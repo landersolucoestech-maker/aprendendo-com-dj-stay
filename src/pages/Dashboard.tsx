@@ -1,13 +1,14 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, BookOpen, Award, Clock, Play, Settings, LogOut, CheckCircle, Lock } from "lucide-react";
-import { Link } from "react-router-dom";
-import LessonCard from "@/components/LessonCard";
+import { BookOpen, Award } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import UserProfile from "@/components/UserProfile";
+import RecentActivities from "@/components/RecentActivities";
+import ModuleProgress from "@/components/ModuleProgress";
+import LessonGrid from "@/components/LessonGrid";
+import DashboardHeader from "@/components/DashboardHeader";
 
 const Dashboard = () => {
   const [user] = useState({
@@ -130,73 +131,14 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-black via-gray-900 to-black border-b border-white/10">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold gradient-text">Área do Aluno</h1>
-              <p className="text-gray-300 mt-1">Bem-vindo de volta, {user.name}!</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white">
-                <Settings className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white">
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <DashboardHeader userName={user.name} />
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-4 gap-8">
-          {/* Sidebar - Perfil */}
+          {/* Sidebar */}
           <div className="space-y-6">
-            <Card className="glass-card border-white/10">
-              <CardHeader>
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-gradient-neon rounded-full flex items-center justify-center">
-                    <User className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-white">{user.name}</CardTitle>
-                    <CardDescription className="text-gray-400">{user.email}</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm text-gray-400">Membro desde</p>
-                  <p className="text-white">{user.joinDate}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-400 mb-2">Progresso Geral</p>
-                  <Progress value={user.progress} className="h-2" />
-                  <p className="text-xs text-gray-400 mt-1">{user.progress}% concluído</p>
-                </div>
-                <Button className="w-full btn-neon">
-                  <Award className="w-4 h-4 mr-2" />
-                  Certificados
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Atividades Recentes */}
-            <Card className="glass-card border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white">Atividades Recentes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {recentActivities.map((item, index) => (
-                  <div key={index} className="border-b border-white/10 pb-3 last:border-b-0">
-                    <p className="text-sm text-white">{item.activity}</p>
-                    <p className="text-xs text-gray-400">{item.time}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            <UserProfile user={user} />
+            <RecentActivities activities={recentActivities} />
           </div>
 
           {/* Main Content */}
@@ -226,54 +168,12 @@ const Dashboard = () => {
                     <VideoPlayer lesson={currentLesson} />
                   </div>
                 ) : (
-                  <div className="space-y-8">
-                    {modules.map((module) => (
-                      <div key={module.id} className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-xl font-bold text-white">{module.title}</h3>
-                            <p className="text-gray-300">{module.description}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm text-gray-400">Progresso</p>
-                            <p className="text-white font-semibold">{module.progress}%</p>
-                          </div>
-                        </div>
-                        
-                        <Progress value={module.progress} className="h-2" />
-                        
-                        <div className="grid gap-4">
-                          {module.lessons.map((lesson) => (
-                            <LessonCard 
-                              key={lesson.id} 
-                              lesson={lesson} 
-                              onClick={() => handleLessonClick(lesson)}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <LessonGrid modules={modules} onLessonClick={handleLessonClick} />
                 )}
               </TabsContent>
 
               <TabsContent value="progresso" className="space-y-6">
-                <Card className="glass-card border-white/10">
-                  <CardHeader>
-                    <CardTitle className="text-white">Estatísticas de Progresso</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {modules.map((module) => (
-                      <div key={module.id} className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-white">{module.title}</span>
-                          <span className="text-gray-400">{module.progress}%</span>
-                        </div>
-                        <Progress value={module.progress} className="h-2" />
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
+                <ModuleProgress modules={modules} />
               </TabsContent>
             </Tabs>
           </div>
