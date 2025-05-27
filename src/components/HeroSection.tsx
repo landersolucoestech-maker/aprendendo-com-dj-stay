@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Play, Star, Users, Clock } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const HeroSection = () => {
   return (
@@ -53,10 +54,12 @@ const HeroSection = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button size="lg" className="btn-neon text-lg px-8 py-6">
-                Começar Agora
-                <Play className="w-5 h-5 ml-2" />
-              </Button>
+              <Link to="/matricule-se">
+                <Button size="lg" className="btn-neon text-lg px-8 py-6">
+                  Começar Agora
+                  <Play className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
               <Button 
                 size="lg" 
                 variant="outline" 

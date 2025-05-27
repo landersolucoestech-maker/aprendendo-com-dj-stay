@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Menu, X, Play, User, BookOpen, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,14 +14,14 @@ const Navigation = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-neon rounded-lg flex items-center justify-center">
               <Play className="w-4 h-4 text-white" />
             </div>
             <span className="text-xl font-bold gradient-text">
               Produção de Funk
             </span>
-          </div>
+          </Link>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
@@ -43,13 +44,17 @@ const Navigation = () => {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" className="text-gray-300 hover:text-white">
-              <User className="w-4 h-4 mr-2" />
-              Entrar
-            </Button>
-            <Button className="btn-neon">
-              Matricule-se
-            </Button>
+            <Link to="/login">
+              <Button variant="ghost" className="text-gray-300 hover:text-white">
+                <User className="w-4 h-4 mr-2" />
+                Entrar
+              </Button>
+            </Link>
+            <Link to="/matricule-se">
+              <Button className="btn-neon">
+                Matricule-se
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -80,13 +85,17 @@ const Navigation = () => {
               Contato
             </a>
             <div className="pt-4 border-t border-white/10 space-y-3">
-              <Button variant="ghost" className="w-full justify-start text-gray-300">
-                <User className="w-4 h-4 mr-2" />
-                Entrar
-              </Button>
-              <Button className="w-full btn-neon">
-                Matricule-se
-              </Button>
+              <Link to="/login">
+                <Button variant="ghost" className="w-full justify-start text-gray-300">
+                  <User className="w-4 h-4 mr-2" />
+                  Entrar
+                </Button>
+              </Link>
+              <Link to="/matricule-se">
+                <Button className="w-full btn-neon">
+                  Matricule-se
+                </Button>
+              </Link>
             </div>
           </div>
         )}
