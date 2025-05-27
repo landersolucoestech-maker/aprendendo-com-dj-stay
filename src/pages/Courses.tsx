@@ -1,5 +1,5 @@
-
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -7,6 +7,7 @@ import { Play, Download, Lock, CheckCircle, Clock, Users } from "lucide-react";
 
 const Courses = () => {
   const [activeModule, setActiveModule] = useState(1);
+  const navigate = useNavigate();
 
   const modules = [
     {
@@ -88,6 +89,13 @@ const Courses = () => {
       type: 'download'
     }
   ];
+
+  const handleLessonClick = (lesson) => {
+    if (lesson.type === 'video') {
+      navigate(`/aula/${lesson.id}`);
+    }
+    // Para downloads, manter comportamento atual
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -202,6 +210,7 @@ const Courses = () => {
                           <Button 
                             className={lesson.completed ? "bg-green-600 hover:bg-green-700" : "btn-neon"}
                             size="sm"
+                            onClick={() => handleLessonClick(lesson)}
                           >
                             {lesson.type === 'download' ? (
                               <>
