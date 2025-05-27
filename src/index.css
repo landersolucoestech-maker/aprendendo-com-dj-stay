@@ -34,6 +34,11 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Neon colors */
+    --neon-purple: 139 92 246;
+    --neon-blue: 59 130 246;
+    --neon-pink: 236 72 153;
   }
 }
 
@@ -58,14 +63,18 @@
   }
   
   .neon-border {
-    @apply border border-neon-purple/50 shadow-[0_0_15px_rgba(139,92,246,0.3)];
+    @apply border border-[rgb(var(--neon-purple))]/50 shadow-[0_0_15px_rgba(139,92,246,0.3)];
   }
   
   .gradient-text {
-    @apply bg-gradient-to-r from-neon-purple to-neon-blue bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-[rgb(var(--neon-purple))] to-[rgb(var(--neon-blue))] bg-clip-text text-transparent;
+  }
+  
+  .gradient-neon {
+    @apply bg-gradient-to-r from-[rgb(var(--neon-purple))] to-[rgb(var(--neon-blue))];
   }
   
   .btn-neon {
-    @apply bg-gradient-to-r from-neon-purple to-neon-blue text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:scale-105;
+    @apply bg-gradient-to-r from-[rgb(var(--neon-purple))] to-[rgb(var(--neon-blue))] text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:scale-105;
   }
 }

@@ -3,8 +3,11 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { User, BookOpen, Award, Clock, Play, Settings, LogOut } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { User, BookOpen, Award, Clock, Play, Settings, LogOut, CheckCircle, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
+import LessonCard from "@/components/LessonCard";
+import VideoPlayer from "@/components/VideoPlayer";
 
 const Dashboard = () => {
   const [user] = useState({
@@ -14,38 +17,104 @@ const Dashboard = () => {
     progress: 65
   });
 
-  const courses = [
+  const [currentLesson, setCurrentLesson] = useState(null);
+
+  const modules = [
     {
       id: 1,
-      title: 'Produção de Funk - Módulo 1',
-      description: 'Fundamentos da produção musical',
+      title: 'Módulo 1 - Fundamentos',
+      description: 'Aprenda os conceitos básicos da produção de funk',
       progress: 100,
-      duration: '2h 30min',
-      completed: true
+      lessons: [
+        {
+          id: 1,
+          title: 'Introdução ao Funk',
+          duration: '15:30',
+          completed: true,
+          videoUrl: 'https://example.com/video1.mp4',
+          description: 'História e evolução do funk brasileiro'
+        },
+        {
+          id: 2,
+          title: 'Estrutura Musical do Funk',
+          duration: '22:45',
+          completed: true,
+          videoUrl: 'https://example.com/video2.mp4',
+          description: 'Entenda a base rítmica e harmônica'
+        },
+        {
+          id: 3,
+          title: 'Equipamentos Básicos',
+          duration: '18:20',
+          completed: true,
+          videoUrl: 'https://example.com/video3.mp4',
+          description: 'O que você precisa para começar'
+        }
+      ]
     },
     {
       id: 2,
-      title: 'Produção de Funk - Módulo 2',
-      description: 'Criação de beats e samples',
+      title: 'Módulo 2 - Criação de Beats',
+      description: 'Domine a arte de criar batidas marcantes',
       progress: 75,
-      duration: '3h 15min',
-      completed: false
+      lessons: [
+        {
+          id: 4,
+          title: 'Drum Patterns Essenciais',
+          duration: '25:10',
+          completed: true,
+          videoUrl: 'https://example.com/video4.mp4',
+          description: 'Padrões rítmicos fundamentais do funk'
+        },
+        {
+          id: 5,
+          title: 'Criando Variações',
+          duration: '30:15',
+          completed: true,
+          videoUrl: 'https://example.com/video5.mp4',
+          description: 'Como dar personalidade aos seus beats'
+        },
+        {
+          id: 6,
+          title: 'Samples e Loops',
+          duration: '20:30',
+          completed: false,
+          videoUrl: 'https://example.com/video6.mp4',
+          description: 'Usando samples de forma criativa'
+        }
+      ]
     },
     {
       id: 3,
-      title: 'Produção de Funk - Módulo 3',
-      description: 'Mixagem e masterização',
+      title: 'Módulo 3 - Mixagem',
+      description: 'Finalize suas faixas com qualidade profissional',
       progress: 30,
-      duration: '2h 45min',
-      completed: false
-    },
-    {
-      id: 4,
-      title: 'Produção de Funk - Módulo 4',
-      description: 'Distribuição e monetização',
-      progress: 0,
-      duration: '1h 50min',
-      completed: false
+      lessons: [
+        {
+          id: 7,
+          title: 'EQ e Compressão',
+          duration: '28:45',
+          completed: true,
+          videoUrl: 'https://example.com/video7.mp4',
+          description: 'Técnicas de equalização e compressão'
+        },
+        {
+          id: 8,
+          title: 'Efeitos e Espacialização',
+          duration: '24:20',
+          completed: false,
+          videoUrl: 'https://example.com/video8.mp4',
+          description: 'Reverb, delay e outros efeitos'
+        },
+        {
+          id: 9,
+          title: 'Masterização Final',
+          duration: '32:10',
+          completed: false,
+          videoUrl: 'https://example.com/video9.mp4',
+          description: 'Dê o toque final nas suas produções'
+        }
+      ]
     }
   ];
 
@@ -54,6 +123,10 @@ const Dashboard = () => {
     { activity: 'Baixou samples do Módulo 2', time: '1 dia atrás' },
     { activity: 'Assistiu "Introdução ao FL Studio"', time: '3 dias atrás' },
   ];
+
+  const handleLessonClick = (lesson) => {
+    setCurrentLesson(lesson);
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -78,7 +151,7 @@ const Dashboard = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-4 gap-8">
           {/* Sidebar - Perfil */}
           <div className="space-y-6">
             <Card className="glass-card border-white/10">
@@ -126,83 +199,83 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* Main Content - Cursos */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">Meus Cursos</h2>
-              <Button variant="outline" className="border-white/20 bg-transparent hover:bg-white/10">
-                <BookOpen className="w-4 h-4 mr-2" />
-                Ver Todos
-              </Button>
-            </div>
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            <Tabs defaultValue="aulas" className="space-y-6">
+              <TabsList className="bg-white/10 border-white/20">
+                <TabsTrigger value="aulas" className="data-[state=active]:bg-white/20">
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Aulas
+                </TabsTrigger>
+                <TabsTrigger value="progresso" className="data-[state=active]:bg-white/20">
+                  <Award className="w-4 h-4 mr-2" />
+                  Progresso
+                </TabsTrigger>
+              </TabsList>
 
-            <div className="grid gap-6">
-              {courses.map((course) => (
-                <Card key={course.id} className="glass-card border-white/10 hover:bg-white/5 transition-colors">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-semibold text-white">{course.title}</h3>
-                          {course.completed && (
-                            <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs">
-                              Concluído
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-gray-300 mb-4">{course.description}</p>
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-400">Progresso</span>
-                            <span className="text-white">{course.progress}%</span>
+              <TabsContent value="aulas" className="space-y-6">
+                {currentLesson ? (
+                  <div className="space-y-6">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setCurrentLesson(null)}
+                      className="border-white/20 bg-transparent hover:bg-white/10"
+                    >
+                      ← Voltar às aulas
+                    </Button>
+                    <VideoPlayer lesson={currentLesson} />
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    {modules.map((module) => (
+                      <div key={module.id} className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-xl font-bold text-white">{module.title}</h3>
+                            <p className="text-gray-300">{module.description}</p>
                           </div>
-                          <Progress value={course.progress} className="h-2" />
+                          <div className="text-right">
+                            <p className="text-sm text-gray-400">Progresso</p>
+                            <p className="text-white font-semibold">{module.progress}%</p>
+                          </div>
                         </div>
-
-                        <div className="flex items-center mt-4 text-sm text-gray-400">
-                          <Clock className="w-4 h-4 mr-1" />
-                          {course.duration}
+                        
+                        <Progress value={module.progress} className="h-2" />
+                        
+                        <div className="grid gap-4">
+                          {module.lessons.map((lesson) => (
+                            <LessonCard 
+                              key={lesson.id} 
+                              lesson={lesson} 
+                              onClick={() => handleLessonClick(lesson)}
+                            />
+                          ))}
                         </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
 
-                      <div className="ml-6">
-                        <Button 
-                          className={course.completed ? "bg-green-600 hover:bg-green-700" : "btn-neon"}
-                          size="lg"
-                        >
-                          <Play className="w-4 h-4 mr-2" />
-                          {course.completed ? 'Revisar' : 'Continuar'}
-                        </Button>
+              <TabsContent value="progresso" className="space-y-6">
+                <Card className="glass-card border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white">Estatísticas de Progresso</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {modules.map((module) => (
+                      <div key={module.id} className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-white">{module.title}</span>
+                          <span className="text-gray-400">{module.progress}%</span>
+                        </div>
+                        <Progress value={module.progress} className="h-2" />
                       </div>
-                    </div>
+                    ))}
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-
-            {/* Quick Actions */}
-            <Card className="glass-card border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white">Acesso Rápido</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-3 gap-4">
-                  <Button variant="outline" className="h-20 flex-col border-white/20 bg-transparent hover:bg-white/10">
-                    <BookOpen className="w-6 h-6 mb-2 text-neon-purple" />
-                    <span>Biblioteca de Samples</span>
-                  </Button>
-                  <Button variant="outline" className="h-20 flex-col border-white/20 bg-transparent hover:bg-white/10">
-                    <User className="w-6 h-6 mb-2 text-neon-blue" />
-                    <span>Comunidade</span>
-                  </Button>
-                  <Button variant="outline" className="h-20 flex-col border-white/20 bg-transparent hover:bg-white/10">
-                    <Award className="w-6 h-6 mb-2 text-neon-pink" />
-                    <span>Certificados</span>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>
