@@ -3,7 +3,7 @@ import { Play, Mail, Phone, Instagram, Youtube } from "lucide-react";
 
 const Footer = () => {
   return (
-    <footer className="bg-black border-t border-white/10">
+    <footer id="contato" className="bg-black border-t border-white/10">
       <div className="container mx-auto px-4 py-12">
         <div className="grid md:grid-cols-4 gap-8">
           

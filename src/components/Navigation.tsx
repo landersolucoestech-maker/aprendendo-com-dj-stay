@@ -9,6 +9,14 @@ const Navigation = () => {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
+  const scrollToContact = () => {
+    const contactSection = document.getElementById('contato');
+    if (contactSection) {
+      contactSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    setIsMenuOpen(false); // Close mobile menu if open
+  };
+
   return (
     <nav className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-lg border-b border-white/10">
       <div className="container mx-auto px-4">
@@ -37,9 +45,12 @@ const Navigation = () => {
             <a href="#depoimentos" className="text-gray-300 hover:text-white transition-colors">
               Depoimentos
             </a>
-            <a href="#contato" className="text-gray-300 hover:text-white transition-colors">
+            <button 
+              onClick={scrollToContact}
+              className="text-gray-300 hover:text-white transition-colors"
+            >
               Contato
-            </a>
+            </button>
           </div>
 
           {/* CTA Buttons */}
@@ -81,9 +92,12 @@ const Navigation = () => {
             <a href="#depoimentos" className="block text-gray-300 hover:text-white transition-colors py-2">
               Depoimentos
             </a>
-            <a href="#contato" className="block text-gray-300 hover:text-white transition-colors py-2">
+            <button 
+              onClick={scrollToContact}
+              className="block text-gray-300 hover:text-white transition-colors py-2 text-left w-full"
+            >
               Contato
-            </a>
+            </button>
             <div className="pt-4 border-t border-white/10 space-y-3">
               <Link to="/login">
                 <Button variant="ghost" className="w-full justify-start text-gray-300">
