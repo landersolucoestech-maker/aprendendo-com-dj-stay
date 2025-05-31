@@ -51,9 +51,9 @@ const BenefitsSection = () => {
           {benefits.map((benefit, index) => (
             <div 
               key={index} 
-              className="glass-card p-6 group hover:neon-border transition-all duration-300 hover:scale-105"
+              className="glass-card p-6 group hover:brand-border transition-all duration-300 hover:scale-105"
             >
-              <div className="w-12 h-12 bg-gradient-neon rounded-lg flex items-center justify-center mb-4 group-hover:animate-pulse">
+              <div className="w-12 h-12 bg-gradient-brand rounded-lg flex items-center justify-center mb-4 group-hover:animate-pulse">
                 <benefit.icon className="w-6 h-6 text-white" />
               </div>
               
@@ -77,7 +77,7 @@ const BenefitsSection = () => {
             <p className="text-gray-300 mb-6">
               Junte-se a mais de 2.500 alunos que já estão produzindo hits de funk
             </p>
-            <button className="btn-neon">
+            <button className="btn-brand">
               Quero me matricular agora
             </button>
           </div>

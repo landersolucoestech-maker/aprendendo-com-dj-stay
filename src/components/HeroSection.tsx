@@ -5,11 +5,11 @@ import { Link } from "react-router-dom";
 
 const HeroSection = () => {
   return (
-    <section id="home" className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-dark">
+    <section id="home" className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-black via-brand-dark to-black">
       {/* Background Effects */}
       <div className="absolute inset-0 opacity-10">
         <div className="w-full h-full bg-repeat" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%238B5CF6' fill-opacity='0.4'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2338b6ff' fill-opacity='0.4'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
         }}></div>
       </div>
       
@@ -19,8 +19,8 @@ const HeroSection = () => {
           {/* Content */}
           <div className="text-center lg:text-left space-y-8">
             <div className="space-y-4">
-              <div className="inline-flex items-center space-x-2 bg-neon-purple/20 px-4 py-2 rounded-full">
-                <Star className="w-4 h-4 text-neon-purple" />
+              <div className="inline-flex items-center space-x-2 bg-brand-light/20 px-4 py-2 rounded-full">
+                <Star className="w-4 h-4 text-brand-light" />
                 <span className="text-sm text-gray-300">Curso #1 em Produção de Funk</span>
               </div>
               
@@ -39,15 +39,15 @@ const HeroSection = () => {
             {/* Stats */}
             <div className="flex flex-wrap gap-6 justify-center lg:justify-start">
               <div className="flex items-center space-x-2">
-                <Users className="w-5 h-5 text-neon-purple" />
+                <Users className="w-5 h-5 text-brand-light" />
                 <span className="text-gray-300">+2.500 alunos</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Clock className="w-5 h-5 text-neon-blue" />
+                <Clock className="w-5 h-5 text-brand-medium" />
                 <span className="text-gray-300">50+ horas de conteúdo</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Star className="w-5 h-5 text-neon-pink" />
+                <Star className="w-5 h-5 text-brand-dark" />
                 <span className="text-gray-300">4.9/5 estrelas</span>
               </div>
             </div>
@@ -55,7 +55,7 @@ const HeroSection = () => {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link to="/matricule-se">
-                <Button size="lg" className="btn-neon text-lg px-8 py-6">
+                <Button size="lg" className="btn-brand text-lg px-8 py-6">
                   Começar Agora
                   <Play className="w-5 h-5 ml-2" />
                 </Button>
@@ -63,7 +63,7 @@ const HeroSection = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="text-lg px-8 py-6 border-white/20 bg-transparent hover:bg-white/10"
+                className="text-lg px-8 py-6 border-brand-light/20 bg-transparent hover:bg-brand-light/10 text-brand-light"
               >
                 Assistir Prévia
               </Button>
@@ -73,7 +73,7 @@ const HeroSection = () => {
           {/* Video/Image */}
           <div className="relative">
             <div className="glass-card p-4 animate-float">
-              <div className="aspect-video bg-gradient-neon rounded-lg flex items-center justify-center relative overflow-hidden">
+              <div className="aspect-video bg-gradient-brand rounded-lg flex items-center justify-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-black/50"></div>
                 <Button 
                   size="lg" 
@@ -96,7 +96,7 @@ const HeroSection = () => {
             {/* Floating elements */}
             <div className="absolute -top-4 -right-4 glass-card p-3 animate-float" style={{animationDelay: '1s'}}>
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <div className="w-3 h-3 bg-brand-light rounded-full animate-pulse"></div>
                 <span className="text-xs text-gray-300">Ao vivo</span>
               </div>
             </div>

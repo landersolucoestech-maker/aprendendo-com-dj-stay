@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button";
 
 const InstructorSection = () => {
   return (
-    <section id="instrutor" className="py-20 bg-gradient-dark relative">
+    <section id="instrutor" className="py-20 bg-gradient-to-br from-black via-brand-dark to-black relative">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           
           {/* Instructor Image */}
           <div className="relative">
             <div className="glass-card p-6">
-              <div className="aspect-square bg-gradient-neon rounded-xl overflow-hidden relative">
+              <div className="aspect-square bg-gradient-brand rounded-xl overflow-hidden relative">
                 <img 
                   src="/placeholder.svg" 
                   alt="DJ Producer" 
@@ -41,7 +41,7 @@ const InstructorSection = () => {
             {/* Floating stats */}
             <div className="absolute -bottom-6 -right-6 glass-card p-4 animate-float" style={{animationDelay: '0.5s'}}>
               <div className="text-center">
-                <div className="text-2xl font-bold text-neon-purple">500M+</div>
+                <div className="text-2xl font-bold text-brand-light">500M+</div>
                 <div className="text-xs text-gray-400">Streams</div>
               </div>
             </div>
@@ -66,37 +66,37 @@ const InstructorSection = () => {
             {/* Achievements */}
             <div className="grid grid-cols-2 gap-4">
               <div className="glass-card p-4 text-center">
-                <Music className="w-8 h-8 text-neon-purple mx-auto mb-2" />
+                <Music className="w-8 h-8 text-brand-light mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white">200+</div>
                 <div className="text-sm text-gray-400">Hits produzidos</div>
               </div>
               
               <div className="glass-card p-4 text-center">
-                <Users className="w-8 h-8 text-neon-blue mx-auto mb-2" />
+                <Users className="w-8 h-8 text-brand-medium mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white">50+</div>
                 <div className="text-sm text-gray-400">Artistas parceiros</div>
               </div>
               
               <div className="glass-card p-4 text-center">
-                <Award className="w-8 h-8 text-neon-pink mx-auto mb-2" />
+                <Award className="w-8 h-8 text-brand-dark mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white">15</div>
                 <div className="text-sm text-gray-400">Anos de experiência</div>
               </div>
               
               <div className="glass-card p-4 text-center">
-                <TrendingUp className="w-8 h-8 text-neon-green mx-auto mb-2" />
+                <TrendingUp className="w-8 h-8 text-brand-light mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white">Top 1</div>
                 <div className="text-sm text-gray-400">Charts nacionais</div>
               </div>
             </div>
 
             {/* Quote */}
-            <div className="glass-card p-6 neon-border">
+            <div className="glass-card p-6 brand-border">
               <blockquote className="text-lg text-gray-300 italic mb-4">
                 "Minha missão é democratizar a produção musical e mostrar que qualquer pessoa 
                 pode criar hits incríveis, independente do equipamento que tem em casa."
               </blockquote>
-              <cite className="text-neon-purple font-semibold">— DJ Alex Producer</cite>
+              <cite className="text-brand-light font-semibold">— DJ Alex Producer</cite>
             </div>
 
             {/* Collaborations */}
@@ -116,7 +116,7 @@ const InstructorSection = () => {
               </div>
             </div>
 
-            <Button size="lg" className="btn-neon">
+            <Button size="lg" className="btn-brand">
               Aprender com o Alex
             </Button>
           </div>

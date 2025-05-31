@@ -63,18 +63,17 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Custom funk theme colors
-				neon: {
-					purple: '#8B5CF6',
-					blue: '#3B82F6',
-					pink: '#EC4899',
-					green: '#10B981'
+				// New custom color scheme
+				brand: {
+					light: '#38b6ff',
+					medium: '#0cc0df', 
+					dark: '#004aad'
 				}
 			},
 			backgroundImage: {
-				'gradient-funk': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-				'gradient-neon': 'linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%)',
-				'gradient-dark': 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%)'
+				'gradient-brand': 'linear-gradient(135deg, #38b6ff 0%, #0cc0df 50%, #004aad 100%)',
+				'gradient-brand-light': 'linear-gradient(135deg, #38b6ff 0%, #0cc0df 100%)',
+				'gradient-brand-dark': 'linear-gradient(135deg, #0cc0df 0%, #004aad 100%)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -100,11 +99,11 @@ export default {
 				},
 				'glow': {
 					'0%, 100%': { 
-						textShadow: '0 0 20px #8B5CF6, 0 0 30px #8B5CF6, 0 0 40px #8B5CF6',
+						textShadow: '0 0 20px #38b6ff, 0 0 30px #38b6ff, 0 0 40px #38b6ff',
 						transform: 'scale(1)'
 					},
 					'50%': { 
-						textShadow: '0 0 10px #8B5CF6, 0 0 20px #8B5CF6, 0 0 30px #8B5CF6',
+						textShadow: '0 0 10px #38b6ff, 0 0 20px #38b6ff, 0 0 30px #38b6ff',
 						transform: 'scale(1.02)'
 					}
 				},

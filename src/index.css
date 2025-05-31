@@ -12,7 +12,7 @@
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 262 83% 58%;
+    --primary: 204 100% 60%;
     --primary-foreground: 210 20% 98%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
@@ -24,21 +24,16 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 262 83% 58%;
+    --ring: 204 100% 60%;
     --radius: 0.75rem;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary: 204 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-    
-    /* Neon colors */
-    --neon-purple: 139 92 246;
-    --neon-blue: 59 130 246;
-    --neon-pink: 236 72 153;
+    --sidebar-ring: 204 100% 60%;
   }
 }
 
@@ -62,19 +57,19 @@
     @apply bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl;
   }
   
-  .neon-border {
-    @apply border border-[rgb(var(--neon-purple))]/50 shadow-[0_0_15px_rgba(139,92,246,0.3)];
+  .brand-border {
+    @apply border border-brand-light/50 shadow-[0_0_15px_rgba(56,182,255,0.3)];
   }
   
   .gradient-text {
-    @apply bg-gradient-to-r from-[rgb(var(--neon-purple))] to-[rgb(var(--neon-blue))] bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-brand-light to-brand-medium bg-clip-text text-transparent;
   }
   
-  .gradient-neon {
-    @apply bg-gradient-to-r from-[rgb(var(--neon-purple))] to-[rgb(var(--neon-blue))];
+  .gradient-brand {
+    @apply bg-gradient-to-r from-brand-light to-brand-medium;
   }
   
-  .btn-neon {
-    @apply bg-gradient-to-r from-[rgb(var(--neon-purple))] to-[rgb(var(--neon-blue))] text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:scale-105;
+  .btn-brand {
+    @apply bg-gradient-to-r from-brand-light to-brand-medium text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(56,182,255,0.5)] hover:scale-105;
   }
 }

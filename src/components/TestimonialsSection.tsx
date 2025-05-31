@@ -31,7 +31,7 @@ const testimonials = [
 
 const TestimonialsSection = () => {
   return (
-    <section id="depoimentos" className="py-20 bg-gradient-dark relative">
+    <section id="depoimentos" className="py-20 bg-gradient-to-br from-black via-brand-dark/20 to-black relative">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
@@ -44,12 +44,12 @@ const TestimonialsSection = () => {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
           {testimonials.map((testimonial, index) => (
-            <div key={index} className="glass-card p-6 group hover:neon-border transition-all duration-300">
+            <div key={index} className="glass-card p-6 group hover:brand-border transition-all duration-300">
               <div className="flex items-center mb-4">
                 <img 
                   src={testimonial.image} 
                   alt={testimonial.name}
-                  className="w-12 h-12 rounded-full mr-4 bg-gradient-neon"
+                  className="w-12 h-12 rounded-full mr-4 bg-gradient-brand"
                 />
                 <div>
                   <h4 className="font-semibold text-white">{testimonial.name}</h4>
@@ -63,7 +63,7 @@ const TestimonialsSection = () => {
                 ))}
               </div>
 
-              <Quote className="w-6 h-6 text-neon-purple mb-3 opacity-50" />
+              <Quote className="w-6 h-6 text-brand-light mb-3 opacity-50" />
               
               <p className="text-gray-300 leading-relaxed mb-4">
                 {testimonial.text}
@@ -73,7 +73,7 @@ const TestimonialsSection = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="border-neon-purple/50 text-neon-purple hover:bg-neon-purple/20"
+                  className="border-brand-light/50 text-brand-light hover:bg-brand-light/20"
                 >
                   <Play className="w-4 h-4 mr-2" />
                   Ver vídeo
@@ -90,7 +90,7 @@ const TestimonialsSection = () => {
               Veja o depoimento completo do MC Kevinho
             </h3>
             
-            <div className="aspect-video bg-gradient-neon rounded-lg flex items-center justify-center relative overflow-hidden mb-6">
+            <div className="aspect-video bg-gradient-brand rounded-lg flex items-center justify-center relative overflow-hidden mb-6">
               <div className="absolute inset-0 bg-black/50"></div>
               <Button 
                 size="lg" 
@@ -114,7 +114,7 @@ const TestimonialsSection = () => {
               Hoje sou referência no segmento."
             </p>
             
-            <Button className="btn-neon">
+            <Button className="btn-brand">
               Eu também quero esse resultado
             </Button>
           </div>

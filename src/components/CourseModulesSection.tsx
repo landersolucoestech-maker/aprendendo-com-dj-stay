@@ -111,15 +111,15 @@ const CourseModulesSection = () => {
           
           <div className="flex flex-wrap gap-8 justify-center mb-8">
             <div className="glass-card px-6 py-3">
-              <div className="text-2xl font-bold text-neon-purple">{Math.floor(totalDuration)}h+</div>
+              <div className="text-2xl font-bold text-brand-light">{Math.floor(totalDuration)}h+</div>
               <div className="text-sm text-gray-400">de conteúdo</div>
             </div>
             <div className="glass-card px-6 py-3">
-              <div className="text-2xl font-bold text-neon-blue">{totalLessons}</div>
+              <div className="text-2xl font-bold text-brand-medium">{totalLessons}</div>
               <div className="text-sm text-gray-400">aulas práticas</div>
             </div>
             <div className="glass-card px-6 py-3">
-              <div className="text-2xl font-bold text-neon-pink">500+</div>
+              <div className="text-2xl font-bold text-brand-dark">500+</div>
               <div className="text-sm text-gray-400">samples exclusivos</div>
             </div>
           </div>
@@ -134,7 +134,7 @@ const CourseModulesSection = () => {
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-4 mb-2">
-                    <span className="text-sm text-neon-purple font-semibold">
+                    <span className="text-sm text-brand-light font-semibold">
                       MÓDULO {index + 1}
                     </span>
                     <div className="flex items-center text-gray-400 text-sm space-x-4">
@@ -173,18 +173,18 @@ const CourseModulesSection = () => {
                     <ul className="space-y-3">
                       {module.topics.map((topic, topicIndex) => (
                         <li key={topicIndex} className="flex items-center text-gray-300">
-                          <div className="w-2 h-2 bg-neon-purple rounded-full mr-3 flex-shrink-0"></div>
+                          <div className="w-2 h-2 bg-brand-light rounded-full mr-3 flex-shrink-0"></div>
                           {topic}
                         </li>
                       ))}
                     </ul>
                     
                     <div className="flex flex-wrap gap-4 mt-6 pt-6 border-t border-white/10">
-                      <Button variant="outline" size="sm" className="border-neon-purple/50 text-neon-purple">
+                      <Button variant="outline" size="sm" className="border-brand-light/50 text-brand-light">
                         <Play className="w-4 h-4 mr-2" />
                         Aula gratuita
                       </Button>
-                      <Button variant="outline" size="sm" className="border-neon-blue/50 text-neon-blue">
+                      <Button variant="outline" size="sm" className="border-brand-medium/50 text-brand-medium">
                         <Download className="w-4 h-4 mr-2" />
                         Materiais extras
                       </Button>
@@ -197,14 +197,14 @@ const CourseModulesSection = () => {
         </div>
 
         <div className="text-center mt-16">
-          <div className="glass-card p-8 max-w-2xl mx-auto neon-border">
+          <div className="glass-card p-8 max-w-2xl mx-auto brand-border">
             <h3 className="text-2xl font-bold text-white mb-4">
               Pronto para dominar a produção de funk?
             </h3>
             <p className="text-gray-300 mb-6">
               Acesso vitalício a todo o conteúdo + materiais extras + suporte direto
             </p>
-            <Button size="lg" className="btn-neon text-lg px-8 py-4">
+            <Button size="lg" className="btn-brand text-lg px-8 py-4">
               Matricular agora por R$ 297
             </Button>
             <p className="text-sm text-gray-400 mt-3">

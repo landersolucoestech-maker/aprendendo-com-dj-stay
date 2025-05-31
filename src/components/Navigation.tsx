@@ -23,7 +23,7 @@ const Navigation = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-neon rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-brand rounded-lg flex items-center justify-center">
               <Play className="w-4 h-4 text-white" />
             </div>
             <span className="text-xl font-bold gradient-text">
@@ -33,21 +33,21 @@ const Navigation = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#home" className="text-gray-300 hover:text-white transition-colors">
+            <a href="#home" className="text-gray-300 hover:text-brand-light transition-colors">
               Início
             </a>
-            <a href="#curso" className="text-gray-300 hover:text-white transition-colors">
+            <a href="#curso" className="text-gray-300 hover:text-brand-light transition-colors">
               O Curso
             </a>
-            <a href="#instrutor" className="text-gray-300 hover:text-white transition-colors">
+            <a href="#instrutor" className="text-gray-300 hover:text-brand-light transition-colors">
               Instrutor
             </a>
-            <a href="#depoimentos" className="text-gray-300 hover:text-white transition-colors">
+            <a href="#depoimentos" className="text-gray-300 hover:text-brand-light transition-colors">
               Depoimentos
             </a>
             <button 
               onClick={scrollToContact}
-              className="text-gray-300 hover:text-white transition-colors"
+              className="text-gray-300 hover:text-brand-light transition-colors"
             >
               Contato
             </button>
@@ -56,13 +56,13 @@ const Navigation = () => {
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             <Link to="/login">
-              <Button variant="ghost" className="text-gray-300 hover:text-white">
+              <Button variant="ghost" className="text-gray-300 hover:text-brand-light">
                 <User className="w-4 h-4 mr-2" />
                 Entrar
               </Button>
             </Link>
             <Link to="/matricule-se">
-              <Button className="btn-neon">
+              <Button className="btn-brand">
                 Matricule-se
               </Button>
             </Link>
@@ -80,21 +80,21 @@ const Navigation = () => {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden glass-card mt-2 p-4 space-y-4">
-            <a href="#home" className="block text-gray-300 hover:text-white transition-colors py-2">
+            <a href="#home" className="block text-gray-300 hover:text-brand-light transition-colors py-2">
               Início
             </a>
-            <a href="#curso" className="block text-gray-300 hover:text-white transition-colors py-2">
+            <a href="#curso" className="block text-gray-300 hover:text-brand-light transition-colors py-2">
               O Curso
             </a>
-            <a href="#instrutor" className="block text-gray-300 hover:text-white transition-colors py-2">
+            <a href="#instrutor" className="block text-gray-300 hover:text-brand-light transition-colors py-2">
               Instrutor
             </a>
-            <a href="#depoimentos" className="block text-gray-300 hover:text-white transition-colors py-2">
+            <a href="#depoimentos" className="block text-gray-300 hover:text-brand-light transition-colors py-2">
               Depoimentos
             </a>
             <button 
               onClick={scrollToContact}
-              className="block text-gray-300 hover:text-white transition-colors py-2 text-left w-full"
+              className="block text-gray-300 hover:text-brand-light transition-colors py-2 text-left w-full"
             >
               Contato
             </button>
@@ -106,7 +106,7 @@ const Navigation = () => {
                 </Button>
               </Link>
               <Link to="/matricule-se">
-                <Button className="w-full btn-neon">
+                <Button className="w-full btn-brand">
                   Matricule-se
                 </Button>
               </Link>
