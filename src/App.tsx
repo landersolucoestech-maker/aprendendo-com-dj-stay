@@ -13,6 +13,9 @@ import Courses from "./pages/Courses";
 import Lesson from "./pages/Lesson";
 import Contact from "./pages/Contact";
 import EditProfile from "./pages/EditProfile";
+import AccessDenied from "./pages/AccessDenied";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import VerifyEmail from "./pages/VerifyEmail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +36,9 @@ const App = () => (
           <Route path="/aula/:lessonId" element={<Lesson />} />
           <Route path="/contato" element={<Contact />} />
           <Route path="/editar-perfil" element={<EditProfile />} />
+          <Route path="/acesso-negado" element={<AccessDenied />} />
+          <Route path="/pagamento-sucesso" element={<PaymentSuccess />} />
+          <Route path="/verificar-email" element={<VerifyEmail />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
