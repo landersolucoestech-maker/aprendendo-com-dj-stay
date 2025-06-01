@@ -2,7 +2,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { User, Award } from "lucide-react";
+import { User, Award, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface UserProfileProps {
   user: {
@@ -18,13 +19,18 @@ const UserProfile = ({ user }: UserProfileProps) => {
     <Card className="glass-card border-white/10">
       <CardHeader>
         <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-gradient-neon rounded-full flex items-center justify-center">
+          <div className="w-16 h-16 bg-gradient-brand rounded-full flex items-center justify-center">
             <User className="w-8 h-8 text-white" />
           </div>
-          <div>
+          <div className="flex-1">
             <CardTitle className="text-white">{user.name}</CardTitle>
             <CardDescription className="text-gray-400">{user.email}</CardDescription>
           </div>
+          <Link to="/editar-perfil">
+            <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white">
+              <Settings className="w-4 h-4" />
+            </Button>
+          </Link>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -37,7 +43,7 @@ const UserProfile = ({ user }: UserProfileProps) => {
           <Progress value={user.progress} className="h-2" />
           <p className="text-xs text-gray-400 mt-1">{user.progress}% concluído</p>
         </div>
-        <Button className="w-full btn-neon">
+        <Button className="w-full btn-brand">
           <Award className="w-4 h-4 mr-2" />
           Certificados
         </Button>
