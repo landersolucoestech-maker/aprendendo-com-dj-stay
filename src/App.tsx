@@ -9,7 +9,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
-import Courses from "./pages/Courses";
 import Lesson from "./pages/Lesson";
 import Contact from "./pages/Contact";
 import EditProfile from "./pages/EditProfile";
@@ -32,7 +31,6 @@ const App = () => (
           <Route path="/matricule-se" element={<Register />} />
           <Route path="/esqueceu-senha" element={<ForgotPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/cursos" element={<Courses />} />
           <Route path="/aula/:lessonId" element={<Lesson />} />
           <Route path="/contato" element={<Contact />} />
           <Route path="/editar-perfil" element={<EditProfile />} />
