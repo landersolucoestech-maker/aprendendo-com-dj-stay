@@ -20,7 +20,7 @@ const Navigation = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-brand rounded-lg flex items-center justify-center overflow-hidden">
-              <img src="/lovable-uploads/500dc396-d512-4009-b9a2-3f64ae885d20.png" alt="Vivendo da Música" className="w-full h-full object-contain" />
+              <img src="/lovable-uploads/500dc396-d512-4009-b9a2-3f64ae885d20.png" alt="Vivendo da Música" className="w-full h-full object-fill" />
             </div>
             <span className="font-bold gradient-text text-lg">Vivenda da Música</span>
           </Link>
