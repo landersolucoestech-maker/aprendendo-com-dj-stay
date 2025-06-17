@@ -25,7 +25,7 @@ const Navigation = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-12 h-12 bg-gradient-brand rounded-lg flex items-center justify-center overflow-hidden">
+            <div className="w-20 h-20 bg-gradient-brand rounded-lg flex items-center justify-center overflow-hidden">
               <img alt="Vivendo da Música" className="w-full h-full object-fill" src="/lovable-uploads/3c33eda7-abc0-49d8-a1c7-5354b45b1ee8.jpg" />
             </div>
             <span className="font-bold gradient-text text-lg">Vivenda da Música</span>
