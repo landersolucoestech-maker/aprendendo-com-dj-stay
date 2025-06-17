@@ -1,16 +1,13 @@
-
 import { Button } from "@/components/ui/button";
 import { Play, Star, Users, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const HeroSection = () => {
-  return (
-    <section id="home" className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-black via-brand-dark to-black">
+  return <section id="home" className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-black via-brand-dark to-black">
       {/* Background Effects */}
       <div className="absolute inset-0 opacity-10">
         <div className="w-full h-full bg-repeat" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2338b6ff' fill-opacity='0.4'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2338b6ff' fill-opacity='0.4'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+      }}></div>
       </div>
       
       <div className="container mx-auto px-4 py-20 relative z-10">
@@ -30,10 +27,7 @@ const HeroSection = () => {
                 <span className="text-white">na Prática</span>
               </h1>
               
-              <p className="text-xl text-gray-300 max-w-2xl">
-                Aprenda a produzir os hits do funk carioca com técnicas profissionais, 
-                samples exclusivos e aulas práticas do zero ao avançado.
-              </p>
+              <p className="text-xl text-gray-300 max-w-2xl">Aprenda a produzir os hits do funk bh com técnicas profissionais, samples exclusivos e aulas práticas do zero ao avançado.</p>
             </div>
 
             {/* Stats */}
@@ -60,11 +54,7 @@ const HeroSection = () => {
                   <Play className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="text-lg px-8 py-6 border-brand-light/20 bg-transparent hover:bg-brand-light/10 text-brand-light"
-              >
+              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-brand-light/20 bg-transparent hover:bg-brand-light/10 text-brand-light">
                 Assistir Prévia
               </Button>
             </div>
@@ -75,10 +65,7 @@ const HeroSection = () => {
             <div className="glass-card p-4 animate-float">
               <div className="aspect-video bg-gradient-brand rounded-lg flex items-center justify-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-black/50"></div>
-                <Button 
-                  size="lg" 
-                  className="relative z-10 bg-white/20 hover:bg-white/30 text-white border-white/30"
-                >
+                <Button size="lg" className="relative z-10 bg-white/20 hover:bg-white/30 text-white border-white/30">
                   <Play className="w-8 h-8" />
                 </Button>
                 
@@ -94,7 +81,9 @@ const HeroSection = () => {
             </div>
             
             {/* Floating elements */}
-            <div className="absolute -top-4 -right-4 glass-card p-3 animate-float" style={{animationDelay: '1s'}}>
+            <div className="absolute -top-4 -right-4 glass-card p-3 animate-float" style={{
+            animationDelay: '1s'
+          }}>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-brand-light rounded-full animate-pulse"></div>
                 <span className="text-xs text-gray-300">Ao vivo</span>
@@ -103,8 +92,6 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default HeroSection;
