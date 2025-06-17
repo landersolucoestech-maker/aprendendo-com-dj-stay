@@ -1,10 +1,7 @@
-
 import { Music, Users, Award, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
 const InstructorSection = () => {
-  return (
-    <section id="instrutor" className="py-20 bg-gradient-to-br from-black via-brand-dark to-black relative">
+  return <section id="instrutor" className="py-20 bg-gradient-to-br from-black via-brand-dark to-black relative">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           
@@ -12,11 +9,7 @@ const InstructorSection = () => {
           <div className="relative">
             <div className="glass-card p-6">
               <div className="aspect-square bg-gradient-brand rounded-xl overflow-hidden relative">
-                <img 
-                  src="/placeholder.svg" 
-                  alt="DJ Producer" 
-                  className="w-full h-full object-cover"
-                />
+                <img src="/placeholder.svg" alt="DJ Producer" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                 
                 {/* Floating achievements */}
@@ -28,18 +21,16 @@ const InstructorSection = () => {
                 </div>
                 
                 <div className="absolute bottom-4 left-4 right-4">
-                  <h3 className="text-2xl font-bold text-white mb-1">
-                    DJ Alex Producer
-                  </h3>
-                  <p className="text-gray-300">
-                    Produtor e Beatmaker Profissional
-                  </p>
+                  <h3 className="text-2xl font-bold text-white mb-1">DJ Stay</h3>
+                  <p className="text-gray-300">Dj e Produtor Musical</p>
                 </div>
               </div>
             </div>
 
             {/* Floating stats */}
-            <div className="absolute -bottom-6 -right-6 glass-card p-4 animate-float" style={{animationDelay: '0.5s'}}>
+            <div className="absolute -bottom-6 -right-6 glass-card p-4 animate-float" style={{
+            animationDelay: '0.5s'
+          }}>
               <div className="text-center">
                 <div className="text-2xl font-bold text-brand-light">500M+</div>
                 <div className="text-xs text-gray-400">Streams</div>
@@ -96,7 +87,7 @@ const InstructorSection = () => {
                 "Minha missão é democratizar a produção musical e mostrar que qualquer pessoa 
                 pode criar hits incríveis, independente do equipamento que tem em casa."
               </blockquote>
-              <cite className="text-brand-light font-semibold">— DJ Alex Producer</cite>
+              <cite className="text-brand-light font-semibold">— DJ Stay</cite>
             </div>
 
             {/* Collaborations */}
@@ -105,14 +96,9 @@ const InstructorSection = () => {
                 Já trabalhou com:
               </h4>
               <div className="flex flex-wrap gap-2">
-                {["MC Kevinho", "MC Hariel", "MC Ryan SP", "MC Davi", "Funk Brasil", "GR6 Music"].map((artist, index) => (
-                  <span 
-                    key={index}
-                    className="bg-white/10 text-gray-300 px-3 py-1 rounded-full text-sm"
-                  >
+                {["MC Kevinho", "MC Hariel", "MC Ryan SP", "MC Davi", "Funk Brasil", "GR6 Music"].map((artist, index) => <span key={index} className="bg-white/10 text-gray-300 px-3 py-1 rounded-full text-sm">
                     {artist}
-                  </span>
-                ))}
+                  </span>)}
               </div>
             </div>
 
@@ -122,8 +108,6 @@ const InstructorSection = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default InstructorSection;
