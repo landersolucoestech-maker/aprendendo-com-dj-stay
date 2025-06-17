@@ -1,10 +1,14 @@
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Menu, X, User } from "lucide-react";
 import { Link } from "react-router-dom";
+
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
   const scrollToContact = () => {
     const contactSection = document.getElementById('contato');
     if (contactSection) {
@@ -14,12 +18,14 @@ const Navigation = () => {
     }
     setIsMenuOpen(false); // Close mobile menu if open
   };
-  return <nav className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-lg border-b border-white/10">
+
+  return (
+    <nav className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-lg border-b border-white/10">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-brand rounded-lg flex items-center justify-center overflow-hidden">
+            <div className="w-12 h-12 bg-gradient-brand rounded-lg flex items-center justify-center overflow-hidden">
               <img alt="Vivendo da Música" className="w-full h-full object-fill" src="/lovable-uploads/3c33eda7-abc0-49d8-a1c7-5354b45b1ee8.jpg" />
             </div>
             <span className="font-bold gradient-text text-lg">Vivenda da Música</span>
@@ -97,6 +103,8 @@ const Navigation = () => {
             </div>
           </div>}
       </div>
-    </nav>;
+    </nav>
+  );
 };
+
 export default Navigation;
