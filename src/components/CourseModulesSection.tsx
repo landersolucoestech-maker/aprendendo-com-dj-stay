@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Play, Clock, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ const modules = [
     description: "Aprenda os conceitos básicos de produção musical, teoria musical aplicada ao funk e configuração do seu home studio.",
     topics: [
       "Introdução à produção musical",
-      "Configuração de DAW (FL Studio/Ableton)",
+      "Configuração de DAW (Ableton)",
       "Teoria musical básica para funk",
       "Estrutura de uma música de funk",
       "Equipamentos necessários"
