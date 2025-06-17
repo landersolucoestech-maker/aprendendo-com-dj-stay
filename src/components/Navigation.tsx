@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Menu, X, Play, User, BookOpen, Phone } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Navigation = () => {
@@ -23,8 +23,12 @@ const Navigation = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-brand rounded-lg flex items-center justify-center">
-              <Play className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 bg-gradient-brand rounded-lg flex items-center justify-center overflow-hidden">
+              <img 
+                src="/lovable-uploads/500dc396-d512-4009-b9a2-3f64ae885d20.png" 
+                alt="Vivendo da Música" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <span className="text-xl font-bold gradient-text">
               Produção de Funk
