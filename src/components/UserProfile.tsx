@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -22,7 +23,7 @@ const UserProfile = ({ user }: UserProfileProps) => {
             <User className="w-8 h-8 text-white" />
           </div>
           <div className="flex-1">
-            <CardTitle className="text-white">{user.name}</CardTitle>
+            <CardTitle className="text-white text-base">{user.name}</CardTitle>
             <CardDescription className="text-gray-400">{user.email}</CardDescription>
           </div>
           <Link to="/editar-perfil">
