@@ -106,66 +106,25 @@ export type Database = {
           },
         ]
       }
-      module_topics: {
-        Row: {
-          content: string
-          created_at: string | null
-          id: string
-          module_id: string
-          order_index: number | null
-        }
-        Insert: {
-          content: string
-          created_at?: string | null
-          id?: string
-          module_id: string
-          order_index?: number | null
-        }
-        Update: {
-          content?: string
-          created_at?: string | null
-          id?: string
-          module_id?: string
-          order_index?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "module_topics_module_id_fkey"
-            columns: ["module_id"]
-            isOneToOne: false
-            referencedRelation: "modules"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       modules: {
         Row: {
           course_id: string | null
           created_at: string | null
-          description: string | null
-          duration: string | null
           id: string
-          lessons_count: number | null
           order_num: number | null
           title: string | null
         }
         Insert: {
           course_id?: string | null
           created_at?: string | null
-          description?: string | null
-          duration?: string | null
           id?: string
-          lessons_count?: number | null
           order_num?: number | null
           title?: string | null
         }
         Update: {
           course_id?: string | null
           created_at?: string | null
-          description?: string | null
-          duration?: string | null
           id?: string
-          lessons_count?: number | null
           order_num?: number | null
           title?: string | null
         }
