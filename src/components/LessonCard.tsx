@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Play, CheckCircle, Clock } from "lucide-react";
 
 interface Lesson {
-  id: string; // Changed from number | string to string
+  id: number | string;
   title: string;
   duration: string;
   completed: boolean;
