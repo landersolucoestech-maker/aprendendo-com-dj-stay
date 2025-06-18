@@ -21,19 +21,34 @@ interface VideoPlayerProps {
 const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const [watchProgress, setWatchProgress] = useState(lesson.completed ? 100 : 0);
   
+  const handleVideoProgress = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    const progress = (video.currentTime / video.duration) * 100;
+    setWatchProgress(Math.round(progress));
+  };
+
+  const handleVideoEnded = () => {
+    setWatchProgress(100);
+  };
+  
   return (
     <div className="space-y-6">
       {/* Video Player */}
       <Card className="glass-card border-white/10">
         <CardContent className="p-0">
-          <div className="aspect-video bg-gray-900 rounded-t-lg flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-10 h-10 text-neon-purple" />
-              </div>
-              <p className="text-gray-300">Player de vídeo será integrado aqui</p>
-              <p className="text-sm text-gray-400 mt-2">URL: {lesson.videoUrl}</p>
-            </div>
+          <div className="aspect-video bg-gray-900 rounded-t-lg overflow-hidden">
+            <video
+              className="w-full h-full object-cover"
+              controls
+              preload="metadata"
+              onTimeUpdate={handleVideoProgress}
+              onEnded={handleVideoEnded}
+              poster="/placeholder.svg"
+            >
+              <source src={lesson.videoUrl} type="video/mp4" />
+              <track kind="captions" src="" label="Portuguese" default />
+              Seu navegador não suporta o elemento de vídeo.
+            </video>
           </div>
           
           <div className="p-6">
