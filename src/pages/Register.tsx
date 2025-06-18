@@ -52,6 +52,17 @@ const Register = () => {
       return false;
     }
 
+    // Validação básica de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: "Erro",
+        description: "Email deve ter um formato válido",
+        variant: "destructive"
+      });
+      return false;
+    }
+
     if (formData.password.length < 8) {
       toast({
         title: "Erro",
@@ -87,6 +98,12 @@ const Register = () => {
     console.log('Form submitted - starting handleSubmit');
     e.preventDefault();
     
+    // Previne duplo clique
+    if (isLoading) {
+      console.log('Already loading, preventing duplicate submission');
+      return;
+    }
+    
     if (!validateForm()) {
       console.log('Form validation failed');
       return;
@@ -97,14 +114,18 @@ const Register = () => {
 
     try {
       console.log('Attempting to sign up with Supabase');
+      
+      // Primeiro, vamos limpar qualquer sessão existente
+      await supabase.auth.signOut();
+      
       const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            full_name: formData.name,
-            phone: formData.phone
+            full_name: formData.name.trim(),
+            phone: formData.phone.trim()
           }
         }
       });
@@ -113,19 +134,24 @@ const Register = () => {
 
       if (error) {
         console.log('Signup error:', error);
-        if (error.message.includes('already registered')) {
-          toast({
-            title: "Erro",
-            description: "Este email já está registrado. Tente fazer login.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Erro",
-            description: error.message,
-            variant: "destructive"
-          });
+        
+        let errorMessage = "Ocorreu um erro durante o cadastro";
+        
+        if (error.message.includes('already registered') || error.message.includes('User already registered')) {
+          errorMessage = "Este email já está registrado. Tente fazer login.";
+        } else if (error.message.includes('Password should be at least')) {
+          errorMessage = "A senha deve ter pelo menos 6 caracteres";
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = "Email inválido";
+        } else if (error.message.includes('weak password')) {
+          errorMessage = "Senha muito fraca. Use uma senha mais forte.";
         }
+        
+        toast({
+          title: "Erro",
+          description: errorMessage,
+          variant: "destructive"
+        });
         return;
       }
 
@@ -137,7 +163,17 @@ const Register = () => {
         });
         
         console.log('Navigating to verify email page');
-        // Redirect to verify email page or login
+        // Limpa o formulário
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          password: '',
+          confirmPassword: '',
+          acceptTerms: false
+        });
+        
+        // Redireciona para a página de verificação de email
         navigate('/verificar-email');
       }
     } catch (error: any) {
@@ -151,12 +187,6 @@ const Register = () => {
       console.log('Setting loading to false');
       setIsLoading(false);
     }
-  };
-
-  const handleButtonClick = () => {
-    console.log('Button clicked! Form data:', formData);
-    console.log('Accept terms:', formData.acceptTerms);
-    console.log('Is loading:', isLoading);
   };
 
   return (
@@ -190,6 +220,7 @@ const Register = () => {
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -206,6 +237,7 @@ const Register = () => {
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -221,6 +253,7 @@ const Register = () => {
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -238,11 +271,13 @@ const Register = () => {
                     className="pl-10 pr-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                     required
                     minLength={8}
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -261,11 +296,13 @@ const Register = () => {
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                     className="pl-10 pr-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                     required
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                    disabled={isLoading}
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -278,6 +315,7 @@ const Register = () => {
                   checked={formData.acceptTerms}
                   onCheckedChange={(checked) => handleInputChange('acceptTerms', checked as boolean)}
                   className="border-white/20"
+                  disabled={isLoading}
                 />
                 <Label htmlFor="terms" className="text-sm text-gray-300">
                   Aceito os <Link to="/termos" className="text-neon-purple hover:text-neon-blue">termos de uso</Link> e <Link to="/privacidade" className="text-neon-purple hover:text-neon-blue">política de privacidade</Link>
@@ -288,7 +326,6 @@ const Register = () => {
                 type="submit" 
                 className="w-full btn-neon" 
                 disabled={!formData.acceptTerms || isLoading}
-                onClick={handleButtonClick}
               >
                 {isLoading ? "Criando conta..." : "Criar Conta"}
               </Button>
