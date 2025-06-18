@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +11,7 @@ import LessonGrid from "@/components/LessonGrid";
 import DashboardHeader from "@/components/DashboardHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useModules } from "@/hooks/useModules";
 
 const Dashboard = () => {
   const [user, setUser] = useState({
@@ -21,6 +23,7 @@ const Dashboard = () => {
 
   const [currentLesson, setCurrentLesson] = useState(null);
   const navigate = useNavigate();
+  const { data: modules = [], isLoading, error } = useModules();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -70,105 +73,6 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const modules = [
-    {
-      id: 1,
-      title: 'Módulo 1 - Fundamentos',
-      description: 'Aprenda os conceitos básicos da produção de funk',
-      progress: 100,
-      lessons: [
-        {
-          id: 1,
-          title: 'Introdução ao Funk',
-          duration: '15:30',
-          completed: true,
-          videoUrl: 'https://example.com/video1.mp4',
-          description: 'História e evolução do funk brasileiro'
-        },
-        {
-          id: 2,
-          title: 'Estrutura Musical do Funk',
-          duration: '22:45',
-          completed: true,
-          videoUrl: 'https://example.com/video2.mp4',
-          description: 'Entenda a base rítmica e harmônica'
-        },
-        {
-          id: 3,
-          title: 'Equipamentos Básicos',
-          duration: '18:20',
-          completed: true,
-          videoUrl: 'https://example.com/video3.mp4',
-          description: 'O que você precisa para começar'
-        }
-      ]
-    },
-    {
-      id: 2,
-      title: 'Módulo 2 - Criação de Beats',
-      description: 'Domine a arte de criar batidas marcantes',
-      progress: 75,
-      lessons: [
-        {
-          id: 4,
-          title: 'Drum Patterns Essenciais',
-          duration: '25:10',
-          completed: true,
-          videoUrl: 'https://example.com/video4.mp4',
-          description: 'Padrões rítmicos fundamentais do funk'
-        },
-        {
-          id: 5,
-          title: 'Criando Variações',
-          duration: '30:15',
-          completed: true,
-          videoUrl: 'https://example.com/video5.mp4',
-          description: 'Como dar personalidade aos seus beats'
-        },
-        {
-          id: 6,
-          title: 'Samples e Loops',
-          duration: '20:30',
-          completed: false,
-          videoUrl: 'https://example.com/video6.mp4',
-          description: 'Usando samples de forma criativa'
-        }
-      ]
-    },
-    {
-      id: 3,
-      title: 'Módulo 3 - Mixagem',
-      description: 'Finalize suas faixas com qualidade profissional',
-      progress: 30,
-      lessons: [
-        {
-          id: 7,
-          title: 'EQ e Compressão',
-          duration: '28:45',
-          completed: true,
-          videoUrl: 'https://example.com/video7.mp4',
-          description: 'Técnicas de equalização e compressão'
-        },
-        {
-          id: 8,
-          title: 'Efeitos e Espacialização',
-          duration: '24:20',
-          completed: false,
-          videoUrl: 'https://example.com/video8.mp4',
-          description: 'Reverb, delay e outros efeitos'
-        },
-        {
-          id: 9,
-          title: 'Masterização Final',
-          duration: '32:10',
-          completed: false,
-          videoUrl: 'https://example.com/video9.mp4',
-          description: 'Dê o toque final nas suas produções'
-        }
-      ]
-    }
-  ];
-
   const recentActivities = [
     { activity: 'Completou a lição "Estrutura de um Beat"', time: '2 horas atrás' },
     { activity: 'Baixou samples do Módulo 2', time: '1 dia atrás' },
@@ -178,6 +82,28 @@ const Dashboard = () => {
   const handleLessonClick = (lesson) => {
     setCurrentLesson(lesson);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Carregando aulas...</h1>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error('Erro ao carregar módulos:', error);
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Erro ao carregar as aulas</h1>
+          <p className="text-gray-300">Tente recarregar a página</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
