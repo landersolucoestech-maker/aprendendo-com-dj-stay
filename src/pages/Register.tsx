@@ -6,11 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,14 +23,119 @@ const Register = () => {
     acceptTerms: false
   });
 
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      toast({
+        title: "Erro",
+        description: "Nome completo é obrigatório",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!formData.email.trim()) {
+      toast({
+        title: "Erro",
+        description: "Email é obrigatório",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (formData.password.length < 8) {
+      toast({
+        title: "Erro",
+        description: "A senha deve ter pelo menos 8 caracteres",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!formData.acceptTerms) {
+      toast({
+        title: "Erro",
+        description: "Você deve aceitar os termos de uso",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implementar lógica de registro
-    console.log('Register attempt:', formData);
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: formData.name,
+            phone: formData.phone
+          }
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast({
+            title: "Erro",
+            description: "Este email já está registrado. Tente fazer login.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Erro",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+        return;
+      }
+
+      if (data.user) {
+        toast({
+          title: "Sucesso!",
+          description: "Conta criada com sucesso! Verifique seu email para confirmar sua conta.",
+        });
+        
+        // Redirect to verify email page or login
+        navigate('/verificar-email');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -155,8 +263,12 @@ const Register = () => {
                 </Label>
               </div>
 
-              <Button type="submit" className="w-full btn-neon" disabled={!formData.acceptTerms}>
-                Criar Conta
+              <Button 
+                type="submit" 
+                className="w-full btn-neon" 
+                disabled={!formData.acceptTerms || isLoading}
+              >
+                {isLoading ? "Criando conta..." : "Criar Conta"}
               </Button>
             </form>
 
