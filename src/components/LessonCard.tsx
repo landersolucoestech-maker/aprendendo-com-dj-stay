@@ -1,10 +1,10 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, CheckCircle, Clock } from "lucide-react";
+import { Play, CheckCircle, Lock, Clock } from "lucide-react";
 
 interface Lesson {
-  id: string;
+  id: number;
   title: string;
   duration: string;
   completed: boolean;

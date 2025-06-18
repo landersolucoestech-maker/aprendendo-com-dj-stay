@@ -3,7 +3,7 @@ import { Progress } from "@/components/ui/progress";
 import LessonCard from "./LessonCard";
 
 interface Lesson {
-  id: string;
+  id: number;
   title: string;
   duration: string;
   completed: boolean;
@@ -12,7 +12,7 @@ interface Lesson {
 }
 
 interface Module {
-  id: string;
+  id: number;
   title: string;
   description: string;
   progress: number;
