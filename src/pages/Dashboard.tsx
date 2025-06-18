@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,7 +23,7 @@ const Dashboard = () => {
 
   const [currentLesson, setCurrentLesson] = useState(null);
   const navigate = useNavigate();
-  const { modules: supabaseModules, lessons: supabaseLessons, loading, error } = useModules();
+  const { data: modules = [], isLoading, error } = useModules();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -72,28 +73,6 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Transformar dados do Supabase para o formato esperado pelos componentes
-  const modules = supabaseModules.map((module) => {
-    const moduleLessons = supabaseLessons
-      .filter(lesson => lesson.module_id === module.id)
-      .map(lesson => ({
-        id: parseInt(lesson.id, 10),
-        title: lesson.title || 'Sem título',
-        duration: '20:00', // Valor padrão já que não temos duration nas lições
-        completed: false, // TODO: Implementar lógica de progresso
-        videoUrl: lesson.video_url || '',
-        description: lesson.content || 'Sem descrição'
-      }));
-
-    return {
-      id: parseInt(module.id, 10),
-      title: module.title || 'Módulo sem título',
-      description: module.description || 'Sem descrição',
-      progress: 0, // TODO: Calcular progresso baseado nas lições completadas
-      lessons: moduleLessons
-    };
-  });
-
   const recentActivities = [
     { activity: 'Completou a lição "Estrutura de um Beat"', time: '2 horas atrás' },
     { activity: 'Baixou samples do Módulo 2', time: '1 dia atrás' },
@@ -104,25 +83,23 @@ const Dashboard = () => {
     setCurrentLesson(lesson);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-purple mx-auto mb-4"></div>
-          <p className="text-gray-300">Carregando módulos...</p>
+          <h1 className="text-2xl font-bold mb-4">Carregando aulas...</h1>
         </div>
       </div>
     );
   }
 
   if (error) {
+    console.error('Erro ao carregar módulos:', error);
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-400 mb-4">Erro ao carregar módulos: {error}</p>
-          <Button onClick={() => window.location.reload()} className="btn-neon">
-            Tentar Novamente
-          </Button>
+          <h1 className="text-2xl font-bold mb-4">Erro ao carregar as aulas</h1>
+          <p className="text-gray-300">Tente recarregar a página</p>
         </div>
       </div>
     );

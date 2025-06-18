@@ -1,69 +1,62 @@
 
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-interface Module {
+export interface Module {
   id: string;
   title: string;
-  description: string;
-  order_num: number;
-  course_id: string;
-  lessons_count: number;
-  duration: string;
-}
-
-interface Lesson {
-  id: string;
-  title: string;
-  content: string;
-  video_url: string;
-  order_num: number;
-  module_id: string;
+  description?: string;
+  progress: number;
+  lessons: any[];
 }
 
 export const useModules = () => {
-  const [modules, setModules] = useState<Module[]>([]);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  return useQuery({
+    queryKey: ['modules'],
+    queryFn: async () => {
+      console.log('Buscando módulos do Supabase...');
+      
+      const { data, error } = await supabase
+        .from('modules')
+        .select(`
+          id,
+          title,
+          description,
+          order_num,
+          lessons (
+            id,
+            title,
+            content,
+            video_url,
+            order_num
+          )
+        `)
+        .order('order_num', { ascending: true });
 
-  useEffect(() => {
-    const fetchModulesAndLessons = async () => {
-      try {
-        setLoading(true);
-        
-        // Buscar módulos
-        const { data: modulesData, error: modulesError } = await supabase
-          .from('modules')
-          .select('*')
-          .order('order_num', { ascending: true });
-
-        if (modulesError) {
-          throw modulesError;
-        }
-
-        // Buscar lições
-        const { data: lessonsData, error: lessonsError } = await supabase
-          .from('lessons')
-          .select('*')
-          .order('order_num', { ascending: true });
-
-        if (lessonsError) {
-          throw lessonsError;
-        }
-
-        setModules(modulesData || []);
-        setLessons(lessonsData || []);
-      } catch (err) {
-        console.error('Erro ao buscar módulos:', err);
-        setError(err instanceof Error ? err.message : 'Erro desconhecido');
-      } finally {
-        setLoading(false);
+      if (error) {
+        console.error('Erro ao buscar módulos:', error);
+        throw error;
       }
-    };
 
-    fetchModulesAndLessons();
-  }, []);
+      console.log('Módulos encontrados:', data);
 
-  return { modules, lessons, loading, error };
+      // Transformar os dados para o formato esperado pelos componentes
+      const modules: Module[] = data?.map((module) => ({
+        id: module.id,
+        title: module.title || 'Módulo sem título',
+        description: module.description || 'Descrição não disponível',
+        progress: 0, // Calcular progresso baseado nas aulas completadas
+        lessons: module.lessons?.map((lesson) => ({
+          id: lesson.id,
+          title: lesson.title || 'Aula sem título',
+          duration: '15:30', // Valor padrão
+          completed: false, // Valor padrão
+          videoUrl: lesson.video_url || '',
+          description: lesson.content || 'Descrição não disponível',
+        })) || [],
+      })) || [];
+
+      return modules;
+    },
+  });
 };

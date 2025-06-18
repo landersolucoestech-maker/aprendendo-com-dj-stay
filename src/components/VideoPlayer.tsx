@@ -21,19 +21,29 @@ interface VideoPlayerProps {
 const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const [watchProgress, setWatchProgress] = useState(lesson.completed ? 100 : 0);
   
+  // Extract YouTube video ID from URL
+  const getYouTubeVideoId = (url: string) => {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+    return match ? match[1] : null;
+  };
+
+  const videoId = getYouTubeVideoId(lesson.videoUrl);
+  const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}` : lesson.videoUrl;
+  
   return (
     <div className="space-y-6">
       {/* Video Player */}
       <Card className="glass-card border-white/10">
         <CardContent className="p-0">
-          <div className="aspect-video bg-gray-900 rounded-t-lg flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-10 h-10 text-neon-purple" />
-              </div>
-              <p className="text-gray-300">Player de vídeo será integrado aqui</p>
-              <p className="text-sm text-gray-400 mt-2">URL: {lesson.videoUrl}</p>
-            </div>
+          <div className="aspect-video bg-gray-900 rounded-t-lg overflow-hidden">
+            <iframe
+              className="w-full h-full"
+              src={embedUrl}
+              title={lesson.title}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </div>
           
           <div className="p-6">
