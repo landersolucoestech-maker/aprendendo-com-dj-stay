@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -20,7 +19,7 @@ const UserProfile = ({ user }: UserProfileProps) => {
       <CardHeader>
         <div className="flex items-center space-x-4">
           <div className="w-16 h-16 bg-gradient-brand rounded-full flex items-center justify-center">
-            <User className="w-8 h-8 text-white" />
+            <User className="w-4 h-4 text-white" />
           </div>
           <div className="flex-1">
             <CardTitle className="text-white">{user.name}</CardTitle>
