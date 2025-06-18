@@ -5,17 +5,89 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implementar lógica de login
-    console.log('Login attempt:', { email, password });
+    
+    if (!email.trim()) {
+      toast({
+        title: "Erro",
+        description: "Email é obrigatório",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!password.trim()) {
+      toast({
+        title: "Erro",
+        description: "Senha é obrigatória",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast({
+            title: "Erro",
+            description: "Email ou senha incorretos",
+            variant: "destructive"
+          });
+        } else if (error.message.includes('Email not confirmed')) {
+          toast({
+            title: "Erro",
+            description: "Verifique seu email antes de fazer login",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Erro",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+        return;
+      }
+
+      if (data.user) {
+        toast({
+          title: "Sucesso!",
+          description: "Login realizado com sucesso!",
+        });
+        
+        // Redirect to dashboard
+        navigate('/dashboard');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -85,8 +157,12 @@ const Login = () => {
                 </Link>
               </div>
 
-              <Button type="submit" className="w-full btn-neon">
-                Entrar
+              <Button 
+                type="submit" 
+                className="w-full btn-neon"
+                disabled={isLoading}
+              >
+                {isLoading ? "Entrando..." : "Entrar"}
               </Button>
             </form>
 
