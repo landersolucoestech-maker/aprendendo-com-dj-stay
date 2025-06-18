@@ -3,7 +3,7 @@ import { Progress } from "@/components/ui/progress";
 import LessonCard from "./LessonCard";
 
 interface Lesson {
-  id: string; // Changed from number to string
+  id: number;
   title: string;
   duration: string;
   completed: boolean;
@@ -12,9 +12,9 @@ interface Lesson {
 }
 
 interface Module {
-  id: string; // Changed from number to string
+  id: number;
   title: string;
-  description?: string; // Made optional to match useModules interface
+  description: string;
   progress: number;
   lessons: Lesson[];
 }
@@ -32,7 +32,7 @@ const LessonGrid = ({ modules, onLessonClick }: LessonGridProps) => {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-white">{module.title}</h3>
-              <p className="text-gray-300">{module.description || 'Descrição não disponível'}</p>
+              <p className="text-gray-300">{module.description}</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-400">Progresso</p>
