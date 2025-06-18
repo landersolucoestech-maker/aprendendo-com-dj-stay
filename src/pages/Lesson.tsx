@@ -6,79 +6,115 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Clock, Download, BookOpen, ArrowLeft, ArrowRight } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Lesson {
+  id: string;
+  title: string;
+  duration: string;
+  completed: boolean;
+  videoUrl: string;
+  description: string;
+  moduleId: string;
+  moduleName: string;
+}
 
 const Lesson = () => {
   const { lessonId } = useParams();
   const navigate = useNavigate();
   const [watchProgress, setWatchProgress] = useState(0);
-
-  // Dados mockados das aulas - em uma aplicação real, isso viria de uma API
-  const lessons = [
-    {
-      id: '1',
-      title: 'Introdução ao Curso',
-      duration: '15:30',
-      completed: true,
-      videoUrl: 'https://example.com/video1.mp4',
-      description: 'Bem-vindo ao curso de produção de funk! Nesta aula introdutória, você conhecerá os objetivos do curso e o que esperar das próximas lições.',
-      moduleId: '1',
-      moduleName: 'Fundamentos da Produção Musical'
-    },
-    {
-      id: '2',
-      title: 'Configurando seu Home Studio',
-      duration: '25:45',
-      completed: false,
-      videoUrl: 'https://example.com/video2.mp4',
-      description: 'Aprenda a configurar seu estúdio em casa com equipamentos básicos e necessários para começar a produzir funk.',
-      moduleId: '1',
-      moduleName: 'Fundamentos da Produção Musical'
-    },
-    {
-      id: '3',
-      title: 'Conhecendo o FL Studio',
-      duration: '30:20',
-      completed: false,
-      videoUrl: 'https://example.com/video3.mp4',
-      description: 'Uma introdução completa ao FL Studio, a DAW que utilizaremos durante todo o curso.',
-      moduleId: '1',
-      moduleName: 'Fundamentos da Produção Musical'
-    },
-    {
-      id: '4',
-      title: 'Drum Patterns Essenciais',
-      duration: '25:10',
-      completed: false,
-      videoUrl: 'https://example.com/video4.mp4',
-      description: 'Domine os padrões rítmicos fundamentais do funk carioca e aprenda a criar beats marcantes.',
-      moduleId: '2',
-      moduleName: 'Criação de Beats e Samples'
-    }
-  ];
-
-  const currentLesson = lessons.find(lesson => lesson.id === lessonId);
-  const currentIndex = lessons.findIndex(lesson => lesson.id === lessonId);
-  const nextLesson = lessons[currentIndex + 1];
-  const prevLesson = lessons[currentIndex - 1];
+  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+  const [allLessons, setAllLessons] = useState<Lesson[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (currentLesson?.completed) {
-      setWatchProgress(100);
+    const fetchLessonData = async () => {
+      try {
+        console.log('Buscando dados da aula:', lessonId);
+        
+        // Buscar todas as aulas com informações dos módulos
+        const { data: lessonsData, error } = await supabase
+          .from('lessons')
+          .select(`
+            id,
+            title,
+            content,
+            video_url,
+            order_num,
+            modules (
+              id,
+              title
+            )
+          `)
+          .order('order_num', { ascending: true });
+
+        if (error) {
+          console.error('Erro ao buscar aulas:', error);
+          return;
+        }
+
+        console.log('Aulas encontradas:', lessonsData);
+
+        // Transformar os dados para o formato esperado
+        const transformedLessons: Lesson[] = lessonsData?.map((lesson) => ({
+          id: lesson.id,
+          title: lesson.title || 'Aula sem título',
+          duration: '15:30', // Valor padrão - em uma aplicação real, isso viria do banco
+          completed: false, // Valor padrão - seria calculado baseado no progresso do usuário
+          videoUrl: lesson.video_url || '',
+          description: lesson.content || 'Descrição não disponível',
+          moduleId: lesson.modules?.id || '',
+          moduleName: lesson.modules?.title || 'Módulo'
+        })) || [];
+
+        setAllLessons(transformedLessons);
+        
+        // Encontrar a aula atual
+        const current = transformedLessons.find(lesson => lesson.id === lessonId);
+        setCurrentLesson(current || null);
+        
+        if (current?.completed) {
+          setWatchProgress(100);
+        }
+        
+      } catch (error) {
+        console.error('Erro ao buscar dados:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (lessonId) {
+      fetchLessonData();
     }
-  }, [currentLesson]);
+  }, [lessonId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Carregando aula...</h1>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentLesson) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Aula não encontrada</h1>
-          <Button onClick={() => navigate('/cursos')} className="btn-neon">
-            Voltar aos Cursos
+          <Button onClick={() => navigate('/dashboard')} className="btn-neon">
+            Voltar ao Dashboard
           </Button>
         </div>
       </div>
     );
   }
+
+  const currentIndex = allLessons.findIndex(lesson => lesson.id === lessonId);
+  const nextLesson = allLessons[currentIndex + 1];
+  const prevLesson = allLessons[currentIndex - 1];
 
   const handleMarkComplete = () => {
     setWatchProgress(100);
@@ -95,7 +131,7 @@ const Lesson = () => {
               <Button 
                 variant="ghost" 
                 size="icon"
-                onClick={() => navigate('/cursos')}
+                onClick={() => navigate('/dashboard')}
                 className="text-gray-300 hover:text-white"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -209,7 +245,7 @@ const Lesson = () => {
                 {!nextLesson && (
                   <Button 
                     className="w-full btn-neon"
-                    onClick={() => navigate('/cursos')}
+                    onClick={() => navigate('/dashboard')}
                   >
                     Finalizar Módulo
                     <CheckCircle className="w-4 h-4 ml-2" />

@@ -2,9 +2,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, CheckCircle, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface Lesson {
-  id: number | string;
+  id: string;
   title: string;
   duration: string;
   completed: boolean;
@@ -14,10 +15,21 @@ interface Lesson {
 
 interface LessonCardProps {
   lesson: Lesson;
-  onClick: () => void;
+  onClick?: () => void;
 }
 
 const LessonCard = ({ lesson, onClick }: LessonCardProps) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      // Se não tem onClick customizado, navegar para a página da aula
+      navigate(`/aula/${lesson.id}`);
+    }
+  };
+
   return (
     <Card className="glass-card border-white/10 hover:bg-white/5 transition-colors cursor-pointer">
       <CardContent className="p-4">
@@ -47,7 +59,7 @@ const LessonCard = ({ lesson, onClick }: LessonCardProps) => {
           
           <div className="flex-shrink-0 ml-4">
             <Button 
-              onClick={onClick}
+              onClick={handleClick}
               className={lesson.completed ? "bg-green-600 hover:bg-green-700" : "btn-neon"}
               size="sm"
             >
