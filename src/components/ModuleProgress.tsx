@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
 interface Module {
-  id: string; // Changed from number to string
+  id: number;
   title: string;
   progress: number;
 }
