@@ -15,49 +15,49 @@ const Lesson = () => {
   // Dados mockados das aulas - em uma aplicação real, isso viria de uma API
   const lessons = [
     {
-      id: 1,
+      id: '1',
       title: 'Introdução ao Curso',
       duration: '15:30',
       completed: true,
       videoUrl: 'https://example.com/video1.mp4',
       description: 'Bem-vindo ao curso de produção de funk! Nesta aula introdutória, você conhecerá os objetivos do curso e o que esperar das próximas lições.',
-      moduleId: 1,
+      moduleId: '1',
       moduleName: 'Fundamentos da Produção Musical'
     },
     {
-      id: 2,
+      id: '2',
       title: 'Configurando seu Home Studio',
       duration: '25:45',
       completed: false,
       videoUrl: 'https://example.com/video2.mp4',
       description: 'Aprenda a configurar seu estúdio em casa com equipamentos básicos e necessários para começar a produzir funk.',
-      moduleId: 1,
+      moduleId: '1',
       moduleName: 'Fundamentos da Produção Musical'
     },
     {
-      id: 3,
+      id: '3',
       title: 'Conhecendo o FL Studio',
       duration: '30:20',
       completed: false,
       videoUrl: 'https://example.com/video3.mp4',
       description: 'Uma introdução completa ao FL Studio, a DAW que utilizaremos durante todo o curso.',
-      moduleId: 1,
+      moduleId: '1',
       moduleName: 'Fundamentos da Produção Musical'
     },
     {
-      id: 4,
+      id: '4',
       title: 'Drum Patterns Essenciais',
       duration: '25:10',
       completed: false,
       videoUrl: 'https://example.com/video4.mp4',
       description: 'Domine os padrões rítmicos fundamentais do funk carioca e aprenda a criar beats marcantes.',
-      moduleId: 2,
+      moduleId: '2',
       moduleName: 'Criação de Beats e Samples'
     }
   ];
 
-  const currentLesson = lessons.find(lesson => lesson.id === parseInt(lessonId || '1'));
-  const currentIndex = lessons.findIndex(lesson => lesson.id === parseInt(lessonId || '1'));
+  const currentLesson = lessons.find(lesson => lesson.id === lessonId);
+  const currentIndex = lessons.findIndex(lesson => lesson.id === lessonId);
   const nextLesson = lessons[currentIndex + 1];
   const prevLesson = lessons[currentIndex - 1];
 

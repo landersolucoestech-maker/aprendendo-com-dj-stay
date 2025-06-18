@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface Module {
   id: string;
   title: string;
-  description?: string;
+  description: string;
   progress: number;
   lessons: any[];
 }
