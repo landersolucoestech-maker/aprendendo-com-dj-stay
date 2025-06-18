@@ -21,15 +21,14 @@ interface VideoPlayerProps {
 const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const [watchProgress, setWatchProgress] = useState(lesson.completed ? 100 : 0);
   
-  const handleVideoProgress = (e: React.SyntheticEvent<HTMLVideoElement>) => {
-    const video = e.currentTarget;
-    const progress = (video.currentTime / video.duration) * 100;
-    setWatchProgress(Math.round(progress));
+  // Extract YouTube video ID from URL
+  const getYouTubeVideoId = (url: string) => {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+    return match ? match[1] : null;
   };
 
-  const handleVideoEnded = () => {
-    setWatchProgress(100);
-  };
+  const videoId = getYouTubeVideoId(lesson.videoUrl);
+  const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}` : lesson.videoUrl;
   
   return (
     <div className="space-y-6">
@@ -37,18 +36,14 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
       <Card className="glass-card border-white/10">
         <CardContent className="p-0">
           <div className="aspect-video bg-gray-900 rounded-t-lg overflow-hidden">
-            <video
-              className="w-full h-full object-cover"
-              controls
-              preload="metadata"
-              onTimeUpdate={handleVideoProgress}
-              onEnded={handleVideoEnded}
-              poster="/placeholder.svg"
-            >
-              <source src={lesson.videoUrl} type="video/mp4" />
-              <track kind="captions" src="" label="Portuguese" default />
-              Seu navegador não suporta o elemento de vídeo.
-            </video>
+            <iframe
+              className="w-full h-full"
+              src={embedUrl}
+              title={lesson.title}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </div>
           
           <div className="p-6">
