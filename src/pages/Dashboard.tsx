@@ -15,7 +15,7 @@ const Dashboard = () => {
   const [user, setUser] = useState({
     name: 'Usuário',
     email: '',
-    joinDate: '15 de Janeiro, 2024',
+    joinDate: '15/01/2024',
     progress: 65
   });
 
@@ -36,8 +36,8 @@ const Dashboard = () => {
         name: session.user?.user_metadata?.full_name || session.user?.user_metadata?.name || 'Usuário',
         email: session.user?.email || '',
         joinDate: new Date(session.user?.created_at || '').toLocaleDateString('pt-BR', {
-          day: 'numeric',
-          month: 'long',
+          day: '2-digit',
+          month: '2-digit',
           year: 'numeric'
         }),
         progress: 65 // Mantém o progresso fixo por enquanto
@@ -57,8 +57,8 @@ const Dashboard = () => {
           name: session.user?.user_metadata?.full_name || session.user?.user_metadata?.name || 'Usuário',
           email: session.user?.email || '',
           joinDate: new Date(session.user?.created_at || '').toLocaleDateString('pt-BR', {
-            day: 'numeric',
-            month: 'long',
+            day: '2-digit',
+            month: '2-digit',
             year: 'numeric'
           }),
           progress: 65
