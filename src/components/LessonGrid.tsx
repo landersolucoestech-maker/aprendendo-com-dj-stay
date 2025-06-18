@@ -14,7 +14,7 @@ interface Lesson {
 interface Module {
   id: string; // Changed from number to string
   title: string;
-  description: string;
+  description?: string; // Made optional to match useModules interface
   progress: number;
   lessons: Lesson[];
 }
@@ -32,7 +32,7 @@ const LessonGrid = ({ modules, onLessonClick }: LessonGridProps) => {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-white">{module.title}</h3>
-              <p className="text-gray-300">{module.description}</p>
+              <p className="text-gray-300">{module.description || 'Descrição não disponível'}</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-400">Progresso</p>
