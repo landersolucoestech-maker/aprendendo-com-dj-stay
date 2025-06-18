@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, Award } from "lucide-react";
@@ -9,16 +8,67 @@ import RecentActivities from "@/components/RecentActivities";
 import ModuleProgress from "@/components/ModuleProgress";
 import LessonGrid from "@/components/LessonGrid";
 import DashboardHeader from "@/components/DashboardHeader";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
-  const [user] = useState({
-    name: 'João Silva',
-    email: 'joao@email.com',
+  const [user, setUser] = useState({
+    name: 'Usuário',
+    email: '',
     joinDate: '15 de Janeiro, 2024',
     progress: 65
   });
 
   const [currentLesson, setCurrentLesson] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate('/login');
+        return;
+      }
+
+      // Atualizar dados do usuário com informações reais
+      const userData = {
+        name: session.user?.user_metadata?.full_name || session.user?.user_metadata?.name || 'Usuário',
+        email: session.user?.email || '',
+        joinDate: new Date(session.user?.created_at || '').toLocaleDateString('pt-BR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        }),
+        progress: 65 // Mantém o progresso fixo por enquanto
+      };
+
+      setUser(userData);
+    };
+
+    checkAuth();
+
+    // Listener para mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate('/login');
+      } else {
+        const userData = {
+          name: session.user?.user_metadata?.full_name || session.user?.user_metadata?.name || 'Usuário',
+          email: session.user?.email || '',
+          joinDate: new Date(session.user?.created_at || '').toLocaleDateString('pt-BR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          }),
+          progress: 65
+        };
+        setUser(userData);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const modules = [
     {
