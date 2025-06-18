@@ -27,10 +27,13 @@ const Register = () => {
   const { toast } = useToast();
 
   const handleInputChange = (field: string, value: string | boolean) => {
+    console.log('Input changed:', field, value);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const validateForm = () => {
+    console.log('Validating form with data:', formData);
+    
     if (!formData.name.trim()) {
       toast({
         title: "Erro",
@@ -76,19 +79,24 @@ const Register = () => {
       return false;
     }
 
+    console.log('Form validation passed');
     return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('Form submitted - starting handleSubmit');
     e.preventDefault();
     
     if (!validateForm()) {
+      console.log('Form validation failed');
       return;
     }
 
+    console.log('Setting loading to true');
     setIsLoading(true);
 
     try {
+      console.log('Attempting to sign up with Supabase');
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -101,7 +109,10 @@ const Register = () => {
         }
       });
 
+      console.log('Supabase signup response:', { data, error });
+
       if (error) {
+        console.log('Signup error:', error);
         if (error.message.includes('already registered')) {
           toast({
             title: "Erro",
@@ -119,23 +130,33 @@ const Register = () => {
       }
 
       if (data.user) {
+        console.log('Signup successful, showing success toast');
         toast({
           title: "Sucesso!",
           description: "Conta criada com sucesso! Verifique seu email para confirmar sua conta.",
         });
         
+        console.log('Navigating to verify email page');
         // Redirect to verify email page or login
         navigate('/verificar-email');
       }
     } catch (error: any) {
+      console.log('Unexpected error:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro inesperado. Tente novamente.",
         variant: "destructive"
       });
     } finally {
+      console.log('Setting loading to false');
       setIsLoading(false);
     }
+  };
+
+  const handleButtonClick = () => {
+    console.log('Button clicked! Form data:', formData);
+    console.log('Accept terms:', formData.acceptTerms);
+    console.log('Is loading:', isLoading);
   };
 
   return (
@@ -267,6 +288,7 @@ const Register = () => {
                 type="submit" 
                 className="w-full btn-neon" 
                 disabled={!formData.acceptTerms || isLoading}
+                onClick={handleButtonClick}
               >
                 {isLoading ? "Criando conta..." : "Criar Conta"}
               </Button>
