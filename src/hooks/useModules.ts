@@ -41,8 +41,13 @@ export const useModules = () => {
 
       console.log('Módulos encontrados:', data);
 
+      if (!data || data.length === 0) {
+        console.log('Nenhum módulo encontrado no banco de dados');
+        return [];
+      }
+
       // Transformar os dados para o formato esperado pelos componentes
-      const modules: Module[] = data?.map((module) => ({
+      const modules: Module[] = data.map((module) => ({
         id: module.id,
         title: module.title || 'Módulo sem título',
         description: module.description || 'Descrição não disponível',
@@ -55,7 +60,7 @@ export const useModules = () => {
           videoUrl: lesson.video_url || '',
           description: lesson.content || 'Descrição não disponível',
         })) || [],
-      })) || [];
+      }));
 
       console.log('Módulos transformados:', modules);
       return modules;
