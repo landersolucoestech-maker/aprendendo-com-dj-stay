@@ -34,13 +34,6 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { data: modules = [], isLoading, error } = useModules();
 
-  console.log('🎯 Dashboard - Estado atual:', {
-    modules,
-    isLoading,
-    error,
-    modulesCount: modules.length
-  });
-
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -50,6 +43,7 @@ const Dashboard = () => {
         return;
       }
 
+      // Atualizar dados do usuário com informações reais
       const userData = {
         name: session.user?.user_metadata?.full_name || session.user?.user_metadata?.name || 'Usuário',
         email: session.user?.email || '',
@@ -58,7 +52,7 @@ const Dashboard = () => {
           month: '2-digit',
           year: 'numeric'
         }),
-        progress: 65
+        progress: 65 // Mantém o progresso fixo por enquanto
       };
 
       setUser(userData);
@@ -66,6 +60,7 @@ const Dashboard = () => {
 
     checkAuth();
 
+    // Listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
         navigate('/login');
@@ -101,50 +96,19 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">🔄 Carregando módulos...</h1>
-          <p className="text-gray-300">Aguarde enquanto buscamos seus cursos</p>
+          <h1 className="text-2xl font-bold mb-4">Carregando aulas...</h1>
         </div>
       </div>
     );
   }
 
   if (error) {
-    console.error('❌ Erro detalhado:', error);
+    console.error('Erro ao carregar módulos:', error);
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">❌ Erro ao carregar módulos</h1>
-          <p className="text-gray-300 mb-4">
-            Erro: {error.message || 'Erro desconhecido'}
-          </p>
-          <Button 
-            onClick={() => window.location.reload()} 
-            className="btn-neon"
-          >
-            🔄 Tentar Novamente
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (modules.length === 0) {
-    return (
-      <div className="min-h-screen bg-black text-white">
-        <DashboardHeader userName={user.name} />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold mb-4">📚 Nenhum módulo encontrado</h1>
-            <p className="text-gray-300 mb-6">
-              Parece que ainda não há módulos cadastrados no sistema.
-            </p>
-            <Button 
-              onClick={() => window.location.reload()} 
-              className="btn-neon"
-            >
-              🔄 Recarregar Página
-            </Button>
-          </div>
+          <h1 className="text-2xl font-bold mb-4">Erro ao carregar as aulas</h1>
+          <p className="text-gray-300">Tente recarregar a página</p>
         </div>
       </div>
     );
@@ -155,13 +119,6 @@ const Dashboard = () => {
       <DashboardHeader userName={user.name} />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Debug Info */}
-        <div className="mb-4 p-4 bg-gray-800 rounded-lg">
-          <h3 className="text-lg font-bold mb-2">🔍 Debug Info</h3>
-          <p>📊 Total de módulos: {modules.length}</p>
-          <p>📖 Total de lições: {modules.reduce((total, module) => total + module.lessons.length, 0)}</p>
-        </div>
-
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="space-y-6">
@@ -175,7 +132,7 @@ const Dashboard = () => {
               <TabsList className="bg-white/10 border-white/20">
                 <TabsTrigger value="aulas" className="data-[state=active]:bg-white/20">
                   <BookOpen className="w-4 h-4 mr-2" />
-                  Aulas ({modules.reduce((total, module) => total + module.lessons.length, 0)})
+                  Aulas
                 </TabsTrigger>
                 <TabsTrigger value="progresso" className="data-[state=active]:bg-white/20">
                   <Award className="w-4 h-4 mr-2" />
