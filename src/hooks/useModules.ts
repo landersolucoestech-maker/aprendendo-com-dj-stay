@@ -54,7 +54,7 @@ export const useModules = () => {
         return [
           {
             id: '1',
-            title: 'Fundamentos da Produção Musical',
+            title: 'Môdulo 1: Fundamentos da Produção Musical',
             description: 'Introdução aos conceitos básicos de produção musical',
             progress: 25,
             lessons: [
@@ -78,7 +78,7 @@ export const useModules = () => {
           },
           {
             id: '2',
-            title: 'Criação de Beats e Samples',
+            title: 'Môdulo 2: Criação de Beats e Samples',
             description: 'Aprenda a criar beats marcantes e trabalhar com samples',
             progress: 50,
             lessons: [
@@ -88,7 +88,7 @@ export const useModules = () => {
                 duration: '18:45',
                 completed: true,
                 videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                description: 'Domine os padrões rítmicos fundamentais do funk carioca.',
+                description: 'Domine os padrões rítmicos fundamentais do funk.',
               },
             ],
           },
