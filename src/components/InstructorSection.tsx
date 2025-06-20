@@ -1,7 +1,10 @@
+
 import { Music, Users, Award, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
 const InstructorSection = () => {
-  return <section id="instrutor" className="py-20 bg-gradient-to-br from-black via-brand-dark to-black relative">
+  return (
+    <section id="instrutor" className="py-20 bg-gradient-to-br from-black via-brand-dark to-black relative">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           
@@ -22,15 +25,15 @@ const InstructorSection = () => {
                 
                 <div className="absolute bottom-4 left-4 right-4">
                   <h3 className="text-2xl font-bold text-white mb-1">DJ Stay</h3>
-                  <p className="text-gray-300">Dj e Produtor Musical</p>
+                  <p className="text-gray-300">DJ e Produtor Musical</p>
                 </div>
               </div>
             </div>
 
             {/* Floating stats */}
             <div className="absolute -bottom-6 -right-6 glass-card p-4 animate-float" style={{
-            animationDelay: '0.5s'
-          }}>
+              animationDelay: '0.5s'
+            }}>
               <div className="text-center">
                 <div className="text-2xl font-bold text-brand-light">500M+</div>
                 <div className="text-xs text-gray-400">Streams</div>
@@ -44,7 +47,9 @@ const InstructorSection = () => {
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
                 Conheça seu <span className="gradient-text">instrutor</span>
               </h2>
-              <p className="text-xl text-gray-300 leading-relaxed mb-6">DJ Stay é uma referência na produção de funk brasileiro, com mais de 15 anos de experiência e parcerias com os maiores nomes do cenário nacional.</p>
+              <p className="text-xl text-gray-300 leading-relaxed mb-6">
+                DJ Stay é uma referência na produção de funk brasileiro, com mais de 15 anos de experiência e parcerias com os maiores nomes do cenário nacional.
+              </p>
               <p className="text-gray-300 leading-relaxed">
                 Suas produções já alcançaram mais de 500 milhões de streams nas plataformas digitais, 
                 e agora ele compartilha todos os seus segredos e técnicas neste curso exclusivo.
@@ -93,18 +98,22 @@ const InstructorSection = () => {
                 Já trabalhou com:
               </h4>
               <div className="flex flex-wrap gap-2">
-                {["MC Kevinho", "MC Hariel", "MC Ryan SP", "MC Davi", "Funk Brasil", "GR6 Music"].map((artist, index) => <span key={index} className="bg-white/10 text-gray-300 px-3 py-1 rounded-full text-sm">
+                {["MC Kevinho", "MC Hariel", "MC Ryan SP", "MC Davi", "Funk Brasil", "GR6 Music"].map((artist, index) => (
+                  <span key={index} className="bg-white/10 text-gray-300 px-3 py-1 rounded-full text-sm">
                     {artist}
-                  </span>)}
+                  </span>
+                ))}
               </div>
             </div>
 
             <Button size="lg" className="btn-brand">
-              Aprender com o Alex
+              Aprender com DJ Stay
             </Button>
           </div>
         </div>
       </div>
-    </section>;
+    </section>
+  );
 };
+
 export default InstructorSection;
