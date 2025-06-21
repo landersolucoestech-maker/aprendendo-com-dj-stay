@@ -13,15 +13,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useModules } from "@/hooks/useModules";
 
-interface Lesson {
-  id: string;
-  title: string;
-  duration: string;
-  completed: boolean;
-  videoUrl: string;
-  description: string;
-}
-
 const Dashboard = () => {
   const [user, setUser] = useState({
     name: 'Usuário',
@@ -30,7 +21,7 @@ const Dashboard = () => {
     progress: 65
   });
 
-  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+  const [currentLesson, setCurrentLesson] = useState(null);
   const navigate = useNavigate();
   const { data: modules = [], isLoading, error } = useModules();
 
@@ -88,7 +79,7 @@ const Dashboard = () => {
     { activity: 'Assistiu "Introdução ao FL Studio"', time: '3 dias atrás' },
   ];
 
-  const handleLessonClick = (lesson: Lesson) => {
+  const handleLessonClick = (lesson) => {
     setCurrentLesson(lesson);
   };
 
