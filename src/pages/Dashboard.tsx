@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +13,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useModules } from "@/hooks/useModules";
 
+interface Lesson {
+  id: string;
+  title: string;
+  duration: string;
+  completed: boolean;
+  videoUrl: string;
+  description: string;
+}
+
 const Dashboard = () => {
   const [user, setUser] = useState({
     name: 'Usuário',
@@ -20,9 +30,9 @@ const Dashboard = () => {
     progress: 65
   });
 
-  const [currentLesson, setCurrentLesson] = useState(null);
+  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const navigate = useNavigate();
-  const { modules, isLoading, error } = useModules();
+  const { data: modules = [], isLoading, error } = useModules();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -78,42 +88,27 @@ const Dashboard = () => {
     { activity: 'Assistiu "Introdução ao FL Studio"', time: '3 dias atrás' },
   ];
 
-  const handleLessonClick = (lesson) => {
+  const handleLessonClick = (lesson: Lesson) => {
     setCurrentLesson(lesson);
   };
-
-  // Convert database modules to the format expected by components
-  const formattedModules = modules.map(module => ({
-    id: module.id,
-    title: module.title || 'Módulo sem título',
-    description: module.description || 'Descrição não disponível',
-    progress: 0, // Calculate based on completed lessons if needed
-    lessons: module.lessons.map(lesson => ({
-      id: lesson.id,
-      title: lesson.title || 'Lição sem título',
-      duration: '15:30', // Default duration - you might want to add this to your database
-      completed: false, // Check progress table if needed
-      videoUrl: lesson.video_url || '',
-      description: lesson.content || 'Descrição não disponível'
-    }))
-  }));
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white"></div>
-          <p className="mt-4">Carregando módulos...</p>
+          <h1 className="text-2xl font-bold mb-4">Carregando aulas...</h1>
         </div>
       </div>
     );
   }
 
   if (error) {
+    console.error('Erro ao carregar módulos:', error);
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-400">Erro ao carregar módulos: {error}</p>
+          <h1 className="text-2xl font-bold mb-4">Erro ao carregar as aulas</h1>
+          <p className="text-gray-300">Tente recarregar a página</p>
         </div>
       </div>
     );
@@ -158,12 +153,12 @@ const Dashboard = () => {
                     <VideoPlayer lesson={currentLesson} />
                   </div>
                 ) : (
-                  <LessonGrid modules={formattedModules} onLessonClick={handleLessonClick} />
+                  <LessonGrid modules={modules} onLessonClick={handleLessonClick} />
                 )}
               </TabsContent>
 
               <TabsContent value="progresso" className="space-y-6">
-                <ModuleProgress modules={formattedModules} />
+                <ModuleProgress modules={modules} />
               </TabsContent>
             </Tabs>
           </div>

@@ -1,71 +1,62 @@
 
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-interface Lesson {
+export interface Module {
   id: string;
   title: string;
-  video_url: string;
-  content: string;
-  order_num: number;
-  module_id: string;
-}
-
-interface Module {
-  id: string;
-  title: string;
-  description: string;
-  order_num: number;
-  lessons: Lesson[];
+  description?: string;
+  progress: number;
+  lessons: any[];
 }
 
 export const useModules = () => {
-  const [modules, setModules] = useState<Module[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  return useQuery({
+    queryKey: ['modules'],
+    queryFn: async () => {
+      console.log('Buscando módulos do Supabase...');
+      
+      const { data, error } = await supabase
+        .from('modules')
+        .select(`
+          id,
+          title,
+          description,
+          order_num,
+          lessons (
+            id,
+            title,
+            content,
+            video_url,
+            order_num
+          )
+        `)
+        .order('order_num', { ascending: true });
 
-  useEffect(() => {
-    const fetchModulesAndLessons = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Fetch modules
-        const { data: modulesData, error: modulesError } = await supabase
-          .from('modules')
-          .select('*')
-          .order('order_num');
-
-        if (modulesError) throw modulesError;
-
-        // Fetch lessons for each module
-        const modulesWithLessons = await Promise.all(
-          (modulesData || []).map(async (module) => {
-            const { data: lessonsData, error: lessonsError } = await supabase
-              .from('lessons')
-              .select('*')
-              .eq('module_id', module.id)
-              .order('order_num');
-
-            if (lessonsError) throw lessonsError;
-
-            return {
-              ...module,
-              lessons: lessonsData || []
-            };
-          })
-        );
-
-        setModules(modulesWithLessons);
-      } catch (err) {
-        console.error('Error fetching modules and lessons:', err);
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setIsLoading(false);
+      if (error) {
+        console.error('Erro ao buscar módulos:', error);
+        throw error;
       }
-    };
 
-    fetchModulesAndLessons();
-  }, []);
+      console.log('Módulos encontrados:', data);
 
-  return { modules, isLoading, error };
+      // Transformar os dados para o formato esperado pelos componentes
+      const modules: Module[] = data?.map((module) => ({
+        id: module.id,
+        title: module.title || 'Módulo sem título',
+        description: module.description || 'Descrição não disponível',
+        progress: 0, // Calcular progresso baseado nas aulas completadas
+        lessons: module.lessons?.map((lesson) => ({
+          id: lesson.id,
+          title: lesson.title || 'Aula sem título',
+          duration: '15:30', // Valor padrão
+          completed: false, // Valor padrão
+          videoUrl: lesson.video_url || '',
+          description: lesson.content || 'Descrição não disponível',
+        })) || [],
+      })) || [];
+
+      return modules;
+    },
+  });
 };
