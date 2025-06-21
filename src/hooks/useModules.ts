@@ -16,7 +16,7 @@ export const useModules = () => {
     queryFn: async () => {
       console.log('Iniciando busca de módulos...');
       
-      // Fazer a consulta completa com join das lessons
+      // Buscar módulos com suas aulas
       const { data, error } = await supabase
         .from('modules')
         .select(`
@@ -39,11 +39,10 @@ export const useModules = () => {
         throw error;
       }
 
-      console.log('Módulos encontrados na consulta:', data);
+      console.log('Módulos encontrados:', data);
 
-      // Se não há dados, retornar array vazio
       if (!data || data.length === 0) {
-        console.log('Nenhum módulo encontrado na base de dados');
+        console.log('Nenhum módulo encontrado no banco de dados');
         return [];
       }
 
@@ -52,15 +51,15 @@ export const useModules = () => {
         id: module.id,
         title: module.title || 'Módulo sem título',
         description: module.description || 'Descrição não disponível',
-        progress: 0, // Por enquanto, progresso zerado - seria calculado baseado nas aulas completadas
-        lessons: (module.lessons || []).map((lesson) => ({
+        progress: 0, // Calcular progresso baseado nas aulas completadas
+        lessons: module.lessons?.map((lesson) => ({
           id: lesson.id,
           title: lesson.title || 'Aula sem título',
-          duration: '15:30', // Valor padrão - em produção viria do banco
-          completed: false, // Valor padrão - seria calculado baseado no progresso do usuário
+          duration: '15:30', // Valor padrão
+          completed: false, // Valor padrão
           videoUrl: lesson.video_url || '',
           description: lesson.content || 'Descrição não disponível',
-        })),
+        })) || [],
       }));
 
       console.log('Módulos transformados:', modules);

@@ -96,7 +96,7 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Carregando aulas...</h1>
+          <h1 className="text-2xl font-bold mb-4">Carregando módulos...</h1>
         </div>
       </div>
     );
@@ -108,7 +108,24 @@ const Dashboard = () => {
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Erro ao carregar as aulas</h1>
-          <p className="text-gray-300">Tente recarregar a página</p>
+          <p className="text-gray-300 mb-4">Erro: {error.message}</p>
+          <Button onClick={() => window.location.reload()} className="btn-neon">
+            Tentar Novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (modules.length === 0) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <DashboardHeader userName={user.name} />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Nenhum módulo encontrado</h1>
+            <p className="text-gray-300">Os módulos do curso ainda não foram configurados.</p>
+          </div>
         </div>
       </div>
     );
