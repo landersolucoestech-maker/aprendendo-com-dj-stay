@@ -1,118 +1,71 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-export interface Module {
+interface Lesson {
+  id: string;
+  title: string;
+  video_url: string;
+  content: string;
+  order_num: number;
+  module_id: string;
+}
+
+interface Module {
   id: string;
   title: string;
   description: string;
-  progress: number;
-  lessons: any[];
+  order_num: number;
+  lessons: Lesson[];
 }
 
 export const useModules = () => {
-  return useQuery({
-    queryKey: ['modules'],
-    queryFn: async () => {
-      console.log('Iniciando busca de módulos...');
-      
-      // Primeiro, vamos verificar se há dados na tabela modules
-      const { data: moduleCheck, error: moduleCheckError } = await supabase
-        .from('modules')
-        .select('*');
-      
-      console.log('Verificação de módulos:', moduleCheck, 'Erro:', moduleCheckError);
-      
-      // Agora vamos fazer a consulta completa
-      const { data, error } = await supabase
-        .from('modules')
-        .select(`
-          id,
-          title,
-          description,
-          order_num,
-          lessons (
-            id,
-            title,
-            content,
-            video_url,
-            order_num
-          )
-        `)
-        .order('order_num', { ascending: true });
+  const [modules, setModules] = useState<Module[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-      if (error) {
-        console.error('Erro ao buscar módulos:', error);
-        throw error;
+  useEffect(() => {
+    const fetchModulesAndLessons = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch modules
+        const { data: modulesData, error: modulesError } = await supabase
+          .from('modules')
+          .select('*')
+          .order('order_num');
+
+        if (modulesError) throw modulesError;
+
+        // Fetch lessons for each module
+        const modulesWithLessons = await Promise.all(
+          (modulesData || []).map(async (module) => {
+            const { data: lessonsData, error: lessonsError } = await supabase
+              .from('lessons')
+              .select('*')
+              .eq('module_id', module.id)
+              .order('order_num');
+
+            if (lessonsError) throw lessonsError;
+
+            return {
+              ...module,
+              lessons: lessonsData || []
+            };
+          })
+        );
+
+        setModules(modulesWithLessons);
+      } catch (err) {
+        console.error('Error fetching modules and lessons:', err);
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      console.log('Módulos encontrados na consulta completa:', data);
+    fetchModulesAndLessons();
+  }, []);
 
-      // Se não há dados, vamos retornar dados de exemplo para testar
-      if (!data || data.length === 0) {
-        console.log('Nenhum módulo encontrado, retornando dados de exemplo...');
-        return [
-          {
-            id: '1',
-            title: 'Fundamentos da Produção Musical',
-            description: 'Introdução aos conceitos básicos de produção musical',
-            progress: 25,
-            lessons: [
-              {
-                id: '1',
-                title: 'Introdução ao Curso',
-                duration: '15:30',
-                completed: false,
-                videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                description: 'Bem-vindo ao curso de produção de funk!',
-              },
-              {
-                id: '2',
-                title: 'Configurando seu Home Studio',
-                duration: '20:15',
-                completed: false,
-                videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                description: 'Aprenda a configurar seu estúdio em casa.',
-              },
-            ],
-          },
-          {
-            id: '2',
-            title: 'Criação de Beats e Samples',
-            description: 'Aprenda a criar beats marcantes e trabalhar com samples',
-            progress: 50,
-            lessons: [
-              {
-                id: '3',
-                title: 'Drum Patterns Essenciais',
-                duration: '18:45',
-                completed: true,
-                videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                description: 'Domine os padrões rítmicos fundamentais do funk carioca.',
-              },
-            ],
-          },
-        ];
-      }
-
-      // Transformar os dados para o formato esperado pelos componentes
-      const modules: Module[] = data?.map((module) => ({
-        id: module.id,
-        title: module.title || 'Módulo sem título',
-        description: module.description || 'Descrição não disponível',
-        progress: 0, // Calcular progresso baseado nas aulas completadas
-        lessons: module.lessons?.map((lesson) => ({
-          id: lesson.id,
-          title: lesson.title || 'Aula sem título',
-          duration: '15:30', // Valor padrão
-          completed: false, // Valor padrão
-          videoUrl: lesson.video_url || '',
-          description: lesson.content || 'Descrição não disponível',
-        })) || [],
-      })) || [];
-
-      console.log('Módulos transformados:', modules);
-      return modules;
-    },
-  });
+  return { modules, isLoading, error };
 };

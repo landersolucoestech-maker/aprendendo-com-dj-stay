@@ -6,7 +6,7 @@ import { CheckCircle, Clock, Download, BookOpen } from "lucide-react";
 import { useState } from "react";
 
 interface Lesson {
-  id: string;
+  id: number;
   title: string;
   duration: string;
   completed: boolean;

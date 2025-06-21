@@ -44,7 +44,10 @@ const InstructorSection = () => {
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
                 Conheça seu <span className="gradient-text">instrutor</span>
               </h2>
-              <p className="text-xl text-gray-300 leading-relaxed mb-6">DJ Stay é uma referência na produção de funk brasileiro, com mais de 15 anos de experiência e parcerias com os maiores nomes do cenário nacional.</p>
+              <p className="text-xl text-gray-300 leading-relaxed mb-6">
+                DJ Alex Producer é uma referência na produção de funk brasileiro, com mais de 15 anos de experiência 
+                e parcerias com os maiores nomes do cenário nacional.
+              </p>
               <p className="text-gray-300 leading-relaxed">
                 Suas produções já alcançaram mais de 500 milhões de streams nas plataformas digitais, 
                 e agora ele compartilha todos os seus segredos e técnicas neste curso exclusivo.
