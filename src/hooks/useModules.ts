@@ -16,14 +16,7 @@ export const useModules = () => {
     queryFn: async () => {
       console.log('Iniciando busca de módulos...');
       
-      // Primeiro, vamos verificar se há dados na tabela modules
-      const { data: moduleCheck, error: moduleCheckError } = await supabase
-        .from('modules')
-        .select('*');
-      
-      console.log('Verificação de módulos:', moduleCheck, 'Erro:', moduleCheckError);
-      
-      // Agora vamos fazer a consulta completa
+      // Fazer a consulta completa com join das lessons
       const { data, error } = await supabase
         .from('modules')
         .select(`
@@ -46,70 +39,29 @@ export const useModules = () => {
         throw error;
       }
 
-      console.log('Módulos encontrados na consulta completa:', data);
+      console.log('Módulos encontrados na consulta:', data);
 
-      // Se não há dados, vamos retornar dados de exemplo para testar
+      // Se não há dados, retornar array vazio
       if (!data || data.length === 0) {
-        console.log('Nenhum módulo encontrado, retornando dados de exemplo...');
-        return [
-          {
-            id: '1',
-            title: 'Môdulo 1: Fundamentos da Produção Musical',
-            description: 'Introdução aos conceitos básicos de produção musical',
-            progress: 25,
-            lessons: [
-              {
-                id: '1',
-                title: 'Introdução ao Curso',
-                duration: '15:30',
-                completed: false,
-                videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                description: 'Bem-vindo ao curso de produção de funk!',
-              },
-              {
-                id: '2',
-                title: 'Configurando seu Home Studio',
-                duration: '20:15',
-                completed: false,
-                videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                description: 'Aprenda a configurar seu estúdio em casa.',
-              },
-            ],
-          },
-          {
-            id: '2',
-            title: 'Môdulo 2: Criação de Beats e Samples',
-            description: 'Aprenda a criar beats marcantes e trabalhar com samples',
-            progress: 50,
-            lessons: [
-              {
-                id: '3',
-                title: 'Drum Patterns Essenciais',
-                duration: '18:45',
-                completed: true,
-                videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                description: 'Domine os padrões rítmicos fundamentais do funk.',
-              },
-            ],
-          },
-        ];
+        console.log('Nenhum módulo encontrado na base de dados');
+        return [];
       }
 
       // Transformar os dados para o formato esperado pelos componentes
-      const modules: Module[] = data?.map((module) => ({
+      const modules: Module[] = data.map((module) => ({
         id: module.id,
         title: module.title || 'Módulo sem título',
         description: module.description || 'Descrição não disponível',
-        progress: 0, // Calcular progresso baseado nas aulas completadas
-        lessons: module.lessons?.map((lesson) => ({
+        progress: 0, // Por enquanto, progresso zerado - seria calculado baseado nas aulas completadas
+        lessons: (module.lessons || []).map((lesson) => ({
           id: lesson.id,
           title: lesson.title || 'Aula sem título',
-          duration: '15:30', // Valor padrão
-          completed: false, // Valor padrão
+          duration: '15:30', // Valor padrão - em produção viria do banco
+          completed: false, // Valor padrão - seria calculado baseado no progresso do usuário
           videoUrl: lesson.video_url || '',
           description: lesson.content || 'Descrição não disponível',
-        })) || [],
-      })) || [];
+        })),
+      }));
 
       console.log('Módulos transformados:', modules);
       return modules;
