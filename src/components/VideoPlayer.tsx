@@ -1,9 +1,9 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Clock, Download, BookOpen } from "lucide-react";
+import { CheckCircle, Clock, Download, BookOpen, ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useUpdateProgress } from "@/hooks/useUserProgress";
 import { useToast } from "@/hooks/use-toast";
 import { useLessonFiles, downloadFileFromStorage } from "@/hooks/useLessonFiles";
@@ -26,6 +26,7 @@ interface VideoPlayerProps {
 
 const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const [watchProgress, setWatchProgress] = useState(lesson.completed ? 100 : 0);
+  const navigate = useNavigate();
   const updateProgress = useUpdateProgress();
   const { toast } = useToast();
   const { data: lessonFiles, isLoading: filesLoading } = useLessonFiles(lesson.id);
@@ -35,6 +36,10 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   // Check if current lesson is completed
   const currentLessonProgress = userProgress?.find(p => p.aula_id === lesson.id);
   const isCurrentLessonCompleted = currentLessonProgress?.completada || lesson.completed || watchProgress === 100;
+  
+  // Find next lesson
+  const currentIndex = allLessons?.findIndex(l => l.id === lesson.id) || 0;
+  const nextLesson = allLessons?.[currentIndex + 1];
   
   // Verificar se todas as aulas foram concluídas (para certificados)
   const areAllLessonsCompleted = () => {
@@ -133,6 +138,17 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
         title: "Erro no download",
         description: "Não foi possível baixar o projeto. Tente novamente.",
         variant: "destructive",
+      });
+    }
+  };
+
+  const handleNextLesson = () => {
+    if (nextLesson) {
+      navigate(`/aula/${nextLesson.id}`);
+    } else {
+      toast({
+        title: "Parabéns!",
+        description: "Você concluiu todas as aulas do curso!",
       });
     }
   };
@@ -237,11 +253,20 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-1">Próxima Aula</h3>
-              <p className="text-gray-300">Continue seu aprendizado</p>
+              <h3 className="text-lg font-semibold text-white mb-1">
+                {nextLesson ? 'Próxima Aula' : 'Curso Concluído'}
+              </h3>
+              <p className="text-gray-300">
+                {nextLesson ? nextLesson.title : 'Parabéns por concluir todas as aulas!'}
+              </p>
             </div>
-            <Button className="btn-neon">
-              Continuar Curso
+            <Button 
+              className="btn-neon"
+              onClick={handleNextLesson}
+              disabled={!nextLesson}
+            >
+              <ArrowRight className="w-4 h-4 mr-2" />
+              {nextLesson ? 'Próxima Aula' : 'Curso Concluído'}
             </Button>
           </div>
         </CardContent>
