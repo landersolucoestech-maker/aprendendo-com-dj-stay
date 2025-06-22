@@ -2,16 +2,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Clock, Download, BookOpen } from "lucide-react";
+import { CheckCircle, Clock, Download, BookOpen, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUpdateProgress } from "@/hooks/useUserProgress";
 import { useToast } from "@/hooks/use-toast";
 import { useLessonFiles, downloadFileFromStorage } from "@/hooks/useLessonFiles";
+import { useLessons } from "@/hooks/useLessons";
+import { useUserProgress } from "@/hooks/useUserProgress";
 
 interface Lesson {
   id: string;
   title: string;
-  duration?: string; // Made optional to match useLessons interface
+  duration?: string;
   completed: boolean;
   video_url?: string;
   videoUrl?: string;
@@ -27,6 +29,18 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const updateProgress = useUpdateProgress();
   const { toast } = useToast();
   const { data: lessonFiles, isLoading: filesLoading } = useLessonFiles(lesson.id);
+  const { data: allLessons } = useLessons();
+  const { data: userProgress } = useUserProgress();
+  
+  // Verificar se todas as aulas foram concluídas
+  const areAllLessonsCompleted = () => {
+    if (!allLessons || !userProgress) return false;
+    
+    const completedLessons = userProgress.filter(progress => progress.completada);
+    return completedLessons.length === allLessons.length;
+  };
+
+  const allLessonsCompleted = areAllLessonsCompleted();
   
   // Extract YouTube video ID from URL
   const getYouTubeVideoId = (url: string) => {
@@ -64,6 +78,15 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   };
 
   const handleDownloadSamples = async () => {
+    if (!allLessonsCompleted) {
+      toast({
+        title: "Acesso restrito",
+        description: "Complete todas as aulas do curso para desbloquear os downloads.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!lessonFiles?.samples_file_path) {
       toast({
         title: "Arquivo não disponível",
@@ -92,6 +115,15 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   };
 
   const handleDownloadProject = async () => {
+    if (!allLessonsCompleted) {
+      toast({
+        title: "Acesso restrito",
+        description: "Complete todas as aulas do curso para desbloquear os downloads.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!lessonFiles?.project_file_path) {
       toast({
         title: "Arquivo não disponível",
@@ -174,24 +206,44 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
               <BookOpen className="w-5 h-5 mr-2" />
               Materiais da Aula
             </CardTitle>
+            {!allLessonsCompleted && (
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 mt-2">
+                <div className="flex items-center text-orange-400 text-sm">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Complete todas as aulas para desbloquear os downloads
+                </div>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="space-y-3">
             <Button 
               variant="outline" 
-              className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
+              className={`w-full justify-start border-white/20 bg-transparent hover:bg-white/10 ${
+                !allLessonsCompleted ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
               onClick={handleDownloadSamples}
               disabled={filesLoading || !lessonFiles?.samples_file_path}
             >
-              <Download className="w-4 h-4 mr-2" />
+              {!allLessonsCompleted ? (
+                <Lock className="w-4 h-4 mr-2" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
               {filesLoading ? 'Carregando...' : 'Samples e loops da aula'}
             </Button>
             <Button 
               variant="outline" 
-              className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
+              className={`w-full justify-start border-white/20 bg-transparent hover:bg-white/10 ${
+                !allLessonsCompleted ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
               onClick={handleDownloadProject}
               disabled={filesLoading || !lessonFiles?.project_file_path}
             >
-              <Download className="w-4 h-4 mr-2" />
+              {!allLessonsCompleted ? (
+                <Lock className="w-4 h-4 mr-2" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
               {filesLoading ? 'Carregando...' : 'Projeto Ableton Live'}
             </Button>
           </CardContent>
