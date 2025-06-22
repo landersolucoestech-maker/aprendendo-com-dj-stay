@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Clock, Download, BookOpen, Lock } from "lucide-react";
+import { CheckCircle, Clock, Download, BookOpen } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUpdateProgress } from "@/hooks/useUserProgress";
 import { useToast } from "@/hooks/use-toast";
@@ -206,44 +206,24 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
               <BookOpen className="w-5 h-5 mr-2" />
               Materiais da Aula
             </CardTitle>
-            {!allLessonsCompleted && (
-              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 mt-2">
-                <div className="flex items-center text-orange-400 text-sm">
-                  <Lock className="w-4 h-4 mr-2" />
-                  Complete todas as aulas para desbloquear os downloads
-                </div>
-              </div>
-            )}
           </CardHeader>
           <CardContent className="space-y-3">
             <Button 
               variant="outline" 
-              className={`w-full justify-start border-white/20 bg-transparent hover:bg-white/10 ${
-                !allLessonsCompleted ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
               onClick={handleDownloadSamples}
               disabled={filesLoading || !lessonFiles?.samples_file_path}
             >
-              {!allLessonsCompleted ? (
-                <Lock className="w-4 h-4 mr-2" />
-              ) : (
-                <Download className="w-4 h-4 mr-2" />
-              )}
+              <Download className="w-4 h-4 mr-2" />
               {filesLoading ? 'Carregando...' : 'Samples e loops da aula'}
             </Button>
             <Button 
               variant="outline" 
-              className={`w-full justify-start border-white/20 bg-transparent hover:bg-white/10 ${
-                !allLessonsCompleted ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
               onClick={handleDownloadProject}
               disabled={filesLoading || !lessonFiles?.project_file_path}
             >
-              {!allLessonsCompleted ? (
-                <Lock className="w-4 h-4 mr-2" />
-              ) : (
-                <Download className="w-4 h-4 mr-2" />
-              )}
+              <Download className="w-4 h-4 mr-2" />
               {filesLoading ? 'Carregando...' : 'Projeto Ableton Live'}
             </Button>
           </CardContent>

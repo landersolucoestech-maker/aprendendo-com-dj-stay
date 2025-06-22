@@ -86,27 +86,11 @@ const UserProfile = ({ user }: UserProfileProps) => {
           <p className="text-xs text-gray-400 mt-1">{user.progress}% concluído</p>
         </div>
         
-        {!allLessonsCompleted && (
-          <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
-            <div className="flex items-center text-orange-400 text-sm">
-              <Lock className="w-4 h-4 mr-2" />
-              Complete todas as aulas para desbloquear os certificados
-            </div>
-          </div>
-        )}
-        
         <Button 
-          className={`w-full btn-brand ${
-            !allLessonsCompleted ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
+          className="w-full btn-brand"
           onClick={handleCertificatesClick}
-          disabled={!allLessonsCompleted}
         >
-          {!allLessonsCompleted ? (
-            <Lock className="w-4 h-4 mr-2" />
-          ) : (
-            <Award className="w-4 h-4 mr-2" />
-          )}
+          <Award className="w-4 h-4 mr-2" />
           Certificados
         </Button>
       </CardContent>
