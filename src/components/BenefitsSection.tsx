@@ -1,5 +1,6 @@
 
 import { Music, Headphones, Download, Users, Zap, Trophy } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const benefits = [
   {
@@ -35,6 +36,12 @@ const benefits = [
 ];
 
 const BenefitsSection = () => {
+  const navigate = useNavigate();
+
+  const handleEnrollClick = () => {
+    navigate('/matricule-se');
+  };
+
   return (
     <section className="py-20 bg-black/50 relative">
       <div className="container mx-auto px-4">
@@ -77,7 +84,7 @@ const BenefitsSection = () => {
             <p className="text-gray-300 mb-6">
               Junte-se a mais de 2.500 alunos que já estão produzindo hits de funk
             </p>
-            <button className="btn-brand">
+            <button onClick={handleEnrollClick} className="btn-brand">
               Quero me matricular agora
             </button>
           </div>
