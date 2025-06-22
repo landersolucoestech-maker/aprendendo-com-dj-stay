@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLessons } from "@/hooks/useLessons";
 import { useModules } from "@/hooks/useModules";
+import { useUserProgress } from "@/hooks/useUserProgress";
 
 const Dashboard = () => {
   const [user, setUser] = useState({
@@ -28,6 +29,7 @@ const Dashboard = () => {
   // Usar os hooks para buscar dados do Supabase
   const { data: lessons, isLoading: lessonsLoading, error: lessonsError } = useLessons();
   const { data: modules, isLoading: modulesLoading, error: modulesError } = useModules();
+  const { data: userProgress } = useUserProgress();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -77,6 +79,28 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Integrar o progresso do usuário com os módulos
+  const modulesWithProgress = modules?.map(module => {
+    // Calcular progresso baseado nas aulas completadas
+    const completedLessons = module.lessons.filter(lesson => {
+      const progress = userProgress?.find(p => p.aula_id === lesson.id);
+      return progress?.completada || false;
+    });
+    
+    const progressPercentage = module.lessons.length > 0 
+      ? Math.round((completedLessons.length / module.lessons.length) * 100)
+      : 0;
+
+    return {
+      ...module,
+      progress: progressPercentage,
+      lessons: module.lessons.map(lesson => ({
+        ...lesson,
+        completed: userProgress?.find(p => p.aula_id === lesson.id)?.completada || false
+      }))
+    };
+  }) || [];
+
   const recentActivities = [
     { activity: 'Completou a lição "Estrutura de um Beat"', time: '2 horas atrás' },
     { activity: 'Baixou samples do Módulo 2', time: '1 dia atrás' },
@@ -84,7 +108,7 @@ const Dashboard = () => {
   ];
 
   const handleLessonClick = (lesson) => {
-    setCurrentLesson(lesson);
+    navigate(`/aula/${lesson.id}`);
   };
 
   // Mostrar loading enquanto os dados são carregados
@@ -155,12 +179,12 @@ const Dashboard = () => {
                     <VideoPlayer lesson={currentLesson} />
                   </div>
                 ) : (
-                  <LessonGrid modules={modules || []} onLessonClick={handleLessonClick} />
+                  <LessonGrid modules={modulesWithProgress} onLessonClick={handleLessonClick} />
                 )}
               </TabsContent>
 
               <TabsContent value="progresso" className="space-y-6">
-                <ModuleProgress modules={modules || []} />
+                <ModuleProgress modules={modulesWithProgress} />
               </TabsContent>
             </Tabs>
           </div>

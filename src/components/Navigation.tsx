@@ -1,102 +1,148 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Menu, X, User } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Menu, X } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+
 const Navigation = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-  const scrollToContact = () => {
-    const contactSection = document.getElementById('contato');
-    if (contactSection) {
-      contactSection.scrollIntoView({
-        behavior: 'smooth'
-      });
+  const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Verificar se o usuário está logado
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+    };
+
+    checkUser();
+
+    // Listener para mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleGetStarted = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/matricule-se');
     }
-    setIsMenuOpen(false); // Close mobile menu if open
   };
-  return <nav className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-lg border-b border-white/10">
-      <div className="container mx-auto px-[16px] my-0 py-[16px]">
+
+  return (
+    <nav className="fixed top-0 w-full bg-black/90 backdrop-blur-md border-b border-white/10 z-50">
+      <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-20 h-20 bg-gradient-brand rounded-lg flex items-center justify-center overflow-hidden">
-              <img alt="Vivendo da Música" className="w-full h-full object-fill" src="/lovable-uploads/3c33eda7-abc0-49d8-a1c7-5354b45b1ee8.jpg" />
-            </div>
-            <span className="gradient-text text-lg font-extrabold">Vivenda da Música</span>
+          <Link to="/" className="text-2xl font-bold gradient-text">
+            FunkBeats Academy
           </Link>
 
-          {/* Desktop Menu */}
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#home" className="text-gray-300 hover:text-brand-light transition-colors">
+            <Link to="/" className="text-gray-300 hover:text-white transition-colors">
               Início
-            </a>
-            <a href="#curso" className="text-gray-300 hover:text-brand-light transition-colors">
-              O Curso
-            </a>
-            <a href="#instrutor" className="text-gray-300 hover:text-brand-light transition-colors">
+            </Link>
+            <Link to="/#modulos" className="text-gray-300 hover:text-white transition-colors">
+              Módulos
+            </Link>
+            <Link to="/#instrutor" className="text-gray-300 hover:text-white transition-colors">
               Instrutor
-            </a>
-            <a href="#depoimentos" className="text-gray-300 hover:text-brand-light transition-colors">
-              Depoimentos
-            </a>
-            <button onClick={scrollToContact} className="text-gray-300 hover:text-brand-light transition-colors">
+            </Link>
+            <Link to="/contato" className="text-gray-300 hover:text-white transition-colors">
               Contato
-            </button>
+            </Link>
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <Link to="/dashboard">
+                  <Button className="btn-neon">
+                    Dashboard
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-4">
+                <Link to="/login">
+                  <Button variant="ghost" className="text-white hover:bg-white/10">
+                    Entrar
+                  </Button>
+                </Link>
+                <Button onClick={handleGetStarted} className="btn-neon">
+                  Começar Agora
+                </Button>
+              </div>
+            )}
           </div>
 
-          {/* CTA Buttons */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Link to="/login">
-              <Button variant="ghost" className="text-gray-300 hover:text-brand-light">
-                <User className="w-4 h-4 mr-2" />
-                Entrar
-              </Button>
-            </Link>
-            <Link to="/matricule-se">
-              <Button className="btn-brand">
-                Matricule-se
-              </Button>
-            </Link>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button onClick={toggleMenu} className="md:hidden text-white p-2">
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {/* Mobile menu button */}
+          <button
+            className="md:hidden text-white"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && <div className="md:hidden glass-card mt-2 p-4 space-y-4">
-            <a href="#home" className="block text-gray-300 hover:text-brand-light transition-colors py-2">
+        {/* Mobile Navigation */}
+        {isOpen && (
+          <div className="md:hidden py-4 space-y-4 border-t border-white/10">
+            <Link 
+              to="/" 
+              className="block text-gray-300 hover:text-white transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
               Início
-            </a>
-            <a href="#curso" className="block text-gray-300 hover:text-brand-light transition-colors py-2">
-              O Curso
-            </a>
-            <a href="#instrutor" className="block text-gray-300 hover:text-brand-light transition-colors py-2">
+            </Link>
+            <Link 
+              to="/#modulos" 
+              className="block text-gray-300 hover:text-white transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              Módulos
+            </Link>
+            <Link 
+              to="/#instrutor" 
+              className="block text-gray-300 hover:text-white transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
               Instrutor
-            </a>
-            <a href="#depoimentos" className="block text-gray-300 hover:text-brand-light transition-colors py-2">
-              Depoimentos
-            </a>
-            <button onClick={scrollToContact} className="block text-gray-300 hover:text-brand-light transition-colors py-2 text-left w-full">
+            </Link>
+            <Link 
+              to="/contato" 
+              className="block text-gray-300 hover:text-white transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
               Contato
-            </button>
-            <div className="pt-4 border-t border-white/10 space-y-3">
-              <Link to="/login">
-                <Button variant="ghost" className="w-full justify-start text-gray-300">
-                  <User className="w-4 h-4 mr-2" />
-                  Entrar
+            </Link>
+            {user ? (
+              <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                <Button className="w-full btn-neon">
+                  Dashboard
                 </Button>
               </Link>
-              <Link to="/matricule-se">
-                <Button className="w-full btn-brand">
-                  Matricule-se
+            ) : (
+              <div className="space-y-2">
+                <Link to="/login" onClick={() => setIsOpen(false)}>
+                  <Button variant="ghost" className="w-full text-white hover:bg-white/10">
+                    Entrar
+                  </Button>
+                </Link>
+                <Button onClick={() => { handleGetStarted(); setIsOpen(false); }} className="w-full btn-neon">
+                  Começar Agora
                 </Button>
-              </Link>
-            </div>
-          </div>}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-    </nav>;
+    </nav>
+  );
 };
+
 export default Navigation;

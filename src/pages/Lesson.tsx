@@ -6,74 +6,49 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Clock, Download, BookOpen, ArrowLeft, ArrowRight } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import { useLessons } from "@/hooks/useLessons";
+import { useUserProgress } from "@/hooks/useUserProgress";
 
 const Lesson = () => {
   const { lessonId } = useParams();
   const navigate = useNavigate();
   const [watchProgress, setWatchProgress] = useState(0);
 
-  // Dados mockados das aulas - em uma aplicação real, isso viria de uma API
-  const lessons = [
-    {
-      id: '1', // Changed from number to string
-      title: 'Introdução ao Curso',
-      duration: '15:30',
-      completed: true,
-      videoUrl: 'https://example.com/video1.mp4',
-      description: 'Bem-vindo ao curso de produção de funk! Nesta aula introdutória, você conhecerá os objetivos do curso e o que esperar das próximas lições.',
-      moduleId: '1', // Changed from number to string
-      moduleName: 'Fundamentos da Produção Musical'
-    },
-    {
-      id: '2', // Changed from number to string
-      title: 'Configurando seu Home Studio',
-      duration: '25:45',
-      completed: false,
-      videoUrl: 'https://example.com/video2.mp4',
-      description: 'Aprenda a configurar seu estúdio em casa com equipamentos básicos e necessários para começar a produzir funk.',
-      moduleId: '1', // Changed from number to string
-      moduleName: 'Fundamentos da Produção Musical'
-    },
-    {
-      id: '3', // Changed from number to string
-      title: 'Conhecendo o FL Studio',
-      duration: '30:20',
-      completed: false,
-      videoUrl: 'https://example.com/video3.mp4',
-      description: 'Uma introdução completa ao FL Studio, a DAW que utilizaremos durante todo o curso.',
-      moduleId: '1', // Changed from number to string
-      moduleName: 'Fundamentos da Produção Musical'
-    },
-    {
-      id: '4', // Changed from number to string
-      title: 'Drum Patterns Essenciais',
-      duration: '25:10',
-      completed: false,
-      videoUrl: 'https://example.com/video4.mp4',
-      description: 'Domine os padrões rítmicos fundamentais do funk carioca e aprenda a criar beats marcantes.',
-      moduleId: '2', // Changed from number to string
-      moduleName: 'Criação de Beats e Samples'
-    }
-  ];
+  const { data: lessons, isLoading } = useLessons();
+  const { data: userProgress } = useUserProgress();
 
-  const currentLesson = lessons.find(lesson => lesson.id === lessonId); // No need to parseInt anymore
-  const currentIndex = lessons.findIndex(lesson => lesson.id === lessonId);
-  const nextLesson = lessons[currentIndex + 1];
-  const prevLesson = lessons[currentIndex - 1];
+  const currentLesson = lessons?.find(lesson => lesson.id === lessonId);
+  const currentIndex = lessons?.findIndex(lesson => lesson.id === lessonId) || 0;
+  const nextLesson = lessons?.[currentIndex + 1];
+  const prevLesson = lessons?.[currentIndex - 1];
+
+  // Buscar progresso do usuário para esta aula
+  const lessonProgress = userProgress?.find(p => p.aula_id === lessonId);
 
   useEffect(() => {
-    if (currentLesson?.completed) {
-      setWatchProgress(100);
+    if (lessonProgress) {
+      setWatchProgress(lessonProgress.progresso_percentual || 0);
     }
-  }, [currentLesson]);
+  }, [lessonProgress]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-gray-300">Carregando aula...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentLesson) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Aula não encontrada</h1>
-          <Button onClick={() => navigate('/cursos')} className="btn-neon">
-            Voltar aos Cursos
+          <Button onClick={() => navigate('/dashboard')} className="btn-neon">
+            Voltar ao Dashboard
           </Button>
         </div>
       </div>
@@ -82,7 +57,7 @@ const Lesson = () => {
 
   const handleMarkComplete = () => {
     setWatchProgress(100);
-    // Aqui você salvaria o progresso no backend
+    // O hook useUpdateProgress será usado pelo VideoPlayer
   };
 
   return (
@@ -95,13 +70,13 @@ const Lesson = () => {
               <Button 
                 variant="ghost" 
                 size="icon"
-                onClick={() => navigate('/cursos')}
+                onClick={() => navigate('/dashboard')}
                 className="text-gray-300 hover:text-white"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
-                <p className="text-sm text-gray-400">{currentLesson.moduleName}</p>
+                <p className="text-sm text-gray-400">Aula</p>
                 <h1 className="text-2xl font-bold gradient-text">{currentLesson.title}</h1>
               </div>
             </div>
@@ -209,7 +184,7 @@ const Lesson = () => {
                 {!nextLesson && (
                   <Button 
                     className="w-full btn-neon"
-                    onClick={() => navigate('/cursos')}
+                    onClick={() => navigate('/dashboard')}
                   >
                     Finalizar Módulo
                     <CheckCircle className="w-4 h-4 ml-2" />
