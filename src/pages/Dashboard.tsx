@@ -11,7 +11,6 @@ import LessonGrid from "@/components/LessonGrid";
 import DashboardHeader from "@/components/DashboardHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useModules } from "@/hooks/useModules";
 
 const Dashboard = () => {
   const [user, setUser] = useState({
@@ -23,7 +22,98 @@ const Dashboard = () => {
 
   const [currentLesson, setCurrentLesson] = useState(null);
   const navigate = useNavigate();
-  const { data: modules = [], isLoading, error } = useModules();
+
+  // Dados mockados dos módulos
+  const modules = [
+    {
+      id: 1,
+      title: 'Fundamentos da Produção Musical',
+      description: 'Aprenda os conceitos básicos da produção musical',
+      progress: 75,
+      lessons: [
+        {
+          id: 1,
+          title: 'Introdução ao Curso',
+          duration: '15:30',
+          completed: true,
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          description: 'Bem-vindo ao curso de produção de funk!'
+        },
+        {
+          id: 2,
+          title: 'Configurando seu Home Studio',
+          duration: '25:45',
+          completed: true,
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          description: 'Aprenda a configurar seu estúdio em casa'
+        },
+        {
+          id: 3,
+          title: 'Conhecendo o FL Studio',
+          duration: '30:20',
+          completed: false,
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          description: 'Uma introdução completa ao FL Studio'
+        }
+      ]
+    },
+    {
+      id: 2,
+      title: 'Criação de Beats e Samples',
+      description: 'Domine a arte de criar beats únicos',
+      progress: 45,
+      lessons: [
+        {
+          id: 4,
+          title: 'Drum Patterns Essenciais',
+          duration: '25:10',
+          completed: false,
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          description: 'Domine os padrões rítmicos fundamentais do funk carioca'
+        },
+        {
+          id: 5,
+          title: 'Estrutura de um Beat',
+          duration: '35:20',
+          completed: false,
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          description: 'Entenda como estruturar um beat profissional'
+        },
+        {
+          id: 6,
+          title: 'Samples e Loops',
+          duration: '28:15',
+          completed: false,
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          description: 'Aprenda a usar samples e criar loops únicos'
+        }
+      ]
+    },
+    {
+      id: 3,
+      title: 'Mixagem e Masterização',
+      description: 'Finalize suas produções com qualidade profissional',
+      progress: 20,
+      lessons: [
+        {
+          id: 7,
+          title: 'Fundamentos da Mixagem',
+          duration: '40:30',
+          completed: false,
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          description: 'Aprenda os conceitos fundamentais da mixagem'
+        },
+        {
+          id: 8,
+          title: 'EQ e Compressão',
+          duration: '32:45',
+          completed: false,
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          description: 'Domine o uso de equalizadores e compressores'
+        }
+      ]
+    }
+  ];
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -82,28 +172,6 @@ const Dashboard = () => {
   const handleLessonClick = (lesson) => {
     setCurrentLesson(lesson);
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Carregando aulas...</h1>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    console.error('Erro ao carregar módulos:', error);
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Erro ao carregar as aulas</h1>
-          <p className="text-gray-300">Tente recarregar a página</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-black text-white">
