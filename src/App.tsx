@@ -17,7 +17,6 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import VerifyEmail from "./pages/VerifyEmail";
 import Verified from "./pages/Verified";
 import NotFound from "./pages/NotFound";
-import Payment from "./pages/Payment";
 
 const queryClient = new QueryClient();
 
@@ -34,7 +33,6 @@ const App = () => (
           <Route path="/esqueceu-senha" element={<ForgotPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/aula/:lessonId" element={<Lesson />} />
-          <Route path="/pagamento" element={<Payment />} />
           <Route path="/contato" element={<Contact />} />
           <Route path="/editar-perfil" element={<EditProfile />} />
           <Route path="/acesso-negado" element={<AccessDenied />} />
