@@ -12,6 +12,7 @@ export type Database = {
       aulas: {
         Row: {
           created_at: string
+          criado_em: string | null
           descricao: string | null
           duracao: number | null
           id: string
@@ -23,6 +24,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          criado_em?: string | null
           descricao?: string | null
           duracao?: number | null
           id?: string
@@ -34,6 +36,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          criado_em?: string | null
           descricao?: string | null
           duracao?: number | null
           id?: string
@@ -91,6 +94,8 @@ export type Database = {
       modulos: {
         Row: {
           created_at: string
+          criado_em: string | null
+          curso_id: string | null
           descricao: string | null
           id: string
           ordem: number
@@ -99,6 +104,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          criado_em?: string | null
+          curso_id?: string | null
           descricao?: string | null
           id?: string
           ordem?: number
@@ -107,6 +114,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          criado_em?: string | null
+          curso_id?: string | null
           descricao?: string | null
           id?: string
           ordem?: number
@@ -215,30 +224,6 @@ export type Database = {
           payment_method?: string | null
           status?: string
           updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      videos: {
-        Row: {
-          created_at: string | null
-          id: string
-          mux_playback_id: string
-          title: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          mux_playback_id: string
-          title: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          mux_playback_id?: string
-          title?: string
           user_id?: string
         }
         Relationships: []

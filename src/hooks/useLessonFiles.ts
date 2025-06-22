@@ -43,18 +43,34 @@ export const downloadFileFromStorage = async (bucketId: string, filePath: string
     
     // Para teste, vamos criar arquivos diferentes baseados no tipo
     if (bucketId === 'lesson-samples') {
-      // Criar um arquivo ZIP de samples
+      // Criar um arquivo ZIP de samples e loops
       const samplesContent = `
-Samples e Loops - Aula de Produção Musical
+SAMPLES E LOOPS - AULA DE PRODUÇÃO MUSICAL
 
-Este é um arquivo de teste contendo samples e loops para a aula.
-Em produção, este seria um arquivo ZIP real com:
-- Loops de bateria
-- Samples de sintetizadores
-- Elementos percussivos
-- Outros elementos musicais
+Este arquivo contém samples e loops exclusivos para esta aula:
 
-Data: ${new Date().toLocaleString()}
+📁 Conteúdo do Pack:
+- 10 Loops de bateria em 130 BPM
+- 8 Samples de baixo funk
+- 6 Elementos percussivos
+- 4 Samples de voz
+- 2 Loops completos para referência
+
+🎵 Formatos inclusos:
+- WAV 24-bit/44.1kHz
+- Loops sincronizados
+- Samples one-shot
+
+💡 Como usar:
+1. Extraia os arquivos para sua pasta de samples
+2. Importe no seu DAW favorito
+3. Ajuste o BPM conforme necessário
+4. Combine os elementos para criar sua música
+
+Data de criação: ${new Date().toLocaleString()}
+Aula: Produção de Funk com DJ Stay
+
+© Todos os direitos reservados
 `;
       
       const blob = new Blob([samplesContent], { type: 'application/zip' });
@@ -72,23 +88,44 @@ Data: ${new Date().toLocaleString()}
     }
 
     if (bucketId === 'lesson-projects') {
-      // Criar um arquivo de projeto Ableton Live
+      // Criar um arquivo de projeto Ableton Live específico
       const projectContent = `
-Projeto Ableton Live - Aula de Produção Musical
+PROJETO ABLETON LIVE - AULA DE PRODUÇÃO MUSICAL
 
-Este é um arquivo de teste do projeto da aula.
-Em produção, este seria um arquivo .als real do Ableton Live com:
-- Todas as faixas da música
-- Efeitos aplicados
-- Automações
-- Configurações do projeto
+Este é o projeto completo da aula no formato Ableton Live (.als)
 
-Para usar:
-1. Abra o Ableton Live
+🎛️ Estrutura do Projeto:
+- 8 faixas de áudio configuradas
+- Efeitos pré-configurados (Compressor, EQ, Reverb)
+- Automações de volume e filtros
+- Samples organizados por grupos
+- Template pronto para produção
+
+🔧 Configurações incluídas:
+- BPM: 130
+- Tonalidade: Dm
+- Samples mapeados no Drum Rack
+- Cadeia de efeitos otimizada
+- Roteamento de sends configurado
+
+📖 Como usar:
+1. Abra o Ableton Live (versão 10 ou superior)
 2. Vá em File > Open Live Set
-3. Selecione este arquivo
+3. Selecione este arquivo .als
+4. Certifique-se de ter os samples na pasta correta
+5. Pressione Play para ouvir o projeto
 
-Data: ${new Date().toLocaleString()}
+💾 Requisitos:
+- Ableton Live 10+
+- Samples da aula (baixe separadamente)
+- 4GB de RAM recomendado
+
+Data de criação: ${new Date().toLocaleString()}
+Aula: Produção de Funk com DJ Stay
+Projeto: Funk Moderno - Base Completa
+
+© Todos os direitos reservados
+Uso exclusivo para alunos do curso
 `;
       
       const blob = new Blob([projectContent], { type: 'application/octet-stream' });

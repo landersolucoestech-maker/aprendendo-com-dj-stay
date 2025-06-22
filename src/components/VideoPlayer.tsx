@@ -125,7 +125,7 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
     }
 
     try {
-      const fileName = `projeto-${lesson.title.replace(/\s+/g, '-').toLowerCase()}.als`;
+      const fileName = `projeto-ableton-${lesson.title.replace(/\s+/g, '-').toLowerCase()}.als`;
       await downloadFileFromStorage('lesson-projects', lessonFiles.project_file_path, fileName);
       
       toast({
