@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -20,23 +19,23 @@ const UserProfile = ({ user }: UserProfileProps) => {
   const { data: profile } = useUserProfile();
 
   return (
-    <Card className="glass-card border-white/10 min-w-[320px]">
-      <CardHeader>
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center space-x-4 flex-1">
-            <Avatar className="w-16 h-16">
+    <Card className="glass-card border-white/10 min-w-[320px] max-w-[380px]">
+      <CardHeader className="pb-4">
+        <div className="flex items-start justify-between w-full gap-3">
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <Avatar className="w-14 h-14 flex-shrink-0">
               <AvatarImage src={profile?.avatar_url || ''} />
               <AvatarFallback className="bg-gradient-brand text-white">
-                <User className="w-8 h-8" />
+                <User className="w-7 h-7" />
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <CardTitle className="text-white text-base">{user.name}</CardTitle>
-              <CardDescription className="text-gray-400">{user.email}</CardDescription>
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-white text-base truncate">{user.name}</CardTitle>
+              <CardDescription className="text-gray-400 text-sm truncate">{user.email}</CardDescription>
             </div>
           </div>
-          <Link to="/editar-perfil">
-            <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white">
+          <Link to="/editar-perfil" className="flex-shrink-0">
+            <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white h-8 w-8">
               <Settings className="w-4 h-4" />
             </Button>
           </Link>
