@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,98 +5,85 @@ import { Download, FileAudio, FileCode, Upload, AlertCircle, ExternalLink } from
 import { useLessonFiles, downloadFileFromStorage } from "@/hooks/useLessonFiles";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from 'react-router-dom';
-
 const LessonFilesExample = () => {
-  const { toast } = useToast();
-  const { lessonId } = useParams();
-  
+  const {
+    toast
+  } = useToast();
+  const {
+    lessonId
+  } = useParams();
   const currentLessonId = lessonId || "1c136523-3b58-4cc3-ba5b-aa03f4a4e081";
-  const { data: lessonFiles, isLoading, error } = useLessonFiles(currentLessonId);
-
+  const {
+    data: lessonFiles,
+    isLoading,
+    error
+  } = useLessonFiles(currentLessonId);
   const handleDownloadSamples = async () => {
     if (!lessonFiles?.samples_file_path) {
       toast({
         title: "Arquivo não disponível",
         description: "Os samples e loops desta aula ainda não foram disponibilizados.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
       const fileName = `samples-loops-aula-${currentLessonId.slice(0, 8)}.zip`;
       await downloadFileFromStorage('lesson-samples', lessonFiles.samples_file_path, fileName);
-      
       toast({
         title: "Download iniciado!",
-        description: "Os samples e loops da aula estão sendo baixados.",
+        description: "Os samples e loops da aula estão sendo baixados."
       });
     } catch (error: any) {
       console.error('Erro ao baixar samples:', error);
       toast({
         title: "Erro no download",
         description: error.message || "Não foi possível baixar os samples.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleDownloadProject = async () => {
     if (!lessonFiles?.project_file_path) {
       toast({
         title: "Arquivo não disponível",
         description: "O projeto Ableton Live desta aula ainda não foi disponibilizado.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
       const fileName = `projeto-aula-${currentLessonId.slice(0, 8)}.als`;
       await downloadFileFromStorage('lesson-projects', lessonFiles.project_file_path, fileName);
-      
       toast({
         title: "Download iniciado!",
-        description: "O projeto Ableton Live está sendo baixado.",
+        description: "O projeto Ableton Live está sendo baixado."
       });
     } catch (error: any) {
       console.error('Erro ao baixar projeto:', error);
       toast({
         title: "Erro no download",
         description: error.message || "Não foi possível baixar o projeto.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   if (isLoading) {
-    return (
-      <Card className="glass-card border-white/10">
+    return <Card className="glass-card border-white/10">
         <CardContent className="p-6">
           <div className="flex items-center space-x-2">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
             <p className="text-gray-300">Carregando arquivos da aula...</p>
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
   if (error) {
-    return (
-      <Card className="glass-card border-white/10">
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-2 text-red-400">
-            <AlertCircle className="w-4 h-4" />
-            <p>Erro ao carregar arquivos: {error.message}</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <Card className="glass-card border-white/10">
+        
+      </Card>;
   }
-
-  return (
-    <div className="space-y-6 p-6">
+  return <div className="space-y-6 p-6">
       <Card className="glass-card border-white/10">
         <CardHeader>
           <CardTitle className="text-white flex items-center">
@@ -111,8 +97,7 @@ const LessonFilesExample = () => {
             <p><strong>Samples disponíveis:</strong> {lessonFiles?.samples_file_path ? '✅ Sim' : '❌ Não'}</p>
             <p><strong>Projeto disponível:</strong> {lessonFiles?.project_file_path ? '✅ Sim' : '❌ Não'}</p>
             
-            {lessonFiles && (
-              <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500/20 rounded-lg">
+            {lessonFiles && <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500/20 rounded-lg">
                 <div className="flex items-center space-x-2 text-blue-400">
                   <AlertCircle className="w-4 h-4" />
                   <p className="text-sm">
@@ -120,45 +105,31 @@ const LessonFilesExample = () => {
                     mas você precisa fazer upload dos arquivos reais no Supabase Storage para que os downloads funcionem.
                   </p>
                 </div>
-              </div>
-            )}
+              </div>}
 
-            {!lessonFiles && (
-              <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-500/20 rounded-lg">
+            {!lessonFiles && <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-500/20 rounded-lg">
                 <div className="flex items-center space-x-2 text-yellow-400">
                   <AlertCircle className="w-4 h-4" />
                   <p className="text-sm">
                     Nenhum arquivo encontrado para esta aula.
                   </p>
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
 
           <div className="grid md:grid-cols-2 gap-4 mt-6">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
-              onClick={handleDownloadSamples}
-              disabled={!lessonFiles?.samples_file_path}
-            >
+            <Button variant="outline" className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10" onClick={handleDownloadSamples} disabled={!lessonFiles?.samples_file_path}>
               <FileAudio className="w-4 h-4 mr-2" />
               Download Samples & Loops
             </Button>
 
-            <Button 
-              variant="outline" 
-              className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
-              onClick={handleDownloadProject}
-              disabled={!lessonFiles?.project_file_path}
-            >
+            <Button variant="outline" className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10" onClick={handleDownloadProject} disabled={!lessonFiles?.project_file_path}>
               <FileCode className="w-4 h-4 mr-2" />
               Download Projeto Ableton
             </Button>
           </div>
 
-          {lessonFiles && (
-            <div className="mt-6 p-4 bg-green-900/20 border border-green-500/20 rounded-lg">
+          {lessonFiles && <div className="mt-6 p-4 bg-green-900/20 border border-green-500/20 rounded-lg">
               <h4 className="text-white font-semibold mb-2 flex items-center">
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Próximos passos para ativar os downloads:
@@ -170,8 +141,7 @@ const LessonFilesExample = () => {
                 <li className="ml-4">• <code>{lessonFiles.project_file_path}</code> → bucket lesson-projects</li>
                 <li>3. Os downloads funcionarão automaticamente após o upload</li>
               </ul>
-            </div>
-          )}
+            </div>}
 
           <div className="mt-6 p-4 bg-gray-800/50 rounded-lg">
             <h4 className="text-white font-semibold mb-2">Como funciona:</h4>
@@ -191,8 +161,6 @@ const LessonFilesExample = () => {
           </details>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default LessonFilesExample;
