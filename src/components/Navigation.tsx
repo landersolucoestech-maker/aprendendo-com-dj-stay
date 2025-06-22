@@ -65,7 +65,7 @@ const Navigation = () => {
               Início
             </Link>
             <button 
-              onClick={() => scrollToSection('modulos')}
+              onClick={() => scrollToSection('curso')}
               className="text-gray-300 hover:text-white transition-colors"
             >
               Curso
@@ -127,7 +127,7 @@ const Navigation = () => {
               Início
             </Link>
             <button 
-              onClick={() => scrollToSection('modulos')}
+              onClick={() => scrollToSection('curso')}
               className="block text-left text-gray-300 hover:text-white transition-colors w-full"
             >
               Curso
