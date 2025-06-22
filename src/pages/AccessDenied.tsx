@@ -1,10 +1,14 @@
+
 import { AlertTriangle, Home, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useNavigate } from "react-router-dom";
+
 const AccessDenied = () => {
   const navigate = useNavigate();
-  return <div className="w-full h-full bg-repeat ">
+
+  return (
+    <div className="w-full h-screen bg-repeat flex items-center justify-center">
       <Card className="glass-card border-white/10 max-w-md w-full text-center">
         <CardHeader className="pb-4">
           <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -42,6 +46,8 @@ const AccessDenied = () => {
           </div>
         </CardContent>
       </Card>
-    </div>;
+    </div>
+  );
 };
+
 export default AccessDenied;
