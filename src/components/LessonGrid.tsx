@@ -25,6 +25,16 @@ interface LessonGridProps {
 }
 
 const LessonGrid = ({ modules, onLessonClick }: LessonGridProps) => {
+  console.log('LessonGrid recebeu módulos:', modules);
+
+  if (!modules || modules.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-300">Nenhum módulo encontrado</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {modules.map((module) => (
@@ -43,13 +53,17 @@ const LessonGrid = ({ modules, onLessonClick }: LessonGridProps) => {
           <Progress value={module.progress} className="h-2" />
           
           <div className="grid gap-4">
-            {module.lessons.map((lesson) => (
-              <LessonCard 
-                key={lesson.id} 
-                lesson={lesson} 
-                onClick={() => onLessonClick(lesson)}
-              />
-            ))}
+            {module.lessons && module.lessons.length > 0 ? (
+              module.lessons.map((lesson) => (
+                <LessonCard 
+                  key={lesson.id} 
+                  lesson={lesson} 
+                  onClick={() => onLessonClick(lesson)}
+                />
+              ))
+            ) : (
+              <p className="text-gray-400 text-center py-4">Nenhuma aula encontrada neste módulo</p>
+            )}
           </div>
         </div>
       ))}

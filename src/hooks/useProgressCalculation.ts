@@ -31,24 +31,25 @@ export const useProgressCalculation = (modules: any[] | undefined) => {
 
     return modules.map(module => {
       // Calcular progresso baseado nas aulas completadas
-      const completedLessons = module.lessons.filter(lesson => {
+      const completedLessons = module.lessons?.filter(lesson => {
         const progress = userProgress?.find(p => p.aula_id === lesson.id);
         return progress?.completada || false;
-      });
+      }) || [];
       
-      const progressPercentage = module.lessons.length > 0 
-        ? Math.round((completedLessons.length / module.lessons.length) * 100)
+      const totalLessons = module.lessons?.length || 0;
+      const progressPercentage = totalLessons > 0 
+        ? Math.round((completedLessons.length / totalLessons) * 100)
         : 0;
 
       return {
         ...module,
         description: module.description || 'Descrição não disponível',
         progress: progressPercentage,
-        lessons: module.lessons.map(lesson => ({
+        lessons: (module.lessons || []).map(lesson => ({
           ...lesson,
-          duration: lesson.duration || '0:00',
-          description: lesson.description || 'Descrição não disponível',
-          videoUrl: lesson.video_url || lesson.videoUrl || '',
+          duration: lesson.duracao ? `${lesson.duracao}:00` : (lesson.duration || '15:30'),
+          description: lesson.descricao || lesson.description || 'Descrição não disponível',
+          videoUrl: lesson.video || lesson.video_url || lesson.videoUrl || '',
           completed: userProgress?.find(p => p.aula_id === lesson.id)?.completada || false
         }))
       };

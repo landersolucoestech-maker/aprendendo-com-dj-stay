@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface Module {
   id: string;
   title: string;
-  description?: string;
+  description: string;
   progress: number;
   lessons: any[];
 }
@@ -21,6 +21,7 @@ export const useModules = () => {
         .select(`
           id,
           titulo,
+          descricao,
           ordem,
           aulas (
             id,
@@ -44,15 +45,21 @@ export const useModules = () => {
       const modules: Module[] = data?.map((modulo) => ({
         id: modulo.id,
         title: modulo.titulo || 'Módulo sem título',
-        description: 'Descrição não disponível',
-        progress: 0, // Calculate progress based on completed lessons
+        description: modulo.descricao || 'Descrição não disponível',
+        progress: 0, // Will be calculated by useProgressCalculation
         lessons: modulo.aulas?.map((aula) => ({
           id: aula.id,
           title: aula.titulo || 'Aula sem título',
+          titulo: aula.titulo,
+          descricao: aula.descricao,
+          video: aula.video,
+          video_url: aula.video,
+          duracao: aula.duracao,
           duration: aula.duracao ? `${aula.duracao}:00` : '15:30',
           completed: false, // Default value
           videoUrl: aula.video || '',
           description: aula.descricao || 'Descrição não disponível',
+          ordem: aula.ordem
         })) || [],
       })) || [];
 

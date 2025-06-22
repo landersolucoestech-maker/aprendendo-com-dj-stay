@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,8 +30,12 @@ const Dashboard = () => {
   const { data: lessons, isLoading: lessonsLoading, error: lessonsError } = useLessons();
   const { data: modules, isLoading: modulesLoading, error: modulesError } = useModules();
   
-  // Usar o novo hook para calcular progresso
+  // Usar o hook para calcular progresso
   const modulesWithProgress = useProgressCalculation(modules);
+
+  console.log('Dashboard - Módulos com progresso:', modulesWithProgress);
+  console.log('Dashboard - Dados brutos dos módulos:', modules);
+  console.log('Dashboard - Aulas:', lessons);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -89,6 +92,7 @@ const Dashboard = () => {
   ];
 
   const handleLessonClick = (lesson) => {
+    console.log('Clicou na aula:', lesson);
     navigate(`/aula/${lesson.id}`);
   };
 
@@ -106,6 +110,7 @@ const Dashboard = () => {
 
   // Mostrar erro se houver problemas ao carregar os dados
   if (lessonsError || modulesError) {
+    console.error('Erro no Dashboard:', { lessonsError, modulesError });
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
