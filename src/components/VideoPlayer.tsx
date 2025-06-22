@@ -60,6 +60,36 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
       });
     }
   };
+
+  const handleDownloadSamples = () => {
+    // Simulando o download de samples e loops
+    const link = document.createElement('a');
+    link.href = '/samples-loops-aula.zip'; // Caminho para o arquivo
+    link.download = `samples-loops-${lesson.title.replace(/\s+/g, '-').toLowerCase()}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Download iniciado!",
+      description: "Os samples e loops da aula estão sendo baixados.",
+    });
+  };
+
+  const handleDownloadProject = () => {
+    // Simulando o download do projeto Ableton Live
+    const link = document.createElement('a');
+    link.href = '/projeto-ableton-live.als'; // Caminho para o arquivo
+    link.download = `projeto-${lesson.title.replace(/\s+/g, '-').toLowerCase()}.als`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Download iniciado!",
+      description: "O projeto Ableton Live está sendo baixado.",
+    });
+  };
   
   return (
     <div className="space-y-6">
@@ -118,11 +148,19 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button variant="outline" className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
+              onClick={handleDownloadSamples}
+            >
               <Download className="w-4 h-4 mr-2" />
               Samples e loops da aula
             </Button>
-            <Button variant="outline" className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
+              onClick={handleDownloadProject}
+            >
               <Download className="w-4 h-4 mr-2" />
               Projeto Ableton Live
             </Button>
