@@ -21,7 +21,7 @@ export const useLessonFiles = (aulaId: string) => {
         .from('lesson_files')
         .select('*')
         .eq('aula_id', aulaId)
-        .maybeSingle(); // Mudança aqui: usar maybeSingle() em vez de single()
+        .maybeSingle();
 
       if (error) {
         console.error('Erro ao buscar arquivos da aula:', error);
@@ -31,7 +31,7 @@ export const useLessonFiles = (aulaId: string) => {
       console.log('Arquivos encontrados:', data);
       return data as LessonFile | null;
     },
-    enabled: !!aulaId, // Só executa se aulaId estiver disponível
+    enabled: !!aulaId,
   });
 };
 
@@ -39,6 +39,25 @@ export const downloadFileFromStorage = async (bucketId: string, filePath: string
   try {
     console.log(`Tentando baixar arquivo: ${filePath} do bucket: ${bucketId}`);
     
+    // First check if the file exists
+    const { data: fileExists, error: listError } = await supabase.storage
+      .from(bucketId)
+      .list(filePath.substring(0, filePath.lastIndexOf('/')) || '');
+
+    if (listError) {
+      console.error('Erro ao verificar existência do arquivo:', listError);
+      throw new Error(`Erro ao verificar arquivo: ${listError.message}`);
+    }
+
+    const fileInList = fileExists?.find(file => 
+      filePath.endsWith(file.name) || filePath.includes(file.name)
+    );
+
+    if (!fileInList) {
+      console.warn('Arquivo não encontrado no storage:', filePath);
+      throw new Error('Arquivo não encontrado no servidor. Entre em contato com o suporte.');
+    }
+
     const { data, error } = await supabase.storage
       .from(bucketId)
       .download(filePath);

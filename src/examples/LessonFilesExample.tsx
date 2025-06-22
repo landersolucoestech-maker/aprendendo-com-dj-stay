@@ -2,36 +2,19 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileAudio, FileCode, Upload, AlertCircle } from "lucide-react";
+import { Download, FileAudio, FileCode, Upload, AlertCircle, ExternalLink } from "lucide-react";
 import { useLessonFiles, downloadFileFromStorage } from "@/hooks/useLessonFiles";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from 'react-router-dom';
-
-/**
- * Exemplo de como usar o sistema de download de arquivos das aulas
- * 
- * Este componente demonstra:
- * 1. Como buscar os arquivos de uma aula usando o hook useLessonFiles
- * 2. Como fazer download dos samples/loops
- * 3. Como fazer download do projeto Ableton Live
- * 4. Como tratar erros e mostrar feedback ao usuário
- */
 
 const LessonFilesExample = () => {
   const { toast } = useToast();
   const { lessonId } = useParams();
   
-  // Usar o ID da aula atual da URL, ou um ID padrão se não estiver disponível
   const currentLessonId = lessonId || "1c136523-3b58-4cc3-ba5b-aa03f4a4e081";
-  
-  // Hook que busca os arquivos da aula no banco de dados
   const { data: lessonFiles, isLoading, error } = useLessonFiles(currentLessonId);
 
-  /**
-   * Função para fazer download dos samples e loops
-   */
   const handleDownloadSamples = async () => {
-    // Verifica se existe o caminho do arquivo de samples
     if (!lessonFiles?.samples_file_path) {
       toast({
         title: "Arquivo não disponível",
@@ -42,34 +25,24 @@ const LessonFilesExample = () => {
     }
 
     try {
-      // Define o nome do arquivo para download
       const fileName = `samples-loops-aula-${currentLessonId.slice(0, 8)}.zip`;
-      
-      // Chama a função de download passando:
-      // - bucket: 'lesson-samples' (definido na migração SQL)
-      // - filePath: caminho do arquivo no storage
-      // - fileName: nome que o arquivo terá quando baixado
       await downloadFileFromStorage('lesson-samples', lessonFiles.samples_file_path, fileName);
       
       toast({
         title: "Download iniciado!",
         description: "Os samples e loops da aula estão sendo baixados.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao baixar samples:', error);
       toast({
         title: "Erro no download",
-        description: `Não foi possível baixar os samples: ${error.message}`,
+        description: error.message || "Não foi possível baixar os samples.",
         variant: "destructive",
       });
     }
   };
 
-  /**
-   * Função para fazer download do projeto Ableton Live
-   */
   const handleDownloadProject = async () => {
-    // Verifica se existe o caminho do arquivo do projeto
     if (!lessonFiles?.project_file_path) {
       toast({
         title: "Arquivo não disponível",
@@ -80,30 +53,23 @@ const LessonFilesExample = () => {
     }
 
     try {
-      // Define o nome do arquivo para download
       const fileName = `projeto-aula-${currentLessonId.slice(0, 8)}.als`;
-      
-      // Chama a função de download passando:
-      // - bucket: 'lesson-projects' (definido na migração SQL)
-      // - filePath: caminho do arquivo no storage
-      // - fileName: nome que o arquivo terá quando baixado
       await downloadFileFromStorage('lesson-projects', lessonFiles.project_file_path, fileName);
       
       toast({
         title: "Download iniciado!",
         description: "O projeto Ableton Live está sendo baixado.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao baixar projeto:', error);
       toast({
         title: "Erro no download",
-        description: `Não foi possível baixar o projeto: ${error.message}`,
+        description: error.message || "Não foi possível baixar o projeto.",
         variant: "destructive",
       });
     }
   };
 
-  // Estados de carregamento e erro
   if (isLoading) {
     return (
       <Card className="glass-card border-white/10">
@@ -145,14 +111,24 @@ const LessonFilesExample = () => {
             <p><strong>Samples disponíveis:</strong> {lessonFiles?.samples_file_path ? '✅ Sim' : '❌ Não'}</p>
             <p><strong>Projeto disponível:</strong> {lessonFiles?.project_file_path ? '✅ Sim' : '❌ Não'}</p>
             
+            {lessonFiles && (
+              <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500/20 rounded-lg">
+                <div className="flex items-center space-x-2 text-blue-400">
+                  <AlertCircle className="w-4 h-4" />
+                  <p className="text-sm">
+                    <strong>Configuração necessária:</strong> Os caminhos dos arquivos estão configurados no banco de dados, 
+                    mas você precisa fazer upload dos arquivos reais no Supabase Storage para que os downloads funcionem.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {!lessonFiles && (
               <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-500/20 rounded-lg">
                 <div className="flex items-center space-x-2 text-yellow-400">
                   <AlertCircle className="w-4 h-4" />
                   <p className="text-sm">
-                    Nenhum arquivo encontrado para esta aula. 
-                    <br />
-                    Para testar o sistema, você precisa adicionar dados na tabela lesson_files.
+                    Nenhum arquivo encontrado para esta aula.
                   </p>
                 </div>
               </div>
@@ -160,7 +136,6 @@ const LessonFilesExample = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4 mt-6">
-            {/* Botão para download de samples */}
             <Button 
               variant="outline" 
               className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
@@ -171,7 +146,6 @@ const LessonFilesExample = () => {
               Download Samples & Loops
             </Button>
 
-            {/* Botão para download do projeto */}
             <Button 
               variant="outline" 
               className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
@@ -183,7 +157,22 @@ const LessonFilesExample = () => {
             </Button>
           </div>
 
-          {/* Informações sobre o funcionamento */}
+          {lessonFiles && (
+            <div className="mt-6 p-4 bg-green-900/20 border border-green-500/20 rounded-lg">
+              <h4 className="text-white font-semibold mb-2 flex items-center">
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Próximos passos para ativar os downloads:
+              </h4>
+              <ul className="text-gray-300 text-sm space-y-2">
+                <li>1. Acesse o <strong>Supabase Storage</strong> do seu projeto</li>
+                <li>2. Faça upload dos arquivos nos caminhos especificados:</li>
+                <li className="ml-4">• <code>{lessonFiles.samples_file_path}</code> → bucket lesson-samples</li>
+                <li className="ml-4">• <code>{lessonFiles.project_file_path}</code> → bucket lesson-projects</li>
+                <li>3. Os downloads funcionarão automaticamente após o upload</li>
+              </ul>
+            </div>
+          )}
+
           <div className="mt-6 p-4 bg-gray-800/50 rounded-lg">
             <h4 className="text-white font-semibold mb-2">Como funciona:</h4>
             <ul className="text-gray-300 text-sm space-y-1">
@@ -194,21 +183,6 @@ const LessonFilesExample = () => {
             </ul>
           </div>
 
-          {/* Como adicionar dados de teste */}
-          <div className="mt-4 p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">
-            <h4 className="text-white font-semibold mb-2">Para testar o sistema:</h4>
-            <div className="text-gray-300 text-sm space-y-2">
-              <p>1. Acesse o SQL Editor do Supabase</p>
-              <p>2. Execute um comando como:</p>
-              <code className="block bg-gray-800 p-2 rounded text-xs mt-1">
-                INSERT INTO lesson_files (aula_id, samples_file_path, project_file_path)<br/>
-                VALUES ('{currentLessonId}', 'exemplo/samples.zip', 'exemplo/projeto.als');
-              </code>
-              <p>3. Faça upload dos arquivos nos buckets correspondentes</p>
-            </div>
-          </div>
-
-          {/* Debug Info */}
           <details className="mt-4">
             <summary className="text-gray-400 cursor-pointer">Ver dados retornados do hook</summary>
             <pre className="text-xs text-gray-300 mt-2 p-2 bg-gray-900 rounded overflow-auto">
