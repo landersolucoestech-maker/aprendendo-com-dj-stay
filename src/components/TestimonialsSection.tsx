@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Star, Play, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,6 +44,16 @@ const TestimonialsSection = () => {
     console.log("Closing modal");
     setModalOpen(false);
     setSelectedTestimonial(null);
+  };
+
+  const handleCTAClick = () => {
+    console.log("CTA button clicked - redirecting to register");
+    // Scroll to top of page and navigate to registration
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Navigate to registration page after a short delay to allow scrolling
+    setTimeout(() => {
+      window.location.href = '/matricule-se';
+    }, 500);
   };
 
   return (
@@ -133,7 +142,7 @@ const TestimonialsSection = () => {
               Hoje sou referência no segmento."
             </p>
             
-            <Button className="btn-brand">
+            <Button className="btn-brand" onClick={handleCTAClick}>
               Eu também quero esse resultado
             </Button>
           </div>
