@@ -19,7 +19,12 @@ const VideoTestimonialModal = ({
   console.log("Modal state:", { isOpen, testimonialName, testimonialRole });
   
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      console.log("Dialog onOpenChange called with:", open);
+      if (!open) {
+        onClose();
+      }
+    }}>
       <DialogContent className="max-w-4xl bg-black/95 border-brand-light/20">
         <DialogHeader>
           <DialogTitle className="text-white text-xl">
