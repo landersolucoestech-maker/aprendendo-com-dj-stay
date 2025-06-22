@@ -46,7 +46,7 @@ const Navigation = () => {
   return (
     <nav className="fixed top-0 w-full bg-black/90 backdrop-blur-md border-b border-white/10 z-50">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between" style={{ height: '85px' }}>
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <img 
