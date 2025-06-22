@@ -167,7 +167,7 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
             </Button>
           </div>
         </CardContent>
-      </div>
+      </Card>
     </div>
   );
 };
