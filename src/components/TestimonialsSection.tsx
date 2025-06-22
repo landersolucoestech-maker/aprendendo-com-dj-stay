@@ -77,7 +77,7 @@ const TestimonialsSection = () => {
                   <p className="text-white text-sm font-medium">
                     "Como o curso mudou minha carreira no funk"
                   </p>
-                  <p className="text-gray-300 text-xs">MC Kevinho - 3:42</p>
+                  <p className="text-gray-300 text-xs">DJ Lael - 3:42</p>
                 </div>
               </div>
             </div>
