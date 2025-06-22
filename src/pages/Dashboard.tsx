@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +9,6 @@ import RecentActivities from "@/components/RecentActivities";
 import ModuleProgress from "@/components/ModuleProgress";
 import LessonGrid from "@/components/LessonGrid";
 import DashboardHeader from "@/components/DashboardHeader";
-import ConnectionStatus from "@/components/ConnectionStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLessons } from "@/hooks/useLessons";
@@ -85,12 +85,6 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const recentActivities = [
-    { activity: 'Completou a lição "Estrutura de um Beat"', time: '2 horas atrás' },
-    { activity: 'Baixou samples do Módulo 2', time: '1 dia atrás' },
-    { activity: 'Assistiu "Introdução ao FL Studio"', time: '3 dias atrás' },
-  ];
-
   const handleLessonClick = (lesson) => {
     console.log('Clicou na aula:', lesson);
     navigate(`/aula/${lesson.id}`);
@@ -131,16 +125,11 @@ const Dashboard = () => {
       <DashboardHeader userName={user.name} />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Status de Conexão */}
-        <div className="mb-6">
-          <ConnectionStatus />
-        </div>
-
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="space-y-6">
             <UserProfile user={user} />
-            <RecentActivities activities={recentActivities} />
+            <RecentActivities />
           </div>
 
           {/* Main Content */}
