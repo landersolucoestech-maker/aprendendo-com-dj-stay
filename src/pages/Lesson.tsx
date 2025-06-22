@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -5,21 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Clock, Download, BookOpen, ArrowLeft, ArrowRight } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import LessonFilesExample from "@/examples/LessonFilesExample";
 import { useLessons } from "@/hooks/useLessons";
 import { useUserProgress } from "@/hooks/useUserProgress";
+
 const Lesson = () => {
-  const {
-    lessonId
-  } = useParams();
+  const { lessonId } = useParams();
   const navigate = useNavigate();
   const [watchProgress, setWatchProgress] = useState(0);
-  const {
-    data: lessons,
-    isLoading
-  } = useLessons();
-  const {
-    data: userProgress
-  } = useUserProgress();
+  const { data: lessons, isLoading } = useLessons();
+  const { data: userProgress } = useUserProgress();
+  
   const currentLesson = lessons?.find(lesson => lesson.id === lessonId);
   const currentIndex = lessons?.findIndex(lesson => lesson.id === lessonId) || 0;
   const nextLesson = lessons?.[currentIndex + 1];
@@ -27,29 +24,37 @@ const Lesson = () => {
 
   // Buscar progresso do usuário para esta aula
   const lessonProgress = userProgress?.find(p => p.aula_id === lessonId);
+  
   useEffect(() => {
     if (lessonProgress) {
       setWatchProgress(lessonProgress.progresso_percentual || 0);
     }
   }, [lessonProgress]);
+
   if (isLoading) {
-    return <div className="min-h-screen bg-black text-white flex items-center justify-center">
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p className="text-gray-300">Carregando aula...</p>
         </div>
-      </div>;
+      </div>
+    );
   }
+
   if (!currentLesson) {
-    return <div className="min-h-screen bg-black text-white flex items-center justify-center">
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Aula não encontrada</h1>
           <Button onClick={() => navigate('/dashboard')} className="btn-neon">
             Voltar ao Dashboard
           </Button>
         </div>
-      </div>;
+      </div>
+    );
   }
+
   const handleMarkComplete = () => {
     setWatchProgress(100);
     // O hook useUpdateProgress será usado pelo VideoPlayer
@@ -65,13 +70,20 @@ const Lesson = () => {
     video_url: currentLesson.video_url,
     videoUrl: currentLesson.video_url || ''
   };
-  return <div className="min-h-screen bg-black text-white">
+
+  return (
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <div className="bg-gradient-to-r from-black via-gray-900 to-black border-b border-white/10">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-gray-300 hover:text-white">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate('/dashboard')} 
+                className="text-gray-300 hover:text-white"
+              >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
@@ -79,10 +91,12 @@ const Lesson = () => {
                 <h1 className="text-2xl font-bold gradient-text">{currentLesson.title}</h1>
               </div>
             </div>
-            {currentLesson.duration && <div className="flex items-center space-x-2 text-sm text-gray-400">
+            {currentLesson.duration && (
+              <div className="flex items-center space-x-2 text-sm text-gray-400">
                 <Clock className="w-4 h-4" />
                 <span>{currentLesson.duration}</span>
-              </div>}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -110,31 +124,31 @@ const Lesson = () => {
                   <Progress value={watchProgress} className="h-2" />
                 </div>
                 
-                {watchProgress < 100 && <Button onClick={handleMarkComplete} className="w-full btn-neon">
+                {watchProgress < 100 && (
+                  <Button onClick={handleMarkComplete} className="w-full btn-neon">
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Marcar como Concluída
-                  </Button>}
+                  </Button>
+                )}
                 
-                {watchProgress === 100 && <div className="flex items-center justify-center text-green-400 text-sm">
+                {watchProgress === 100 && (
+                  <div className="flex items-center justify-center text-green-400 text-sm">
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Aula Concluída!
-                  </div>}
+                  </div>
+                )}
               </CardContent>
             </Card>
-
-            {/* Materials Card */}
-            
-
-            {/* Navigation Card */}
-            
           </div>
         </div>
 
-        {/* Lesson Description */}
+        {/* Exemplo de Sistema de Download */}
         <div className="mt-8">
-          
+          <LessonFilesExample />
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Lesson;
