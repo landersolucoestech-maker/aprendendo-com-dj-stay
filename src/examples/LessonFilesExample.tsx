@@ -79,9 +79,7 @@ const LessonFilesExample = () => {
       </Card>;
   }
   if (error) {
-    return <Card className="glass-card border-white/10">
-        
-      </Card>;
+    return;
   }
   return <div className="space-y-6 p-6">
       <Card className="glass-card border-white/10">
