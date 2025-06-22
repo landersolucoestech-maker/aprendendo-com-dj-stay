@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+
+import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile, useUpdateProfile } from "@/hooks/useUserProfile";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
+import { supabase } from "@/integrations/supabase/client";
 
 const EditProfile = () => {
   const { toast } = useToast();
@@ -20,8 +22,8 @@ const EditProfile = () => {
   const { uploadAvatar, isUploading } = useAvatarUpload();
   
   const [formData, setFormData] = useState({
-    name: 'João Silva',
-    email: 'joao@email.com',
+    name: '',
+    email: '',
     phone: '',
     bio: '',
     instagram: '',
@@ -30,6 +32,27 @@ const EditProfile = () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load user data on component mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          setFormData(prev => ({
+            ...prev,
+            name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '',
+            email: user.email || '',
+          }));
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados do usuário:', error);
+      }
+    };
+
+    loadUserData();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -61,15 +84,47 @@ const EditProfile = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simular salvamento
-    setTimeout(() => {
+    try {
+      // Update user metadata with the new name
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: {
+          full_name: formData.name,
+        }
+      });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Simular salvamento de outros dados
+      setTimeout(() => {
+        setIsLoading(false);
+        toast({
+          title: "Perfil atualizado!",
+          description: "Suas informações foram salvas com sucesso.",
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
       setIsLoading(false);
       toast({
-        title: "Perfil atualizado!",
-        description: "Suas informações foram salvas com sucesso.",
+        title: "Erro",
+        description: "Não foi possível atualizar o perfil. Tente novamente.",
+        variant: "destructive",
       });
-    }, 1000);
+    }
   };
+
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-gray-300">Carregando perfil...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -175,6 +230,7 @@ const EditProfile = () => {
                       onChange={handleInputChange}
                       className="bg-white/5 border-white/20 text-white"
                       required
+                      disabled
                     />
                   </div>
                 </div>
