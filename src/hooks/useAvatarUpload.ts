@@ -43,7 +43,7 @@ export const useAvatarUpload = () => {
         });
 
       if (error) {
-        throw error;
+        throw new Error('Falha no upload da imagem');
       }
 
       // Obter URL pública
@@ -53,7 +53,6 @@ export const useAvatarUpload = () => {
 
       return publicUrl;
     } catch (error: any) {
-      console.error('Erro no upload:', error);
       toast({
         title: "Erro no upload",
         description: error.message || "Não foi possível fazer upload da imagem",

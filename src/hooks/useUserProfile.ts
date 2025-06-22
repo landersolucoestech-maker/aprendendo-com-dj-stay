@@ -27,8 +27,7 @@ export const useUserProfile = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Erro ao buscar perfil:', error);
-        throw error;
+        throw new Error('Erro ao buscar perfil do usuário');
       }
 
       return data as UserProfile | null;
@@ -59,8 +58,7 @@ export const useUpdateProfile = () => {
         .single();
 
       if (error) {
-        console.error('Erro ao atualizar perfil:', error);
-        throw error;
+        throw new Error('Erro ao atualizar perfil');
       }
 
       return data;

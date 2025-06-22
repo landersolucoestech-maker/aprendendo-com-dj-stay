@@ -47,12 +47,16 @@ const EditProfile = () => {
           }));
         }
       } catch (error) {
-        console.error('Erro ao carregar dados do usuário:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os dados do usuário.",
+          variant: "destructive",
+        });
       }
     };
 
     loadUserData();
-  }, []);
+  }, [toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -93,7 +97,7 @@ const EditProfile = () => {
       });
 
       if (updateError) {
-        throw updateError;
+        throw new Error('Falha ao atualizar perfil');
       }
 
       // Simular salvamento de outros dados
@@ -105,7 +109,6 @@ const EditProfile = () => {
         });
       }, 1000);
     } catch (error) {
-      console.error('Erro ao atualizar perfil:', error);
       setIsLoading(false);
       toast({
         title: "Erro",
