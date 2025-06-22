@@ -60,6 +60,13 @@ const Lesson = () => {
     // O hook useUpdateProgress será usado pelo VideoPlayer
   };
 
+  // Converter o lesson do hook para o formato esperado pelo VideoPlayer
+  const lessonForPlayer = {
+    ...currentLesson,
+    completed: lessonProgress?.completada || false,
+    duration: currentLesson.duration || '15:30'
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
@@ -80,10 +87,12 @@ const Lesson = () => {
                 <h1 className="text-2xl font-bold gradient-text">{currentLesson.title}</h1>
               </div>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-400">
-              <Clock className="w-4 h-4" />
-              <span>{currentLesson.duration}</span>
-            </div>
+            {currentLesson.duration && (
+              <div className="flex items-center space-x-2 text-sm text-gray-400">
+                <Clock className="w-4 h-4" />
+                <span>{currentLesson.duration}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -92,7 +101,7 @@ const Lesson = () => {
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Main Video Player */}
           <div className="lg:col-span-3">
-            <VideoPlayer lesson={currentLesson} />
+            <VideoPlayer lesson={lessonForPlayer} />
           </div>
 
           {/* Sidebar */}

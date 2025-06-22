@@ -9,11 +9,12 @@ import RecentActivities from "@/components/RecentActivities";
 import ModuleProgress from "@/components/ModuleProgress";
 import LessonGrid from "@/components/LessonGrid";
 import DashboardHeader from "@/components/DashboardHeader";
+import ConnectionStatus from "@/components/ConnectionStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLessons } from "@/hooks/useLessons";
 import { useModules } from "@/hooks/useModules";
-import { useUserProgress } from "@/hooks/useUserProgress";
+import { useProgressCalculation } from "@/hooks/useProgressCalculation";
 
 const Dashboard = () => {
   const [user, setUser] = useState({
@@ -29,7 +30,9 @@ const Dashboard = () => {
   // Usar os hooks para buscar dados do Supabase
   const { data: lessons, isLoading: lessonsLoading, error: lessonsError } = useLessons();
   const { data: modules, isLoading: modulesLoading, error: modulesError } = useModules();
-  const { data: userProgress } = useUserProgress();
+  
+  // Usar o novo hook para calcular progresso
+  const modulesWithProgress = useProgressCalculation(modules);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -79,29 +82,6 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Integrar o progresso do usuário com os módulos
-  const modulesWithProgress = modules?.map(module => {
-    // Calcular progresso baseado nas aulas completadas
-    const completedLessons = module.lessons.filter(lesson => {
-      const progress = userProgress?.find(p => p.aula_id === lesson.id);
-      return progress?.completada || false;
-    });
-    
-    const progressPercentage = module.lessons.length > 0 
-      ? Math.round((completedLessons.length / module.lessons.length) * 100)
-      : 0;
-
-    return {
-      ...module,
-      description: module.description || 'Descrição não disponível', // Ensure description is always a string
-      progress: progressPercentage,
-      lessons: module.lessons.map(lesson => ({
-        ...lesson,
-        completed: userProgress?.find(p => p.aula_id === lesson.id)?.completada || false
-      }))
-    };
-  }) || [];
-
   const recentActivities = [
     { activity: 'Completou a lição "Estrutura de um Beat"', time: '2 horas atrás' },
     { activity: 'Baixou samples do Módulo 2', time: '1 dia atrás' },
@@ -146,6 +126,11 @@ const Dashboard = () => {
       <DashboardHeader userName={user.name} />
 
       <div className="container mx-auto px-4 py-8">
+        {/* Status de Conexão */}
+        <div className="mb-6">
+          <ConnectionStatus />
+        </div>
+
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="space-y-6">
