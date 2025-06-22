@@ -41,7 +41,7 @@ export const downloadFileFromStorage = async (bucketId: string, filePath: string
   try {
     console.log(`Iniciando download: ${fileName} de ${bucketId}/${filePath}`);
     
-    // Para teste, vamos criar arquivos diferentes baseados no tipo
+    // Para teste, vamos criar arquivos diferentes baseados no bucketId
     if (bucketId === 'lesson-samples') {
       // Criar um arquivo ZIP de samples e loops
       const samplesContent = `
