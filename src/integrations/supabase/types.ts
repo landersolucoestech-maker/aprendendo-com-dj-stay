@@ -134,7 +134,7 @@ export type Database = {
           tempo_assistido: number | null
           ultima_visualizacao: string | null
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           aula_id?: string | null
@@ -145,7 +145,7 @@ export type Database = {
           tempo_assistido?: number | null
           ultima_visualizacao?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           aula_id?: string | null
@@ -156,7 +156,7 @@ export type Database = {
           tempo_assistido?: number | null
           ultima_visualizacao?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -174,21 +174,21 @@ export type Database = {
           created_at: string | null
           id: string
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
           id?: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string | null
           id?: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
