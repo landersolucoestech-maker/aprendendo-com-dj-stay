@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Clock, Download, BookOpen, Lock } from "lucide-react";
+import { CheckCircle, Clock, Download, BookOpen } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUpdateProgress } from "@/hooks/useUserProgress";
 import { useToast } from "@/hooks/use-toast";
@@ -69,7 +69,7 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
       
       toast({
         title: "Aula concluída!",
-        description: "Seu progresso foi salvo com sucesso. Agora você pode baixar os materiais da aula.",
+        description: "Seu progresso foi salvo com sucesso.",
       });
     } catch (error) {
       console.error('Erro ao marcar aula como concluída:', error);
@@ -82,15 +82,6 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   };
 
   const handleDownloadSamples = async () => {
-    if (!isCurrentLessonCompleted) {
-      toast({
-        title: "Aula não concluída",
-        description: "Marque a aula como concluída para desbloquear o download dos samples e loops.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!lessonFiles?.samples_file_path) {
       toast({
         title: "Arquivo não disponível",
@@ -119,15 +110,6 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   };
 
   const handleDownloadProject = async () => {
-    if (!isCurrentLessonCompleted) {
-      toast({
-        title: "Aula não concluída",
-        description: "Marque a aula como concluída para desbloquear o download do projeto Ableton Live.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!lessonFiles?.project_file_path) {
       toast({
         title: "Arquivo não disponível",
@@ -214,43 +196,22 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
           <CardContent className="space-y-3">
             <Button 
               variant="outline" 
-              className={`w-full justify-start border-white/20 bg-transparent hover:bg-white/10 ${
-                !isCurrentLessonCompleted ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
               onClick={handleDownloadSamples}
-              disabled={filesLoading || !lessonFiles?.samples_file_path || !isCurrentLessonCompleted}
+              disabled={filesLoading || !lessonFiles?.samples_file_path}
             >
-              {!isCurrentLessonCompleted ? (
-                <Lock className="w-4 h-4 mr-2" />
-              ) : (
-                <Download className="w-4 h-4 mr-2" />
-              )}
+              <Download className="w-4 h-4 mr-2" />
               {filesLoading ? 'Carregando...' : 'Samples e loops da aula'}
             </Button>
             <Button 
               variant="outline" 
-              className={`w-full justify-start border-white/20 bg-transparent hover:bg-white/10 ${
-                !isCurrentLessonCompleted ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
               onClick={handleDownloadProject}
-              disabled={filesLoading || !lessonFiles?.project_file_path || !isCurrentLessonCompleted}
+              disabled={filesLoading || !lessonFiles?.project_file_path}
             >
-              {!isCurrentLessonCompleted ? (
-                <Lock className="w-4 h-4 mr-2" />
-              ) : (
-                <Download className="w-4 h-4 mr-2" />
-              )}
+              <Download className="w-4 h-4 mr-2" />
               {filesLoading ? 'Carregando...' : 'Projeto Ableton Live'}
             </Button>
-            
-            {!isCurrentLessonCompleted && (
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 mt-3">
-                <div className="flex items-center text-blue-400 text-sm">
-                  <Lock className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span>Marque a aula como concluída para liberar os downloads</span>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
 
