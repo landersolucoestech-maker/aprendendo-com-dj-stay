@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Star, Play, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import VideoTestimonialModal from "./VideoTestimonialModal";
+
 const testimonials = [{
   name: "MC Kevinho",
   role: "Artista e Produtor",
@@ -22,8 +25,26 @@ const testimonials = [{
   text: "Em 3 meses consegui lançar meu primeiro EP graças ao que aprendi no curso. Valeu cada centavo investido!",
   hasVideo: true
 }];
+
 const TestimonialsSection = () => {
-  return <section id="depoimentos" className="py-20 bg-gradient-to-br from-black via-brand-dark/20 to-black relative">
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedTestimonial, setSelectedTestimonial] = useState<{
+    name: string;
+    role: string;
+  } | null>(null);
+
+  const handleVideoClick = (name: string, role: string) => {
+    setSelectedTestimonial({ name, role });
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedTestimonial(null);
+  };
+
+  return (
+    <section id="depoimentos" className="py-20 bg-gradient-to-br from-black via-brand-dark/20 to-black relative">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
@@ -35,7 +56,8 @@ const TestimonialsSection = () => {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          {testimonials.map((testimonial, index) => <div key={index} className="glass-card p-6 group hover:brand-border transition-all duration-300">
+          {testimonials.map((testimonial, index) => (
+            <div key={index} className="glass-card p-6 group hover:brand-border transition-all duration-300">
               <div className="flex items-center mb-4">
                 <img src={testimonial.image} alt={testimonial.name} className="w-12 h-12 rounded-full mr-4 bg-gradient-brand" />
                 <div>
@@ -45,7 +67,9 @@ const TestimonialsSection = () => {
               </div>
 
               <div className="flex mb-3">
-                {[...Array(testimonial.rating)].map((_, i) => <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />)}
+                {[...Array(testimonial.rating)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                ))}
               </div>
 
               <Quote className="w-6 h-6 text-brand-light mb-3 opacity-50" />
@@ -54,11 +78,19 @@ const TestimonialsSection = () => {
                 {testimonial.text}
               </p>
 
-              {testimonial.hasVideo && <Button variant="outline" size="sm" className="border-brand-light/50 text-brand-light hover:bg-brand-light/20">
+              {testimonial.hasVideo && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-brand-light/50 text-brand-light hover:bg-brand-light/20"
+                  onClick={() => handleVideoClick(testimonial.name, testimonial.role)}
+                >
                   <Play className="w-4 h-4 mr-2" />
                   Ver vídeo
-                </Button>}
-            </div>)}
+                </Button>
+              )}
+            </div>
+          ))}
         </div>
 
         {/* Featured Video Testimonial */}
@@ -68,7 +100,11 @@ const TestimonialsSection = () => {
             
             <div className="aspect-video bg-gradient-brand rounded-lg flex items-center justify-center relative overflow-hidden mb-6">
               <div className="absolute inset-0 bg-black/50"></div>
-              <Button size="lg" className="relative z-10 bg-white/20 hover:bg-white/30 text-white border-white/30">
+              <Button 
+                size="lg" 
+                className="relative z-10 bg-white/20 hover:bg-white/30 text-white border-white/30"
+                onClick={() => handleVideoClick("DJ Lael", "DJ e Produtor")}
+              >
                 <Play className="w-8 h-8" />
               </Button>
               
@@ -93,6 +129,15 @@ const TestimonialsSection = () => {
           </div>
         </div>
       </div>
-    </section>;
+
+      <VideoTestimonialModal
+        isOpen={modalOpen}
+        onClose={handleCloseModal}
+        testimonialName={selectedTestimonial?.name || ""}
+        testimonialRole={selectedTestimonial?.role || ""}
+      />
+    </section>
+  );
 };
+
 export default TestimonialsSection;
