@@ -1,12 +1,9 @@
-
 import { CheckCircle, Home, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-
 const Verified = () => {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-purple-900 flex items-center justify-center p-4">
+  return <div className="min-h-screen w-full bg-repeat flex items-center justify-center p-4">
       <Card className="glass-card border-white/10 max-w-md w-full text-center">
         <CardHeader className="pb-4">
           <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -39,10 +36,7 @@ const Verified = () => {
             </Link>
             
             <Link to="/login" className="block">
-              <Button 
-                variant="outline" 
-                className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
+              <Button variant="outline" className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20">
                 Fazer Login
               </Button>
             </Link>
@@ -62,8 +56,6 @@ const Verified = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default Verified;
