@@ -62,9 +62,13 @@ const Lesson = () => {
 
   // Converter o lesson do hook para o formato esperado pelo VideoPlayer
   const lessonForPlayer = {
-    ...currentLesson,
+    id: currentLesson.id,
+    title: currentLesson.title,
+    description: currentLesson.description || 'Descrição não disponível',
+    duration: currentLesson.duration || '15:30',
     completed: lessonProgress?.completada || false,
-    duration: currentLesson.duration || '15:30'
+    video_url: currentLesson.video_url,
+    videoUrl: currentLesson.video_url || ''
   };
 
   return (

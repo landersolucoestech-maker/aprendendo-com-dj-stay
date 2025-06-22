@@ -23,7 +23,7 @@ interface Module {
   lessons: Lesson[];
 }
 
-export const useProgressCalculation = (modules: Module[] | undefined) => {
+export const useProgressCalculation = (modules: any[] | undefined) => {
   const { data: userProgress } = useUserProgress();
 
   const modulesWithProgress = useMemo(() => {
@@ -48,6 +48,7 @@ export const useProgressCalculation = (modules: Module[] | undefined) => {
           ...lesson,
           duration: lesson.duration || '0:00',
           description: lesson.description || 'Descrição não disponível',
+          videoUrl: lesson.video_url || lesson.videoUrl || '',
           completed: userProgress?.find(p => p.aula_id === lesson.id)?.completada || false
         }))
       };
