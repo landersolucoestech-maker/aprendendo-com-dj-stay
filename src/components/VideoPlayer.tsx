@@ -120,15 +120,11 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
           <CardContent className="space-y-3">
             <Button variant="outline" className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10">
               <Download className="w-4 h-4 mr-2" />
-              Baixar slides da apresentação
-            </Button>
-            <Button variant="outline" className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10">
-              <Download className="w-4 h-4 mr-2" />
               Samples e loops da aula
             </Button>
             <Button variant="outline" className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10">
               <Download className="w-4 h-4 mr-2" />
-              Projeto FL Studio
+              Projeto Ableton Live
             </Button>
           </CardContent>
         </Card>
@@ -145,12 +141,6 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
             >
               <CheckCircle className="w-4 h-4 mr-2" />
               {updateProgress.isPending ? 'Salvando...' : watchProgress === 100 ? 'Concluída!' : 'Marcar como concluída'}
-            </Button>
-            <Button variant="outline" className="w-full border-white/20 bg-transparent hover:bg-white/10">
-              Fazer anotações
-            </Button>
-            <Button variant="outline" className="w-full border-white/20 bg-transparent hover:bg-white/10">
-              Tirar dúvidas
             </Button>
           </CardContent>
         </Card>
