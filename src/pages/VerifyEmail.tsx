@@ -1,30 +1,27 @@
-
 import { Mail, RefreshCw, Home, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-
 const VerifyEmail = () => {
   const [isResending, setIsResending] = useState(false);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   const handleResendEmail = async () => {
     setIsResending(true);
-    
+
     // Simular envio de email
     setTimeout(() => {
       setIsResending(false);
       toast({
         title: "Email reenviado!",
-        description: "Verifique sua caixa de entrada e spam.",
+        description: "Verifique sua caixa de entrada e spam."
       });
     }, 2000);
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
+  return <div className="min-h-screen w-full bg-repeat flex items-center justify-center p-4">
       <Card className="glass-card border-white/10 max-w-md w-full text-center">
         <CardHeader className="pb-4">
           <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -52,24 +49,13 @@ const VerifyEmail = () => {
           </div>
 
           <div className="space-y-3">
-            <Button 
-              onClick={handleResendEmail}
-              disabled={isResending}
-              className="w-full btn-brand"
-            >
-              {isResending ? (
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Mail className="w-4 h-4 mr-2" />
-              )}
+            <Button onClick={handleResendEmail} disabled={isResending} className="w-full btn-brand">
+              {isResending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
               {isResending ? "Reenviando..." : "Reenviar Email"}
             </Button>
             
             <Link to="/login" className="block">
-              <Button 
-                variant="outline" 
-                className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
+              <Button variant="outline" className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20">
                 Já verifiquei - Fazer Login
               </Button>
             </Link>
@@ -89,8 +75,6 @@ const VerifyEmail = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default VerifyEmail;
