@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -20,7 +19,7 @@ const UserProfile = ({ user }: UserProfileProps) => {
   const { data: profile } = useUserProfile();
 
   return (
-    <Card className="glass-card border-white/10">
+    <Card className="glass-card border-white/10 min-w-[320px]">
       <CardHeader>
         <div className="flex items-center space-x-4">
           <Avatar className="w-16 h-16">
