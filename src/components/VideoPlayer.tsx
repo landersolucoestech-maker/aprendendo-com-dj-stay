@@ -8,9 +8,9 @@ import { useUpdateProgress } from "@/hooks/useUserProgress";
 import { useToast } from "@/hooks/use-toast";
 
 interface Lesson {
-  id: string; // Changed from number | string to string
+  id: string;
   title: string;
-  duration: string;
+  duration?: string; // Made optional to match useLessons interface
   completed: boolean;
   video_url?: string;
   videoUrl?: string;
@@ -39,10 +39,10 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const handleMarkComplete = async () => {
     try {
       await updateProgress.mutateAsync({
-        aulaId: lesson.id, // Now already a string, no need to convert
+        aulaId: lesson.id,
         completada: true,
         progressoPercentual: 100,
-        tempoAssistido: 0, // Poderia ser calculado baseado na duração do vídeo
+        tempoAssistido: 0,
       });
       
       setWatchProgress(100);
@@ -89,10 +89,12 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
                 <h2 className="text-2xl font-bold text-white mb-2">{lesson.title}</h2>
                 <p className="text-gray-300">{lesson.description}</p>
               </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-400">
-                <Clock className="w-4 h-4" />
-                <span>{lesson.duration}</span>
-              </div>
+              {lesson.duration && (
+                <div className="flex items-center space-x-2 text-sm text-gray-400">
+                  <Clock className="w-4 h-4" />
+                  <span>{lesson.duration}</span>
+                </div>
+              )}
             </div>
             
             <div className="space-y-2">

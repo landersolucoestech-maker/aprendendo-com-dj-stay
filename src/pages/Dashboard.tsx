@@ -93,6 +93,7 @@ const Dashboard = () => {
 
     return {
       ...module,
+      description: module.description || 'Descrição não disponível', // Ensure description is always a string
       progress: progressPercentage,
       lessons: module.lessons.map(lesson => ({
         ...lesson,
