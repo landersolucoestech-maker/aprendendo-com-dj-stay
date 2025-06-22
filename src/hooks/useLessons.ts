@@ -21,21 +21,17 @@ export const useLessons = () => {
       console.log('Buscando aulas do Supabase...');
       
       const { data, error } = await supabase
-        .from('lessons')
+        .from('aulas')
         .select(`
           id,
-          title,
-          content,
-          video_url,
-          order_num,
-          module_id,
-          modules!inner(
-            title,
-            description,
-            duration
-          )
+          titulo,
+          descricao,
+          video,
+          ordem,
+          modulo_id,
+          duracao
         `)
-        .order('order_num', { ascending: true });
+        .order('ordem', { ascending: true });
 
       if (error) {
         console.error('Erro ao buscar aulas:', error);
@@ -44,18 +40,17 @@ export const useLessons = () => {
 
       console.log('Aulas encontradas:', data);
 
-      // Transformar os dados para o formato esperado pelos componentes
-      const lessons: Lesson[] = data?.map((lesson) => ({
-        id: lesson.id,
-        title: lesson.title || 'Sem título',
-        content: lesson.content,
-        video_url: lesson.video_url,
-        order_num: lesson.order_num,
-        module_id: lesson.module_id,
-        duration: '15:30', // Valor padrão por enquanto
-        completed: false, // Valor padrão por enquanto
-        description: lesson.content || 'Descrição não disponível',
-        videoUrl: lesson.video_url || '', // Para compatibilidade com o componente existente
+      // Transform the data to match the expected format
+      const lessons: Lesson[] = data?.map((aula) => ({
+        id: aula.id,
+        title: aula.titulo || 'Sem título',
+        content: aula.descricao,
+        video_url: aula.video,
+        order_num: aula.ordem,
+        module_id: aula.modulo_id,
+        duration: aula.duracao ? `${aula.duracao}:00` : '15:30', // Convert minutes to MM:SS format
+        completed: false, // Default value
+        description: aula.descricao || 'Descrição não disponível',
       })) || [];
 
       return lessons;

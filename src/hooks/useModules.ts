@@ -17,21 +17,21 @@ export const useModules = () => {
       console.log('Buscando módulos do Supabase...');
       
       const { data, error } = await supabase
-        .from('modules')
+        .from('modulos')
         .select(`
           id,
-          title,
-          description,
-          order_num,
-          lessons (
+          titulo,
+          ordem,
+          aulas (
             id,
-            title,
-            content,
-            video_url,
-            order_num
+            titulo,
+            descricao,
+            video,
+            ordem,
+            duracao
           )
         `)
-        .order('order_num', { ascending: true });
+        .order('ordem', { ascending: true });
 
       if (error) {
         console.error('Erro ao buscar módulos:', error);
@@ -40,19 +40,19 @@ export const useModules = () => {
 
       console.log('Módulos encontrados:', data);
 
-      // Transformar os dados para o formato esperado pelos componentes
-      const modules: Module[] = data?.map((module) => ({
-        id: module.id,
-        title: module.title || 'Módulo sem título',
-        description: module.description || 'Descrição não disponível',
-        progress: 0, // Calcular progresso baseado nas aulas completadas
-        lessons: module.lessons?.map((lesson) => ({
-          id: lesson.id,
-          title: lesson.title || 'Aula sem título',
-          duration: '15:30', // Valor padrão
-          completed: false, // Valor padrão
-          videoUrl: lesson.video_url || '',
-          description: lesson.content || 'Descrição não disponível',
+      // Transform the data to match the expected format
+      const modules: Module[] = data?.map((modulo) => ({
+        id: modulo.id,
+        title: modulo.titulo || 'Módulo sem título',
+        description: 'Descrição não disponível',
+        progress: 0, // Calculate progress based on completed lessons
+        lessons: modulo.aulas?.map((aula) => ({
+          id: aula.id,
+          title: aula.titulo || 'Aula sem título',
+          duration: aula.duracao ? `${aula.duracao}:00` : '15:30',
+          completed: false, // Default value
+          videoUrl: aula.video || '',
+          description: aula.descricao || 'Descrição não disponível',
         })) || [],
       })) || [];
 
