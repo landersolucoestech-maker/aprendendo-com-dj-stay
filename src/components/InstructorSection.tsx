@@ -1,7 +1,16 @@
 import { Music, Users, Award, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+
 const InstructorSection = () => {
-  return <section id="instrutor" className="py-20 bg-gradient-to-br from-black via-brand-dark to-black relative">
+  const navigate = useNavigate();
+
+  const handleEnrollClick = () => {
+    navigate('/matricule-se');
+  };
+
+  return (
+    <section id="instrutor" className="py-20 bg-gradient-to-br from-black via-brand-dark to-black relative">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           
@@ -99,10 +108,12 @@ const InstructorSection = () => {
               </div>
             </div>
 
-            <Button size="lg" className="btn-brand">Aprender com o Stay</Button>
+            <Button onClick={handleEnrollClick} size="lg" className="btn-brand">Aprender com o Stay</Button>
           </div>
         </div>
       </div>
-    </section>;
+    </section>
+  );
 };
+
 export default InstructorSection;
