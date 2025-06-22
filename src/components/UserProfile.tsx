@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { User, Award, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface UserProfileProps {
   user: {
@@ -15,13 +17,18 @@ interface UserProfileProps {
 }
 
 const UserProfile = ({ user }: UserProfileProps) => {
+  const { data: profile } = useUserProfile();
+
   return (
     <Card className="glass-card border-white/10">
       <CardHeader>
         <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-gradient-brand rounded-full flex items-center justify-center">
-            <User className="w-8 h-8 text-white" />
-          </div>
+          <Avatar className="w-16 h-16">
+            <AvatarImage src={profile?.avatar_url || ''} />
+            <AvatarFallback className="bg-gradient-brand text-white">
+              <User className="w-8 h-8" />
+            </AvatarFallback>
+          </Avatar>
           <div className="flex-1">
             <CardTitle className="text-white text-base">{user.name}</CardTitle>
             <CardDescription className="text-gray-400">{user.email}</CardDescription>

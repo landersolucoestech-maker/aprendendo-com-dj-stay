@@ -1,17 +1,23 @@
-
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Camera, Save, User } from "lucide-react";
+import { ArrowLeft, Camera, Save, User, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useUserProfile, useUpdateProfile } from "@/hooks/useUserProfile";
+import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 
 const EditProfile = () => {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const { data: profile, isLoading: profileLoading } = useUserProfile();
+  const updateProfile = useUpdateProfile();
+  const { uploadAvatar, isUploading } = useAvatarUpload();
   
   const [formData, setFormData] = useState({
     name: 'João Silva',
@@ -31,6 +37,24 @@ const EditProfile = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const avatarUrl = await uploadAvatar(file);
+    if (avatarUrl) {
+      await updateProfile.mutateAsync({ avatar_url: avatarUrl });
+      toast({
+        title: "Avatar atualizado!",
+        description: "Sua foto de perfil foi alterada com sucesso.",
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,19 +104,42 @@ const EditProfile = () => {
               <CardContent>
                 <div className="flex items-center space-x-6">
                   <Avatar className="w-24 h-24">
-                    <AvatarImage src="" />
+                    <AvatarImage src={profile?.avatar_url || ''} />
                     <AvatarFallback className="bg-gradient-brand text-white text-2xl">
                       <User className="w-8 h-8" />
                     </AvatarFallback>
                   </Avatar>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="border-white/20 bg-transparent hover:bg-white/10"
-                  >
-                    <Camera className="w-4 h-4 mr-2" />
-                    Alterar Foto
-                  </Button>
+                  <div className="space-y-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="border-white/20 bg-transparent hover:bg-white/10"
+                      onClick={handleAvatarClick}
+                      disabled={isUploading}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="w-4 h-4 mr-2" />
+                          Alterar Foto
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-gray-400">
+                      JPG, PNG ou WEBP. Máximo 5MB.
+                    </p>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -221,7 +268,7 @@ const EditProfile = () => {
               <Button 
                 type="submit" 
                 className="btn-brand"
-                disabled={isLoading}
+                disabled={isLoading || isUploading}
               >
                 {isLoading ? (
                   "Salvando..."
