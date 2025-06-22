@@ -8,7 +8,7 @@ import { useUpdateProgress } from "@/hooks/useUserProgress";
 import { useToast } from "@/hooks/use-toast";
 
 interface Lesson {
-  id: number | string;
+  id: string; // Changed from number | string to string
   title: string;
   duration: string;
   completed: boolean;
@@ -39,7 +39,7 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const handleMarkComplete = async () => {
     try {
       await updateProgress.mutateAsync({
-        aulaId: lesson.id.toString(),
+        aulaId: lesson.id, // Now already a string, no need to convert
         completada: true,
         progressoPercentual: 100,
         tempoAssistido: 0, // Poderia ser calculado baseado na duração do vídeo
