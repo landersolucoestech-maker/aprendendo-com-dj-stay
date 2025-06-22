@@ -35,6 +35,14 @@ const Navigation = () => {
     }
   };
 
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+    setIsOpen(false);
+  };
+
   return (
     <nav className="fixed top-0 w-full bg-black/90 backdrop-blur-md border-b border-white/10 z-50">
       <div className="container mx-auto px-4">
@@ -49,12 +57,24 @@ const Navigation = () => {
             <Link to="/" className="text-gray-300 hover:text-white transition-colors">
               Início
             </Link>
-            <Link to="/#modulos" className="text-gray-300 hover:text-white transition-colors">
-              Módulos
-            </Link>
-            <Link to="/#instrutor" className="text-gray-300 hover:text-white transition-colors">
+            <button 
+              onClick={() => scrollToSection('modulos')}
+              className="text-gray-300 hover:text-white transition-colors"
+            >
+              Curso
+            </button>
+            <button 
+              onClick={() => scrollToSection('instrutor')}
+              className="text-gray-300 hover:text-white transition-colors"
+            >
               Instrutor
-            </Link>
+            </button>
+            <button 
+              onClick={() => scrollToSection('depoimentos')}
+              className="text-gray-300 hover:text-white transition-colors"
+            >
+              Depoimentos
+            </button>
             <Link to="/contato" className="text-gray-300 hover:text-white transition-colors">
               Contato
             </Link>
@@ -74,7 +94,7 @@ const Navigation = () => {
                   </Button>
                 </Link>
                 <Button onClick={handleGetStarted} className="btn-neon">
-                  Começar Agora
+                  Matricular
                 </Button>
               </div>
             )}
@@ -99,20 +119,24 @@ const Navigation = () => {
             >
               Início
             </Link>
-            <Link 
-              to="/#modulos" 
-              className="block text-gray-300 hover:text-white transition-colors"
-              onClick={() => setIsOpen(false)}
+            <button 
+              onClick={() => scrollToSection('modulos')}
+              className="block text-left text-gray-300 hover:text-white transition-colors w-full"
             >
-              Módulos
-            </Link>
-            <Link 
-              to="/#instrutor" 
-              className="block text-gray-300 hover:text-white transition-colors"
-              onClick={() => setIsOpen(false)}
+              Curso
+            </button>
+            <button 
+              onClick={() => scrollToSection('instrutor')}
+              className="block text-left text-gray-300 hover:text-white transition-colors w-full"
             >
               Instrutor
-            </Link>
+            </button>
+            <button 
+              onClick={() => scrollToSection('depoimentos')}
+              className="block text-left text-gray-300 hover:text-white transition-colors w-full"
+            >
+              Depoimentos
+            </button>
             <Link 
               to="/contato" 
               className="block text-gray-300 hover:text-white transition-colors"
@@ -134,7 +158,7 @@ const Navigation = () => {
                   </Button>
                 </Link>
                 <Button onClick={() => { handleGetStarted(); setIsOpen(false); }} className="w-full btn-neon">
-                  Começar Agora
+                  Matricular
                 </Button>
               </div>
             )}

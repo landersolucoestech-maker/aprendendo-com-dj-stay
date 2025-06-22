@@ -5,17 +5,20 @@ import { useUserProgress } from './useUserProgress';
 interface Lesson {
   id: string;
   title: string;
-  duration?: string;
+  duration: string;
   completed?: boolean;
   video_url?: string;
   videoUrl?: string;
   description: string;
+  content?: string;
+  order_num?: number;
+  module_id?: string;
 }
 
 interface Module {
   id: string;
   title: string;
-  description?: string;
+  description: string;
   progress: number;
   lessons: Lesson[];
 }
@@ -43,6 +46,8 @@ export const useProgressCalculation = (modules: Module[] | undefined) => {
         progress: progressPercentage,
         lessons: module.lessons.map(lesson => ({
           ...lesson,
+          duration: lesson.duration || '0:00',
+          description: lesson.description || 'Descrição não disponível',
           completed: userProgress?.find(p => p.aula_id === lesson.id)?.completada || false
         }))
       };
