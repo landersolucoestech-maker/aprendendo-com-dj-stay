@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Play, Clock, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+
 const modules = [{
   title: "Módulo 1: Fundamentos da Produção Musical",
   duration: "4h 30min",
@@ -38,17 +40,27 @@ const modules = [{
   description: "Técnicas avançadas de produção, como vender suas beats e se posicionar no mercado musical.",
   topics: ["Técnicas de produção avançada", "Como vender suas beats", "Direitos autorais e licenciamento", "Marketing para produtores", "Networking no meio musical"]
 }];
+
 const CourseModulesSection = () => {
   const [expandedModule, setExpandedModule] = useState<number | null>(null);
+  const navigate = useNavigate();
+
   const toggleModule = (index: number) => {
     setExpandedModule(expandedModule === index ? null : index);
   };
+
+  const handleEnrollClick = () => {
+    navigate('/matricule-se');
+  };
+
   const totalDuration = modules.reduce((total, module) => {
     const [hours, minutes] = module.duration.split('h ');
     return total + parseInt(hours) + parseInt(minutes.replace('min', '')) / 60;
   }, 0);
   const totalLessons = modules.reduce((total, module) => total + module.lessons, 0);
-  return <section id="curso" className="py-20 bg-black/30 relative">
+
+  return (
+    <section id="curso" className="py-20 bg-black/30 relative">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
@@ -131,7 +143,7 @@ const CourseModulesSection = () => {
             <p className="text-gray-300 mb-6">
               Acesso vitalício a todo o conteúdo + materiais extras + suporte direto
             </p>
-            <Button size="lg" className="btn-brand text-lg px-8 py-4">
+            <Button onClick={handleEnrollClick} size="lg" className="btn-brand text-lg px-8 py-4">
               Matricular agora por R$ 297
             </Button>
             <p className="text-sm text-gray-400 mt-3">
@@ -140,6 +152,8 @@ const CourseModulesSection = () => {
           </div>
         </div>
       </div>
-    </section>;
+    </section>
+  );
 };
+
 export default CourseModulesSection;
