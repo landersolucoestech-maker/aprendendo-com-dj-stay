@@ -123,51 +123,10 @@ const Lesson = () => {
             </Card>
 
             {/* Materials Card */}
-            <Card className="glass-card border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white text-lg flex items-center">
-                  <BookOpen className="w-5 h-5 mr-2" />
-                  Materiais
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10">
-                  <Download className="w-4 h-4 mr-2" />
-                  Slides da Aula
-                </Button>
-                <Button variant="outline" className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10">
-                  <Download className="w-4 h-4 mr-2" />
-                  Samples e Loops
-                </Button>
-                <Button variant="outline" className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10">
-                  <Download className="w-4 h-4 mr-2" />
-                  Projeto FL Studio
-                </Button>
-              </CardContent>
-            </Card>
+            
 
             {/* Navigation Card */}
-            <Card className="glass-card border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white text-lg">Navegação</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {prevLesson && <Button variant="outline" className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10" onClick={() => navigate(`/aula/${prevLesson.id}`)}>
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Aula Anterior
-                  </Button>}
-                
-                {nextLesson && <Button className="w-full btn-neon" onClick={() => navigate(`/aula/${nextLesson.id}`)}>
-                    Próxima Aula
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>}
-                
-                {!nextLesson && <Button className="w-full btn-neon" onClick={() => navigate('/dashboard')}>
-                    Finalizar Módulo
-                    <CheckCircle className="w-4 h-4 ml-2" />
-                  </Button>}
-              </CardContent>
-            </Card>
+            
           </div>
         </div>
 
