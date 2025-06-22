@@ -10,11 +10,13 @@ const Footer = () => {
           {/* Logo and Description */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-brand rounded-lg flex items-center justify-center">
-                <Play className="w-4 h-4 text-white" />
-              </div>
+              <img 
+                src="/lovable-uploads/c897ec5f-f749-4598-a04d-9a148db1bf71.png" 
+                alt="Vivendo da Música Logo" 
+                className="w-12 h-12 object-contain"
+              />
               <span className="text-xl font-bold gradient-text">
-                Produção de Funk
+                Vivendo da Música
               </span>
             </div>
             <p className="text-gray-400">
@@ -58,7 +60,7 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-2 text-gray-400">
                 <Mail className="w-4 h-4" />
-                <span>contato@producaodefunk.com</span>
+                <span>contato@vivendodamusica.com</span>
               </div>
               <div className="flex items-center space-x-2 text-gray-400">
                 <Phone className="w-4 h-4" />
@@ -70,7 +72,7 @@ const Footer = () => {
 
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-400 text-sm">
-            © 2024 Produção de Funk na Prática. Todos os direitos reservados.
+            © 2024 Vivendo da Música. Todos os direitos reservados.
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <a href="#" className="text-gray-400 hover:text-brand-light text-sm transition-colors">
