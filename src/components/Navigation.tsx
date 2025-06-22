@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Menu, X, Music } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -49,9 +49,11 @@ const Navigation = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-brand-light to-brand-medium rounded-full flex items-center justify-center">
-              <Music className="w-5 h-5 text-white" />
-            </div>
+            <img 
+              src="/lovable-uploads/db1b3703-f32b-43e4-bc00-ee4e8e08c366.png" 
+              alt="Vivendo da Música Logo" 
+              className="w-10 h-10 object-contain"
+            />
             <span className="text-2xl font-bold gradient-text">
               Vivendo da Música
             </span>
