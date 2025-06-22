@@ -249,7 +249,7 @@ export type Database = {
     }
     Functions: {
       user_has_paid_access: {
-        Args: { user_uuid: string }
+        Args: Record<PropertyKey, never> | { user_uuid: string }
         Returns: boolean
       }
     }
