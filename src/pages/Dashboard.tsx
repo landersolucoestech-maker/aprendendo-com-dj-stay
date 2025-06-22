@@ -9,6 +9,7 @@ import RecentActivities from "@/components/RecentActivities";
 import ModuleProgress from "@/components/ModuleProgress";
 import LessonGrid from "@/components/LessonGrid";
 import DashboardHeader from "@/components/DashboardHeader";
+import AccessControl from "@/components/AccessControl";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLessons } from "@/hooks/useLessons";
@@ -29,8 +30,6 @@ const Dashboard = () => {
   // Usar os hooks para buscar dados do Supabase
   const { data: lessons, isLoading: lessonsLoading, error: lessonsError } = useLessons();
   const { data: modules, isLoading: modulesLoading, error: modulesError } = useModules();
-  
-  // Usar o hook para calcular progresso
   const modulesWithProgress = useProgressCalculation(modules);
 
   console.log('Dashboard - Módulos com progresso:', modulesWithProgress);
@@ -55,7 +54,7 @@ const Dashboard = () => {
           month: '2-digit',
           year: 'numeric'
         }),
-        progress: 65 // Mantém o progresso fixo por enquanto
+        progress: 65
       };
 
       setUser(userData);
@@ -63,7 +62,6 @@ const Dashboard = () => {
 
     checkAuth();
 
-    // Listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
         navigate('/login');
@@ -102,7 +100,6 @@ const Dashboard = () => {
     );
   }
 
-  // Mostrar erro se houver problemas ao carregar os dados
   if (lessonsError || modulesError) {
     console.error('Erro no Dashboard:', { lessonsError, modulesError });
     return (
@@ -120,7 +117,7 @@ const Dashboard = () => {
     );
   }
 
-  return (
+  const DashboardContent = () => (
     <div className="min-h-screen bg-black text-white">
       <DashboardHeader userName={user.name} />
 
@@ -171,6 +168,12 @@ const Dashboard = () => {
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <AccessControl feature="as aulas do curso">
+      <DashboardContent />
+    </AccessControl>
   );
 };
 

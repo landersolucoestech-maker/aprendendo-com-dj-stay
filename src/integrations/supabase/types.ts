@@ -80,36 +80,6 @@ export type Database = {
         }
         Relationships: []
       }
-      payments: {
-        Row: {
-          amount: number | null
-          course_id: string | null
-          created_at: string | null
-          id: string
-          payment_provider: string | null
-          status: string | null
-          user_id: string | null
-        }
-        Insert: {
-          amount?: number | null
-          course_id?: string | null
-          created_at?: string | null
-          id?: string
-          payment_provider?: string | null
-          status?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          amount?: number | null
-          course_id?: string | null
-          created_at?: string | null
-          id?: string
-          payment_provider?: string | null
-          status?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       progresso_aulas: {
         Row: {
           aula_id: string | null
@@ -154,12 +124,51 @@ export type Database = {
           },
         ]
       }
+      user_subscriptions: {
+        Row: {
+          amount: number | null
+          created_at: string
+          expiry_date: string | null
+          id: string
+          payment_date: string | null
+          payment_method: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      user_has_paid_access: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
