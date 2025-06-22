@@ -8,7 +8,8 @@ interface Lesson {
   title: string;
   duration: string;
   completed: boolean;
-  videoUrl: string;
+  video_url?: string;
+  videoUrl?: string;
   description: string;
 }
 
@@ -37,7 +38,7 @@ const LessonCard = ({ lesson, onClick }: LessonCardProps) => {
             
             <div className="flex-1 min-w-0">
               <h4 className="text-lg font-semibold text-white mb-1">{lesson.title}</h4>
-              <p className="text-gray-300 text-sm mb-2">{lesson.description}</p>
+              <p className="text-gray-300 text-sm mb-2 line-clamp-2">{lesson.description}</p>
               <div className="flex items-center text-sm text-gray-400">
                 <Clock className="w-4 h-4 mr-1" />
                 {lesson.duration}

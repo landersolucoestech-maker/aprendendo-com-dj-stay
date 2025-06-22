@@ -3,14 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Clock, Download, BookOpen } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useUpdateProgress } from "@/hooks/useUserProgress";
+import { useToast } from "@/hooks/use-toast";
 
 interface Lesson {
-  id: number;
+  id: number | string;
   title: string;
   duration: string;
   completed: boolean;
-  videoUrl: string;
+  video_url?: string;
+  videoUrl?: string;
   description: string;
 }
 
@@ -20,6 +23,8 @@ interface VideoPlayerProps {
 
 const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const [watchProgress, setWatchProgress] = useState(lesson.completed ? 100 : 0);
+  const updateProgress = useUpdateProgress();
+  const { toast } = useToast();
   
   // Extract YouTube video ID from URL
   const getYouTubeVideoId = (url: string) => {
@@ -27,8 +32,34 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
     return match ? match[1] : null;
   };
 
-  const videoId = getYouTubeVideoId(lesson.videoUrl);
-  const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}` : lesson.videoUrl;
+  const videoUrl = lesson.video_url || lesson.videoUrl || '';
+  const videoId = getYouTubeVideoId(videoUrl);
+  const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}` : videoUrl;
+
+  const handleMarkComplete = async () => {
+    try {
+      await updateProgress.mutateAsync({
+        aulaId: lesson.id.toString(),
+        completada: true,
+        progressoPercentual: 100,
+        tempoAssistido: 0, // Poderia ser calculado baseado na duração do vídeo
+      });
+      
+      setWatchProgress(100);
+      
+      toast({
+        title: "Aula concluída!",
+        description: "Seu progresso foi salvo com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao marcar aula como concluída:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar o progresso. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -36,14 +67,20 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
       <Card className="glass-card border-white/10">
         <CardContent className="p-0">
           <div className="aspect-video bg-gray-900 rounded-t-lg overflow-hidden">
-            <iframe
-              className="w-full h-full"
-              src={embedUrl}
-              title={lesson.title}
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+            {embedUrl ? (
+              <iframe
+                className="w-full h-full"
+                src={embedUrl}
+                title={lesson.title}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                <p className="text-gray-400">Vídeo não disponível</p>
+              </div>
+            )}
           </div>
           
           <div className="p-6">
@@ -101,10 +138,11 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
           <CardContent className="space-y-3">
             <Button 
               className="w-full btn-neon"
-              onClick={() => setWatchProgress(100)}
+              onClick={handleMarkComplete}
+              disabled={updateProgress.isPending || watchProgress === 100}
             >
               <CheckCircle className="w-4 h-4 mr-2" />
-              Marcar como concluída
+              {updateProgress.isPending ? 'Salvando...' : watchProgress === 100 ? 'Concluída!' : 'Marcar como concluída'}
             </Button>
             <Button variant="outline" className="w-full border-white/20 bg-transparent hover:bg-white/10">
               Fazer anotações
@@ -122,14 +160,14 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-white mb-1">Próxima Aula</h3>
-              <p className="text-gray-300">Samples e Loops</p>
+              <p className="text-gray-300">Continue seu aprendizado</p>
             </div>
             <Button className="btn-neon">
               Continuar Curso
             </Button>
           </div>
         </CardContent>
-      </Card>
+      </div>
     </div>
   );
 };

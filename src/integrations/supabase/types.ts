@@ -11,49 +11,39 @@ export type Database = {
     Tables: {
       aulas: {
         Row: {
-          curso_id: string | null
+          created_at: string
           descricao: string | null
           duracao: number | null
           id: string
           modulo_id: string | null
-          ordem: number | null
-          slug: string | null
-          titulo: string | null
-          trancado: boolean | null
+          ordem: number
+          titulo: string
+          updated_at: string
           video: string | null
         }
         Insert: {
-          curso_id?: string | null
+          created_at?: string
           descricao?: string | null
           duracao?: number | null
           id?: string
           modulo_id?: string | null
-          ordem?: number | null
-          slug?: string | null
-          titulo?: string | null
-          trancado?: boolean | null
+          ordem?: number
+          titulo: string
+          updated_at?: string
           video?: string | null
         }
         Update: {
-          curso_id?: string | null
+          created_at?: string
           descricao?: string | null
           duracao?: number | null
           id?: string
           modulo_id?: string | null
-          ordem?: number | null
-          slug?: string | null
-          titulo?: string | null
-          trancado?: boolean | null
+          ordem?: number
+          titulo?: string
+          updated_at?: string
           video?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "aulas_curso_id_fkey"
-            columns: ["curso_id"]
-            isOneToOne: false
-            referencedRelation: "cursos"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "aulas_modulo_id_fkey"
             columns: ["modulo_id"]
@@ -63,118 +53,32 @@ export type Database = {
           },
         ]
       }
-      cursos: {
-        Row: {
-          ativo: boolean | null
-          capa: string | null
-          descricao: string | null
-          id: string
-          ordem: number | null
-          slug: string | null
-          titulo: string | null
-        }
-        Insert: {
-          ativo?: boolean | null
-          capa?: string | null
-          descricao?: string | null
-          id?: string
-          ordem?: number | null
-          slug?: string | null
-          titulo?: string | null
-        }
-        Update: {
-          ativo?: boolean | null
-          capa?: string | null
-          descricao?: string | null
-          id?: string
-          ordem?: number | null
-          slug?: string | null
-          titulo?: string | null
-        }
-        Relationships: []
-      }
-      enrollments: {
-        Row: {
-          course_id: string | null
-          enrolled_at: string | null
-          id: string
-          user_id: string | null
-        }
-        Insert: {
-          course_id?: string | null
-          enrolled_at?: string | null
-          id?: string
-          user_id?: string | null
-        }
-        Update: {
-          course_id?: string | null
-          enrolled_at?: string | null
-          id?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      modules: {
-        Row: {
-          course_id: string | null
-          created_at: string | null
-          description: string | null
-          duration: string | null
-          id: string
-          lessons_count: number | null
-          order_num: number | null
-          title: string | null
-        }
-        Insert: {
-          course_id?: string | null
-          created_at?: string | null
-          description?: string | null
-          duration?: string | null
-          id?: string
-          lessons_count?: number | null
-          order_num?: number | null
-          title?: string | null
-        }
-        Update: {
-          course_id?: string | null
-          created_at?: string | null
-          description?: string | null
-          duration?: string | null
-          id?: string
-          lessons_count?: number | null
-          order_num?: number | null
-          title?: string | null
-        }
-        Relationships: []
-      }
       modulos: {
         Row: {
-          curso_id: string | null
+          created_at: string
+          descricao: string | null
           id: string
-          ordem: number | null
-          titulo: string | null
+          ordem: number
+          titulo: string
+          updated_at: string
         }
         Insert: {
-          curso_id?: string | null
+          created_at?: string
+          descricao?: string | null
           id?: string
-          ordem?: number | null
-          titulo?: string | null
+          ordem?: number
+          titulo: string
+          updated_at?: string
         }
         Update: {
-          curso_id?: string | null
+          created_at?: string
+          descricao?: string | null
           id?: string
-          ordem?: number | null
-          titulo?: string | null
+          ordem?: number
+          titulo?: string
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "modulos_curso_id_fkey"
-            columns: ["curso_id"]
-            isOneToOne: false
-            referencedRelation: "cursos"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       payments: {
         Row: {
@@ -206,58 +110,49 @@ export type Database = {
         }
         Relationships: []
       }
-      progresso: {
+      progresso_aulas: {
         Row: {
           aula_id: string | null
-          concluida: boolean | null
-          data: string | null
+          completada: boolean | null
+          created_at: string
           id: string
+          progresso_percentual: number | null
+          tempo_assistido: number | null
+          ultima_visualizacao: string | null
+          updated_at: string
           user_id: string | null
         }
         Insert: {
           aula_id?: string | null
-          concluida?: boolean | null
-          data?: string | null
+          completada?: boolean | null
+          created_at?: string
           id?: string
+          progresso_percentual?: number | null
+          tempo_assistido?: number | null
+          ultima_visualizacao?: string | null
+          updated_at?: string
           user_id?: string | null
         }
         Update: {
           aula_id?: string | null
-          concluida?: boolean | null
-          data?: string | null
+          completada?: boolean | null
+          created_at?: string
           id?: string
+          progresso_percentual?: number | null
+          tempo_assistido?: number | null
+          ultima_visualizacao?: string | null
+          updated_at?: string
           user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "progresso_aula_id_fkey"
+            foreignKeyName: "progresso_aulas_aula_id_fkey"
             columns: ["aula_id"]
             isOneToOne: false
             referencedRelation: "aulas"
             referencedColumns: ["id"]
           },
         ]
-      }
-      users: {
-        Row: {
-          created_at: string | null
-          email: string
-          full_name: string | null
-          id: string
-        }
-        Insert: {
-          created_at?: string | null
-          email: string
-          full_name?: string | null
-          id?: string
-        }
-        Update: {
-          created_at?: string | null
-          email?: string
-          full_name?: string | null
-          id?: string
-        }
-        Relationships: []
       }
     }
     Views: {
