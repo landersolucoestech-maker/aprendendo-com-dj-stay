@@ -52,7 +52,7 @@ const Navigation = () => {
             <img 
               src="/lovable-uploads/db1b3703-f32b-43e4-bc00-ee4e8e08c366.png" 
               alt="Vivendo da Música Logo" 
-              className="w-10 h-10 object-contain"
+              className="w-20 h-20 object-contain"
             />
             <span className="text-2xl font-bold gradient-text">
               Vivendo da Música
