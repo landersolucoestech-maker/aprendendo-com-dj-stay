@@ -61,9 +61,12 @@ const Navigation = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-gray-300 hover:text-white transition-colors">
+            <button 
+              onClick={() => scrollToSection('home')}
+              className="text-gray-300 hover:text-white transition-colors"
+            >
               Início
-            </Link>
+            </button>
             <button 
               onClick={() => scrollToSection('curso')}
               className="text-gray-300 hover:text-white transition-colors"
@@ -119,13 +122,12 @@ const Navigation = () => {
         {/* Mobile Navigation */}
         {isOpen && (
           <div className="md:hidden py-4 space-y-4 border-t border-white/10">
-            <Link 
-              to="/" 
-              className="block text-gray-300 hover:text-white transition-colors"
-              onClick={() => setIsOpen(false)}
+            <button 
+              onClick={() => scrollToSection('home')}
+              className="block text-left text-gray-300 hover:text-white transition-colors w-full"
             >
               Início
-            </Link>
+            </button>
             <button 
               onClick={() => scrollToSection('curso')}
               className="block text-left text-gray-300 hover:text-white transition-colors w-full"
