@@ -1,9 +1,7 @@
 import { Music, Users, Award, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
 const InstructorSection = () => {
-  return (
-    <section id="instrutor" className="py-20 bg-gradient-to-br from-black via-brand-dark to-black relative">
+  return <section id="instrutor" className="py-20 bg-gradient-to-br from-black via-brand-dark to-black relative">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           
@@ -31,8 +29,8 @@ const InstructorSection = () => {
 
             {/* Floating stats */}
             <div className="absolute -bottom-6 -right-6 glass-card p-4 animate-float" style={{
-              animationDelay: '0.5s'
-            }}>
+            animationDelay: '0.5s'
+          }}>
               <div className="text-center">
                 <div className="text-2xl font-bold text-brand-light">500M+</div>
                 <div className="text-xs text-gray-400">Streams</div>
@@ -95,22 +93,16 @@ const InstructorSection = () => {
                 Já trabalhou com:
               </h4>
               <div className="flex flex-wrap gap-2">
-                {["MC Kekel", "MC Drika", "MC Melody", "MC M10", "MC Vittin LC", "Danny Russo"].map((artist, index) => (
-                  <span key={index} className="bg-white/10 text-gray-300 px-3 py-1 rounded-full text-sm">
+                {["MC Kekel", "MC Drika", "MC Melody", "MC M10", "MC Vittin LC", "Danny Russo"].map((artist, index) => <span key={index} className="bg-white/10 text-gray-300 px-3 py-1 rounded-full text-sm">
                     {artist}
-                  </span>
-                ))}
+                  </span>)}
               </div>
             </div>
 
-            <Button size="lg" className="btn-brand">
-              Aprender com o Alex
-            </Button>
+            <Button size="lg" className="btn-brand">Aprender com o Stay</Button>
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default InstructorSection;
