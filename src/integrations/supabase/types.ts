@@ -53,6 +53,41 @@ export type Database = {
           },
         ]
       }
+      lesson_files: {
+        Row: {
+          aula_id: string | null
+          created_at: string | null
+          id: string
+          project_file_path: string | null
+          samples_file_path: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          aula_id?: string | null
+          created_at?: string | null
+          id?: string
+          project_file_path?: string | null
+          samples_file_path?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          aula_id?: string | null
+          created_at?: string | null
+          id?: string
+          project_file_path?: string | null
+          samples_file_path?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_files_aula_id_fkey"
+            columns: ["aula_id"]
+            isOneToOne: false
+            referencedRelation: "aulas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       modulos: {
         Row: {
           created_at: string

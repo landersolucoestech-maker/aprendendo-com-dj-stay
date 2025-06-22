@@ -6,6 +6,7 @@ import { CheckCircle, Clock, Download, BookOpen } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUpdateProgress } from "@/hooks/useUserProgress";
 import { useToast } from "@/hooks/use-toast";
+import { useLessonFiles, downloadFileFromStorage } from "@/hooks/useLessonFiles";
 
 interface Lesson {
   id: string;
@@ -25,6 +26,7 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const [watchProgress, setWatchProgress] = useState(lesson.completed ? 100 : 0);
   const updateProgress = useUpdateProgress();
   const { toast } = useToast();
+  const { data: lessonFiles, isLoading: filesLoading } = useLessonFiles(lesson.id);
   
   // Extract YouTube video ID from URL
   const getYouTubeVideoId = (url: string) => {
@@ -61,34 +63,60 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
     }
   };
 
-  const handleDownloadSamples = () => {
-    // Simulando o download de samples e loops
-    const link = document.createElement('a');
-    link.href = '/samples-loops-aula.zip'; // Caminho para o arquivo
-    link.download = `samples-loops-${lesson.title.replace(/\s+/g, '-').toLowerCase()}.zip`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({
-      title: "Download iniciado!",
-      description: "Os samples e loops da aula estão sendo baixados.",
-    });
+  const handleDownloadSamples = async () => {
+    if (!lessonFiles?.samples_file_path) {
+      toast({
+        title: "Arquivo não disponível",
+        description: "Os samples e loops desta aula ainda não foram disponibilizados.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const fileName = `samples-loops-${lesson.title.replace(/\s+/g, '-').toLowerCase()}.zip`;
+      await downloadFileFromStorage('lesson-samples', lessonFiles.samples_file_path, fileName);
+      
+      toast({
+        title: "Download iniciado!",
+        description: "Os samples e loops da aula estão sendo baixados.",
+      });
+    } catch (error) {
+      console.error('Erro ao baixar samples:', error);
+      toast({
+        title: "Erro no download",
+        description: "Não foi possível baixar os samples. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDownloadProject = () => {
-    // Simulando o download do projeto Ableton Live
-    const link = document.createElement('a');
-    link.href = '/projeto-ableton-live.als'; // Caminho para o arquivo
-    link.download = `projeto-${lesson.title.replace(/\s+/g, '-').toLowerCase()}.als`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({
-      title: "Download iniciado!",
-      description: "O projeto Ableton Live está sendo baixado.",
-    });
+  const handleDownloadProject = async () => {
+    if (!lessonFiles?.project_file_path) {
+      toast({
+        title: "Arquivo não disponível",
+        description: "O projeto Ableton Live desta aula ainda não foi disponibilizado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const fileName = `projeto-${lesson.title.replace(/\s+/g, '-').toLowerCase()}.als`;
+      await downloadFileFromStorage('lesson-projects', lessonFiles.project_file_path, fileName);
+      
+      toast({
+        title: "Download iniciado!",
+        description: "O projeto Ableton Live está sendo baixado.",
+      });
+    } catch (error) {
+      console.error('Erro ao baixar projeto:', error);
+      toast({
+        title: "Erro no download",
+        description: "Não foi possível baixar o projeto. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
   
   return (
@@ -152,17 +180,19 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
               variant="outline" 
               className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
               onClick={handleDownloadSamples}
+              disabled={filesLoading || !lessonFiles?.samples_file_path}
             >
               <Download className="w-4 h-4 mr-2" />
-              Samples e loops da aula
+              {filesLoading ? 'Carregando...' : 'Samples e loops da aula'}
             </Button>
             <Button 
               variant="outline" 
               className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
               onClick={handleDownloadProject}
+              disabled={filesLoading || !lessonFiles?.project_file_path}
             >
               <Download className="w-4 h-4 mr-2" />
-              Projeto Ableton Live
+              {filesLoading ? 'Carregando...' : 'Projeto Ableton Live'}
             </Button>
           </CardContent>
         </Card>
