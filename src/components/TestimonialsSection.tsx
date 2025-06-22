@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Star, Play, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,11 +35,14 @@ const TestimonialsSection = () => {
   } | null>(null);
 
   const handleVideoClick = (name: string, role: string) => {
+    console.log("Video button clicked:", { name, role });
     setSelectedTestimonial({ name, role });
     setModalOpen(true);
+    console.log("Modal should be open now");
   };
 
   const handleCloseModal = () => {
+    console.log("Closing modal");
     setModalOpen(false);
     setSelectedTestimonial(null);
   };
@@ -83,7 +87,10 @@ const TestimonialsSection = () => {
                   variant="outline" 
                   size="sm" 
                   className="border-brand-light/50 text-brand-light hover:bg-brand-light/20"
-                  onClick={() => handleVideoClick(testimonial.name, testimonial.role)}
+                  onClick={() => {
+                    console.log("Button clicked for:", testimonial.name);
+                    handleVideoClick(testimonial.name, testimonial.role);
+                  }}
                 >
                   <Play className="w-4 h-4 mr-2" />
                   Ver vídeo
@@ -103,7 +110,10 @@ const TestimonialsSection = () => {
               <Button 
                 size="lg" 
                 className="relative z-10 bg-white/20 hover:bg-white/30 text-white border-white/30"
-                onClick={() => handleVideoClick("DJ Lael", "DJ e Produtor")}
+                onClick={() => {
+                  console.log("Featured video button clicked");
+                  handleVideoClick("DJ Lael", "DJ e Produtor");
+                }}
               >
                 <Play className="w-8 h-8" />
               </Button>

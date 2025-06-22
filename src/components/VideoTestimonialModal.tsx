@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 
@@ -16,6 +16,8 @@ const VideoTestimonialModal = ({
   testimonialName, 
   testimonialRole 
 }: VideoTestimonialModalProps) => {
+  console.log("Modal state:", { isOpen, testimonialName, testimonialRole });
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl bg-black/95 border-brand-light/20">
@@ -23,6 +25,9 @@ const VideoTestimonialModal = ({
           <DialogTitle className="text-white text-xl">
             Depoimento de {testimonialName}
           </DialogTitle>
+          <DialogDescription className="text-gray-400">
+            Assista ao depoimento completo de {testimonialName} sobre sua experiência no curso
+          </DialogDescription>
         </DialogHeader>
         
         <div className="aspect-video bg-gradient-brand rounded-lg flex items-center justify-center relative overflow-hidden">
@@ -30,6 +35,7 @@ const VideoTestimonialModal = ({
           <Button 
             size="lg" 
             className="relative z-10 bg-white/20 hover:bg-white/30 text-white border-white/30"
+            onClick={() => console.log("Play button clicked")}
           >
             <Play className="w-8 h-8" />
           </Button>
