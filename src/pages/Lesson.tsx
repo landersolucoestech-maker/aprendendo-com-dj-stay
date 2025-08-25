@@ -8,22 +8,20 @@ import { CheckCircle, Clock, Download, BookOpen, ArrowLeft, ArrowRight } from "l
 import VideoPlayer from "@/components/VideoPlayer";
 import LessonFilesExample from "@/examples/LessonFilesExample";
 import { useLessons } from "@/hooks/useLessons";
-import { useUserProgress } from "@/hooks/useUserProgress";
 
 const Lesson = () => {
   const { lessonId } = useParams();
   const navigate = useNavigate();
   const [watchProgress, setWatchProgress] = useState(0);
   const { data: lessons, isLoading } = useLessons();
-  const { data: userProgress } = useUserProgress();
   
   const currentLesson = lessons?.find(lesson => lesson.id === lessonId);
   const currentIndex = lessons?.findIndex(lesson => lesson.id === lessonId) || 0;
   const nextLesson = lessons?.[currentIndex + 1];
   const prevLesson = lessons?.[currentIndex - 1];
 
-  // Buscar progresso do usuário para esta aula
-  const lessonProgress = userProgress?.find(p => p.aula_id === lessonId);
+  // Dados estáticos (sem autenticação)
+  const lessonProgress = { completada: false, progresso_percentual: 0 };
   
   useEffect(() => {
     if (lessonProgress) {

@@ -9,7 +9,6 @@ import RecentActivities from "@/components/RecentActivities";
 import ModuleProgress from "@/components/ModuleProgress";
 import LessonGrid from "@/components/LessonGrid";
 import DashboardHeader from "@/components/DashboardHeader";
-import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLessons } from "@/hooks/useLessons";
 import { useModules } from "@/hooks/useModules";
@@ -37,53 +36,16 @@ const Dashboard = () => {
   console.log('Dashboard - Dados brutos dos módulos:', modules);
   console.log('Dashboard - Aulas:', lessons);
 
+  // Dados estáticos do usuário (sem autenticação)
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate('/login');
-        return;
-      }
-
-      // Atualizar dados do usuário com informações reais
-      const userData = {
-        name: session.user?.user_metadata?.full_name || session.user?.user_metadata?.name || 'Usuário',
-        email: session.user?.email || '',
-        joinDate: new Date(session.user?.created_at || '').toLocaleDateString('pt-BR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        }),
-        progress: 65 // Mantém o progresso fixo por enquanto
-      };
-
-      setUser(userData);
+    const userData = {
+      name: 'Usuário Demo',
+      email: 'demo@exemplo.com',
+      joinDate: '15/01/2024',
+      progress: 65
     };
-
-    checkAuth();
-
-    // Listener para mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate('/login');
-      } else {
-        const userData = {
-          name: session.user?.user_metadata?.full_name || session.user?.user_metadata?.name || 'Usuário',
-          email: session.user?.email || '',
-          joinDate: new Date(session.user?.created_at || '').toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          }),
-          progress: 65
-        };
-        setUser(userData);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    setUser(userData);
+  }, []);
 
   const handleLessonClick = (lesson) => {
     console.log('Clicou na aula:', lesson);
