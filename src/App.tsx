@@ -23,6 +23,7 @@ import Contact from "@/pages/Contact";
 import EditProfile from "@/pages/EditProfile";
 import AccessDenied from "@/pages/AccessDenied";
 import PaymentSuccess from "@/pages/PaymentSuccess";
+import CertificateVerification from "@/pages/CertificateVerification";
 import VerifyEmail from "@/pages/VerifyEmail";
 import Verified from "@/pages/Verified";
 import NotFound from "@/pages/NotFound";
@@ -55,6 +56,7 @@ export default function App() {
               <Route path="/verificar-email" element={<VerifyEmail />} />
               <Route path="/verificado" element={<Verified />} />
               <Route path="/contato" element={<Contact />} />
+              <Route path="/certificado/:code" element={<CertificateVerification />} />
               <Route path="/acesso-negado" element={<AccessDenied />} />
 
               <Route element={<ProtectedRoute />}>
