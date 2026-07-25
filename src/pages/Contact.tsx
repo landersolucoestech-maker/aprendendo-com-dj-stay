@@ -1,235 +1,36 @@
-
-import { useState } from 'react';
+import { Headphones, LogIn, Mail } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
-const Contact = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    // Simular envio do formulário
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    toast({
-      title: "Mensagem enviada!",
-      description: "Entraremos em contato com você em breve.",
-    });
-
-    setFormData({
-      name: '',
-      email: '',
-      subject: '',
-      message: ''
-    });
-    setIsSubmitting(false);
-  };
+export default function Contact() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const supportEmail = import.meta.env.VITE_PUBLIC_SUPPORT_EMAIL as string | undefined;
 
   return (
     <div className="min-h-screen bg-black text-white">
       <Navigation />
-      
-      {/* Header Section */}
-      <section className="pt-20 pb-16 bg-gradient-to-b from-black via-gray-900 to-black">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-6">
-            Entre em Contato
-          </h1>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            Tem alguma dúvida sobre o curso? Precisa de suporte? Estamos aqui para ajudar!
-          </p>
+      <main className="container mx-auto px-4 py-24">
+        <div className="max-w-3xl mx-auto text-center space-y-8">
+          <div><p className="text-sm text-gray-400">Ajuda e atendimento</p><h1 className="text-4xl md:text-5xl font-bold gradient-text mt-2">Fale com nossa equipe</h1><p className="text-gray-300 mt-4">O atendimento é registrado por protocolo para preservar o histórico e acompanhar cada solicitação até a resolução.</p></div>
+          <Card className="glass-card border-white/10 text-left">
+            <CardHeader><CardTitle className="text-white flex items-center gap-2"><Headphones className="w-5 h-5" />Central de suporte</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-400">Dúvidas sobre acesso, aulas, materiais, pagamentos, reembolsos ou certificados devem ser enviadas pela área autenticada.</p>
+              <Button className="w-full" onClick={() => navigate(user ? "/suporte" : "/login")}>
+                {user ? <Headphones className="w-4 h-4 mr-2" /> : <LogIn className="w-4 h-4 mr-2" />}
+                {user ? "Abrir central de suporte" : "Entrar para solicitar atendimento"}
+              </Button>
+              {supportEmail && <Button asChild variant="outline" className="w-full border-white/20 bg-transparent"><a href={`mailto:${supportEmail}`}><Mail className="w-4 h-4 mr-2" />Enviar e-mail</a></Button>}
+            </CardContent>
+          </Card>
         </div>
-      </section>
-
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid lg:grid-cols-2 gap-12">
-          {/* Contact Information */}
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-6">
-                Fale Conosco
-              </h2>
-              <p className="text-gray-300 text-lg leading-relaxed">
-                Nossa equipe está sempre disponível para tirar suas dúvidas e ajudar você 
-                a aproveitar ao máximo o curso de produção de funk.
-              </p>
-            </div>
-
-            <div className="grid gap-6">
-              <Card className="glass-card border-white/10">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-neon rounded-lg flex items-center justify-center">
-                      <Mail className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-white font-semibold">Email</h3>
-                      <p className="text-gray-300">contato@producaodefunk.com</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="glass-card border-white/10">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-neon rounded-lg flex items-center justify-center">
-                      <Phone className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-white font-semibold">WhatsApp</h3>
-                      <p className="text-gray-300">(11) 99999-9999</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="glass-card border-white/10">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-neon rounded-lg flex items-center justify-center">
-                      <Clock className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-white font-semibold">Horário de Atendimento</h3>
-                      <p className="text-gray-300">Segunda a Sexta: 9h às 18h</p>
-                      <p className="text-gray-300">Sábado: 9h às 14h</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="glass-card border-white/10">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-neon rounded-lg flex items-center justify-center">
-                      <MapPin className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-white font-semibold">Localização</h3>
-                      <p className="text-gray-300">São Paulo, SP - Brasil</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Contact Form */}
-          <div>
-            <Card className="glass-card border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white text-2xl">Envie sua Mensagem</CardTitle>
-                <CardDescription className="text-gray-300">
-                  Preencha o formulário abaixo e retornaremos o mais breve possível.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name" className="text-white">Nome</Label>
-                      <Input
-                        id="name"
-                        name="name"
-                        type="text"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        placeholder="Seu nome completo"
-                        required
-                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email" className="text-white">Email</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        placeholder="seu@email.com"
-                        required
-                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="subject" className="text-white">Assunto</Label>
-                    <Input
-                      id="subject"
-                      name="subject"
-                      type="text"
-                      value={formData.subject}
-                      onChange={handleInputChange}
-                      placeholder="Qual o motivo do contato?"
-                      required
-                      className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="message" className="text-white">Mensagem</Label>
-                    <Textarea
-                      id="message"
-                      name="message"
-                      value={formData.message}
-                      onChange={handleInputChange}
-                      placeholder="Descreva sua dúvida ou mensagem..."
-                      required
-                      rows={6}
-                      className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 resize-none"
-                    />
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                    className="w-full btn-neon"
-                  >
-                    {isSubmitting ? (
-                      "Enviando..."
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4 mr-2" />
-                        Enviar Mensagem
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-
+      </main>
       <Footer />
     </div>
   );
-};
-
-export default Contact;
+}
