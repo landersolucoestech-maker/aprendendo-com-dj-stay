@@ -1,139 +1,64 @@
-
-import { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Award } from "lucide-react";
-import VideoPlayer from "@/components/VideoPlayer";
-import UserProfile from "@/components/UserProfile";
-import RecentActivities from "@/components/RecentActivities";
-import ModuleProgress from "@/components/ModuleProgress";
-import LessonGrid from "@/components/LessonGrid";
-import DashboardHeader from "@/components/DashboardHeader";
 import { useNavigate } from "react-router-dom";
-import { useLessons } from "@/hooks/useLessons";
-import { useModules } from "@/hooks/useModules";
-import { useProgressCalculation } from "@/hooks/useProgressCalculation";
+import { Award, BookOpen, Clock3, GraduationCap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import PortalHeader from "@/components/portal/PortalHeader";
+import { useAuth } from "@/contexts/AuthContext";
+import { useMyEnrollments } from "@/hooks/useStudentData";
+import { formatDate } from "@/lib/platform";
 
-const Dashboard = () => {
-  const [user, setUser] = useState({
-    name: 'Usuário',
-    email: '',
-    joinDate: '15/01/2024',
-    progress: 65
-  });
-
-  const [currentLesson, setCurrentLesson] = useState(null);
+export default function Dashboard() {
   const navigate = useNavigate();
-
-  // Usar os hooks para buscar dados do Supabase
-  const { data: lessons, isLoading: lessonsLoading, error: lessonsError } = useLessons();
-  const { data: modules, isLoading: modulesLoading, error: modulesError } = useModules();
-  
-  // Usar o hook para calcular progresso
-  const modulesWithProgress = useProgressCalculation(modules);
-
-  console.log('Dashboard - Módulos com progresso:', modulesWithProgress);
-  console.log('Dashboard - Dados brutos dos módulos:', modules);
-  console.log('Dashboard - Aulas:', lessons);
-
-  // Dados estáticos do usuário (sem autenticação)
-  useEffect(() => {
-    const userData = {
-      name: 'Usuário Demo',
-      email: 'demo@exemplo.com',
-      joinDate: '15/01/2024',
-      progress: 65
-    };
-    setUser(userData);
-  }, []);
-
-  const handleLessonClick = (lesson) => {
-    console.log('Clicou na aula:', lesson);
-    navigate(`/aula/${lesson.id}`);
-  };
-
-  // Mostrar loading enquanto os dados são carregados
-  if (lessonsLoading || modulesLoading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-gray-300">Carregando conteúdo...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Mostrar erro se houver problemas ao carregar os dados
-  if (lessonsError || modulesError) {
-    console.error('Erro no Dashboard:', { lessonsError, modulesError });
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Erro ao carregar dados</h2>
-          <p className="text-gray-300 mb-4">
-            {lessonsError?.message || modulesError?.message || 'Erro desconhecido'}
-          </p>
-          <Button onClick={() => window.location.reload()} className="btn-neon">
-            Tentar Novamente
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const { profile } = useAuth();
+  const { data: enrollments, isLoading, error } = useMyEnrollments();
+  const active = enrollments?.filter((entry) => entry.status === "active") ?? [];
+  const completed = enrollments?.filter((entry) => entry.status === "completed") ?? [];
+  const averageProgress = enrollments?.length
+    ? enrollments.reduce((sum, entry) => sum + Number(entry.progress_percent), 0) / enrollments.length
+    : 0;
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <DashboardHeader userName={user.name} />
-
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <UserProfile user={user} />
-            <RecentActivities />
+      <PortalHeader />
+      <main className="container mx-auto px-4 py-8 space-y-8">
+        <section className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div>
+            <p className="text-gray-400">Bem-vindo de volta,</p>
+            <h1 className="text-3xl md:text-4xl font-bold gradient-text">{profile?.full_name || "Aluno"}</h1>
           </div>
+          <Button onClick={() => navigate("/catalogo")}>Explorar novos cursos</Button>
+        </section>
 
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            <Tabs defaultValue="aulas" className="space-y-6">
-              <TabsList className="bg-white/10 border-white/20">
-                <TabsTrigger value="aulas" className="data-[state=active]:bg-white/20">
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Aulas
-                </TabsTrigger>
-                <TabsTrigger value="progresso" className="data-[state=active]:bg-white/20">
-                  <Award className="w-4 h-4 mr-2" />
-                  Progresso
-                </TabsTrigger>
-              </TabsList>
+        <section className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <Card className="glass-card border-white/10"><CardContent className="p-5"><BookOpen className="w-5 h-5 mb-3" /><p className="text-sm text-gray-400">Cursos ativos</p><p className="text-2xl font-bold">{active.length}</p></CardContent></Card>
+          <Card className="glass-card border-white/10"><CardContent className="p-5"><Award className="w-5 h-5 mb-3" /><p className="text-sm text-gray-400">Cursos concluídos</p><p className="text-2xl font-bold">{completed.length}</p></CardContent></Card>
+          <Card className="glass-card border-white/10"><CardContent className="p-5"><GraduationCap className="w-5 h-5 mb-3" /><p className="text-sm text-gray-400">Progresso médio</p><p className="text-2xl font-bold">{averageProgress.toFixed(1)}%</p></CardContent></Card>
+          <Card className="glass-card border-white/10"><CardContent className="p-5"><Clock3 className="w-5 h-5 mb-3" /><p className="text-sm text-gray-400">Último acesso</p><p className="text-sm font-medium mt-2">{formatDate(enrollments?.[0]?.last_accessed_at)}</p></CardContent></Card>
+        </section>
 
-              <TabsContent value="aulas" className="space-y-6">
-                {currentLesson ? (
-                  <div className="space-y-6">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setCurrentLesson(null)}
-                      className="border-white/20 bg-transparent hover:bg-white/10"
-                    >
-                      ← Voltar às aulas
-                    </Button>
-                    <VideoPlayer lesson={currentLesson} />
-                  </div>
-                ) : (
-                  <LessonGrid modules={modulesWithProgress} onLessonClick={handleLessonClick} />
-                )}
-              </TabsContent>
-
-              <TabsContent value="progresso" className="space-y-6">
-                <ModuleProgress modules={modulesWithProgress} />
-              </TabsContent>
-            </Tabs>
+        <section className="space-y-4">
+          <div className="flex items-center justify-between"><h2 className="text-2xl font-bold">Continuar aprendendo</h2><Button variant="ghost" onClick={() => navigate("/meus-cursos")}>Ver todos</Button></div>
+          {isLoading && <p className="text-gray-400">Carregando seus cursos...</p>}
+          {error && <p className="text-red-400">{error.message}</p>}
+          {!isLoading && !enrollments?.length && (
+            <Card className="glass-card border-white/10"><CardContent className="p-10 text-center"><BookOpen className="w-10 h-10 mx-auto text-gray-500 mb-3" /><h3 className="text-lg font-semibold">Você ainda não possui cursos</h3><p className="text-gray-400 mt-1 mb-4">Escolha um curso no catálogo para iniciar.</p><Button onClick={() => navigate("/catalogo")}>Abrir catálogo</Button></CardContent></Card>
+          )}
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {enrollments?.slice(0, 6).map((enrollment) => (
+              <Card key={enrollment.id} className="glass-card border-white/10 overflow-hidden">
+                {enrollment.courses.cover_image_path && <div className="aspect-video bg-cover bg-center" style={{ backgroundImage: `url(${enrollment.courses.cover_image_path})` }} />}
+                <CardHeader><CardTitle className="text-white text-lg">{enrollment.courses.title}</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-gray-400 line-clamp-2">{enrollment.courses.short_description || "Curso disponível para acesso."}</p>
+                  <div className="space-y-2"><div className="flex justify-between text-sm"><span className="text-gray-400">Progresso</span><span>{Number(enrollment.progress_percent).toFixed(1)}%</span></div><Progress value={Number(enrollment.progress_percent)} /></div>
+                  <Button className="w-full" onClick={() => navigate(`/curso/${enrollment.course_id}`)}>Continuar curso</Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
-};
-
-export default Dashboard;
+}
