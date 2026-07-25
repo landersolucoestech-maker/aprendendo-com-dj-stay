@@ -26,7 +26,7 @@ import PaymentSuccess from "@/pages/PaymentSuccess";
 import VerifyEmail from "@/pages/VerifyEmail";
 import Verified from "@/pages/Verified";
 import NotFound from "@/pages/NotFound";
-import InstructorDashboard from "@/pages/instructor/InstructorDashboard";
+import InstructorIndex from "@/pages/instructor/InstructorIndex";
 import InstructorCourses from "@/pages/instructor/InstructorCourses";
 import InstructorCourseEditor from "@/pages/instructor/InstructorCourseEditor";
 import InstructorStudents from "@/pages/instructor/InstructorStudents";
@@ -35,11 +35,7 @@ import InstructorSupport from "@/pages/instructor/InstructorSupport";
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
+    queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false },
   },
 });
 
@@ -78,14 +74,16 @@ export default function App() {
 
               <Route element={<ProtectedRoute roles={["instructor", "support", "admin", "owner"]} />}>
                 <Route path="/instrutor" element={<InstructorLayout />}>
-                  <Route index element={<InstructorDashboard />} />
-                  <Route path="cursos" element={<InstructorCourses />} />
-                  <Route path="cursos/novo" element={<InstructorCourses />} />
-                  <Route path="cursos/:courseId" element={<InstructorCourseEditor />} />
-                  <Route path="alunos" element={<InstructorStudents />} />
-                  <Route path="vendas" element={<InstructorSales />} />
+                  <Route index element={<InstructorIndex />} />
                   <Route path="atendimento" element={<InstructorSupport />} />
                   <Route path="atendimento/:ticketId" element={<SupportTicket staff />} />
+                  <Route element={<ProtectedRoute roles={["instructor", "admin", "owner"]} />}>
+                    <Route path="cursos" element={<InstructorCourses />} />
+                    <Route path="cursos/novo" element={<InstructorCourses />} />
+                    <Route path="cursos/:courseId" element={<InstructorCourseEditor />} />
+                    <Route path="alunos" element={<InstructorStudents />} />
+                    <Route path="vendas" element={<InstructorSales />} />
+                  </Route>
                 </Route>
               </Route>
 
