@@ -74,9 +74,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasRole = useCallback((...allowed: AppRole[]) => allowed.some((role) => roles.includes(role)), [roles]);
 
   const defaultRoute = useMemo(() => {
-    if (hasRole("owner", "admin", "instructor", "support")) return "/instrutor";
+    if (roles.includes("owner") || roles.includes("admin") || roles.includes("instructor")) return "/instrutor";
+    if (roles.includes("support")) return "/instrutor/atendimento";
     return "/dashboard";
-  }, [hasRole]);
+  }, [roles]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
