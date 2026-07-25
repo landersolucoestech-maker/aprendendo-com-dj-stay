@@ -1,187 +1,65 @@
-
-import { useState } from 'react';
+import { FormEvent, useState } from "react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { db } from "@/lib/platform";
 
-const Login = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
+export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email.trim()) {
-      toast({
-        title: "Erro",
-        description: "Email é obrigatório",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!password.trim()) {
-      toast({
-        title: "Erro",
-        description: "Senha é obrigatória",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) throw error;
+      if (!data.user) throw new Error("A sessão não foi criada.");
 
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          toast({
-            title: "Erro",
-            description: "Email ou senha incorretos",
-            variant: "destructive"
-          });
-        } else if (error.message.includes('Email not confirmed')) {
-          toast({
-            title: "Erro",
-            description: "Verifique seu email antes de fazer login",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Erro",
-            description: error.message,
-            variant: "destructive"
-          });
-        }
+      const requestedRoute = (location.state as { from?: string } | null)?.from;
+      if (requestedRoute) {
+        navigate(requestedRoute, { replace: true });
         return;
       }
 
-      if (data.user) {
-        toast({
-          title: "Sucesso!",
-          description: "Login realizado com sucesso!",
-        });
-        
-        // Redirect to dashboard
-        navigate('/dashboard');
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro inesperado. Tente novamente.",
-        variant: "destructive"
-      });
+      const { data: roles } = await db.from("user_roles").select("role").eq("user_id", data.user.id);
+      const roleNames = (roles ?? []).map((entry: { role: string }) => entry.role);
+      if (roleNames.some((role: string) => ["owner", "admin", "instructor"].includes(role))) navigate("/instrutor", { replace: true });
+      else if (roleNames.includes("support")) navigate("/instrutor/atendimento", { replace: true });
+      else navigate("/dashboard", { replace: true });
+      toast({ title: "Login realizado", description: "Sua sessão foi iniciada com segurança." });
+    } catch (error) {
+      const message = error instanceof Error && error.message.includes("Invalid login credentials") ? "E-mail ou senha incorretos." : error instanceof Error ? error.message : "Não foi possível entrar.";
+      toast({ title: "Erro no login", description: message, variant: "destructive" });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-      {/* Background Effects */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="w-full h-full bg-repeat" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%238B5CF6' fill-opacity='0.4'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
-      </div>
-
-      <div className="w-full max-w-md relative z-10">
-        <Card className="glass-card border-white/10">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl gradient-text">Entrar</CardTitle>
-            <CardDescription className="text-gray-300">
-              Acesse sua conta para continuar aprendendo
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-white">Senha</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Sua senha"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Link 
-                  to="/esqueceu-senha" 
-                  className="text-sm text-neon-purple hover:text-neon-blue transition-colors"
-                >
-                  Esqueceu a senha?
-                </Link>
-              </div>
-
-              <Button 
-                type="submit" 
-                className="w-full btn-neon"
-                disabled={isLoading}
-              >
-                {isLoading ? "Entrando..." : "Entrar"}
-              </Button>
-            </form>
-
-            <div className="text-center">
-              <p className="text-gray-300">
-                Não tem uma conta?{' '}
-                <Link 
-                  to="/matricule-se" 
-                  className="text-neon-purple hover:text-neon-blue transition-colors font-medium"
-                >
-                  Matricule-se agora
-                </Link>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="glass-card border-white/10 w-full max-w-md">
+        <CardHeader className="text-center"><CardTitle className="text-2xl gradient-text">Entrar</CardTitle><CardDescription className="text-gray-400">Acesse seus cursos ou o painel de gestão.</CardDescription></CardHeader>
+        <CardContent>
+          <form onSubmit={submit} className="space-y-4">
+            <div className="space-y-2"><Label htmlFor="login-email">E-mail</Label><div className="relative"><Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" /><Input id="login-email" type="email" className="pl-9" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></div></div>
+            <div className="space-y-2"><Label htmlFor="login-password">Senha</Label><div className="relative"><Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" /><Input id="login-password" type={showPassword ? "text" : "password"} className="pl-9 pr-10" value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" /><button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}>{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button></div></div>
+            <div className="flex justify-end"><Link to="/esqueceu-senha" className="text-sm text-purple-400 hover:text-purple-300">Esqueci minha senha</Link></div>
+            <Button className="w-full" type="submit" disabled={loading}>{loading ? "Entrando..." : "Entrar"}</Button>
+          </form>
+          <p className="text-sm text-gray-400 text-center mt-6">Ainda não possui conta? <Link to="/matricule-se" className="text-purple-400 hover:text-purple-300">Criar conta</Link></p>
+        </CardContent>
+      </Card>
     </div>
   );
-};
-
-export default Login;
+}
