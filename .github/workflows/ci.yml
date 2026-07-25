@@ -44,7 +44,25 @@ jobs:
           retention-days: 3
 
       - name: Typecheck
-        run: npm run typecheck
+        run: npm run typecheck > typecheck-report.txt 2>&1
+
+      - name: Upload typecheck report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: typecheck-report
+          path: typecheck-report.txt
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Production build
-        run: npm run build
+        run: npm run build > build-report.txt 2>&1
+
+      - name: Upload build report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-report
+          path: build-report.txt
+          if-no-files-found: ignore
+          retention-days: 3
