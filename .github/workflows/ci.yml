@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  frontend:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -64,5 +64,30 @@ jobs:
         with:
           name: build-report
           path: build-report.txt
+          if-no-files-found: ignore
+          retention-days: 3
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: latest
+          github-token: ${{ github.token }}
+
+      - name: Apply migrations to fresh database
+        run: supabase db start > database-report.txt 2>&1
+
+      - name: Upload database report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-report
+          path: database-report.txt
           if-no-files-found: ignore
           retention-days: 3
