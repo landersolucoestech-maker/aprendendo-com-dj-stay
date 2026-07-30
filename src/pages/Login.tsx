@@ -79,7 +79,7 @@ const Login = () => {
         // Redirect to dashboard
         navigate('/dashboard');
       }
-    } catch (error: any) {
+    } catch {
       toast({
         title: "Erro",
         description: "Ocorreu um erro inesperado. Tente novamente.",

@@ -5,6 +5,7 @@ import { Download, FileAudio, FileCode, Upload, AlertCircle, ExternalLink, Check
 import { useLessonFiles, downloadFileFromStorage } from "@/hooks/useLessonFiles";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from 'react-router-dom';
+import { getErrorMessage } from "@/lib/error-message";
 const LessonFilesExample = () => {
   const {
     toast
@@ -34,11 +35,11 @@ const LessonFilesExample = () => {
         title: "Download iniciado!",
         description: "Os samples e loops da aula estão sendo baixados."
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao baixar samples:', error);
       toast({
         title: "Erro no download",
-        description: error.message || "Não foi possível baixar os samples.",
+        description: getErrorMessage(error, "Não foi possível baixar os samples."),
         variant: "destructive"
       });
     }
@@ -59,11 +60,11 @@ const LessonFilesExample = () => {
         title: "Download iniciado!",
         description: "O projeto Ableton Live está sendo baixado."
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao baixar projeto:', error);
       toast({
         title: "Erro no download",
-        description: error.message || "Não foi possível baixar o projeto.",
+        description: getErrorMessage(error, "Não foi possível baixar o projeto."),
         variant: "destructive"
       });
     }

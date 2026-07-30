@@ -2,12 +2,27 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface ModuleLesson {
+  id: string;
+  title: string;
+  titulo: string;
+  descricao: string | null;
+  video: string | null;
+  video_url: string | null;
+  duracao: number | null;
+  duration: string;
+  completed: boolean;
+  videoUrl: string;
+  description: string;
+  ordem: number;
+}
+
 export interface Module {
   id: string;
   title: string;
   description: string;
   progress: number;
-  lessons: any[];
+  lessons: ModuleLesson[];
 }
 
 export const useModules = () => {

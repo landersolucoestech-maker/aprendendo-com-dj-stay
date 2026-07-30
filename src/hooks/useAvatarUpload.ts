@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/lib/error-message';
 
 export const useAvatarUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -52,10 +53,10 @@ export const useAvatarUpload = () => {
         .getPublicUrl(fileName);
 
       return publicUrl;
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Erro no upload",
-        description: error.message || "Não foi possível fazer upload da imagem",
+        description: getErrorMessage(error, "Não foi possível fazer upload da imagem"),
         variant: "destructive",
       });
       return null;

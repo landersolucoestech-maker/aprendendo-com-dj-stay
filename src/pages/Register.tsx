@@ -27,12 +27,10 @@ const Register = () => {
   const { toast } = useToast();
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    console.log('Input changed:', field, value);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const validateForm = () => {
-    console.log('Validating form with data:', formData);
     
     if (!formData.name.trim()) {
       toast({
@@ -90,30 +88,24 @@ const Register = () => {
       return false;
     }
 
-    console.log('Form validation passed');
     return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('Form submitted - starting handleSubmit');
     e.preventDefault();
     
     // Previne duplo clique
     if (isLoading) {
-      console.log('Already loading, preventing duplicate submission');
       return;
     }
     
     if (!validateForm()) {
-      console.log('Form validation failed');
       return;
     }
 
-    console.log('Setting loading to true');
     setIsLoading(true);
 
     try {
-      console.log('Attempting to sign up with Supabase');
       
       // Primeiro, vamos limpar qualquer sessão existente
       await supabase.auth.signOut();
@@ -130,10 +122,8 @@ const Register = () => {
         }
       });
 
-      console.log('Supabase signup response:', { data, error });
 
       if (error) {
-        console.log('Signup error:', error);
         
         let errorMessage = "Ocorreu um erro durante o cadastro";
         
@@ -156,13 +146,11 @@ const Register = () => {
       }
 
       if (data.user) {
-        console.log('Signup successful, showing success toast');
         toast({
           title: "Sucesso!",
           description: "Conta criada com sucesso! Verifique seu email para confirmar sua conta.",
         });
         
-        console.log('Navigating to verify email page');
         // Limpa o formulário
         setFormData({
           name: '',
@@ -176,15 +164,13 @@ const Register = () => {
         // Redireciona para a página de verificação de email
         navigate('/verificar-email');
       }
-    } catch (error: any) {
-      console.log('Unexpected error:', error);
+    } catch {
       toast({
         title: "Erro",
         description: "Ocorreu um erro inesperado. Tente novamente.",
         variant: "destructive"
       });
     } finally {
-      console.log('Setting loading to false');
       setIsLoading(false);
     }
   };

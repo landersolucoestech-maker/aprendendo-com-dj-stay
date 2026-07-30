@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,14 +20,8 @@ const Lesson = () => {
   const nextLesson = lessons?.[currentIndex + 1];
   const prevLesson = lessons?.[currentIndex - 1];
 
-  // Dados estáticos (sem autenticação)
-  const lessonProgress = { completada: false, progresso_percentual: 0 };
-  
-  useEffect(() => {
-    if (lessonProgress) {
-      setWatchProgress(lessonProgress.progresso_percentual || 0);
-    }
-  }, [lessonProgress]);
+  // Estado provisório do protótipo; a persistência canônica será restaurada nas fases de Auth e progresso.
+  const lessonCompleted = false;
 
   if (isLoading) {
     return (
@@ -64,7 +58,7 @@ const Lesson = () => {
     title: currentLesson.title,
     description: currentLesson.description || 'Descrição não disponível',
     duration: currentLesson.duration || '15:30',
-    completed: lessonProgress?.completada || false,
+    completed: lessonCompleted,
     video_url: currentLesson.video_url,
     videoUrl: currentLesson.video_url || ''
   };
