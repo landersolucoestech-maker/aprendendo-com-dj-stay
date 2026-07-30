@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(30);
 
 select has_type('public','lesson_media_provider','lesson media provider enum exists');
 select ok(
