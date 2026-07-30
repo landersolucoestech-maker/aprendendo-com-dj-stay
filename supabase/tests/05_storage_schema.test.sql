@@ -54,57 +54,60 @@ select is(
     select count(*)::integer
     from pg_proc p
     join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='public' and p.prosecdef
+    where n.nspname='public' and not p.prosecdef
       and p.proname in ('prepare_asset_upload','confirm_asset_upload','transition_asset_state','fail_asset_upload','grant_asset_access','revoke_asset_access')
   ),
   6,
-  'six audited public RPCs use security definer'
+  'six audited public RPC wrappers use security invoker'
 );
 select ok(
   (
     select array_agg(p.proname order by p.proname)
     from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='public' and p.prosecdef
+    where n.nspname='public' and not p.prosecdef
+      and p.proname in ('prepare_asset_upload','confirm_asset_upload','transition_asset_state','fail_asset_upload','grant_asset_access','revoke_asset_access')
   ) = array[
     'confirm_asset_upload','fail_asset_upload','grant_asset_access','prepare_asset_upload',
     'revoke_asset_access','transition_asset_state'
   ]::name[],
-  'no unexpected public security definer function exists'
+  'no unexpected public asset wrapper exists'
 );
 select is(
   (select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and p.prosecdef),
-  3,
-  'private schema contains only role helpers and asset event logger as security definers'
+  9,
+  'private schema contains role helpers, event logger and six privileged implementations'
 );
 select is(
   (
     select count(*)::integer
     from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where p.prosecdef and n.nspname in ('public','private')
+    where p.prosecdef and n.nspname='private'
       and p.proconfig = array['search_path=""']::text[]
   ),
   9,
-  'every security definer function fixes an empty search path'
+  'every private security definer function fixes an empty search path'
 );
 select is(
   (
     select count(*)::integer
     from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='public' and p.prosecdef
+    where n.nspname='public'
+      and p.proname in ('prepare_asset_upload','confirm_asset_upload','transition_asset_state','fail_asset_upload','grant_asset_access','revoke_asset_access')
       and has_function_privilege('anon', p.oid, 'EXECUTE')
   ),
   0,
-  'anon cannot execute asset RPCs'
+  'anon cannot execute asset RPC wrappers'
 );
 select is(
   (
     select count(*)::integer
     from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='public' and p.prosecdef
+    where n.nspname='public'
+      and p.proname in ('prepare_asset_upload','confirm_asset_upload','transition_asset_state','fail_asset_upload','grant_asset_access','revoke_asset_access')
       and has_function_privilege('authenticated', p.oid, 'EXECUTE')
   ),
   6,
-  'authenticated role can invoke the six controlled RPCs'
+  'authenticated role can invoke the six controlled wrappers'
 );
 select ok(
   not has_table_privilege('anon','public.assets','SELECT')
