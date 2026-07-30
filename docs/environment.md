@@ -5,41 +5,63 @@
 - o frontend recebe somente configuração pública;
 - segredos permanecem exclusivamente em backend, Edge Functions ou secret manager;
 - não existe fallback silencioso entre ambientes;
-- o projeto legado `uonsgcndzzuclcixoaei` é proibido como runtime;
-- arquivos `.env` são locais e não são versionados.
+- o projeto Supabase legado é proibido como runtime;
+- arquivos `.env` são locais e não são versionados;
+- o ambiente é declarado explicitamente por `VITE_APP_ENV`.
 
 ## Mapeamento obrigatório
 
-| GitHub | Supabase | Project ref |
-| --- | --- | --- |
-| `dev` | branch de desenvolvimento | `jmtyurketfclaneqxohu` |
-| `main` | produção | `tduvfrxagujryfnqpdmc` |
+| GitHub | `VITE_APP_ENV` | Supabase | Project ref |
+| --- | --- | --- | --- |
+| `dev` | `development` | branch de desenvolvimento | `jmtyurketfclaneqxohu` |
+| `main` | `production` | produção | `tduvfrxagujryfnqpdmc` |
 
 Produção permanece somente leitura durante a auditoria e a refatoração.
 
 ## Variáveis públicas do frontend
 
-O arquivo `.env` local deverá definir:
+O `.env` local de desenvolvimento deverá definir:
 
 ```text
-VITE_SUPABASE_URL=<URL pública do ambiente correto>
-VITE_SUPABASE_PUBLISHABLE_KEY=<chave publicável do ambiente correto>
+VITE_APP_ENV=development
+VITE_SUPABASE_URL=https://jmtyurketfclaneqxohu.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<chave publishable ativa do projeto dev>
 ```
 
-A aplicação deverá falhar explicitamente na Fase B4 quando:
+A hospedagem de produção deverá fornecer exclusivamente:
 
-- uma variável estiver ausente;
-- a URL for inválida;
-- o project ref não corresponder ao ambiente;
-- houver referência ao projeto legado;
-- uma chave privilegiada for detectada no frontend.
+```text
+VITE_APP_ENV=production
+VITE_SUPABASE_URL=https://tduvfrxagujryfnqpdmc.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<chave publishable ativa de produção>
+```
+
+Nenhum valor de chave pode ser copiado para o repositório, documentação, issue ou log.
+
+## Validações executadas pela aplicação
+
+A criação do cliente Supabase falha explicitamente quando houver:
+
+- variável ausente;
+- `VITE_APP_ENV` fora do enum permitido;
+- modo Vite incompatível com o ambiente declarado;
+- URL inválida ou sem HTTPS;
+- URL com path, query, hash, credencial ou porta;
+- hostname fora de `<project-ref>.supabase.co`;
+- project ref incompatível com o ambiente;
+- chave `sb_secret_*`;
+- JWT público com role diferente de `anon`;
+- JWT `anon` emitido para outro project ref;
+- chave em formato desconhecido.
+
+Chaves modernas `sb_publishable_*` são aceitas sem serem registradas ou inspecionadas além do formato público.
 
 ## Variáveis proibidas no frontend
 
 Nunca exponha por `VITE_*`:
 
 - `service_role`;
-- secret key do Supabase;
+- `sb_secret_*`;
 - segredo de webhook;
 - chave privada de provider de pagamento;
 - credencial SMTP;
@@ -53,12 +75,23 @@ npm ci
 npm run dev
 ```
 
-O `.env` local deve apontar exclusivamente para `jmtyurketfclaneqxohu`. Não crie ou versione `.env.development`, `.env.production`, `.env.local` ou `.env.staging`.
+Use somente o `.env` local ignorado pelo Git. Não crie ou versione `.env.development`, `.env.production`, `.env.local` ou `.env.staging`.
+
+## Gates
+
+```bash
+npm run check:environment
+npm run lint
+npm run typecheck
+npm run build
+```
+
+`check:environment` verifica arquivos versionados, referências legadas no runtime, hardcode no cliente e vínculo do Supabase CLI ao ambiente `dev`.
 
 ## Produção
 
-As variáveis de produção deverão ser fornecidas pela plataforma de hospedagem somente à branch `main`. Nenhum valor de produção deve ser copiado para o repositório.
+As variáveis de produção serão fornecidas pela plataforma de hospedagem somente à branch `main`. Nenhuma credencial de produção deve ser copiada para `dev`, arquivos locais compartilhados ou GitHub Actions.
 
 ## Rotação e incidente
 
-A chave publicável legada encontrada no histórico não é uma credencial administrativa, mas deverá ser avaliada e rotacionada antes da desativação do projeto legado. Qualquer segredo administrativo encontrado deverá ser revogado imediatamente e tratado como incidente.
+A chave publicável encontrada no histórico do projeto legado não é administrativa, mas deverá ser avaliada e rotacionada antes da desativação daquele projeto. Qualquer segredo administrativo encontrado deverá ser revogado imediatamente e tratado como incidente.

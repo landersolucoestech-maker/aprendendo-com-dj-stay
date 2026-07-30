@@ -8,7 +8,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
+    "check:environment": "node scripts/check-environment-contract.mjs",
+    "typecheck": "npm run check:environment && tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run build",
     "preview": "vite preview"
   },
