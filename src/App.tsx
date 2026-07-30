@@ -41,7 +41,16 @@ const App = () => (
             <Route path="/verificado" element={<Verified />} />
             <Route path="/redefinir-senha" element={<ResetPassword />} />
             <Route path="/acesso-negado" element={<AccessDenied />} />
-            <Route path="/pagamento-sucesso" element={<PaymentSuccess />} />
+            <Route
+              path="/pagamento-sucesso"
+              element={
+                <RequireAuth>
+                  <RequireRole allowedRoles={["aluno", "administrador_proprietario"]}>
+                    <PaymentSuccess />
+                  </RequireRole>
+                </RequireAuth>
+              }
+            />
 
             <Route
               path="/login"
