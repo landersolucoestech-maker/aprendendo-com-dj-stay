@@ -28,14 +28,6 @@ const getYouTubeVideoId = (url: string): string | null => {
   return match?.[1] ?? null;
 };
 
-const slugifyFileName = (title: string): string =>
-  title
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase();
-
 const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const [watchProgress, setWatchProgress] = useState(lesson.progressPercent);
   const navigate = useNavigate();
@@ -79,10 +71,11 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
     }
   };
 
-  const handleDownloadSamples = async () => {
-    const filePath = lessonFilesQuery.data?.samples_file_path;
+  const sampleAsset = lessonFilesQuery.data?.find((asset) => asset.purpose === "sample");
+  const projectAsset = lessonFilesQuery.data?.find((asset) => asset.purpose === "project");
 
-    if (!filePath) {
+  const handleDownloadSamples = async () => {
+    if (!sampleAsset) {
       toast({
         title: "Arquivo não disponível",
         description: "Os samples e loops desta aula ainda não foram disponibilizados.",
@@ -92,11 +85,7 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
     }
 
     try {
-      await downloadFileFromStorage(
-        "lesson-samples",
-        filePath,
-        `samples-loops-${slugifyFileName(lesson.title)}.zip`,
-      );
+      await downloadFileFromStorage(sampleAsset);
       toast({
         title: "Download iniciado",
         description: "Os samples e loops da aula estão sendo baixados.",
@@ -111,9 +100,7 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   };
 
   const handleDownloadProject = async () => {
-    const filePath = lessonFilesQuery.data?.project_file_path;
-
-    if (!filePath) {
+    if (!projectAsset) {
       toast({
         title: "Arquivo não disponível",
         description: "O projeto desta aula ainda não foi disponibilizado.",
@@ -123,11 +110,7 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
     }
 
     try {
-      await downloadFileFromStorage(
-        "lesson-projects",
-        filePath,
-        `projeto-${slugifyFileName(lesson.title)}.als`,
-      );
+      await downloadFileFromStorage(projectAsset);
       toast({
         title: "Download iniciado",
         description: "O projeto da aula está sendo baixado.",
@@ -224,7 +207,7 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
               variant="outline"
               className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
               onClick={handleDownloadSamples}
-              disabled={filesUnavailable || !lessonFilesQuery.data?.samples_file_path}
+              disabled={filesUnavailable || !sampleAsset}
             >
               <Download className="w-4 h-4 mr-2" />
               {lessonFilesQuery.isLoading ? "Carregando..." : "Samples e loops da aula"}
@@ -233,7 +216,7 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
               variant="outline"
               className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
               onClick={handleDownloadProject}
-              disabled={filesUnavailable || !lessonFilesQuery.data?.project_file_path}
+              disabled={filesUnavailable || !projectAsset}
             >
               <Download className="w-4 h-4 mr-2" />
               {lessonFilesQuery.isLoading ? "Carregando..." : "Projeto da aula"}
