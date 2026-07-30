@@ -10,6 +10,8 @@ import RecentActivities from "@/components/RecentActivities";
 import UserProfile from "@/components/UserProfile";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getActiveEnrollments, useCourseAccess } from "@/hooks/useCourseAccess";
+import { useCurrentRole } from "@/hooks/useCurrentRole";
 import { useModules } from "@/hooks/useModules";
 import {
   useProgressCalculation,
@@ -20,6 +22,8 @@ import { getErrorMessage } from "@/lib/error-message";
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const roleQuery = useCurrentRole();
+  const accessQuery = useCourseAccess();
   const modulesQuery = useModules();
   const progressCalculation = useProgressCalculation(modulesQuery.data);
 
@@ -27,7 +31,13 @@ const Dashboard = () => {
     return null;
   }
 
-  if (modulesQuery.isLoading || progressCalculation.isLoading || progressCalculation.data === undefined) {
+  if (
+    roleQuery.isLoading ||
+    accessQuery.isLoading ||
+    modulesQuery.isLoading ||
+    progressCalculation.isLoading ||
+    progressCalculation.data === undefined
+  ) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
@@ -38,7 +48,8 @@ const Dashboard = () => {
     );
   }
 
-  const loadingError = modulesQuery.error ?? progressCalculation.error;
+  const loadingError =
+    roleQuery.error ?? accessQuery.error ?? modulesQuery.error ?? progressCalculation.error;
 
   if (loadingError) {
     return (
@@ -57,6 +68,25 @@ const Dashboard = () => {
   }
 
   const modulesWithProgress = progressCalculation.data;
+  const activeEnrollments = accessQuery.data ? getActiveEnrollments(accessQuery.data) : [];
+  const isAdministrator = roleQuery.data?.role === "administrador_proprietario";
+
+  if (!isAdministrator && activeEnrollments.length === 0) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
+        <div className="text-center max-w-xl">
+          <h2 className="text-2xl font-bold mb-4">Matrícula ativa necessária</h2>
+          <p className="text-gray-300 mb-6">
+            O conteúdo do curso permanece bloqueado até que uma matrícula ativa seja confirmada.
+          </p>
+          <Button onClick={() => navigate("/pagamento-sucesso")} className="btn-neon">
+            Verificar acesso
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   let metadata: UserMetadataProfile;
 
   try {
