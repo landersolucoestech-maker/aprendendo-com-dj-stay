@@ -1,0 +1,160 @@
+diff --git a/src/hooks/useProgressCalculation.ts b/src/hooks/useProgressCalculation.ts
+index 06c27e0..58aa984 100644
+--- a/src/hooks/useProgressCalculation.ts
++++ b/src/hooks/useProgressCalculation.ts
+@@ -1,60 +1,47 @@
++import { useMemo } from "react";
+ 
+-import { useMemo } from 'react';
+-import { useUserProgress } from './useUserProgress';
+-
+-interface Lesson {
+-  id: string;
+-  title: string;
+-  duration: string;
+-  completed?: boolean;
+-  video_url?: string;
+-  videoUrl?: string;
+-  description: string;
+-  content?: string;
+-  order_num?: number;
+-  module_id?: string;
+-}
+-
+-interface Module {
+-  id: string;
+-  title: string;
+-  description: string;
+-  progress: number;
+-  lessons: Lesson[];
+-}
+-
+-export const useProgressCalculation = (modules: any[] | undefined) => {
++import type { Module } from "./useModules";
++import { useUserProgress } from "./useUserProgress";
++
++export const useProgressCalculation = (modules: Module[] | undefined): Module[] => {
+   const { data: userProgress } = useUserProgress();
+ 
+-  const modulesWithProgress = useMemo(() => {
+-    if (!modules) return [];
+-
+-    return modules.map(module => {
+-      // Calcular progresso baseado nas aulas completadas
+-      const completedLessons = module.lessons?.filter(lesson => {
+-        const progress = userProgress?.find(p => p.aula_id === lesson.id);
+-        return progress?.completada || false;
+-      }) || [];
+-      
+-      const totalLessons = module.lessons?.length || 0;
+-      const progressPercentage = totalLessons > 0 
+-        ? Math.round((completedLessons.length / totalLessons) * 100)
++  return useMemo(() => {
++    if (!modules) {
++      return [];
++    }
++
++    const progressByLesson = new Map(
++      (userProgress ?? []).map((progress) => [progress.aula_id, progress]),
++    );
++
++    return modules.map((module) => {
++      const lessons = module.lessons.map((lesson) => {
++        const progress = progressByLesson.get(lesson.id);
++
++        return {
++          ...lesson,
++          duration: lesson.duracao
++            ? `${lesson.duracao}:00`
++            : lesson.duration || "15:30",
++          description:
++            lesson.descricao || lesson.description || "Descrição não disponível",
++          videoUrl: lesson.video || lesson.video_url || lesson.videoUrl || "",
++          completed: progress?.completada ?? false,
++        };
++      });
++
++      const completedLessons = lessons.filter((lesson) => lesson.completed).length;
++      const progress = lessons.length > 0
++        ? Math.round((completedLessons / lessons.length) * 100)
+         : 0;
+ 
+       return {
+         ...module,
+-        description: module.description || 'Descrição não disponível',
+-        progress: progressPercentage,
+-        lessons: (module.lessons || []).map(lesson => ({
+-          ...lesson,
+-          duration: lesson.duracao ? `${lesson.duracao}:00` : (lesson.duration || '15:30'),
+-          description: lesson.descricao || lesson.description || 'Descrição não disponível',
+-          videoUrl: lesson.video || lesson.video_url || lesson.videoUrl || '',
+-          completed: userProgress?.find(p => p.aula_id === lesson.id)?.completada || false
+-        }))
++        description: module.description || "Descrição não disponível",
++        progress,
++        lessons,
+       };
+     });
+   }, [modules, userProgress]);
+-
+-  return modulesWithProgress;
+ };
+diff --git a/src/lib/error-message.ts b/src/lib/error-message.ts
+new file mode 100644
+index 0000000..a8d0e2a
+--- /dev/null
++++ b/src/lib/error-message.ts
+@@ -0,0 +1,3 @@
++export function getErrorMessage(error: unknown, fallback: string): string {
++  return error instanceof Error && error.message ? error.message : fallback;
++}
+diff --git a/src/pages/Lesson.tsx b/src/pages/Lesson.tsx
+index 4aa50d9..a3da4d4 100644
+--- a/src/pages/Lesson.tsx
++++ b/src/pages/Lesson.tsx
+@@ -1,5 +1,5 @@
+ 
+-import { useState, useEffect } from 'react';
++import { useState } from 'react';
+ import { useParams, useNavigate } from 'react-router-dom';
+ import { Button } from "@/components/ui/button";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+@@ -20,14 +20,8 @@ const Lesson = () => {
+   const nextLesson = lessons?.[currentIndex + 1];
+   const prevLesson = lessons?.[currentIndex - 1];
+ 
+-  // Dados estáticos (sem autenticação)
+-  const lessonProgress = { completada: false, progresso_percentual: 0 };
+-  
+-  useEffect(() => {
+-    if (lessonProgress) {
+-      setWatchProgress(lessonProgress.progresso_percentual || 0);
+-    }
+-  }, [lessonProgress]);
++  // Estado provisório do protótipo; a persistência canônica será restaurada nas fases de Auth e progresso.
++  const lessonCompleted = false;
+ 
+   if (isLoading) {
+     return (
+@@ -64,7 +58,7 @@ const Lesson = () => {
+     title: currentLesson.title,
+     description: currentLesson.description || 'Descrição não disponível',
+     duration: currentLesson.duration || '15:30',
+-    completed: lessonProgress?.completada || false,
++    completed: lessonCompleted,
+     video_url: currentLesson.video_url,
+     videoUrl: currentLesson.video_url || ''
+   };
+diff --git a/src/pages/Login.tsx b/src/pages/Login.tsx
+index 7c37a3d..e4be095 100644
+--- a/src/pages/Login.tsx
++++ b/src/pages/Login.tsx
+@@ -79,7 +79,7 @@ const Login = () => {
+         // Redirect to dashboard
+         navigate('/dashboard');
+       }
+-    } catch (error: any) {
++    } catch {
+       toast({
+         title: "Erro",
+         description: "Ocorreu um erro inesperado. Tente novamente.",

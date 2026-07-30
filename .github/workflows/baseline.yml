@@ -27,11 +27,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Capturar metadados Git
+      - name: Capturar metadados Git de entrada
         id: gitmeta
         run: echo "tree_sha=$(git rev-parse HEAD^{tree})" >> "$GITHUB_OUTPUT"
 
+      - name: Aplicar lote de correções da fase
+        id: phase_apply
+        continue-on-error: true
+        run: |
+          shopt -s nullglob
+          patches=(scripts/b3/*.patch)
+
+          if [ ${#patches[@]} -eq 0 ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          for patch in "${patches[@]}"; do
+            git apply --check "$patch"
+          done
+
+          for patch in "${patches[@]}"; do
+            git apply "$patch"
+          done
+
+          rm -rf scripts/b3
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "refactor(b3): resolve lint and typing baseline"
+          git push origin HEAD:dev
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Configurar Node.js
+        if: steps.phase_apply.outcome == 'success'
         uses: actions/setup-node@v4
         with:
           node-version: 22.16.0
@@ -39,6 +70,7 @@ jobs:
 
       - name: Sincronizar package-lock.json
         id: lock_sync
+        if: steps.phase_apply.outcome == 'success'
         continue-on-error: true
         run: npm install --package-lock-only --ignore-scripts
 
@@ -56,7 +88,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package-lock.json
-          git commit -m "chore(b2): sync npm lockfile"
+          git commit -m "chore: sync npm lockfile"
           git push origin HEAD:dev
           echo "changed=true" >> "$GITHUB_OUTPUT"
           echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
@@ -89,7 +121,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: source-${{ steps.lock_commit.outputs.commit_sha || github.sha }}
+          name: source-${{ steps.lock_commit.outputs.commit_sha || steps.phase_apply.outputs.commit_sha || github.sha }}
           path: |
             .
             !.git/**
@@ -103,7 +135,9 @@ jobs:
         uses: actions/github-script@v7
         env:
           TREE_SHA: ${{ steps.gitmeta.outputs.tree_sha }}
-          VALIDATED_SHA: ${{ steps.lock_commit.outputs.commit_sha || github.sha }}
+          VALIDATED_SHA: ${{ steps.lock_commit.outputs.commit_sha || steps.phase_apply.outputs.commit_sha || github.sha }}
+          PHASE_APPLY_OUTCOME: ${{ steps.phase_apply.outcome }}
+          PHASE_CHANGED: ${{ steps.phase_apply.outputs.changed }}
           LOCK_SYNC_OUTCOME: ${{ steps.lock_sync.outcome }}
           LOCK_COMMIT_OUTCOME: ${{ steps.lock_commit.outcome }}
           LOCK_CHANGED: ${{ steps.lock_commit.outputs.changed }}
@@ -126,7 +160,9 @@ jobs:
               '',
               '| Etapa | Resultado |',
               '| --- | --- |',
-              `| sincronizar lockfile | ${process.env.LOCK_SYNC_OUTCOME} |`,
+              `| aplicar lote da fase | ${process.env.PHASE_APPLY_OUTCOME} |`,
+              `| árvore alterada | ${process.env.PHASE_CHANGED || 'false'} |`,
+              `| sincronizar lockfile | ${process.env.LOCK_SYNC_OUTCOME || 'skipped'} |`,
               `| persistir lockfile | ${process.env.LOCK_COMMIT_OUTCOME || 'skipped'} |`,
               `| lockfile alterado | ${process.env.LOCK_CHANGED || 'false'} |`,
               `| npm ci | ${process.env.INSTALL_OUTCOME || 'skipped'} |`,
@@ -147,6 +183,7 @@ jobs:
       - name: Aplicar gate final
         if: always()
         env:
+          PHASE_APPLY_OUTCOME: ${{ steps.phase_apply.outcome }}
           LOCK_SYNC_OUTCOME: ${{ steps.lock_sync.outcome }}
           LOCK_COMMIT_OUTCOME: ${{ steps.lock_commit.outcome }}
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
@@ -154,6 +191,7 @@ jobs:
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         run: |
+          test "$PHASE_APPLY_OUTCOME" = "success"
           test "$LOCK_SYNC_OUTCOME" = "success"
           test "$LOCK_COMMIT_OUTCOME" = "success"
           test "$INSTALL_OUTCOME" = "success"

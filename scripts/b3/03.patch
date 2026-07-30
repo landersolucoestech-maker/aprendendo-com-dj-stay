@@ -1,0 +1,98 @@
+diff --git a/src/examples/LessonFilesExample.tsx b/src/examples/LessonFilesExample.tsx
+index 4234b21..8b3e29c 100644
+--- a/src/examples/LessonFilesExample.tsx
++++ b/src/examples/LessonFilesExample.tsx
+@@ -5,6 +5,7 @@ import { Download, FileAudio, FileCode, Upload, AlertCircle, ExternalLink, Check
+ import { useLessonFiles, downloadFileFromStorage } from "@/hooks/useLessonFiles";
+ import { useToast } from "@/hooks/use-toast";
+ import { useParams } from 'react-router-dom';
++import { getErrorMessage } from "@/lib/error-message";
+ const LessonFilesExample = () => {
+   const {
+     toast
+@@ -34,11 +35,11 @@ const LessonFilesExample = () => {
+         title: "Download iniciado!",
+         description: "Os samples e loops da aula estão sendo baixados."
+       });
+-    } catch (error: any) {
++    } catch (error: unknown) {
+       console.error('Erro ao baixar samples:', error);
+       toast({
+         title: "Erro no download",
+-        description: error.message || "Não foi possível baixar os samples.",
++        description: getErrorMessage(error, "Não foi possível baixar os samples."),
+         variant: "destructive"
+       });
+     }
+@@ -59,11 +60,11 @@ const LessonFilesExample = () => {
+         title: "Download iniciado!",
+         description: "O projeto Ableton Live está sendo baixado."
+       });
+-    } catch (error: any) {
++    } catch (error: unknown) {
+       console.error('Erro ao baixar projeto:', error);
+       toast({
+         title: "Erro no download",
+-        description: error.message || "Não foi possível baixar o projeto.",
++        description: getErrorMessage(error, "Não foi possível baixar o projeto."),
+         variant: "destructive"
+       });
+     }
+diff --git a/src/hooks/useAvatarUpload.ts b/src/hooks/useAvatarUpload.ts
+index 4d21b0b..f729023 100644
+--- a/src/hooks/useAvatarUpload.ts
++++ b/src/hooks/useAvatarUpload.ts
+@@ -2,6 +2,7 @@
+ import { useState } from 'react';
+ import { supabase } from '@/integrations/supabase/client';
+ import { useToast } from '@/hooks/use-toast';
++import { getErrorMessage } from '@/lib/error-message';
+ 
+ export const useAvatarUpload = () => {
+   const [isUploading, setIsUploading] = useState(false);
+@@ -52,10 +53,10 @@ export const useAvatarUpload = () => {
+         .getPublicUrl(fileName);
+ 
+       return publicUrl;
+-    } catch (error: any) {
++    } catch (error: unknown) {
+       toast({
+         title: "Erro no upload",
+-        description: error.message || "Não foi possível fazer upload da imagem",
++        description: getErrorMessage(error, "Não foi possível fazer upload da imagem"),
+         variant: "destructive",
+       });
+       return null;
+diff --git a/src/hooks/useModules.ts b/src/hooks/useModules.ts
+index 3e081e9..bc503ea 100644
+--- a/src/hooks/useModules.ts
++++ b/src/hooks/useModules.ts
+@@ -2,12 +2,27 @@
+ import { useQuery } from '@tanstack/react-query';
+ import { supabase } from '@/integrations/supabase/client';
+ 
++export interface ModuleLesson {
++  id: string;
++  title: string;
++  titulo: string;
++  descricao: string | null;
++  video: string | null;
++  video_url: string | null;
++  duracao: number | null;
++  duration: string;
++  completed: boolean;
++  videoUrl: string;
++  description: string;
++  ordem: number;
++}
++
+ export interface Module {
+   id: string;
+   title: string;
+   description: string;
+   progress: number;
+-  lessons: any[];
++  lessons: ModuleLesson[];
+ }
+ 
+ export const useModules = () => {

@@ -1,0 +1,141 @@
+diff --git a/src/components/ui/pagination.tsx b/src/components/ui/pagination.tsx
+index ea40d19..62e1a30 100644
+--- a/src/components/ui/pagination.tsx
++++ b/src/components/ui/pagination.tsx
+@@ -2,7 +2,8 @@ import * as React from "react"
+ import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
+ 
+ import { cn } from "@/lib/utils"
+-import { ButtonProps, buttonVariants } from "@/components/ui/button"
++import type { ButtonProps } from "@/components/ui/button"
++import { buttonVariants } from "@/components/ui/button-variants"
+ 
+ const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
+   <nav
+diff --git a/src/components/ui/sidebar.tsx b/src/components/ui/sidebar.tsx
+index 1a566bf..de58439 100644
+--- a/src/components/ui/sidebar.tsx
++++ b/src/components/ui/sidebar.tsx
+@@ -757,5 +757,4 @@ export {
+   SidebarRail,
+   SidebarSeparator,
+   SidebarTrigger,
+-  useSidebar,
+ }
+diff --git a/src/components/ui/sonner.tsx b/src/components/ui/sonner.tsx
+index 3541814..1128edf 100644
+--- a/src/components/ui/sonner.tsx
++++ b/src/components/ui/sonner.tsx
+@@ -1,5 +1,5 @@
+ import { useTheme } from "next-themes"
+-import { Toaster as Sonner, toast } from "sonner"
++import { Toaster as Sonner } from "sonner"
+ 
+ type ToasterProps = React.ComponentProps<typeof Sonner>
+ 
+@@ -26,4 +26,4 @@ const Toaster = ({ ...props }: ToasterProps) => {
+   )
+ }
+ 
+-export { Toaster, toast }
++export { Toaster }
+diff --git a/src/components/ui/textarea.tsx b/src/components/ui/textarea.tsx
+index 9f9a6dc..12c9136 100644
+--- a/src/components/ui/textarea.tsx
++++ b/src/components/ui/textarea.tsx
+@@ -2,8 +2,7 @@ import * as React from "react"
+ 
+ import { cn } from "@/lib/utils"
+ 
+-export interface TextareaProps
+-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
++export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>
+ 
+ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+   ({ className, ...props }, ref) => {
+diff --git a/src/components/ui/toggle-group.tsx b/src/components/ui/toggle-group.tsx
+index afe5da6..172f316 100644
+--- a/src/components/ui/toggle-group.tsx
++++ b/src/components/ui/toggle-group.tsx
+@@ -3,7 +3,7 @@ import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"
+ import { type VariantProps } from "class-variance-authority"
+ 
+ import { cn } from "@/lib/utils"
+-import { toggleVariants } from "@/components/ui/toggle"
++import { toggleVariants } from "@/components/ui/toggle-variants"
+ 
+ const ToggleGroupContext = React.createContext<
+   VariantProps<typeof toggleVariants>
+diff --git a/src/components/ui/toggle-variants.ts b/src/components/ui/toggle-variants.ts
+new file mode 100644
+index 0000000..6b1b48e
+--- /dev/null
++++ b/src/components/ui/toggle-variants.ts
+@@ -0,0 +1,23 @@
++import { cva } from "class-variance-authority";
++
++export const toggleVariants = cva(
++  "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground",
++  {
++    variants: {
++      variant: {
++        default: "bg-transparent",
++        outline:
++          "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
++      },
++      size: {
++        default: "h-10 px-3",
++        sm: "h-9 px-2.5",
++        lg: "h-11 px-5",
++      },
++    },
++    defaultVariants: {
++      variant: "default",
++      size: "default",
++    },
++  },
++);
+diff --git a/src/components/ui/toggle.tsx b/src/components/ui/toggle.tsx
+index 9ecac28..ae7841c 100644
+--- a/src/components/ui/toggle.tsx
++++ b/src/components/ui/toggle.tsx
+@@ -1,31 +1,10 @@
+ import * as React from "react"
+ import * as TogglePrimitive from "@radix-ui/react-toggle"
+-import { cva, type VariantProps } from "class-variance-authority"
++import { type VariantProps } from "class-variance-authority"
+ 
+ import { cn } from "@/lib/utils"
+ 
+-const toggleVariants = cva(
+-  "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground",
+-  {
+-    variants: {
+-      variant: {
+-        default: "bg-transparent",
+-        outline:
+-          "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
+-      },
+-      size: {
+-        default: "h-10 px-3",
+-        sm: "h-9 px-2.5",
+-        lg: "h-11 px-5",
+-      },
+-    },
+-    defaultVariants: {
+-      variant: "default",
+-      size: "default",
+-    },
+-  }
+-)
+-
++import { toggleVariants } from "@/components/ui/toggle-variants"
+ const Toggle = React.forwardRef<
+   React.ElementRef<typeof TogglePrimitive.Root>,
+   React.ComponentPropsWithoutRef<typeof TogglePrimitive.Root> &
+@@ -40,4 +19,4 @@ const Toggle = React.forwardRef<
+ 
+ Toggle.displayName = TogglePrimitive.Root.displayName
+ 
+-export { Toggle, toggleVariants }
++export { Toggle }
