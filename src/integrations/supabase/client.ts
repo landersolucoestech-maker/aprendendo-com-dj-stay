@@ -6,4 +6,12 @@ import type { Database } from "./types";
 export const supabase = createClient<Database>(
   publicConfig.supabaseUrl,
   publicConfig.supabasePublishableKey,
+  {
+    auth: {
+      flowType: "pkce",
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false,
+    },
+  },
 );

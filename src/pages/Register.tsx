@@ -1,336 +1,100 @@
+import { useState } from "react";
+import { Eye, EyeOff, Lock, Mail, Phone, User } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
-import { useState } from 'react';
+import { getAuthErrorMessage } from "@/auth/auth-errors";
+import { signUpWithPassword } from "@/auth/auth-service";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
-const Register = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-    acceptTerms: false
-  });
+interface RegistrationForm {
+  readonly name: string;
+  readonly email: string;
+  readonly phone: string;
+  readonly password: string;
+  readonly confirmation: string;
+  readonly acceptedTerms: boolean;
+}
 
+const INITIAL_FORM: RegistrationForm = {
+  name: "",
+  email: "",
+  phone: "",
+  password: "",
+  confirmation: "",
+  acceptedTerms: false,
+};
+
+const Register = () => {
+  const [form, setForm] = useState<RegistrationForm>(INITIAL_FORM);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const setField = <Key extends keyof RegistrationForm>(key: Key, value: RegistrationForm[Key]) => {
+    setForm((current) => ({ ...current, [key]: value }));
   };
 
-  const validateForm = () => {
-    
-    if (!formData.name.trim()) {
-      toast({
-        title: "Erro",
-        description: "Nome completo é obrigatório",
-        variant: "destructive"
-      });
-      return false;
-    }
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
 
-    if (!formData.email.trim()) {
-      toast({
-        title: "Erro",
-        description: "Email é obrigatório",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    // Validação básica de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast({
-        title: "Erro",
-        description: "Email deve ter um formato válido",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    if (formData.password.length < 8) {
-      toast({
-        title: "Erro",
-        description: "A senha deve ter pelo menos 8 caracteres",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "As senhas não coincidem",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    if (!formData.acceptTerms) {
-      toast({
-        title: "Erro",
-        description: "Você deve aceitar os termos de uso",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Previne duplo clique
-    if (isLoading) {
+    if (!form.name.trim() || !form.email.trim()) {
+      toast({ title: "Dados incompletos", description: "Informe nome e email.", variant: "destructive" });
       return;
     }
-    
-    if (!validateForm()) {
+
+    if (form.password.length < 8 || form.password !== form.confirmation) {
+      toast({ title: "Senha inválida", description: "Use pelo menos 8 caracteres e confirme a mesma senha.", variant: "destructive" });
+      return;
+    }
+
+    if (!form.acceptedTerms) {
+      toast({ title: "Termos obrigatórios", description: "Aceite os termos e a política de privacidade.", variant: "destructive" });
       return;
     }
 
     setIsLoading(true);
+    const { data, error } = await signUpWithPassword({ email: form.email, password: form.password, fullName: form.name, phone: form.phone });
+    setIsLoading(false);
 
-    try {
-      
-      // Primeiro, vamos limpar qualquer sessão existente
-      await supabase.auth.signOut();
-      
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email.trim(),
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: formData.name.trim(),
-            phone: formData.phone.trim()
-          }
-        }
-      });
-
-
-      if (error) {
-        
-        let errorMessage = "Ocorreu um erro durante o cadastro";
-        
-        if (error.message.includes('already registered') || error.message.includes('User already registered')) {
-          errorMessage = "Este email já está registrado. Tente fazer login.";
-        } else if (error.message.includes('Password should be at least')) {
-          errorMessage = "A senha deve ter pelo menos 6 caracteres";
-        } else if (error.message.includes('Invalid email')) {
-          errorMessage = "Email inválido";
-        } else if (error.message.includes('weak password')) {
-          errorMessage = "Senha muito fraca. Use uma senha mais forte.";
-        }
-        
-        toast({
-          title: "Erro",
-          description: errorMessage,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (data.user) {
-        toast({
-          title: "Sucesso!",
-          description: "Conta criada com sucesso! Verifique seu email para confirmar sua conta.",
-        });
-        
-        // Limpa o formulário
-        setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          password: '',
-          confirmPassword: '',
-          acceptTerms: false
-        });
-        
-        // Redireciona para a página de verificação de email
-        navigate('/verificar-email');
-      }
-    } catch {
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro inesperado. Tente novamente.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+    if (error || !data.user) {
+      toast({ title: "Não foi possível criar a conta", description: getAuthErrorMessage(error), variant: "destructive" });
+      return;
     }
+
+    if (data.session) {
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+
+    navigate("/verificar-email", { replace: true, state: { email: form.email.trim().toLowerCase() } });
   };
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-      {/* Background Effects */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="w-full h-full bg-repeat" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%238B5CF6' fill-opacity='0.4'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
-      </div>
-
-      <div className="w-full max-w-md relative z-10">
-        <Card className="glass-card border-white/10">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl gradient-text">Matricule-se</CardTitle>
-            <CardDescription className="text-gray-300">
-              Comece sua jornada na produção de funk hoje mesmo
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-white">Nome Completo</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Seu nome completo"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-white">Telefone (opcional)</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="(11) 99999-9999"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-white">Senha</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Mínimo 8 caracteres"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                    className="pl-10 pr-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
-                    required
-                    minLength={8}
-                    disabled={isLoading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                    disabled={isLoading}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-white">Confirmar Senha</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirme sua senha"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    className="pl-10 pr-10 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
-                    required
-                    disabled={isLoading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                    disabled={isLoading}
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="terms" 
-                  checked={formData.acceptTerms}
-                  onCheckedChange={(checked) => handleInputChange('acceptTerms', checked as boolean)}
-                  className="border-white/20"
-                  disabled={isLoading}
-                />
-                <Label htmlFor="terms" className="text-sm text-gray-300">
-                  Aceito os <Link to="/termos" className="text-neon-purple hover:text-neon-blue">termos de uso</Link> e <Link to="/privacidade" className="text-neon-purple hover:text-neon-blue">política de privacidade</Link>
-                </Label>
-              </div>
-
-              <Button 
-                type="submit" 
-                className="w-full btn-neon" 
-                disabled={!formData.acceptTerms || isLoading}
-              >
-                {isLoading ? "Criando conta..." : "Criar Conta"}
-              </Button>
-            </form>
-
-            <div className="text-center">
-              <p className="text-gray-300">
-                Já tem uma conta?{' '}
-                <Link 
-                  to="/login" 
-                  className="text-neon-purple hover:text-neon-blue transition-colors font-medium"
-                >
-                  Faça login
-                </Link>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="glass-card border-white/10 w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl gradient-text">Matricule-se</CardTitle>
+          <CardDescription className="text-gray-300">Crie sua conta para acessar a plataforma.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2"><Label htmlFor="name">Nome completo</Label><div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><Input id="name" value={form.name} onChange={(event) => setField("name", event.target.value)} className="pl-10 bg-white/5 border-white/20 text-white" required disabled={isLoading} /></div></div>
+            <div className="space-y-2"><Label htmlFor="email">Email</Label><div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><Input id="email" type="email" value={form.email} onChange={(event) => setField("email", event.target.value)} className="pl-10 bg-white/5 border-white/20 text-white" required disabled={isLoading} /></div></div>
+            <div className="space-y-2"><Label htmlFor="phone">Telefone</Label><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><Input id="phone" type="tel" value={form.phone} onChange={(event) => setField("phone", event.target.value)} className="pl-10 bg-white/5 border-white/20 text-white" disabled={isLoading} /></div></div>
+            <div className="space-y-2"><Label htmlFor="password">Senha</Label><div className="relative"><Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><Input id="password" type={showPassword ? "text" : "password"} value={form.password} onChange={(event) => setField("password", event.target.value)} className="pl-10 pr-10 bg-white/5 border-white/20 text-white" minLength={8} required disabled={isLoading} /><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button></div></div>
+            <div className="space-y-2"><Label htmlFor="confirmation">Confirmar senha</Label><Input id="confirmation" type="password" value={form.confirmation} onChange={(event) => setField("confirmation", event.target.value)} className="bg-white/5 border-white/20 text-white" required disabled={isLoading} /></div>
+            <div className="flex items-start gap-2"><Checkbox id="terms" checked={form.acceptedTerms} onCheckedChange={(checked) => setField("acceptedTerms", checked === true)} /><Label htmlFor="terms" className="text-sm text-gray-300">Aceito os termos de uso e a política de privacidade.</Label></div>
+            <Button type="submit" className="w-full btn-neon" disabled={isLoading}>{isLoading ? "Criando conta..." : "Criar conta"}</Button>
+          </form>
+          <p className="text-center text-gray-300 mt-6">Já possui conta? <Link to="/login" className="text-neon-purple font-medium">Entrar</Link></p>
+        </CardContent>
+      </Card>
     </div>
   );
 };

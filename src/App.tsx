@@ -1,40 +1,57 @@
+import { QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 
+import { AuthProvider } from "@/auth/AuthProvider";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
-import Lesson from "./pages/Lesson";
-import Contact from "./pages/Contact";
-import EditProfile from "./pages/EditProfile";
-import AccessDenied from "./pages/AccessDenied";
-import PaymentSuccess from "./pages/PaymentSuccess";
-import VerifyEmail from "./pages/VerifyEmail";
-import Verified from "./pages/Verified";
-import NotFound from "./pages/NotFound";
-
-const queryClient = new QueryClient();
+import { queryClient } from "@/lib/query-client";
+import { PublicOnlyRoute } from "@/routing/PublicOnlyRoute";
+import { RequireAuth } from "@/routing/RequireAuth";
+import AccessDenied from "@/pages/AccessDenied";
+import AuthCallback from "@/pages/AuthCallback";
+import Contact from "@/pages/Contact";
+import Dashboard from "@/pages/Dashboard";
+import EditProfile from "@/pages/EditProfile";
+import ForgotPassword from "@/pages/ForgotPassword";
+import Index from "@/pages/Index";
+import Lesson from "@/pages/Lesson";
+import Login from "@/pages/Login";
+import NotFound from "@/pages/NotFound";
+import PaymentSuccess from "@/pages/PaymentSuccess";
+import Register from "@/pages/Register";
+import ResetPassword from "@/pages/ResetPassword";
+import Verified from "@/pages/Verified";
+import VerifyEmail from "@/pages/VerifyEmail";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/aula/:lessonId" element={<Lesson />} />
-          <Route path="/contato" element={<Contact />} />
-          <Route path="/editar-perfil" element={<EditProfile />} />
-          <Route path="/acesso-negado" element={<AccessDenied />} />
-          <Route path="/pagamento-sucesso" element={<PaymentSuccess />} />
-          <Route path="/verificar-email" element={<VerifyEmail />} />
-          <Route path="/verificado" element={<Verified />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/contato" element={<Contact />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/verificar-email" element={<VerifyEmail />} />
+            <Route path="/verificado" element={<Verified />} />
+            <Route path="/redefinir-senha" element={<ResetPassword />} />
+            <Route path="/acesso-negado" element={<AccessDenied />} />
+            <Route path="/pagamento-sucesso" element={<PaymentSuccess />} />
+
+            <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+            <Route path="/matricule-se" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+            <Route path="/esqueceu-senha" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+
+            <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+            <Route path="/aula/:lessonId" element={<RequireAuth><Lesson /></RequireAuth>} />
+            <Route path="/editar-perfil" element={<RequireAuth><EditProfile /></RequireAuth>} />
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

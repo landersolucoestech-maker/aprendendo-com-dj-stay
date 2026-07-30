@@ -1,5 +1,5 @@
-# Gate controlado das fases de fundação. Não contém deploy.
-name: Baseline técnico
+# Gate sequencial de qualidade. Não contém deploy.
+name: Gate técnico
 
 on:
   workflow_dispatch:
@@ -10,15 +10,15 @@ on:
       - "docs/**"
 
 permissions:
-  contents: write
+  contents: read
   issues: write
 
 concurrency:
-  group: baseline-dev
+  group: gate-dev
   cancel-in-progress: false
 
 jobs:
-  baseline:
+  quality:
     name: Instalação, lint, typecheck e build
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -27,115 +27,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Capturar metadados Git de entrada
-        id: gitmeta
-        run: echo "tree_sha=$(git rev-parse HEAD^{tree})" >> "$GITHUB_OUTPUT"
-
-      - name: Aplicar lote de autenticação
-        id: phase_apply
-        continue-on-error: true
-        run: |
-          shopt -s nullglob
-          chunks=(scripts/b5/payload.*.b64)
-
-          if [ ${#chunks[@]} -eq 0 ]; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          cat "${chunks[@]}" | base64 --decode > /tmp/b5-payload.tar.gz
-          gzip -t /tmp/b5-payload.tar.gz
-
-          cat > /tmp/b5-expected.txt <<'EOF'
-          docs/refactor/04-authentication-sessions.md
-          package.json
-          scripts/check-auth-contract.mjs
-          src/App.tsx
-          src/auth/
-          src/auth/AuthProvider.tsx
-          src/auth/auth-context.ts
-          src/auth/auth-errors.ts
-          src/auth/auth-service.ts
-          src/auth/use-auth.ts
-          src/auth/user-metadata.ts
-          src/components/DashboardHeader.tsx
-          src/components/Navigation.tsx
-          src/integrations/supabase/client.ts
-          src/lib/query-client.ts
-          src/pages/AccessDenied.tsx
-          src/pages/AuthCallback.tsx
-          src/pages/Dashboard.tsx
-          src/pages/EditProfile.tsx
-          src/pages/ForgotPassword.tsx
-          src/pages/Login.tsx
-          src/pages/Register.tsx
-          src/pages/ResetPassword.tsx
-          src/pages/Verified.tsx
-          src/pages/VerifyEmail.tsx
-          src/routing/
-          src/routing/AuthLoadingScreen.tsx
-          src/routing/PublicOnlyRoute.tsx
-          src/routing/RequireAuth.tsx
-          src/routing/route-state.ts
-          EOF
-
-          sed -i 's/^          //' /tmp/b5-expected.txt
-          tar -tzf /tmp/b5-payload.tar.gz | sort > /tmp/b5-actual.txt
-          sort -o /tmp/b5-expected.txt /tmp/b5-expected.txt
-          diff -u /tmp/b5-expected.txt /tmp/b5-actual.txt
-
-          if grep -Eq '(^/|(^|/)\.\.(/|$))' /tmp/b5-actual.txt; then
-            echo "A carga contém caminho inseguro." >&2
-            exit 1
-          fi
-
-          tar -xzf /tmp/b5-payload.tar.gz
-          rm -rf scripts/b5
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "feat(b5): centralize authentication and sessions"
-          git push origin HEAD:dev
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-          echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
       - name: Configurar Node.js
-        if: steps.phase_apply.outcome == 'success'
         uses: actions/setup-node@v4
         with:
           node-version: 22.16.0
           cache: npm
 
-      - name: Sincronizar package-lock.json
-        id: lock_sync
-        if: steps.phase_apply.outcome == 'success'
-        continue-on-error: true
-        run: npm install --package-lock-only --ignore-scripts
-
-      - name: Persistir lockfile sincronizado
-        id: lock_commit
-        if: steps.lock_sync.outcome == 'success'
-        continue-on-error: true
-        run: |
-          if git diff --quiet -- package-lock.json; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          git commit -m "chore: sync npm lockfile"
-          git push origin HEAD:dev
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-          echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
       - name: Instalação limpa
         id: install
-        if: steps.lock_sync.outcome == 'success' && steps.lock_commit.outcome == 'success'
         continue-on-error: true
         run: npm ci
 
@@ -155,13 +54,17 @@ jobs:
         id: build
         if: steps.install.outcome == 'success'
         continue-on-error: true
-        run: npm run build
+        env:
+          VITE_APP_ENV: development
+          VITE_SUPABASE_URL: https://jmtyurketfclaneqxohu.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholder_for_static_build_only
+        run: npm run build:dev
 
       - name: Exportar snapshot integral do código-fonte
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: source-${{ steps.lock_commit.outputs.commit_sha || steps.phase_apply.outputs.commit_sha || github.sha }}
+          name: source-${{ github.sha }}
           path: |
             .
             !.git/**
@@ -174,41 +77,27 @@ jobs:
         if: always()
         uses: actions/github-script@v7
         env:
-          TREE_SHA: ${{ steps.gitmeta.outputs.tree_sha }}
-          VALIDATED_SHA: ${{ steps.lock_commit.outputs.commit_sha || steps.phase_apply.outputs.commit_sha || github.sha }}
-          PHASE_APPLY_OUTCOME: ${{ steps.phase_apply.outcome }}
-          PHASE_CHANGED: ${{ steps.phase_apply.outputs.changed }}
-          LOCK_SYNC_OUTCOME: ${{ steps.lock_sync.outcome }}
-          LOCK_COMMIT_OUTCOME: ${{ steps.lock_commit.outcome }}
-          LOCK_CHANGED: ${{ steps.lock_commit.outputs.changed }}
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
           LINT_OUTCOME: ${{ steps.lint.outcome }}
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         with:
           script: |
-            const shortSha = process.env.VALIDATED_SHA.slice(0, 12);
+            const shortSha = context.sha.slice(0, 12);
             const title = `Gate técnico — ${shortSha}`;
             const body = [
               '## Evidência automática do gate técnico',
               '',
-              `- Commit disparador: \`${context.sha}\``,
-              `- Commit validado: \`${process.env.VALIDATED_SHA}\``,
-              `- Tree SHA de entrada: \`${process.env.TREE_SHA}\``,
+              `- Commit validado: \`${context.sha}\``,
               `- Branch: \`${context.ref.replace('refs/heads/', '')}\``,
               `- Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               '',
               '| Etapa | Resultado |',
               '| --- | --- |',
-              `| aplicar lote da fase | ${process.env.PHASE_APPLY_OUTCOME} |`,
-              `| árvore alterada | ${process.env.PHASE_CHANGED || 'false'} |`,
-              `| sincronizar lockfile | ${process.env.LOCK_SYNC_OUTCOME || 'skipped'} |`,
-              `| persistir lockfile | ${process.env.LOCK_COMMIT_OUTCOME || 'skipped'} |`,
-              `| lockfile alterado | ${process.env.LOCK_CHANGED || 'false'} |`,
               `| npm ci | ${process.env.INSTALL_OUTCOME || 'skipped'} |`,
               `| npm run lint | ${process.env.LINT_OUTCOME || 'skipped'} |`,
               `| npm run typecheck | ${process.env.TYPECHECK_OUTCOME || 'skipped'} |`,
-              `| npm run build | ${process.env.BUILD_OUTCOME || 'skipped'} |`,
+              `| npm run build:dev | ${process.env.BUILD_OUTCOME || 'skipped'} |`,
               '',
               'Esta issue é evidência técnica automática. Não representa aprovação de produção.'
             ].join('\n');
@@ -223,17 +112,11 @@ jobs:
       - name: Aplicar gate final
         if: always()
         env:
-          PHASE_APPLY_OUTCOME: ${{ steps.phase_apply.outcome }}
-          LOCK_SYNC_OUTCOME: ${{ steps.lock_sync.outcome }}
-          LOCK_COMMIT_OUTCOME: ${{ steps.lock_commit.outcome }}
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
           LINT_OUTCOME: ${{ steps.lint.outcome }}
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         run: |
-          test "$PHASE_APPLY_OUTCOME" = "success"
-          test "$LOCK_SYNC_OUTCOME" = "success"
-          test "$LOCK_COMMIT_OUTCOME" = "success"
           test "$INSTALL_OUTCOME" = "success"
           test "$LINT_OUTCOME" = "success"
           test "$TYPECHECK_OUTCOME" = "success"
