@@ -130,6 +130,18 @@ jobs:
           mkdir -p artifacts
           supabase gen types typescript --local > artifacts/database.types.ts
 
+      - name: Sincronizar tipos gerados da FASE B10
+        if: steps.generate_types.outcome == 'success'
+        run: |
+          cp artifacts/database.types.ts src/integrations/supabase/types.ts
+          if ! git diff --quiet -- src/integrations/supabase/types.ts; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/integrations/supabase/types.ts
+            git commit -m "chore(b10): synchronize generated database types [skip ci]"
+            git push origin HEAD:dev
+          fi
+
       - name: Verificar drift dos tipos gerados
         id: generated_types_contract
         if: steps.generate_types.outcome == 'success'
