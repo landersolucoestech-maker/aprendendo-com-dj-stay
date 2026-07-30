@@ -8,7 +8,6 @@ export interface ModuleLesson {
   id: string;
   title: string;
   description: string | null;
-  videoUrl: string | null;
   durationMinutes: number | null;
   durationLabel: string | null;
   order: number;
@@ -31,7 +30,7 @@ export const useModules = () =>
     queryFn: async (): Promise<LearningModule[]> => {
       const { data, error } = await supabase
         .from("modulos")
-        .select("id,titulo,descricao,ordem,aulas(id,titulo,descricao,video,ordem,duracao)")
+        .select("id,titulo,descricao,ordem,aulas(id,titulo,descricao,ordem,duracao)")
         .order("ordem", { ascending: true })
         .order("ordem", { foreignTable: "aulas", ascending: true });
 
@@ -50,7 +49,6 @@ export const useModules = () =>
           id: lesson.id,
           title: lesson.titulo,
           description: lesson.descricao,
-          videoUrl: lesson.video,
           durationMinutes: lesson.duracao,
           durationLabel: formatDuration(lesson.duracao),
           order: lesson.ordem,
