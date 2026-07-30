@@ -1,0 +1,332 @@
+diff --git a/src/components/ConnectionStatus.tsx b/src/components/ConnectionStatus.tsx
+index 2a25510..797c9f1 100644
+--- a/src/components/ConnectionStatus.tsx
++++ b/src/components/ConnectionStatus.tsx
+@@ -1,8 +1,7 @@
+ 
+ import { useState, useEffect } from 'react';
+-import { Card, CardContent } from "@/components/ui/card";
+ import { Alert, AlertDescription } from "@/components/ui/alert";
+-import { CheckCircle, AlertCircle, Wifi, WifiOff } from "lucide-react";
++import { CheckCircle, AlertCircle } from "lucide-react";
+ import { supabase } from "@/integrations/supabase/client";
+ 
+ const ConnectionStatus = () => {
+@@ -13,7 +12,7 @@ const ConnectionStatus = () => {
+     // Testar conexão com Supabase
+     const testConnection = async () => {
+       try {
+-        const { data, error } = await supabase.from('modulos').select('count').limit(1);
++        const { error } = await supabase.from('modulos').select('count').limit(1);
+         if (error) throw error;
+         setIsConnected(true);
+         setLastUpdate(new Date());
+diff --git a/src/components/CourseModulesSection.tsx b/src/components/CourseModulesSection.tsx
+index e614d11..6033c5e 100644
+--- a/src/components/CourseModulesSection.tsx
++++ b/src/components/CourseModulesSection.tsx
+@@ -1,5 +1,5 @@
+ import { useState } from 'react';
+-import { ChevronDown, ChevronUp, Play, Clock, Download } from "lucide-react";
++import { ChevronDown, ChevronUp, Play, Clock } from "lucide-react";
+ import { Button } from "@/components/ui/button";
+ import { useNavigate } from "react-router-dom";
+ 
+diff --git a/src/components/DashboardHeader.tsx b/src/components/DashboardHeader.tsx
+index 726faa4..d2e1e8a 100644
+--- a/src/components/DashboardHeader.tsx
++++ b/src/components/DashboardHeader.tsx
+@@ -29,7 +29,7 @@ const DashboardHeader = ({ userName }: DashboardHeaderProps) => {
+         });
+         navigate('/');
+       }
+-    } catch (error) {
++    } catch {
+       toast({
+         title: "Erro",
+         description: "Erro inesperado ao fazer logout",
+diff --git a/src/components/Footer.tsx b/src/components/Footer.tsx
+index 8596b79..f92726b 100644
+--- a/src/components/Footer.tsx
++++ b/src/components/Footer.tsx
+@@ -1,5 +1,5 @@
+ 
+-import { Play, Mail, Phone, Instagram, Youtube } from "lucide-react";
++import { Mail, Phone, Instagram, Youtube } from "lucide-react";
+ 
+ const Footer = () => {
+   return (
+diff --git a/src/components/UserProfile.tsx b/src/components/UserProfile.tsx
+index 4d41d83..cb9dda8 100644
+--- a/src/components/UserProfile.tsx
++++ b/src/components/UserProfile.tsx
+@@ -2,7 +2,7 @@
+ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+ import { Progress } from "@/components/ui/progress";
+-import { User, Award, Settings, Lock } from "lucide-react";
++import { User, Award, Settings } from "lucide-react";
+ import { Link } from "react-router-dom";
+ import { useUserProfile } from "@/hooks/useUserProfile";
+ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+diff --git a/src/components/VideoPlayer.tsx b/src/components/VideoPlayer.tsx
+index 2c10fe2..28ed449 100644
+--- a/src/components/VideoPlayer.tsx
++++ b/src/components/VideoPlayer.tsx
+@@ -2,13 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+ import { Progress } from "@/components/ui/progress";
+ import { CheckCircle, Clock, Download, BookOpen, ArrowRight } from "lucide-react";
+-import { useState, useEffect } from "react";
++import { useState } from "react";
+ import { useNavigate } from "react-router-dom";
+ import { useUpdateProgress } from "@/hooks/useUserProgress";
+ import { useToast } from "@/hooks/use-toast";
+ import { useLessonFiles, downloadFileFromStorage } from "@/hooks/useLessonFiles";
+ import { useLessons } from "@/hooks/useLessons";
+-import { useUserProgress } from "@/hooks/useUserProgress";
+ 
+ interface Lesson {
+   id: string;
+@@ -31,26 +30,10 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
+   const { toast } = useToast();
+   const { data: lessonFiles, isLoading: filesLoading } = useLessonFiles(lesson.id);
+   const { data: allLessons } = useLessons();
+-  const { data: userProgress } = useUserProgress();
+-  
+-  // Check if current lesson is completed
+-  const currentLessonProgress = userProgress?.find(p => p.aula_id === lesson.id);
+-  const isCurrentLessonCompleted = currentLessonProgress?.completada || lesson.completed || watchProgress === 100;
+-  
+   // Find next lesson
+   const currentIndex = allLessons?.findIndex(l => l.id === lesson.id) || 0;
+   const nextLesson = allLessons?.[currentIndex + 1];
+   
+-  // Verificar se todas as aulas foram concluídas (para certificados)
+-  const areAllLessonsCompleted = () => {
+-    if (!allLessons || !userProgress) return false;
+-    
+-    const completedLessons = userProgress.filter(progress => progress.completada);
+-    return completedLessons.length === allLessons.length;
+-  };
+-
+-  const allLessonsCompleted = areAllLessonsCompleted();
+-  
+   // Extract YouTube video ID from URL
+   const getYouTubeVideoId = (url: string) => {
+     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+diff --git a/src/examples/LessonFilesExample.tsx b/src/examples/LessonFilesExample.tsx
+index 8b3e29c..ed1a0d9 100644
+--- a/src/examples/LessonFilesExample.tsx
++++ b/src/examples/LessonFilesExample.tsx
+@@ -1,81 +1,31 @@
+-import React from 'react';
+-import { Button } from "@/components/ui/button";
+-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+-import { Download, FileAudio, FileCode, Upload, AlertCircle, ExternalLink, CheckCircle } from "lucide-react";
+-import { useLessonFiles, downloadFileFromStorage } from "@/hooks/useLessonFiles";
+-import { useToast } from "@/hooks/use-toast";
+-import { useParams } from 'react-router-dom';
+-import { getErrorMessage } from "@/lib/error-message";
++import { Card, CardContent } from "@/components/ui/card";
++import { useLessonFiles } from "@/hooks/useLessonFiles";
++import { useParams } from "react-router-dom";
++
+ const LessonFilesExample = () => {
+-  const {
+-    toast
+-  } = useToast();
+-  const {
+-    lessonId
+-  } = useParams();
+-  const currentLessonId = lessonId || "1c136523-3b58-4cc3-ba5b-aa03f4a4e081";
+-  const {
+-    data: lessonFiles,
+-    isLoading,
+-    error
+-  } = useLessonFiles(currentLessonId);
+-  const handleDownloadSamples = async () => {
+-    if (!lessonFiles?.samples_file_path) {
+-      toast({
+-        title: "Arquivo não disponível",
+-        description: "Os samples e loops desta aula ainda não foram disponibilizados.",
+-        variant: "destructive"
+-      });
+-      return;
+-    }
+-    try {
+-      const fileName = `samples-loops-aula-${currentLessonId.slice(0, 8)}.zip`;
+-      await downloadFileFromStorage('lesson-samples', lessonFiles.samples_file_path, fileName);
+-      toast({
+-        title: "Download iniciado!",
+-        description: "Os samples e loops da aula estão sendo baixados."
+-      });
+-    } catch (error: unknown) {
+-      console.error('Erro ao baixar samples:', error);
+-      toast({
+-        title: "Erro no download",
+-        description: getErrorMessage(error, "Não foi possível baixar os samples."),
+-        variant: "destructive"
+-      });
+-    }
+-  };
+-  const handleDownloadProject = async () => {
+-    if (!lessonFiles?.project_file_path) {
+-      toast({
+-        title: "Arquivo não disponível",
+-        description: "O projeto Ableton Live desta aula ainda não foi disponibilizado.",
+-        variant: "destructive"
+-      });
+-      return;
+-    }
+-    try {
+-      const fileName = `projeto-aula-${currentLessonId.slice(0, 8)}.als`;
+-      await downloadFileFromStorage('lesson-projects', lessonFiles.project_file_path, fileName);
+-      toast({
+-        title: "Download iniciado!",
+-        description: "O projeto Ableton Live está sendo baixado."
+-      });
+-    } catch (error: unknown) {
+-      console.error('Erro ao baixar projeto:', error);
+-      toast({
+-        title: "Erro no download",
+-        description: getErrorMessage(error, "Não foi possível baixar o projeto."),
+-        variant: "destructive"
+-      });
+-    }
+-  };
++  const { lessonId } = useParams();
++  const currentLessonId = lessonId ?? "1c136523-3b58-4cc3-ba5b-aa03f4a4e081";
++  const { isLoading, error } = useLessonFiles(currentLessonId);
++
+   if (isLoading) {
+-    return <Card className="glass-card border-white/10">
++    return (
++      <Card className="glass-card border-white/10">
+         <CardContent className="p-6">
+           <div className="flex items-center space-x-2">
+-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
++            <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
+             <p className="text-gray-300">Carregando arquivos da aula...</p>
+           </div>
+         </CardContent>
+-      </Card>;
++      </Card>
++    );
+   }
++
+   if (error) {
+     return null;
+   }
+-  return <div className="space-y-6 p-6">
+-      
+-    </div>;
++
++  return null;
+ };
++
+ export default LessonFilesExample;
+diff --git a/src/hooks/use-toast.ts b/src/hooks/use-toast.ts
+index 83c2767..66803de 100644
+--- a/src/hooks/use-toast.ts
++++ b/src/hooks/use-toast.ts
+@@ -16,15 +16,6 @@ type ToasterToast = ToastProps & {
+   action?: ToastActionElement
+ }
+ 
+-const actionTypes = {
+-  ADD_TOAST: "ADD_TOAST",
+-  UPDATE_TOAST: "UPDATE_TOAST",
+-  DISMISS_TOAST: "DISMISS_TOAST",
+-  REMOVE_TOAST: "REMOVE_TOAST",
+-} as const
+-
+ let count = 0
+ 
+ function genId() {
+@@ -32,25 +23,23 @@ function genId() {
+   return count.toString()
+ }
+ 
+-type ActionType = typeof actionTypes
+-
+ type Action =
+   | {
+-      type: ActionType["ADD_TOAST"]
++      type: "ADD_TOAST"
+       toast: ToasterToast
+     }
+   | {
+-      type: ActionType["UPDATE_TOAST"]
++      type: "UPDATE_TOAST"
+       toast: Partial<ToasterToast>
+     }
+   | {
+-      type: ActionType["DISMISS_TOAST"]
++      type: "DISMISS_TOAST"
+       toastId?: ToasterToast["id"]
+     }
+   | {
+-      type: ActionType["REMOVE_TOAST"]
++      type: "REMOVE_TOAST"
+       toastId?: ToasterToast["id"]
+     }
+ 
+diff --git a/src/hooks/useAvatarUpload.ts b/src/hooks/useAvatarUpload.ts
+index f729023..5c08d0b 100644
+--- a/src/hooks/useAvatarUpload.ts
++++ b/src/hooks/useAvatarUpload.ts
+@@ -36,7 +36,7 @@ export const useAvatarUpload = () => {
+         .remove([`${user.id}/avatar.jpg`, `${user.id}/avatar.png`, `${user.id}/avatar.jpeg`, `${user.id}/avatar.webp`]);
+ 
+       // Upload do novo arquivo
+-      const { data, error } = await supabase.storage
++      const { error } = await supabase.storage
+         .from('avatars')
+         .upload(fileName, file, {
+           cacheControl: '3600',
+diff --git a/src/pages/EditProfile.tsx b/src/pages/EditProfile.tsx
+index d3f7d2b..7a1cd2f 100644
+--- a/src/pages/EditProfile.tsx
++++ b/src/pages/EditProfile.tsx
+@@ -46,7 +46,7 @@ const EditProfile = () => {
+             email: user.email || '',
+           }));
+         }
+-      } catch (error) {
++      } catch {
+         toast({
+           title: "Erro",
+           description: "Não foi possível carregar os dados do usuário.",
+@@ -108,7 +108,7 @@ const EditProfile = () => {
+           description: "Suas informações foram salvas com sucesso.",
+         });
+       }, 1000);
+-    } catch (error) {
++    } catch {
+       setIsLoading(false);
+       toast({
+         title: "Erro",
+diff --git a/src/pages/Lesson.tsx b/src/pages/Lesson.tsx
+index a3da4d4..0908348 100644
+--- a/src/pages/Lesson.tsx
++++ b/src/pages/Lesson.tsx
+@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
+ import { Button } from "@/components/ui/button";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Progress } from "@/components/ui/progress";
+-import { CheckCircle, Clock, Download, BookOpen, ArrowLeft, ArrowRight } from "lucide-react";
++import { CheckCircle, Clock, ArrowLeft } from "lucide-react";
+ import VideoPlayer from "@/components/VideoPlayer";
+ import LessonFilesExample from "@/examples/LessonFilesExample";
+ import { useLessons } from "@/hooks/useLessons";
+@@ -17,9 +17,6 @@ const Lesson = () => {
+   const { data: lessons, isLoading } = useLessons();
+   
+   const currentLesson = lessons?.find(lesson => lesson.id === lessonId);
+-  const currentIndex = lessons?.findIndex(lesson => lesson.id === lessonId) || 0;
+-  const nextLesson = lessons?.[currentIndex + 1];
+-  const prevLesson = lessons?.[currentIndex - 1];
+ 
+   // Estado provisório do protótipo; a persistência canônica será restaurada nas fases de Auth e progresso.
+   const lessonCompleted = false;
