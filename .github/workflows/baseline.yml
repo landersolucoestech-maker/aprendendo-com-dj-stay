@@ -1,4 +1,4 @@
-# Gate sequencial de qualidade. Não contém deploy.
+# Gate sequencial de qualidade e reconstrução local do banco. Não contém deploy.
 name: Gate técnico
 
 on:
@@ -19,9 +19,9 @@ concurrency:
 
 jobs:
   quality:
-    name: Instalação, lint, typecheck e build
+    name: Banco limpo, testes, tipos e aplicação
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -44,6 +44,40 @@ jobs:
         continue-on-error: true
         run: npm run lint
 
+      - name: Configurar Supabase CLI
+        id: supabase_cli
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Iniciar Supabase local
+        id: database_start
+        if: steps.supabase_cli.outcome == 'success'
+        continue-on-error: true
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+
+      - name: Reconstruir banco do zero
+        id: database_reset
+        if: steps.database_start.outcome == 'success'
+        continue-on-error: true
+        run: supabase db reset --local --no-seed
+
+      - name: Testes SQL pgTAP
+        id: database_tests
+        if: steps.database_reset.outcome == 'success'
+        continue-on-error: true
+        run: supabase test db
+
+      - name: Gerar tipos TypeScript do schema local
+        id: generate_types
+        if: steps.database_tests.outcome == 'success'
+        continue-on-error: true
+        run: |
+          mkdir -p artifacts
+          supabase gen types typescript --local > artifacts/database.types.ts
+
       - name: Typecheck
         id: typecheck
         if: steps.install.outcome == 'success'
@@ -57,8 +91,16 @@ jobs:
         env:
           VITE_APP_ENV: development
           VITE_SUPABASE_URL: https://jmtyurketfclaneqxohu.supabase.co
-          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholder_for_static_build_only
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_DEV_PUBLISHABLE_KEY }}
         run: npm run build:dev
+
+      - name: Exportar tipos gerados
+        if: steps.generate_types.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-types-${{ github.sha }}
+          path: artifacts/database.types.ts
+          retention-days: 1
 
       - name: Exportar snapshot integral do código-fonte
         if: always()
@@ -70,6 +112,7 @@ jobs:
             !.git/**
             !node_modules/**
             !dist/**
+            !supabase/.temp/**
           include-hidden-files: true
           retention-days: 1
 
@@ -79,6 +122,11 @@ jobs:
         env:
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
           LINT_OUTCOME: ${{ steps.lint.outcome }}
+          SUPABASE_CLI_OUTCOME: ${{ steps.supabase_cli.outcome }}
+          DATABASE_START_OUTCOME: ${{ steps.database_start.outcome }}
+          DATABASE_RESET_OUTCOME: ${{ steps.database_reset.outcome }}
+          DATABASE_TESTS_OUTCOME: ${{ steps.database_tests.outcome }}
+          GENERATE_TYPES_OUTCOME: ${{ steps.generate_types.outcome }}
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         with:
@@ -96,6 +144,11 @@ jobs:
               '| --- | --- |',
               `| npm ci | ${process.env.INSTALL_OUTCOME || 'skipped'} |`,
               `| npm run lint | ${process.env.LINT_OUTCOME || 'skipped'} |`,
+              `| Supabase CLI | ${process.env.SUPABASE_CLI_OUTCOME || 'skipped'} |`,
+              `| supabase start | ${process.env.DATABASE_START_OUTCOME || 'skipped'} |`,
+              `| supabase db reset --local | ${process.env.DATABASE_RESET_OUTCOME || 'skipped'} |`,
+              `| supabase test db | ${process.env.DATABASE_TESTS_OUTCOME || 'skipped'} |`,
+              `| gerar tipos TypeScript | ${process.env.GENERATE_TYPES_OUTCOME || 'skipped'} |`,
               `| npm run typecheck | ${process.env.TYPECHECK_OUTCOME || 'skipped'} |`,
               `| npm run build:dev | ${process.env.BUILD_OUTCOME || 'skipped'} |`,
               '',
@@ -114,10 +167,20 @@ jobs:
         env:
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
           LINT_OUTCOME: ${{ steps.lint.outcome }}
+          SUPABASE_CLI_OUTCOME: ${{ steps.supabase_cli.outcome }}
+          DATABASE_START_OUTCOME: ${{ steps.database_start.outcome }}
+          DATABASE_RESET_OUTCOME: ${{ steps.database_reset.outcome }}
+          DATABASE_TESTS_OUTCOME: ${{ steps.database_tests.outcome }}
+          GENERATE_TYPES_OUTCOME: ${{ steps.generate_types.outcome }}
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         run: |
           test "$INSTALL_OUTCOME" = "success"
           test "$LINT_OUTCOME" = "success"
+          test "$SUPABASE_CLI_OUTCOME" = "success"
+          test "$DATABASE_START_OUTCOME" = "success"
+          test "$DATABASE_RESET_OUTCOME" = "success"
+          test "$DATABASE_TESTS_OUTCOME" = "success"
+          test "$GENERATE_TYPES_OUTCOME" = "success"
           test "$TYPECHECK_OUTCOME" = "success"
           test "$BUILD_OUTCOME" = "success"
