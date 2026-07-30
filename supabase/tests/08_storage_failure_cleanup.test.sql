@@ -46,9 +46,20 @@ select throws_ok(
   $$select public.fail_asset_upload((select id from public.assets where idempotency_key='failure:mismatch:01'),'CLIENT_CLEANUP',true)$$,
   '22023', null, 'asset cannot be marked removed while storage object still exists'
 );
-select lives_ok(
-  $$delete from storage.objects where bucket_id='private-assets' and name=(select object_path from public.assets where idempotency_key='failure:mismatch:01')$$,
-  'owner can remove failed private object'
+
+-- The Storage API deletes the physical object and then removes its catalog row.
+-- Direct application deletion remains blocked by storage.protect_objects_delete.
+reset role;
+alter table storage.objects disable trigger protect_objects_delete;
+delete from storage.objects
+where bucket_id='private-assets'
+  and name=(select object_path from public.assets where idempotency_key='failure:mismatch:01');
+alter table storage.objects enable trigger protect_objects_delete;
+set local role authenticated;
+select is(
+  (select count(*)::integer from storage.objects where bucket_id='private-assets' and name=(select object_path from public.assets where idempotency_key='failure:mismatch:01')),
+  0,
+  'Storage API removal state is reflected before cleanup finalization'
 );
 select results_eq(
   $$select (public.fail_asset_upload((select id from public.assets where idempotency_key='failure:mismatch:01'),'CLIENT_CLEANUP',true)).state::text$$,
