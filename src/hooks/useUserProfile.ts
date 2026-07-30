@@ -1,14 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import { parseDataContract } from "@/contracts/contract-error";
-import {
-  avatarUpdateInputSchema,
-  userProfileSchema,
-  type UserProfileRow,
-} from "@/contracts/learning";
+import { userProfileSchema, type UserProfileRow } from "@/contracts/learning";
+import { assetRowSchema } from "@/contracts/storage";
 import { supabase } from "@/integrations/supabase/client";
+import { createSignedAssetUrl } from "@/lib/private-assets";
 
-export type UserProfile = UserProfileRow;
+export interface UserProfile extends UserProfileRow {
+  avatarSignedUrl: string | null;
+}
 
 export const useUserProfile = () =>
   useQuery({
@@ -32,42 +32,37 @@ export const useUserProfile = () =>
         throw error;
       }
 
-      return data === null ? null : parseDataContract(userProfileSchema, data, "perfil do aluno");
-    },
-  });
-
-export const useUpdateProfile = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (input: { avatarUrl: string | null }): Promise<UserProfile> => {
-      const validatedInput = parseDataContract(
-        avatarUpdateInputSchema,
-        input,
-        "parâmetros de atualização do avatar",
-      );
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("Usuário não autenticado");
+      if (data === null) {
+        return null;
       }
 
-      const { data, error } = await supabase
-        .from("user_profiles")
-        .upsert({ user_id: user.id, avatar_url: validatedInput.avatarUrl }, { onConflict: "user_id" })
-        .select()
-        .single();
+      const profile = parseDataContract(userProfileSchema, data, "perfil do usuário");
 
-      if (error) {
-        throw error;
+      if (profile.avatar_asset_id === null) {
+        return { ...profile, avatarSignedUrl: null };
       }
 
-      return parseDataContract(userProfileSchema, data, "atualização de perfil");
+      const { data: avatarData, error: avatarError } = await supabase
+        .from("assets")
+        .select("*")
+        .eq("id", profile.avatar_asset_id)
+        .eq("purpose", "avatar")
+        .eq("state", "published")
+        .is("deleted_at", null)
+        .maybeSingle();
+
+      if (avatarError) {
+        throw avatarError;
+      }
+
+      if (avatarData === null) {
+        return { ...profile, avatarSignedUrl: null };
+      }
+
+      const avatar = parseDataContract(assetRowSchema, avatarData, "asset de avatar");
+      const avatarSignedUrl = await createSignedAssetUrl(avatar, 300);
+      return { ...profile, avatarSignedUrl };
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-    },
+    staleTime: 4 * 60 * 1000,
+    refetchInterval: 4 * 60 * 1000,
   });
-};
