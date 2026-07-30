@@ -73,18 +73,23 @@ select ok(
   'no unexpected public asset wrapper exists'
 );
 select is(
-  (select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and p.prosecdef),
-  9,
-  'private schema contains role helpers, event logger and six privileged implementations'
+  (
+    select count(*)::integer
+    from pg_proc p
+    join pg_namespace n on n.oid=p.pronamespace
+    where n.nspname='public' and p.prosecdef
+  ),
+  0,
+  'no security definer function is exposed in public'
 );
 select is(
   (
     select count(*)::integer
     from pg_proc p join pg_namespace n on n.oid=p.pronamespace
     where p.prosecdef and n.nspname='private'
-      and p.proconfig = array['search_path=""']::text[]
+      and p.proconfig is distinct from array['search_path=""']::text[]
   ),
-  9,
+  0,
   'every private security definer function fixes an empty search path'
 );
 select is(

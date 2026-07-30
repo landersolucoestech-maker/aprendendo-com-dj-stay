@@ -7,8 +7,12 @@ values
   ('11000000-0000-4000-8000-000000000001', 'student-one@example.test'),
   ('11000000-0000-4000-8000-000000000002', 'student-two@example.test');
 
-insert into public.modulos (id, titulo, ordem)
-values ('21000000-0000-4000-8000-000000000001', 'Módulo protegido', 1);
+insert into public.courses (id, title, slug, status)
+values ('20000000-0000-4000-8000-000000000001', 'Curso protegido', 'curso-protegido-estudante', 'published');
+insert into public.modulos (id, course_id, titulo, ordem)
+values ('21000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', 'Módulo protegido', 1);
+insert into public.enrollments (id, user_id, course_id, status, source, starts_at)
+values ('41000000-0000-4000-8000-000000000001', '11000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', 'active', 'manual_grant', statement_timestamp() - interval '1 minute');
 insert into public.aulas (id, modulo_id, titulo, ordem, duracao)
 values ('31000000-0000-4000-8000-000000000001', '21000000-0000-4000-8000-000000000001', 'Aula protegida', 1, 10);
 insert into public.progresso_aulas (id, user_id, aula_id, progresso_percentual, tempo_assistido)
@@ -40,7 +44,7 @@ select is_empty(
   'student cannot promote their own role'
 );
 select throws_ok(
-  $$insert into public.modulos (titulo, ordem) values ('Tentativa indevida', 99)$$,
+  $$insert into public.modulos (course_id, titulo, ordem) values ('20000000-0000-4000-8000-000000000001', 'Tentativa indevida', 99)$$,
   '42501', null, 'student cannot create learning content'
 );
 

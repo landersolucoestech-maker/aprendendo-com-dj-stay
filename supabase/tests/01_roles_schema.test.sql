@@ -42,9 +42,16 @@ select ok(
   'asset API exposes only six security invoker wrappers'
 );
 select is(
-  (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace where p.prosecdef and n.nspname = 'private'),
-  9,
-  'all nine privileged implementations and helpers remain in the private schema'
+  (
+    select count(*)::integer
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where p.prosecdef
+      and n.nspname = 'private'
+      and p.proconfig is distinct from array['search_path=""']::text[]
+  ),
+  0,
+  'every privileged private function fixes an empty search_path'
 );
 select is(
   (select proconfig from pg_proc where oid = 'private.current_user_role()'::regprocedure),

@@ -7,8 +7,10 @@ values
   ('14000000-0000-4000-8000-000000000001', 'avatar-owner@example.test'),
   ('14000000-0000-4000-8000-000000000002', 'avatar-other@example.test');
 
-insert into public.modulos (id, titulo, ordem)
-values ('24000000-0000-4000-8000-000000000001', 'Módulo de storage', 1);
+insert into public.courses (id, title, slug, status)
+values ('20000000-0000-4000-8000-000000000004', 'Curso de storage', 'curso-storage-avatar', 'published');
+insert into public.modulos (id, course_id, titulo, ordem)
+values ('24000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000004', 'Módulo de storage', 1);
 insert into public.aulas (id, modulo_id, titulo, ordem)
 values ('34000000-0000-4000-8000-000000000001', '24000000-0000-4000-8000-000000000001', 'Aula de storage', 1);
 

@@ -8,8 +8,10 @@ values
   ('12000000-0000-4000-8000-000000000002', 'anonymous-user@example.test');
 update public.user_roles set role = 'afiliado'::public.app_role where user_id = '12000000-0000-4000-8000-000000000001';
 
-insert into public.modulos (id, titulo, ordem)
-values ('22000000-0000-4000-8000-000000000001', 'Módulo protegido', 1);
+insert into public.courses (id, title, slug, status)
+values ('20000000-0000-4000-8000-000000000002', 'Curso de afiliado', 'curso-afiliado-isolado', 'published');
+insert into public.modulos (id, course_id, titulo, ordem)
+values ('22000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000002', 'Módulo protegido', 1);
 insert into public.aulas (id, modulo_id, titulo, ordem)
 values ('32000000-0000-4000-8000-000000000001', '22000000-0000-4000-8000-000000000001', 'Aula protegida', 1);
 insert into public.progresso_aulas (id, user_id, aula_id)
