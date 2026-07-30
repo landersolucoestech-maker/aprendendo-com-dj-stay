@@ -1,6 +1,26 @@
 # FASE B9 — Storage seguro e lifecycle de arquivos
 
-Status: migration e integração em validação. A fase só será encerrada após reconstrução limpa, 140 testes pgTAP, tipos sem drift, frontend integrado e auditoria do Supabase `dev`.
+Status: concluída em `dev`, com banco, frontend, contratos e auditorias validados.
+
+## Commits validados
+
+```text
+fb7c65d1463c1f648ebbce3a03ddd5ec34c04987
+2944faa33a9881899fcc9e3ada724a67eda1c2bd
+688c3d190986817e86cb6241898c0d5e82b4e73c
+```
+
+## Evidências automáticas
+
+- workflow final de integração: `30570297090`;
+- workflow de hardening das RPCs: `30571315949`;
+- workflow dos índices de FK: `30571712180`;
+- `npm ci`: success;
+- lint: success;
+- reconstrução local integral: success;
+- pgTAP: 142 asserções aprovadas;
+- tipos TypeScript sem drift: success;
+- contratos estáticos, TypeScript estrito e build: success.
 
 ## Inventário anterior
 
@@ -55,20 +75,22 @@ O caminho é gerado pelo PostgreSQL, imutável, não reutiliza nomes e nunca é 
 - `grant_asset_access`;
 - `revoke_asset_access`.
 
-As seis RPCs usam `SECURITY DEFINER`, `search_path` vazio, validação explícita de usuário/papel/ownership e revogação de execução para `PUBLIC` e `anon`.
+As seis funções expostas em `public` são wrappers `SECURITY INVOKER`, com `search_path` vazio e execução revogada para `PUBLIC` e `anon`. As implementações privilegiadas foram movidas para o schema não exposto `private`, usam `SECURITY DEFINER`, `search_path` vazio e validação explícita de usuário, papel, ownership e estado.
 
 ## Perfil e materiais de aula
 
-- `user_profiles.avatar_url` é removido;
+- `user_profiles.avatar_url` foi removido;
 - `user_profiles.avatar_asset_id` referencia um asset publicado;
-- `lesson_files` é removida;
+- `lesson_files` foi removida;
 - materiais são consultados em `assets` por `lesson_id`, finalidade e estado;
 - outro aluno não lê metadados ou objeto sem grant individual;
-- a FASE B10 emitirá grants a partir de matrícula ou compra.
+- a FASE B10 emitirá grants a partir de matrícula ou compra;
+- avatar e downloads utilizam URLs assinadas de curta duração;
+- nenhum bucket ou arquivo público permanece no frontend.
 
 ## Testes
 
-A suíte totaliza 140 asserções pgTAP e cobre:
+A suíte totaliza 142 asserções pgTAP e cobre:
 
 - enums, constraints, RLS, grants e privilégios;
 - bucket privado e policies de Storage;
@@ -80,12 +102,26 @@ A suíte totaliza 140 asserções pgTAP e cobre:
 - concessão, renovação, expiração e revogação de acesso;
 - objeto ausente e metadata mismatch;
 - cleanup e eventos de auditoria;
-- impossibilidade de invalidar asset publicado.
+- impossibilidade de invalidar asset publicado;
+- wrappers públicos invoker e implementações privadas privilegiadas;
+- índices de cobertura dos FKs de auditoria.
+
+## Estado remoto do Supabase `dev`
+
+- dez migrations registradas;
+- oito tabelas públicas, todas com RLS ativa e zero registros;
+- bucket `private-assets`, `public = false`, limite de 5 GiB e zero objetos;
+- quatro policies em `storage.objects`;
+- três policies de leitura nas tabelas de assets;
+- zero privilégios de tabelas de assets para `anon`;
+- zero alertas de segurança nos advisors;
+- zero FKs sem índice;
+- avisos restantes de performance limitados a índices ainda não utilizados em banco vazio e à configuração informativa de conexões do Auth.
 
 ## Limites
 
-- nenhum seed ou arquivo fictício será criado;
+- nenhum seed ou arquivo fictício foi criado;
 - processamento de mídia assíncrono será integrado em fase própria;
 - grants comerciais dependem da modelagem de matrícula/compra da FASE B10;
-- produção permanece somente leitura;
-- nenhum deploy é executado nesta fase.
+- produção permaneceu somente leitura;
+- nenhum deploy foi executado.
