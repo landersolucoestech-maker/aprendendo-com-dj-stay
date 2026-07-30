@@ -34,6 +34,168 @@ export type Database = {
   }
   public: {
     Tables: {
+      asset_access_grants: {
+        Row: {
+          asset_id: string
+          created_at: string
+          expires_at: string | null
+          granted_by_user_id: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          expires_at?: string | null
+          granted_by_user_id: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          expires_at?: string | null
+          granted_by_user_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_access_grants_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_events: {
+        Row: {
+          actor_user_id: string | null
+          asset_id: string
+          created_at: string
+          details: Json
+          event_type: Database["public"]["Enums"]["asset_event_type"]
+          from_state: Database["public"]["Enums"]["asset_state"] | null
+          id: string
+          to_state: Database["public"]["Enums"]["asset_state"] | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          asset_id: string
+          created_at?: string
+          details?: Json
+          event_type: Database["public"]["Enums"]["asset_event_type"]
+          from_state?: Database["public"]["Enums"]["asset_state"] | null
+          id?: string
+          to_state?: Database["public"]["Enums"]["asset_state"] | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          asset_id?: string
+          created_at?: string
+          details?: Json
+          event_type?: Database["public"]["Enums"]["asset_event_type"]
+          from_state?: Database["public"]["Enums"]["asset_state"] | null
+          id?: string
+          to_state?: Database["public"]["Enums"]["asset_state"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_events_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assets: {
+        Row: {
+          bucket_id: string
+          checksum_sha256: string | null
+          created_at: string
+          created_by_user_id: string
+          deleted_at: string | null
+          extension: string
+          failed_at: string | null
+          failure_reason: string | null
+          id: string
+          idempotency_key: string
+          lesson_id: string | null
+          metadata: Json
+          mime_type: string
+          normalized_name: string
+          object_path: string | null
+          original_name: string
+          owner_user_id: string
+          processing_started_at: string | null
+          published_at: string | null
+          purpose: Database["public"]["Enums"]["asset_purpose"]
+          size_bytes: number
+          state: Database["public"]["Enums"]["asset_state"]
+          updated_at: string
+          uploaded_at: string | null
+        }
+        Insert: {
+          bucket_id?: string
+          checksum_sha256?: string | null
+          created_at?: string
+          created_by_user_id: string
+          deleted_at?: string | null
+          extension: string
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          idempotency_key: string
+          lesson_id?: string | null
+          metadata?: Json
+          mime_type: string
+          normalized_name: string
+          object_path?: string | null
+          original_name: string
+          owner_user_id: string
+          processing_started_at?: string | null
+          published_at?: string | null
+          purpose: Database["public"]["Enums"]["asset_purpose"]
+          size_bytes: number
+          state?: Database["public"]["Enums"]["asset_state"]
+          updated_at?: string
+          uploaded_at?: string | null
+        }
+        Update: {
+          bucket_id?: string
+          checksum_sha256?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          deleted_at?: string | null
+          extension?: string
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          idempotency_key?: string
+          lesson_id?: string | null
+          metadata?: Json
+          mime_type?: string
+          normalized_name?: string
+          object_path?: string | null
+          original_name?: string
+          owner_user_id?: string
+          processing_started_at?: string | null
+          published_at?: string | null
+          purpose?: Database["public"]["Enums"]["asset_purpose"]
+          size_bytes?: number
+          state?: Database["public"]["Enums"]["asset_state"]
+          updated_at?: string
+          uploaded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assets_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "aulas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       aulas: {
         Row: {
           created_at: string
@@ -74,41 +236,6 @@ export type Database = {
             columns: ["modulo_id"]
             isOneToOne: false
             referencedRelation: "modulos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      lesson_files: {
-        Row: {
-          aula_id: string
-          created_at: string
-          id: string
-          project_file_path: string | null
-          samples_file_path: string | null
-          updated_at: string
-        }
-        Insert: {
-          aula_id: string
-          created_at?: string
-          id?: string
-          project_file_path?: string | null
-          samples_file_path?: string | null
-          updated_at?: string
-        }
-        Update: {
-          aula_id?: string
-          created_at?: string
-          id?: string
-          project_file_path?: string | null
-          samples_file_path?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lesson_files_aula_id_fkey"
-            columns: ["aula_id"]
-            isOneToOne: true
-            referencedRelation: "aulas"
             referencedColumns: ["id"]
           },
         ]
@@ -186,27 +313,35 @@ export type Database = {
       }
       user_profiles: {
         Row: {
-          avatar_url: string | null
+          avatar_asset_id: string | null
           created_at: string
           id: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          avatar_url?: string | null
+          avatar_asset_id?: string | null
           created_at?: string
           id?: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          avatar_url?: string | null
+          avatar_asset_id?: string | null
           created_at?: string
           id?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_avatar_asset_id_fkey"
+            columns: ["avatar_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -234,10 +369,212 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      confirm_asset_upload: {
+        Args: { p_asset_id: string }
+        Returns: {
+          bucket_id: string
+          checksum_sha256: string | null
+          created_at: string
+          created_by_user_id: string
+          deleted_at: string | null
+          extension: string
+          failed_at: string | null
+          failure_reason: string | null
+          id: string
+          idempotency_key: string
+          lesson_id: string | null
+          metadata: Json
+          mime_type: string
+          normalized_name: string
+          object_path: string | null
+          original_name: string
+          owner_user_id: string
+          processing_started_at: string | null
+          published_at: string | null
+          purpose: Database["public"]["Enums"]["asset_purpose"]
+          size_bytes: number
+          state: Database["public"]["Enums"]["asset_state"]
+          updated_at: string
+          uploaded_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fail_asset_upload: {
+        Args: {
+          p_asset_id: string
+          p_object_removed?: boolean
+          p_reason: string
+        }
+        Returns: {
+          bucket_id: string
+          checksum_sha256: string | null
+          created_at: string
+          created_by_user_id: string
+          deleted_at: string | null
+          extension: string
+          failed_at: string | null
+          failure_reason: string | null
+          id: string
+          idempotency_key: string
+          lesson_id: string | null
+          metadata: Json
+          mime_type: string
+          normalized_name: string
+          object_path: string | null
+          original_name: string
+          owner_user_id: string
+          processing_started_at: string | null
+          published_at: string | null
+          purpose: Database["public"]["Enums"]["asset_purpose"]
+          size_bytes: number
+          state: Database["public"]["Enums"]["asset_state"]
+          updated_at: string
+          uploaded_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      grant_asset_access: {
+        Args: { p_asset_id: string; p_expires_at?: string; p_user_id: string }
+        Returns: {
+          asset_id: string
+          created_at: string
+          expires_at: string | null
+          granted_by_user_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "asset_access_grants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      prepare_asset_upload: {
+        Args: {
+          p_idempotency_key: string
+          p_lesson_id?: string
+          p_mime_type: string
+          p_original_name: string
+          p_purpose: Database["public"]["Enums"]["asset_purpose"]
+          p_size_bytes: number
+        }
+        Returns: {
+          bucket_id: string
+          checksum_sha256: string | null
+          created_at: string
+          created_by_user_id: string
+          deleted_at: string | null
+          extension: string
+          failed_at: string | null
+          failure_reason: string | null
+          id: string
+          idempotency_key: string
+          lesson_id: string | null
+          metadata: Json
+          mime_type: string
+          normalized_name: string
+          object_path: string | null
+          original_name: string
+          owner_user_id: string
+          processing_started_at: string | null
+          published_at: string | null
+          purpose: Database["public"]["Enums"]["asset_purpose"]
+          size_bytes: number
+          state: Database["public"]["Enums"]["asset_state"]
+          updated_at: string
+          uploaded_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      revoke_asset_access: {
+        Args: { p_asset_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      transition_asset_state: {
+        Args: {
+          p_asset_id: string
+          p_target_state: Database["public"]["Enums"]["asset_state"]
+        }
+        Returns: {
+          bucket_id: string
+          checksum_sha256: string | null
+          created_at: string
+          created_by_user_id: string
+          deleted_at: string | null
+          extension: string
+          failed_at: string | null
+          failure_reason: string | null
+          id: string
+          idempotency_key: string
+          lesson_id: string | null
+          metadata: Json
+          mime_type: string
+          normalized_name: string
+          object_path: string | null
+          original_name: string
+          owner_user_id: string
+          processing_started_at: string | null
+          published_at: string | null
+          purpose: Database["public"]["Enums"]["asset_purpose"]
+          size_bytes: number
+          state: Database["public"]["Enums"]["asset_state"]
+          updated_at: string
+          uploaded_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "aluno" | "afiliado" | "administrador_proprietario"
+      asset_event_type:
+        | "intent_created"
+        | "upload_confirmed"
+        | "processing_started"
+        | "published"
+        | "failed"
+        | "cleanup_requested"
+        | "object_removed"
+        | "associated"
+      asset_purpose:
+        | "avatar"
+        | "video"
+        | "audio"
+        | "image"
+        | "document"
+        | "sample"
+        | "preset"
+        | "stem"
+        | "project"
+        | "archive"
+        | "template"
+        | "support_file"
+        | "digital_product"
+      asset_state:
+        | "pending"
+        | "uploaded"
+        | "processing"
+        | "published"
+        | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -369,6 +706,32 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["aluno", "afiliado", "administrador_proprietario"],
+      asset_event_type: [
+        "intent_created",
+        "upload_confirmed",
+        "processing_started",
+        "published",
+        "failed",
+        "cleanup_requested",
+        "object_removed",
+        "associated",
+      ],
+      asset_purpose: [
+        "avatar",
+        "video",
+        "audio",
+        "image",
+        "document",
+        "sample",
+        "preset",
+        "stem",
+        "project",
+        "archive",
+        "template",
+        "support_file",
+        "digital_product",
+      ],
+      asset_state: ["pending", "uploaded", "processing", "published", "failed"],
     },
   },
 } as const
