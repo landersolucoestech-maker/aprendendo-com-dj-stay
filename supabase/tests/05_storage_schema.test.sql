@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(28);
+select plan(30);
 
 select has_type('public', 'asset_purpose', 'asset purpose enum exists');
 select ok(
@@ -129,6 +129,24 @@ select is(
   (select count(*)::integer from pg_trigger where not tgisinternal and tgname='assets_set_updated_at'),
   1,
   'asset timestamp trigger exists once'
+);
+select ok(
+  exists (
+    select 1 from pg_indexes
+    where schemaname='public'
+      and tablename='asset_access_grants'
+      and indexname='asset_access_grants_granted_by_user_id_idx'
+  ),
+  'grant auditor foreign key has a covering index'
+);
+select ok(
+  exists (
+    select 1 from pg_indexes
+    where schemaname='public'
+      and tablename='asset_events'
+      and indexname='asset_events_actor_user_id_idx'
+  ),
+  'asset event actor foreign key has a covering index'
 );
 
 select * from finish();
