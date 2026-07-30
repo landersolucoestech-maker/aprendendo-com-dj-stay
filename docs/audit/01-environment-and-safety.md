@@ -12,12 +12,17 @@ Branch de produção: main
 Branch de desenvolvimento: dev
 HEAD original de main: b3a303caff9a19f231616b2b4d9fc65c2d8a557d
 Criação de dev: criada exatamente a partir de main
-Worktree local: não disponível no conector GitHub
-Sistema operacional local: não validável sem checkout
-Node.js: não validável sem checkout
+Worktree local do repositório: indisponível
+Sistema operacional do executor: Linux em contêiner
+Git: 2.47.3
+Node.js: v22.16.0
+npm: 10.9.2
+Bun: não instalado
+pnpm: não instalado
+gh CLI: não instalado
 Package manager declarado: inexistente no package.json
 Lockfiles detectados: package-lock.json e bun.lockb
-Supabase CLI: não validável sem checkout
+Supabase CLI: não instalada
 Supabase dev: jmtyurketfclaneqxohu
 Supabase produção: tduvfrxagujryfnqpdmc
 Projeto legado referenciado: uonsgcndzzuclcixoaei
@@ -30,7 +35,7 @@ Timezone operacional definida pelo requisito: America/Sao_Paulo
 - `main` permaneceu sem alterações.
 - A branch `dev` não existia e foi criada exatamente a partir do HEAD de `main`.
 - Nenhum force push, reset, rebase, merge ou exclusão foi executado.
-- O checkout local não pôde ser criado porque o ambiente de terminal não resolveu `github.com`; por isso `git status`, arquivos ignorados locais, Node.js, package manager efetivamente instalado e Supabase CLI não puderam ser comprovados por terminal.
+- O checkout local não pôde ser criado porque o ambiente de terminal não resolveu `github.com`; por isso `git status`, arquivos ignorados locais e comandos do projeto não puderam ser comprovados por terminal.
 - Todas as escritas desta auditoria serão limitadas a `docs/audit` na branch `dev` até o encerramento formal do Estágio A.
 
 ## Supabase de desenvolvimento
@@ -88,6 +93,7 @@ O repositório referencia `uonsgcndzzuclcixoaei`, porém a conta Supabase conect
 2. O conector GitHub não expõe `git status` nem arquivos ignorados locais.
 3. O projeto Supabase legado não está acessível pela conexão atual.
 4. Não há dados de aplicação nos Supabase atuais para homologar fluxos funcionais.
+5. `gh`, Bun, pnpm e Supabase CLI não estão instalados no executor.
 
 ## Registro da fase
 
@@ -112,21 +118,23 @@ Achados ou correções:
 - Grants públicos em função SECURITY DEFINER de produção identificados.
 
 Arquivos:
-- Criado apenas este documento de auditoria.
+- Criado e atualizado apenas este documento de auditoria.
 
 Banco e migrations:
 - Nenhuma alteração.
 
 Comandos executados:
 - Operações equivalentes de leitura pelos conectores GitHub e Supabase.
+- Verificação local de Git, Node.js, npm e ferramentas disponíveis.
 - Tentativa de acesso local ao GitHub falhou por resolução de rede.
 
 Resultados e códigos de saída:
 - Conectores GitHub e Supabase: sucesso.
+- Git 2.47.3, Node.js v22.16.0 e npm 10.9.2 disponíveis.
 - Terminal para acesso GitHub: falha de DNS, código 128.
 
 Testes:
-- Não aplicável nesta fase; execução local bloqueada.
+- Não aplicável nesta fase; execução do projeto bloqueada pela ausência de checkout.
 
 Evidências:
 - HEAD de main registrado.
