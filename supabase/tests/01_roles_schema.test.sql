@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(13);
+select plan(14);
 
 select has_type('public', 'app_role', 'application role enum exists');
 select ok(
@@ -52,6 +52,20 @@ select is(
   (select count(*)::integer from pg_trigger where not tgisinternal and tgname = 'on_auth_user_role_created'),
   1,
   'auth signup role trigger exists once'
+);
+select is(
+  (
+    select count(*)::integer
+    from (
+      select tablename, roles, cmd
+      from pg_policies
+      where schemaname = 'public' and permissive = 'PERMISSIVE'
+      group by tablename, roles, cmd
+      having count(*) > 1
+    ) as duplicate_policies
+  ),
+  0,
+  'no action has overlapping permissive policies'
 );
 
 insert into auth.users (id, email)
