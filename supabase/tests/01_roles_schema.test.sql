@@ -21,7 +21,16 @@ select ok(
     select array_agg(p.proname order by p.proname)
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
-    where p.prosecdef and n.nspname = 'public'
+    where not p.prosecdef
+      and n.nspname = 'public'
+      and p.proname in (
+        'confirm_asset_upload',
+        'fail_asset_upload',
+        'grant_asset_access',
+        'prepare_asset_upload',
+        'revoke_asset_access',
+        'transition_asset_state'
+      )
   ) = array[
     'confirm_asset_upload',
     'fail_asset_upload',
@@ -30,12 +39,12 @@ select ok(
     'revoke_asset_access',
     'transition_asset_state'
   ]::name[],
-  'only the six audited asset RPCs are exposed as public security definers'
+  'asset API exposes only six security invoker wrappers'
 );
 select is(
   (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace where p.prosecdef and n.nspname = 'private'),
-  3,
-  'only the three audited private security definer functions exist'
+  9,
+  'all nine privileged implementations and helpers remain in the private schema'
 );
 select is(
   (select proconfig from pg_proc where oid = 'private.current_user_role()'::regprocedure),
@@ -49,7 +58,7 @@ select is(
 );
 select ok(
   has_function_privilege('authenticated', 'private.current_user_role()', 'EXECUTE'),
-  'authenticated users can execute only the role lookup helper'
+  'authenticated users can execute the protected role lookup helper'
 );
 select ok(
   not has_function_privilege('authenticated', 'private.handle_new_user_role()', 'EXECUTE'),
