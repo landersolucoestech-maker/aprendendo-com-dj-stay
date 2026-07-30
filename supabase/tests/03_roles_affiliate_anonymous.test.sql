@@ -26,7 +26,7 @@ select is((select count(*)::integer from public.modulos), 0, 'affiliate cannot r
 select is((select count(*)::integer from public.progresso_aulas), 0, 'affiliate cannot read student progress');
 select is((select count(*)::integer from public.user_profiles), 1, 'affiliate can read only their own profile');
 select lives_ok(
-  $$update public.user_profiles set avatar_url = 'https://example.test/avatar.webp' where user_id = '12000000-0000-4000-8000-000000000001'$$,
+  $$update public.user_profiles set avatar_asset_id = avatar_asset_id where user_id = '12000000-0000-4000-8000-000000000001'$$,
   'affiliate can update their own profile'
 );
 reset role;
