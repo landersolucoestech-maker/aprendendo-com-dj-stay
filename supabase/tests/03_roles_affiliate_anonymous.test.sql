@@ -33,7 +33,7 @@ reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"12000000-0000-4000-8000-000000000002","role":"authenticated","is_anonymous":true}', true);
-select is_null((select private.current_user_role()), 'anonymous authenticated user receives no application role');
+select ok((select private.current_user_role()) is null, 'anonymous authenticated user receives no application role');
 select is((select count(*)::integer from public.modulos), 0, 'anonymous authenticated user cannot read learning content');
 select is((select count(*)::integer from public.user_profiles), 0, 'anonymous authenticated user cannot read profiles');
 reset role;

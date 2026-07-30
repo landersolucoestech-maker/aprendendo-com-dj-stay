@@ -28,12 +28,12 @@ select is(
 );
 select is(
   (select proconfig from pg_proc where oid = 'private.current_user_role()'::regprocedure),
-  array['search_path=']::text[],
+  array['search_path=""']::text[],
   'role helper has an empty fixed search_path'
 );
 select is(
   (select proconfig from pg_proc where oid = 'private.handle_new_user_role()'::regprocedure),
-  array['search_path=']::text[],
+  array['search_path=""']::text[],
   'new-user trigger function has an empty fixed search_path'
 );
 select ok(
