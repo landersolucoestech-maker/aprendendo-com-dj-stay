@@ -31,32 +31,72 @@ jobs:
         id: gitmeta
         run: echo "tree_sha=$(git rev-parse HEAD^{tree})" >> "$GITHUB_OUTPUT"
 
-      - name: Aplicar lote de correções da fase
+      - name: Aplicar lote de autenticação
         id: phase_apply
         continue-on-error: true
         run: |
           shopt -s nullglob
-          patches=(scripts/b3/*.patch)
+          chunks=(scripts/b5/payload.*.b64)
 
-          if [ ${#patches[@]} -eq 0 ]; then
+          if [ ${#chunks[@]} -eq 0 ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          for patch in "${patches[@]}"; do
-            git apply --check "$patch"
-          done
+          cat "${chunks[@]}" | base64 --decode > /tmp/b5-payload.tar.gz
+          gzip -t /tmp/b5-payload.tar.gz
 
-          for patch in "${patches[@]}"; do
-            git apply "$patch"
-          done
+          cat > /tmp/b5-expected.txt <<'EOF'
+          docs/refactor/04-authentication-sessions.md
+          package.json
+          scripts/check-auth-contract.mjs
+          src/App.tsx
+          src/auth/
+          src/auth/AuthProvider.tsx
+          src/auth/auth-context.ts
+          src/auth/auth-errors.ts
+          src/auth/auth-service.ts
+          src/auth/use-auth.ts
+          src/auth/user-metadata.ts
+          src/components/DashboardHeader.tsx
+          src/components/Navigation.tsx
+          src/integrations/supabase/client.ts
+          src/lib/query-client.ts
+          src/pages/AccessDenied.tsx
+          src/pages/AuthCallback.tsx
+          src/pages/Dashboard.tsx
+          src/pages/EditProfile.tsx
+          src/pages/ForgotPassword.tsx
+          src/pages/Login.tsx
+          src/pages/Register.tsx
+          src/pages/ResetPassword.tsx
+          src/pages/Verified.tsx
+          src/pages/VerifyEmail.tsx
+          src/routing/
+          src/routing/AuthLoadingScreen.tsx
+          src/routing/PublicOnlyRoute.tsx
+          src/routing/RequireAuth.tsx
+          src/routing/route-state.ts
+          EOF
 
-          rm -rf scripts/b3
+          sed -i 's/^          //' /tmp/b5-expected.txt
+          tar -tzf /tmp/b5-payload.tar.gz | sort > /tmp/b5-actual.txt
+          sort -o /tmp/b5-expected.txt /tmp/b5-expected.txt
+          diff -u /tmp/b5-expected.txt /tmp/b5-actual.txt
+
+          if grep -Eq '(^/|(^|/)\.\.(/|$))' /tmp/b5-actual.txt; then
+            echo "A carga contém caminho inseguro." >&2
+            exit 1
+          fi
+
+          tar -xzf /tmp/b5-payload.tar.gz
+          rm -rf scripts/b5
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "refactor(b3): resolve lint and typing baseline"
+          git commit -m "feat(b5): centralize authentication and sessions"
           git push origin HEAD:dev
           echo "changed=true" >> "$GITHUB_OUTPUT"
           echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
