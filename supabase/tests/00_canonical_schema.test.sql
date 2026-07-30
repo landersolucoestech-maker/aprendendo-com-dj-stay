@@ -6,13 +6,13 @@ select has_table('public', 'modulos', 'modulos exists');
 select has_table('public', 'aulas', 'aulas exists');
 select has_table('public', 'progresso_aulas', 'progresso_aulas exists');
 select has_table('public', 'user_profiles', 'user_profiles exists');
-select has_table('public', 'lesson_files', 'lesson_files exists');
+select hasnt_table('public', 'lesson_files', 'legacy lesson_files table was removed');
 
 select ok((select relrowsecurity and relforcerowsecurity from pg_class where oid = 'public.modulos'::regclass), 'modulos has forced RLS');
 select ok((select relrowsecurity and relforcerowsecurity from pg_class where oid = 'public.aulas'::regclass), 'aulas has forced RLS');
 select ok((select relrowsecurity and relforcerowsecurity from pg_class where oid = 'public.progresso_aulas'::regclass), 'progresso_aulas has forced RLS');
 select ok((select relrowsecurity and relforcerowsecurity from pg_class where oid = 'public.user_profiles'::regclass), 'user_profiles has forced RLS');
-select ok((select relrowsecurity and relforcerowsecurity from pg_class where oid = 'public.lesson_files'::regclass), 'lesson_files has forced RLS');
+select ok(exists (select 1 from information_schema.columns where table_schema='public' and table_name='user_profiles' and column_name='avatar_asset_id'), 'profiles reference private avatar assets');
 
 select has_pk('public', 'modulos', 'modules have a primary key');
 select has_fk('public', 'aulas', 'lessons have foreign keys');
@@ -21,7 +21,7 @@ select has_fk('public', 'progresso_aulas', 'progress has foreign keys');
 select throws_ok($$insert into public.progresso_aulas(user_id,aula_id,progresso_percentual) values ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002',101)$$, '23514', null, 'progress percentage constraint rejects values above 100');
 select has_check('public', 'progresso_aulas', 'progress has check constraints');
 select has_check('public', 'aulas', 'lessons have check constraints');
-select has_check('public', 'lesson_files', 'lesson files have check constraints');
+select has_check('public', 'assets', 'assets have lifecycle and file validation constraints');
 
 select is((select prosecdef from pg_proc where oid='public.set_updated_at()'::regprocedure), false, 'updated_at function is invoker security');
 select is((select proconfig from pg_proc where oid='public.set_updated_at()'::regprocedure), array['search_path=pg_catalog']::text[], 'updated_at function fixes search_path');
