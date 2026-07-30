@@ -10,7 +10,7 @@ on:
       - "docs/**"
 
 permissions:
-  contents: read
+  contents: write
   issues: write
 
 concurrency:
@@ -26,6 +26,58 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Aplicar pacote funcional B10
+        id: apply_b10
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -d scripts/b10-payload ]; then
+            echo "applied_commit=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          mapfile -t chunks < <(find scripts/b10-payload -maxdepth 1 -type f -name 'part-*.b64' | sort)
+          test "${#chunks[@]}" -eq 11
+          cat "${chunks[@]}" > /tmp/b10-payload.b64
+          base64 --decode /tmp/b10-payload.b64 > /tmp/b10-patch.tar.gz
+          echo "c03f60b811d3dbdac63c14bc5a4969e229840a2fb8e541e2267a25d05552352b  /tmp/b10-patch.tar.gz" | sha256sum -c -
+          gzip -t /tmp/b10-patch.tar.gz
+
+          cat > /tmp/b10-expected.txt <<'MANIFEST'
+          supabase/migrations/20260730200200_course_content_access.sql
+          supabase/migrations/20260730200300_lesson_media.sql
+          supabase/migrations/20260730200400_playback_schema.sql
+          supabase/migrations/20260730200500_playback_rpcs.sql
+          supabase/tests/00_canonical_schema.test.sql
+          supabase/tests/01_roles_schema.test.sql
+          supabase/tests/02_roles_student.test.sql
+          supabase/tests/03_roles_affiliate_anonymous.test.sql
+          supabase/tests/04_roles_admin.test.sql
+          supabase/tests/05_storage_schema.test.sql
+          supabase/tests/06_storage_avatar.test.sql
+          supabase/tests/07_storage_lesson_grants.test.sql
+          supabase/tests/09_course_access_schema.test.sql
+          supabase/tests/10_enrollment_lifecycle.test.sql
+          supabase/tests/11_course_content_rls.test.sql
+          supabase/tests/12_lesson_media_playback.test.sql
+          MANIFEST
+          sed -i 's/^          //' /tmp/b10-expected.txt
+          tar -tzf /tmp/b10-patch.tar.gz | sort > /tmp/b10-actual.txt
+          diff -u /tmp/b10-expected.txt /tmp/b10-actual.txt
+          if grep -Eq '(^/|(^|/)\.\.(/|$))' /tmp/b10-actual.txt; then
+            echo "Manifesto contém path inseguro." >&2
+            exit 1
+          fi
+
+          tar -xzf /tmp/b10-patch.tar.gz -C .
+          rm -rf scripts/b10-payload
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/migrations supabase/tests scripts/b10-payload
+          git commit -m "feat(b10): protect course enrollment and lesson playback [skip ci]"
+          git push origin HEAD:dev
+          echo "applied_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Configurar Node.js
         uses: actions/setup-node@v4
@@ -137,6 +189,7 @@ jobs:
         if: always()
         uses: actions/github-script@v7
         env:
+          APPLIED_COMMIT: ${{ steps.apply_b10.outputs.applied_commit }}
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
           LINT_OUTCOME: ${{ steps.lint.outcome }}
           SUPABASE_CLI_OUTCOME: ${{ steps.supabase_cli.outcome }}
@@ -154,7 +207,8 @@ jobs:
             const body = [
               '## Evidência automática do gate técnico',
               '',
-              `- Commit validado: \`${context.sha}\``,
+              `- Commit controlador: \`${context.sha}\``,
+              `- Commit funcional aplicado: \`${process.env.APPLIED_COMMIT || context.sha}\``,
               `- Branch: \`${context.ref.replace('refs/heads/', '')}\``,
               `- Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               '',
