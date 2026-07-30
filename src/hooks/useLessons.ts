@@ -8,7 +8,6 @@ export interface Lesson {
   id: string;
   title: string;
   description: string | null;
-  videoUrl: string | null;
   order: number;
   moduleId: string;
   durationMinutes: number | null;
@@ -24,7 +23,7 @@ export const useLessons = () =>
     queryFn: async (): Promise<Lesson[]> => {
       const { data, error } = await supabase
         .from("aulas")
-        .select("id,titulo,descricao,video,ordem,modulo_id,duracao")
+        .select("id,titulo,descricao,ordem,modulo_id,duracao")
         .order("ordem", { ascending: true });
 
       if (error) {
@@ -37,7 +36,6 @@ export const useLessons = () =>
         id: lesson.id,
         title: lesson.titulo,
         description: lesson.descricao,
-        videoUrl: lesson.video,
         order: lesson.ordem,
         moduleId: lesson.modulo_id,
         durationMinutes: lesson.duracao,
