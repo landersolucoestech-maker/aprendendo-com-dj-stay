@@ -48,10 +48,13 @@ select results_eq(
   $$values ('dQw4w9WgXcQ'::text)$$,
   'only normalized provider id is persisted'
 );
-select results_eq(
-  $$select private.lesson_embed_url(provider,external_video_id) from public.lesson_media where lesson_id='49000000-0000-4000-8000-000000000001'$$,
-  $$values ('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1'::text)$$,
-  'official privacy-enhanced embed URL is derived'
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'private.lesson_embed_url(public.lesson_media_provider,text)',
+    'EXECUTE'
+  ),
+  'browser role cannot execute private embed URL helper'
 );
 reset role;
 
@@ -75,8 +78,13 @@ select results_eq(
   'trusted media service resolves valid token'
 );
 select ok(
-  (select embed_url like 'https://www.youtube-nocookie.com/embed/%' and bucket_id is null and object_path is null from public.resolve_lesson_playback_token(current_setting('test.playback_token'),repeat('a',64))),
-  'external resolution exposes official embed but no storage path'
+  (
+    select embed_url = 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1'
+      and bucket_id is null
+      and object_path is null
+    from public.resolve_lesson_playback_token(current_setting('test.playback_token'),repeat('a',64))
+  ),
+  'trusted resolver returns official privacy-enhanced embed and no storage path'
 );
 select results_eq(
   $$select reason from public.resolve_lesson_playback_token(current_setting('test.playback_token'),repeat('b',64))$$,
