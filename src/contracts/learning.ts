@@ -83,52 +83,13 @@ export const progressUpdateInputSchema = z
   })
   .strict();
 
-const storageObjectPathSchema = nonBlankTextSchema
-  .max(1024)
-  .refine((path) => !path.startsWith("/"), "O caminho não pode ser absoluto.")
-  .refine(
-    (path) => !path.split("/").some((segment) => segment === ".."),
-    "O caminho não pode conter segmentos de travessia.",
-  );
-
-export const lessonFileSchema = z
-  .object({
-    id: uuidSchema,
-    aula_id: uuidSchema,
-    samples_file_path: storageObjectPathSchema.nullable(),
-    project_file_path: storageObjectPathSchema.nullable(),
-    created_at: timestampSchema,
-    updated_at: timestampSchema,
-  })
-  .strict()
-  .refine(
-    (value) => value.samples_file_path !== null || value.project_file_path !== null,
-    "Ao menos um arquivo deve estar associado à aula.",
-  );
-
-export const fileDownloadInputSchema = z
-  .object({
-    bucketId: z.enum(["lesson-samples", "lesson-projects"]),
-    filePath: storageObjectPathSchema,
-    fileName: nonBlankTextSchema.max(255).refine((value) => !value.includes("/"), {
-      message: "O nome do arquivo não pode conter separadores de caminho.",
-    }),
-  })
-  .strict();
-
 export const userProfileSchema = z
   .object({
     id: uuidSchema,
     user_id: uuidSchema,
-    avatar_url: httpsUrlSchema.nullable(),
+    avatar_asset_id: uuidSchema.nullable(),
     created_at: timestampSchema,
     updated_at: timestampSchema,
-  })
-  .strict();
-
-export const avatarUpdateInputSchema = z
-  .object({
-    avatarUrl: httpsUrlSchema.nullable(),
   })
   .strict();
 
@@ -171,6 +132,5 @@ export const profileMetadataInputSchema = z
 export type LessonRow = z.infer<typeof lessonRowSchema>;
 export type ProgressRow = z.infer<typeof progressRowSchema>;
 export type ProgressUpdateInput = z.infer<typeof progressUpdateInputSchema>;
-export type LessonFileRow = z.infer<typeof lessonFileSchema>;
 export type UserProfileRow = z.infer<typeof userProfileSchema>;
 export type ProfileMetadataInput = z.infer<typeof profileMetadataInputSchema>;
