@@ -1,6 +1,6 @@
 # FASE B6 — Reconciliação do banco e migrations
 
-Status: baseline canônica preparada; reconstrução limpa e aplicação remota em `dev` ainda dependem dos gates registrados abaixo.
+Status: concluída em `dev` com reconstrução limpa, testes SQL, aplicação remota, tipos gerados e gate da aplicação aprovados.
 
 ## Estado anterior
 
@@ -14,7 +14,7 @@ Status: baseline canônica preparada; reconstrução limpa e aplicação remota 
 
 ## Decisão de reconciliação
 
-Como não existem objetos ou dados de negócio nos ambientes remotos, o histórico local defeituoso foi substituído por uma baseline única e canônica. O escopo desta fase é somente o domínio já consumido pelo frontend:
+Como não existiam objetos ou dados de negócio nos ambientes remotos, o histórico local defeituoso foi substituído por uma baseline única e canônica. O escopo desta fase ficou limitado ao domínio já consumido pelo frontend:
 
 - módulos;
 - aulas;
@@ -35,17 +35,54 @@ Storage, pagamentos, afiliados, matrículas, CMS administrativo e autorização 
 - ownership para progresso e perfil;
 - nenhuma seed ou URL fictícia;
 - nenhum bucket criado;
-- testes pgTAP transacionais.
+- 20 testes pgTAP transacionais.
 
-## Evidência anterior à persistência
+## Aplicação em `dev`
 
-A migration completa foi executada no Supabase `dev` dentro de uma transação explícita e encerrada com `ROLLBACK`. O teste retornou cinco tabelas criadas dentro da transação, demonstrando que o DDL e suas dependências são aceitos sem persistir objetos.
+Migration registrada:
 
-## Gates pendentes desta fase
+```text
+20260730142308 canonical_learning_schema
+```
 
-1. reconstrução local do zero via Supabase CLI;
-2. execução da suíte pgTAP;
-3. aplicação da migration somente no Supabase `dev`;
-4. inventário e advisors pós-migration;
-5. geração automática dos tipos TypeScript;
-6. lint, typecheck estrito e build.
+Estado remoto após a aplicação:
+
+- 5 tabelas em `public`;
+- 0 registros;
+- 0 buckets;
+- 0 Edge Functions;
+- RLS ativa nas 5 tabelas;
+- nenhum alerta do advisor de segurança;
+- produção permaneceu somente leitura.
+
+## Tipos gerados
+
+O arquivo `src/integrations/supabase/types.ts` foi substituído pelo contrato gerado automaticamente a partir do Supabase `dev`. Foram removidos do tipo:
+
+- `user_subscriptions`;
+- `user_has_paid_access`;
+- `curso_id`;
+- `criado_em`;
+- nulabilidade incorreta de FKs e timestamps.
+
+## Evidência automática
+
+Commit validado:
+
+```text
+668304840e0b44fe48120b705253de05d5205eac
+```
+
+Workflow run: `30551616542`
+
+| Etapa | Resultado |
+| --- | --- |
+| `npm ci` | success |
+| `npm run lint` | success |
+| Supabase CLI | success |
+| `supabase start` | success |
+| `supabase db reset --local` | success |
+| `supabase test db` | success |
+| geração de tipos TypeScript | success |
+| `npm run typecheck` | success |
+| `npm run build:dev` | success |
