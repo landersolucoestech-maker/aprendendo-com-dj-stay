@@ -18,7 +18,7 @@ select is((select count(*)::integer from pg_policies where schemaname='public' a
 select is((select count(*)::integer from pg_policies where schemaname='public' and tablename='user_profiles'), 4, 'profiles has four owner policies');
 select is((select count(*)::integer from pg_policies where schemaname='public' and tablename='modulos' and roles = array['authenticated']::name[]), 1, 'modules read is authenticated only');
 
-select throws_ok($$insert into public.progresso_aulas(user_id,aula_id,progresso_percentual) values ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002',101)$$, '23503', null, 'foreign keys reject invalid progress before unsafe data persists');
+select throws_ok($$insert into public.progresso_aulas(user_id,aula_id,progresso_percentual) values ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002',101)$$, '23514', null, 'progress percentage constraint rejects values above 100');
 select has_check('public', 'progresso_aulas', 'progress has check constraints');
 select has_check('public', 'aulas', 'lessons have check constraints');
 select has_check('public', 'lesson_files', 'lesson files have check constraints');
