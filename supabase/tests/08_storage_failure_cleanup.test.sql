@@ -26,6 +26,20 @@ select is(
   1,
   'missing object failure is audited once'
 );
+select results_eq(
+  $$select (public.fail_asset_upload((select id from public.assets where idempotency_key='failure:missing:0001'),'MISSING_OBJECT_CLEANUP',true)).state::text$$,
+  $$values ('failed'::text)$$,
+  'cleanup can be finalized only after the object is absent'
+);
+select ok(
+  (select deleted_at is not null from public.assets where idempotency_key='failure:missing:0001'),
+  'cleanup finalization records deletion timestamp'
+);
+select is(
+  (select count(*)::integer from public.asset_events where asset_id=(select id from public.assets where idempotency_key='failure:missing:0001') and event_type='object_removed'::public.asset_event_type),
+  1,
+  'object removal is recorded in immutable audit events'
+);
 
 select lives_ok(
   $$select public.prepare_asset_upload('avatar'::public.asset_purpose,'mismatch.webp','image/webp',2048,'failure:mismatch:01',null)$$,
@@ -46,35 +60,12 @@ select throws_ok(
   $$select public.fail_asset_upload((select id from public.assets where idempotency_key='failure:mismatch:01'),'CLIENT_CLEANUP',true)$$,
   '22023', null, 'asset cannot be marked removed while storage object still exists'
 );
-
--- The Storage API deletes the physical object and then removes its catalog row.
--- Direct application deletion remains blocked by storage.protect_objects_delete.
-reset role;
-alter table storage.objects disable trigger protect_objects_delete;
-delete from storage.objects
-where bucket_id='private-assets'
-  and name=(select object_path from public.assets where idempotency_key='failure:mismatch:01');
-alter table storage.objects enable trigger protect_objects_delete;
-set local role authenticated;
-select is(
-  (select count(*)::integer from storage.objects where bucket_id='private-assets' and name=(select object_path from public.assets where idempotency_key='failure:mismatch:01')),
-  0,
-  'Storage API removal state is reflected before cleanup finalization'
-);
 select results_eq(
-  $$select (public.fail_asset_upload((select id from public.assets where idempotency_key='failure:mismatch:01'),'CLIENT_CLEANUP',true)).state::text$$,
+  $$select (public.fail_asset_upload((select id from public.assets where idempotency_key='failure:mismatch:01'),'METADATA_MISMATCH',false)).state::text$$,
   $$values ('failed'::text)$$,
-  'cleanup finalization remains idempotently failed'
+  'failed lifecycle remains idempotent while cleanup is pending'
 );
-select ok(
-  (select deleted_at is not null from public.assets where idempotency_key='failure:mismatch:01'),
-  'cleanup records deletion timestamp'
-);
-select is(
-  (select count(*)::integer from public.asset_events where asset_id=(select id from public.assets where idempotency_key='failure:mismatch:01') and event_type='object_removed'::public.asset_event_type),
-  1,
-  'object removal is recorded in immutable audit events'
-);
+
 select lives_ok(
   $$select public.prepare_asset_upload('avatar'::public.asset_purpose,'published.webp','image/webp',3072,'failure:published:01',null)$$,
   'published lifecycle scenario prepares an intent'
