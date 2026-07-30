@@ -3,12 +3,6 @@ import { z } from "zod";
 export const uuidSchema = z.string().uuid();
 const timestampSchema = z.string().datetime({ offset: true });
 const nonBlankTextSchema = z.string().trim().min(1);
-const httpsUrlSchema = z
-  .string()
-  .max(2048)
-  .url()
-  .refine((value) => new URL(value).protocol === "https:", "A URL deve utilizar HTTPS.");
-
 export const lessonIdSchema = uuidSchema;
 
 export const lessonRowSchema = z
@@ -17,7 +11,6 @@ export const lessonRowSchema = z
     modulo_id: uuidSchema,
     titulo: nonBlankTextSchema.max(200),
     descricao: z.string().nullable(),
-    video: httpsUrlSchema.nullable(),
     ordem: z.number().int().nonnegative(),
     duracao: z.number().int().min(1).max(1440).nullable(),
     created_at: timestampSchema,
@@ -31,7 +24,6 @@ export const lessonsResponseSchema = z.array(
     modulo_id: true,
     titulo: true,
     descricao: true,
-    video: true,
     ordem: true,
     duracao: true,
   }),
@@ -41,7 +33,6 @@ const moduleLessonSchema = lessonRowSchema.pick({
   id: true,
   titulo: true,
   descricao: true,
-  video: true,
   ordem: true,
   duracao: true,
 });
