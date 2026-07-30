@@ -1,1 +1,4 @@
 project_id = "jmtyurketfclaneqxohu"
+
+[functions.media-playback]
+verify_jwt = false
