@@ -16,15 +16,26 @@ select ok(
   (select relrowsecurity and relforcerowsecurity from pg_class where oid = 'public.user_roles'::regclass),
   'user roles has forced RLS'
 );
-select is(
-  (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace where p.prosecdef and n.nspname = 'public'),
-  0,
-  'no security definer function is exposed in public'
+select ok(
+  (
+    select array_agg(p.proname order by p.proname)
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where p.prosecdef and n.nspname = 'public'
+  ) = array[
+    'confirm_asset_upload',
+    'fail_asset_upload',
+    'grant_asset_access',
+    'prepare_asset_upload',
+    'revoke_asset_access',
+    'transition_asset_state'
+  ]::name[],
+  'only the six audited asset RPCs are exposed as public security definers'
 );
 select is(
   (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace where p.prosecdef and n.nspname = 'private'),
-  2,
-  'only the two audited private security definer functions exist'
+  3,
+  'only the three audited private security definer functions exist'
 );
 select is(
   (select proconfig from pg_proc where oid = 'private.current_user_role()'::regprocedure),
