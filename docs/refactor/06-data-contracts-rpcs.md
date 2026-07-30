@@ -1,6 +1,6 @@
 # FASE B7 — Contratos de dados e RPCs
 
-Status: implementação preparada em `dev`; encerramento condicionado ao gate automático.
+Status: concluída em `dev` com contratos de runtime, bloqueio de drift e gate automático aprovado.
 
 ## Escopo auditado
 
@@ -63,11 +63,35 @@ A interface recebe uma mensagem segura e não persiste payloads que falhem na va
 
 O arquivo `src/integrations/supabase/types.ts` continua sendo gerado pelo Supabase e não foi editado manualmente nesta fase.
 
-O workflow passa a comparar o tipo gerado durante a reconstrução limpa com o tipo versionado. Qualquer drift interrompe o gate.
+O workflow compara o tipo gerado durante a reconstrução limpa com o tipo versionado. Qualquer drift interrompe o gate.
+
+## Evidência automática
+
+Commit validado:
+
+```text
+a8a1bb37858ac53663cfee564e515902f282aea2
+```
+
+Workflow run: `30557768404`
+
+| Etapa | Resultado |
+| --- | --- |
+| `npm ci` | success |
+| `npm run lint` | success |
+| Supabase CLI | success |
+| `supabase start` | success |
+| `supabase db reset --local` | success |
+| `supabase test db` | success |
+| geração de tipos TypeScript | success |
+| tipos gerados sem drift | success |
+| `npm run typecheck` | success |
+| `npm run build:dev` | success |
 
 ## Limites
 
 - Storage privado e autorização de download pertencem à FASE B9;
 - papéis, matrículas e autorização por recurso pertencem à FASE B8 e fases de domínio;
 - pagamentos, pedidos, Pix, webhooks e dados financeiros pertencem às fases de checkout e financeiro;
-- produção permanece somente leitura.
+- produção permaneceu somente leitura;
+- nenhum deploy foi executado.
