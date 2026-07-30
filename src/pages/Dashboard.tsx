@@ -17,7 +17,7 @@ import { useProgressCalculation } from "@/hooks/useProgressCalculation";
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { data: lessons, isLoading: lessonsLoading, error: lessonsError } = useLessons();
+  const { isLoading: lessonsLoading, error: lessonsError } = useLessons();
   const { data: modules, isLoading: modulesLoading, error: modulesError } = useModules();
   const modulesWithProgress = useProgressCalculation(modules);
 
