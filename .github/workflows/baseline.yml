@@ -1,4 +1,4 @@
-# Pacote B10 completo: sete blocos verificados antes da extração.
+# Pacote B10 completo: blocos 00–06 presentes e verificados por SHA integral.
 name: Gate técnico
 on:
   workflow_dispatch:
