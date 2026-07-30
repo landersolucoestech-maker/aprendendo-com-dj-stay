@@ -15,7 +15,7 @@ import { parseDataContract } from "@/contracts/contract-error";
 import { profileMetadataInputSchema } from "@/contracts/learning";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { useToast } from "@/hooks/use-toast";
-import { useUpdateProfile, useUserProfile } from "@/hooks/useUserProfile";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { getErrorMessage } from "@/lib/error-message";
 
@@ -44,7 +44,6 @@ const EditProfile = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const profileQuery = useUserProfile();
-  const updateProfile = useUpdateProfile();
   const { uploadAvatar, isUploading } = useAvatarUpload();
   const [form, setForm] = useState<ProfileForm>(EMPTY_FORM);
   const [isSaving, setIsSaving] = useState(false);
@@ -83,19 +82,13 @@ const EditProfile = () => {
       return;
     }
 
-    const avatarUrl = await uploadAvatar(file);
-    if (!avatarUrl) {
-      return;
-    }
+    const publishedAsset = await uploadAvatar(file);
+    event.target.value = "";
 
-    try {
-      await updateProfile.mutateAsync({ avatarUrl });
-      toast({ title: "Avatar atualizado", description: "Sua foto de perfil foi salva." });
-    } catch (error: unknown) {
+    if (publishedAsset !== null) {
       toast({
-        title: "Não foi possível salvar o avatar",
-        description: getErrorMessage(error, "Tente novamente em alguns instantes."),
-        variant: "destructive",
+        title: "Avatar atualizado",
+        description: "Sua foto de perfil foi publicada com segurança.",
       });
     }
   };
@@ -201,12 +194,14 @@ const EditProfile = () => {
             <CardHeader>
               <CardTitle>Foto do perfil</CardTitle>
               <CardDescription className="text-gray-400">
-                Imagem vinculada ao seu usuário.
+                Imagem armazenada de forma privada e exibida por URL temporária.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex items-center gap-6">
               <Avatar className="w-24 h-24">
-                {profileQuery.data?.avatar_url ? <AvatarImage src={profileQuery.data.avatar_url} /> : null}
+                {profileQuery.data?.avatarSignedUrl ? (
+                  <AvatarImage src={profileQuery.data.avatarSignedUrl} />
+                ) : null}
                 <AvatarFallback>
                   <User className="w-10 h-10" />
                 </AvatarFallback>
@@ -222,10 +217,10 @@ const EditProfile = () => {
                 type="button"
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading || updateProfile.isPending}
+                disabled={isUploading}
               >
                 <Camera className="w-4 h-4 mr-2" />
-                {isUploading || updateProfile.isPending ? "Enviando..." : "Alterar foto"}
+                {isUploading ? "Enviando..." : "Alterar foto"}
               </Button>
             </CardContent>
           </Card>
