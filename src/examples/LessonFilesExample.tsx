@@ -1,11 +1,16 @@
+import { useParams } from "react-router-dom";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { useLessonFiles } from "@/hooks/useLessonFiles";
-import { useParams } from "react-router-dom";
+import { getErrorMessage } from "@/lib/error-message";
 
 const LessonFilesExample = () => {
   const { lessonId } = useParams();
-  const currentLessonId = lessonId ?? "1c136523-3b58-4cc3-ba5b-aa03f4a4e081";
-  const { isLoading, error } = useLessonFiles(currentLessonId);
+  const { data, isLoading, error } = useLessonFiles(lessonId ?? "");
+
+  if (!lessonId) {
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -13,7 +18,7 @@ const LessonFilesExample = () => {
         <CardContent className="p-6">
           <div className="flex items-center space-x-2">
             <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-            <p className="text-gray-300">Carregando arquivos da aula...</p>
+            <p className="text-gray-300">Carregando materiais privados da aula...</p>
           </div>
         </CardContent>
       </Card>
@@ -21,6 +26,16 @@ const LessonFilesExample = () => {
   }
 
   if (error) {
+    return (
+      <Card className="glass-card border-white/10">
+        <CardContent className="p-6 text-red-300">
+          {getErrorMessage(error, "Não foi possível consultar os materiais da aula.")}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data?.length) {
     return null;
   }
 
