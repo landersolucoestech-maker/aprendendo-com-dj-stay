@@ -1,3 +1,4 @@
+# Gate controlado das fases de fundação. Não contém deploy.
 name: Baseline técnico
 
 on:
