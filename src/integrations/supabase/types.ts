@@ -7,21 +7,40 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
       aulas: {
         Row: {
           created_at: string
-          criado_em: string | null
           descricao: string | null
           duracao: number | null
           id: string
-          modulo_id: string | null
+          modulo_id: string
           ordem: number
           titulo: string
           updated_at: string
@@ -29,11 +48,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          criado_em?: string | null
           descricao?: string | null
           duracao?: number | null
           id?: string
-          modulo_id?: string | null
+          modulo_id: string
           ordem?: number
           titulo: string
           updated_at?: string
@@ -41,11 +59,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          criado_em?: string | null
           descricao?: string | null
           duracao?: number | null
           id?: string
-          modulo_id?: string | null
+          modulo_id?: string
           ordem?: number
           titulo?: string
           updated_at?: string
@@ -63,34 +80,34 @@ export type Database = {
       }
       lesson_files: {
         Row: {
-          aula_id: string | null
-          created_at: string | null
+          aula_id: string
+          created_at: string
           id: string
           project_file_path: string | null
           samples_file_path: string | null
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          aula_id?: string | null
-          created_at?: string | null
+          aula_id: string
+          created_at?: string
           id?: string
           project_file_path?: string | null
           samples_file_path?: string | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          aula_id?: string | null
-          created_at?: string | null
+          aula_id?: string
+          created_at?: string
           id?: string
           project_file_path?: string | null
           samples_file_path?: string | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "lesson_files_aula_id_fkey"
             columns: ["aula_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "aulas"
             referencedColumns: ["id"]
           },
@@ -99,8 +116,6 @@ export type Database = {
       modulos: {
         Row: {
           created_at: string
-          criado_em: string | null
-          curso_id: string | null
           descricao: string | null
           id: string
           ordem: number
@@ -109,8 +124,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          criado_em?: string | null
-          curso_id?: string | null
           descricao?: string | null
           id?: string
           ordem?: number
@@ -119,8 +132,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          criado_em?: string | null
-          curso_id?: string | null
           descricao?: string | null
           id?: string
           ordem?: number
@@ -131,35 +142,35 @@ export type Database = {
       }
       progresso_aulas: {
         Row: {
-          aula_id: string | null
-          completada: boolean | null
+          aula_id: string
+          completada: boolean
           created_at: string
           id: string
-          progresso_percentual: number | null
-          tempo_assistido: number | null
-          ultima_visualizacao: string | null
+          progresso_percentual: number
+          tempo_assistido: number
+          ultima_visualizacao: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          aula_id?: string | null
-          completada?: boolean | null
+          aula_id: string
+          completada?: boolean
           created_at?: string
           id?: string
-          progresso_percentual?: number | null
-          tempo_assistido?: number | null
-          ultima_visualizacao?: string | null
+          progresso_percentual?: number
+          tempo_assistido?: number
+          ultima_visualizacao?: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          aula_id?: string | null
-          completada?: boolean | null
+          aula_id?: string
+          completada?: boolean
           created_at?: string
           id?: string
-          progresso_percentual?: number | null
-          tempo_assistido?: number | null
-          ultima_visualizacao?: string | null
+          progresso_percentual?: number
+          tempo_assistido?: number
+          ultima_visualizacao?: string
           updated_at?: string
           user_id?: string
         }
@@ -176,58 +187,22 @@ export type Database = {
       user_profiles: {
         Row: {
           avatar_url: string | null
-          created_at: string | null
-          id: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string | null
-          id?: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string | null
-          id?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_subscriptions: {
-        Row: {
-          amount: number | null
           created_at: string
-          expiry_date: string | null
           id: string
-          payment_date: string | null
-          payment_method: string | null
-          status: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          amount?: number | null
+          avatar_url?: string | null
           created_at?: string
-          expiry_date?: string | null
           id?: string
-          payment_date?: string | null
-          payment_method?: string | null
-          status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          amount?: number | null
+          avatar_url?: string | null
           created_at?: string
-          expiry_date?: string | null
           id?: string
-          payment_date?: string | null
-          payment_method?: string | null
-          status?: string
           updated_at?: string
           user_id?: string
         }
@@ -238,10 +213,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      user_has_paid_access: {
-        Args: Record<PropertyKey, never> | { user_uuid: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
@@ -370,6 +342,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
