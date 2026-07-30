@@ -38,22 +38,28 @@ export type Database = {
         Row: {
           asset_id: string
           created_at: string
+          enrollment_id: string | null
           expires_at: string | null
           granted_by_user_id: string
+          id: string
           user_id: string
         }
         Insert: {
           asset_id: string
           created_at?: string
+          enrollment_id?: string | null
           expires_at?: string | null
           granted_by_user_id: string
+          id?: string
           user_id: string
         }
         Update: {
           asset_id?: string
           created_at?: string
+          enrollment_id?: string | null
           expires_at?: string | null
           granted_by_user_id?: string
+          id?: string
           user_id?: string
         }
         Relationships: [
@@ -62,6 +68,13 @@ export type Database = {
             columns: ["asset_id"]
             isOneToOne: false
             referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_access_grants_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
             referencedColumns: ["id"]
           },
         ]
@@ -206,7 +219,6 @@ export type Database = {
           ordem: number
           titulo: string
           updated_at: string
-          video: string | null
         }
         Insert: {
           created_at?: string
@@ -217,7 +229,6 @@ export type Database = {
           ordem?: number
           titulo: string
           updated_at?: string
-          video?: string | null
         }
         Update: {
           created_at?: string
@@ -228,7 +239,6 @@ export type Database = {
           ordem?: number
           titulo?: string
           updated_at?: string
-          video?: string | null
         }
         Relationships: [
           {
@@ -240,8 +250,196 @@ export type Database = {
           },
         ]
       }
+      courses: {
+        Row: {
+          access_duration_days: number | null
+          created_at: string
+          id: string
+          slug: string
+          status: Database["public"]["Enums"]["course_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          access_duration_days?: number | null
+          created_at?: string
+          id?: string
+          slug: string
+          status?: Database["public"]["Enums"]["course_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          access_duration_days?: number | null
+          created_at?: string
+          id?: string
+          slug?: string
+          status?: Database["public"]["Enums"]["course_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      enrollment_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          details: Json
+          enrollment_id: string
+          event_type: Database["public"]["Enums"]["enrollment_event_type"]
+          from_status: Database["public"]["Enums"]["enrollment_status"] | null
+          id: string
+          to_status: Database["public"]["Enums"]["enrollment_status"] | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          details?: Json
+          enrollment_id: string
+          event_type: Database["public"]["Enums"]["enrollment_event_type"]
+          from_status?: Database["public"]["Enums"]["enrollment_status"] | null
+          id?: string
+          to_status?: Database["public"]["Enums"]["enrollment_status"] | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          details?: Json
+          enrollment_id?: string
+          event_type?: Database["public"]["Enums"]["enrollment_event_type"]
+          from_status?: Database["public"]["Enums"]["enrollment_status"] | null
+          id?: string
+          to_status?: Database["public"]["Enums"]["enrollment_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollment_events_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      enrollments: {
+        Row: {
+          course_id: string
+          created_at: string
+          expires_at: string | null
+          granted_by_user_id: string | null
+          id: string
+          payment_confirmed_at: string | null
+          revoked_at: string | null
+          source: Database["public"]["Enums"]["enrollment_source"]
+          source_reference: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["enrollment_status"]
+          status_reason: string | null
+          suspended_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          expires_at?: string | null
+          granted_by_user_id?: string | null
+          id?: string
+          payment_confirmed_at?: string | null
+          revoked_at?: string | null
+          source: Database["public"]["Enums"]["enrollment_source"]
+          source_reference?: string | null
+          starts_at?: string
+          status: Database["public"]["Enums"]["enrollment_status"]
+          status_reason?: string | null
+          suspended_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          expires_at?: string | null
+          granted_by_user_id?: string | null
+          id?: string
+          payment_confirmed_at?: string | null
+          revoked_at?: string | null
+          source?: Database["public"]["Enums"]["enrollment_source"]
+          source_reference?: string | null
+          starts_at?: string
+          status?: Database["public"]["Enums"]["enrollment_status"]
+          status_reason?: string | null
+          suspended_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_media: {
+        Row: {
+          asset_id: string | null
+          created_at: string
+          created_by_user_id: string
+          external_video_id: string | null
+          id: string
+          is_active: boolean
+          lesson_id: string
+          provider: Database["public"]["Enums"]["lesson_media_provider"]
+          updated_at: string
+          watermark_enabled: boolean
+        }
+        Insert: {
+          asset_id?: string | null
+          created_at?: string
+          created_by_user_id: string
+          external_video_id?: string | null
+          id?: string
+          is_active?: boolean
+          lesson_id: string
+          provider: Database["public"]["Enums"]["lesson_media_provider"]
+          updated_at?: string
+          watermark_enabled?: boolean
+        }
+        Update: {
+          asset_id?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          external_video_id?: string | null
+          id?: string
+          is_active?: boolean
+          lesson_id?: string
+          provider?: Database["public"]["Enums"]["lesson_media_provider"]
+          updated_at?: string
+          watermark_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_media_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_media_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: true
+            referencedRelation: "aulas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       modulos: {
         Row: {
+          course_id: string
           created_at: string
           descricao: string | null
           id: string
@@ -250,6 +448,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          course_id: string
           created_at?: string
           descricao?: string | null
           id?: string
@@ -258,6 +457,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          course_id?: string
           created_at?: string
           descricao?: string | null
           id?: string
@@ -265,7 +465,126 @@ export type Database = {
           titulo?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "modulos_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playback_events: {
+        Row: {
+          created_at: string
+          details: Json
+          event_type: Database["public"]["Enums"]["playback_event_type"]
+          id: string
+          lesson_media_id: string | null
+          playback_token_id: string | null
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          event_type: Database["public"]["Enums"]["playback_event_type"]
+          id?: string
+          lesson_media_id?: string | null
+          playback_token_id?: string | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          event_type?: Database["public"]["Enums"]["playback_event_type"]
+          id?: string
+          lesson_media_id?: string | null
+          playback_token_id?: string | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playback_events_lesson_media_id_fkey"
+            columns: ["lesson_media_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playback_events_playback_token_id_fkey"
+            columns: ["playback_token_id"]
+            isOneToOne: false
+            referencedRelation: "playback_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playback_tokens: {
+        Row: {
+          auth_session_id: string
+          created_at: string
+          enrollment_id: string | null
+          expires_at: string
+          fingerprint_hash: string
+          id: string
+          last_used_at: string | null
+          lesson_media_id: string
+          revoked_at: string | null
+          token_hash: string
+          use_count: number
+          user_id: string
+          watermark_text: string | null
+        }
+        Insert: {
+          auth_session_id: string
+          created_at?: string
+          enrollment_id?: string | null
+          expires_at: string
+          fingerprint_hash: string
+          id?: string
+          last_used_at?: string | null
+          lesson_media_id: string
+          revoked_at?: string | null
+          token_hash: string
+          use_count?: number
+          user_id: string
+          watermark_text?: string | null
+        }
+        Update: {
+          auth_session_id?: string
+          created_at?: string
+          enrollment_id?: string | null
+          expires_at?: string
+          fingerprint_hash?: string
+          id?: string
+          last_used_at?: string | null
+          lesson_media_id?: string
+          revoked_at?: string | null
+          token_hash?: string
+          use_count?: number
+          user_id?: string
+          watermark_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playback_tokens_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playback_tokens_lesson_media_id_fkey"
+            columns: ["lesson_media_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_media"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       progresso_aulas: {
         Row: {
@@ -404,6 +723,40 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      confirm_course_purchase: {
+        Args: {
+          p_confirmed_at: string
+          p_course_id: string
+          p_expires_at?: string
+          p_source_reference: string
+          p_starts_at?: string
+          p_user_id: string
+        }
+        Returns: {
+          course_id: string
+          created_at: string
+          expires_at: string | null
+          granted_by_user_id: string | null
+          id: string
+          payment_confirmed_at: string | null
+          revoked_at: string | null
+          source: Database["public"]["Enums"]["enrollment_source"]
+          source_reference: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["enrollment_status"]
+          status_reason: string | null
+          suspended_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "enrollments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      disable_lesson_media: { Args: { p_lesson_id: string }; Returns: boolean }
       fail_asset_upload: {
         Args: {
           p_asset_id: string
@@ -448,13 +801,47 @@ export type Database = {
         Returns: {
           asset_id: string
           created_at: string
+          enrollment_id: string | null
           expires_at: string | null
           granted_by_user_id: string
+          id: string
           user_id: string
         }
         SetofOptions: {
           from: "*"
           to: "asset_access_grants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      grant_course_enrollment: {
+        Args: {
+          p_course_id: string
+          p_expires_at?: string
+          p_reason?: string
+          p_starts_at?: string
+          p_user_id: string
+        }
+        Returns: {
+          course_id: string
+          created_at: string
+          expires_at: string | null
+          granted_by_user_id: string | null
+          id: string
+          payment_confirmed_at: string | null
+          revoked_at: string | null
+          source: Database["public"]["Enums"]["enrollment_source"]
+          source_reference: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["enrollment_status"]
+          status_reason: string | null
+          suspended_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "enrollments"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -501,9 +888,116 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      renew_course_enrollment: {
+        Args: { p_enrollment_id: string; p_expires_at: string }
+        Returns: {
+          course_id: string
+          created_at: string
+          expires_at: string | null
+          granted_by_user_id: string | null
+          id: string
+          payment_confirmed_at: string | null
+          revoked_at: string | null
+          source: Database["public"]["Enums"]["enrollment_source"]
+          source_reference: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["enrollment_status"]
+          status_reason: string | null
+          suspended_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "enrollments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      request_lesson_playback_token: {
+        Args: { p_fingerprint_hash: string; p_lesson_id: string }
+        Returns: {
+          expires_at: string
+          granted: boolean
+          provider: Database["public"]["Enums"]["lesson_media_provider"]
+          reason: string
+          token: string
+          watermark_text: string
+        }[]
+      }
+      resolve_lesson_playback_token: {
+        Args: { p_fingerprint_hash: string; p_token: string }
+        Returns: {
+          bucket_id: string
+          embed_url: string
+          expires_at: string
+          granted: boolean
+          mime_type: string
+          object_path: string
+          provider: Database["public"]["Enums"]["lesson_media_provider"]
+          reason: string
+          watermark_text: string
+        }[]
+      }
       revoke_asset_access: {
         Args: { p_asset_id: string; p_user_id: string }
         Returns: boolean
+      }
+      revoke_course_enrollment: {
+        Args: { p_enrollment_id: string; p_reason: string }
+        Returns: {
+          course_id: string
+          created_at: string
+          expires_at: string | null
+          granted_by_user_id: string | null
+          id: string
+          payment_confirmed_at: string | null
+          revoked_at: string | null
+          source: Database["public"]["Enums"]["enrollment_source"]
+          source_reference: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["enrollment_status"]
+          status_reason: string | null
+          suspended_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "enrollments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      revoke_lesson_playback_token: {
+        Args: { p_token: string }
+        Returns: boolean
+      }
+      suspend_course_enrollment: {
+        Args: { p_enrollment_id: string; p_reason: string }
+        Returns: {
+          course_id: string
+          created_at: string
+          expires_at: string | null
+          granted_by_user_id: string | null
+          id: string
+          payment_confirmed_at: string | null
+          revoked_at: string | null
+          source: Database["public"]["Enums"]["enrollment_source"]
+          source_reference: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["enrollment_status"]
+          status_reason: string | null
+          suspended_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "enrollments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       transition_asset_state: {
         Args: {
@@ -543,6 +1037,57 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      upsert_external_lesson_media: {
+        Args: {
+          p_lesson_id: string
+          p_provider: Database["public"]["Enums"]["lesson_media_provider"]
+          p_source_url: string
+          p_watermark_enabled?: boolean
+        }
+        Returns: {
+          asset_id: string | null
+          created_at: string
+          created_by_user_id: string
+          external_video_id: string | null
+          id: string
+          is_active: boolean
+          lesson_id: string
+          provider: Database["public"]["Enums"]["lesson_media_provider"]
+          updated_at: string
+          watermark_enabled: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "lesson_media"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      upsert_private_lesson_media: {
+        Args: {
+          p_asset_id: string
+          p_lesson_id: string
+          p_watermark_enabled?: boolean
+        }
+        Returns: {
+          asset_id: string | null
+          created_at: string
+          created_by_user_id: string
+          external_video_id: string | null
+          id: string
+          is_active: boolean
+          lesson_id: string
+          provider: Database["public"]["Enums"]["lesson_media_provider"]
+          updated_at: string
+          watermark_enabled: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "lesson_media"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "aluno" | "afiliado" | "administrador_proprietario"
@@ -575,6 +1120,24 @@ export type Database = {
         | "processing"
         | "published"
         | "failed"
+      course_status: "draft" | "published" | "archived"
+      enrollment_event_type:
+        | "created"
+        | "payment_confirmed"
+        | "activated"
+        | "renewed"
+        | "suspended"
+        | "revoked"
+        | "access_denied"
+      enrollment_source: "manual_grant" | "purchase"
+      enrollment_status: "pending" | "active" | "suspended" | "revoked"
+      lesson_media_provider: "private_asset" | "youtube" | "vimeo"
+      playback_event_type:
+        | "issued"
+        | "resolved"
+        | "denied"
+        | "expired"
+        | "revoked"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -732,6 +1295,26 @@ export const Constants = {
         "digital_product",
       ],
       asset_state: ["pending", "uploaded", "processing", "published", "failed"],
+      course_status: ["draft", "published", "archived"],
+      enrollment_event_type: [
+        "created",
+        "payment_confirmed",
+        "activated",
+        "renewed",
+        "suspended",
+        "revoked",
+        "access_denied",
+      ],
+      enrollment_source: ["manual_grant", "purchase"],
+      enrollment_status: ["pending", "active", "suspended", "revoked"],
+      lesson_media_provider: ["private_asset", "youtube", "vimeo"],
+      playback_event_type: [
+        "issued",
+        "resolved",
+        "denied",
+        "expired",
+        "revoked",
+      ],
     },
   },
 } as const
