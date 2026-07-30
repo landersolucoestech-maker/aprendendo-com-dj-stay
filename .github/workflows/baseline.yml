@@ -115,11 +115,16 @@ jobs:
       - name: Evidência
         if: always()
         uses: actions/github-script@v7
+        env:
+          APPLIED_SHA: ${{ steps.apply.outputs.sha }}
+          JOB_STATUS: ${{ job.status }}
         with:
           script: |
+            const appliedSha = process.env.APPLIED_SHA || context.sha;
+            const jobStatus = process.env.JOB_STATUS || 'unknown';
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `Gate técnico — ${context.sha.slice(0,12)}`,
-              body: `Commit controlador: \`${context.sha}\`\nCommit funcional: \`${{ steps.apply.outputs.sha || github.sha }}\`\nRun: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\nConclusão: **${{ job.status }}**`
-            })
+              body: `Commit controlador: \`${context.sha}\`\nCommit funcional: \`${appliedSha}\`\nRun: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\nConclusão: **${jobStatus}**`
+            });
