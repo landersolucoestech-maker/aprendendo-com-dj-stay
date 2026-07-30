@@ -1,6 +1,12 @@
 # FASE B5 — Autenticação, sessões e rotas protegidas
 
-Status: implementação gravada; validação automática obrigatória.
+Status: concluída em `dev` com gate automático aprovado.
+
+## Commit validado
+
+```text
+c5727394736df0e2874d98fd98e8723122eaddba
+```
 
 ## Implementação
 
@@ -15,11 +21,23 @@ Status: implementação gravada; validação automática obrigatória.
 - landing page restaurada em `/`;
 - perfil do usuário derivado da sessão real, sem usuário demonstrativo;
 - atualização de perfil persistida em `user_metadata`;
-- contrato estático `check:auth` integrado ao typecheck.
+- contrato estático `check:auth` integrado ao typecheck;
+- cargas Base64 temporárias removidas do repositório.
+
+## Evidência automática
+
+Workflow run: `30548775282`
+
+| Etapa | Resultado |
+| --- | --- |
+| `npm ci` | success |
+| `npm run lint` | success |
+| `npm run typecheck` | success |
+| `npm run build:dev` | success |
 
 ## Limites
 
 - nenhuma tabela, policy, bucket ou migration foi criada nesta fase;
 - autorização por matrícula e pagamento pertence às fases de domínio e pagamento;
-- produção permanece somente leitura;
-- a fase só pode ser encerrada após `npm ci`, lint, TypeScript estrito e build aprovados no GitHub Actions.
+- produção permaneceu somente leitura;
+- nenhum deploy foi executado.
