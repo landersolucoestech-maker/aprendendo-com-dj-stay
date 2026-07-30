@@ -9,7 +9,7 @@ on:
       - "docs/**"
 
 permissions:
-  contents: read
+  contents: write
   issues: write
 
 concurrency:
@@ -36,8 +36,33 @@ jobs:
           node-version: 22.16.0
           cache: npm
 
+      - name: Sincronizar package-lock.json
+        id: lock_sync
+        continue-on-error: true
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Persistir lockfile sincronizado
+        id: lock_commit
+        if: steps.lock_sync.outcome == 'success'
+        continue-on-error: true
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore(b2): sync npm lockfile"
+          git push origin HEAD:dev
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Instalação limpa
         id: install
+        if: steps.lock_sync.outcome == 'success' && steps.lock_commit.outcome == 'success'
         continue-on-error: true
         run: npm ci
 
@@ -51,7 +76,7 @@ jobs:
         id: typecheck
         if: steps.install.outcome == 'success'
         continue-on-error: true
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Build
         id: build
@@ -63,7 +88,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: source-${{ github.sha }}
+          name: source-${{ steps.lock_commit.outputs.commit_sha || github.sha }}
           path: |
             .
             !.git/**
@@ -72,33 +97,40 @@ jobs:
           include-hidden-files: true
           retention-days: 1
 
-      - name: Registrar evidência do baseline
+      - name: Registrar evidência do gate
         if: always()
         uses: actions/github-script@v7
         env:
           TREE_SHA: ${{ steps.gitmeta.outputs.tree_sha }}
+          VALIDATED_SHA: ${{ steps.lock_commit.outputs.commit_sha || github.sha }}
+          LOCK_SYNC_OUTCOME: ${{ steps.lock_sync.outcome }}
+          LOCK_COMMIT_OUTCOME: ${{ steps.lock_commit.outcome }}
+          LOCK_CHANGED: ${{ steps.lock_commit.outputs.changed }}
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
           LINT_OUTCOME: ${{ steps.lint.outcome }}
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         with:
           script: |
-            const shortSha = context.sha.slice(0, 12);
-            const title = `Baseline B1 — ${shortSha}`;
+            const shortSha = process.env.VALIDATED_SHA.slice(0, 12);
+            const title = `Gate técnico — ${shortSha}`;
             const body = [
-              '## Evidência automática da Fase B1',
+              '## Evidência automática do gate técnico',
               '',
-              `- Commit: \`${context.sha}\``,
-              `- Tree SHA: \`${process.env.TREE_SHA}\``,
+              `- Commit disparador: \`${context.sha}\``,
+              `- Commit validado: \`${process.env.VALIDATED_SHA}\``,
+              `- Tree SHA de entrada: \`${process.env.TREE_SHA}\``,
               `- Branch: \`${context.ref.replace('refs/heads/', '')}\``,
               `- Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              `- Snapshot: \`source-${context.sha}\``,
               '',
               '| Etapa | Resultado |',
               '| --- | --- |',
-              `| npm ci | ${process.env.INSTALL_OUTCOME} |`,
+              `| sincronizar lockfile | ${process.env.LOCK_SYNC_OUTCOME} |`,
+              `| persistir lockfile | ${process.env.LOCK_COMMIT_OUTCOME || 'skipped'} |`,
+              `| lockfile alterado | ${process.env.LOCK_CHANGED || 'false'} |`,
+              `| npm ci | ${process.env.INSTALL_OUTCOME || 'skipped'} |`,
               `| npm run lint | ${process.env.LINT_OUTCOME || 'skipped'} |`,
-              `| npx tsc --noEmit | ${process.env.TYPECHECK_OUTCOME || 'skipped'} |`,
+              `| npm run typecheck | ${process.env.TYPECHECK_OUTCOME || 'skipped'} |`,
               `| npm run build | ${process.env.BUILD_OUTCOME || 'skipped'} |`,
               '',
               'Esta issue é evidência técnica automática. Não representa aprovação de produção.'
@@ -114,11 +146,15 @@ jobs:
       - name: Aplicar gate final
         if: always()
         env:
+          LOCK_SYNC_OUTCOME: ${{ steps.lock_sync.outcome }}
+          LOCK_COMMIT_OUTCOME: ${{ steps.lock_commit.outcome }}
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
           LINT_OUTCOME: ${{ steps.lint.outcome }}
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         run: |
+          test "$LOCK_SYNC_OUTCOME" = "success"
+          test "$LOCK_COMMIT_OUTCOME" = "success"
           test "$INSTALL_OUTCOME" = "success"
           test "$LINT_OUTCOME" = "success"
           test "$TYPECHECK_OUTCOME" = "success"

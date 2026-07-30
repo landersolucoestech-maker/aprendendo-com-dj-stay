@@ -1,73 +1,83 @@
-# Welcome to your Lovable project
+# Plataforma de cursos e produtos digitais
 
-## Project info
+Repositório técnico da plataforma atualmente identificada pelo nome de projeto **Aprendendo com DJ Stay**. A marca pública definitiva ainda depende de decisão formal e não deve ser inferida a partir do nome do repositório, do projeto Supabase ou de nomenclaturas legadas.
 
-**URL**: https://lovable.dev/projects/444efae5-919c-4d89-ba34-dc01bb737ea7
+## Estado atual
 
-## How can I edit this code?
+O projeto está em refatoração integral na branch `dev`. A branch `main` permanece como referência de produção e não recebe alterações automáticas.
 
-There are several ways of editing your application.
+O código herdado é um protótipo React/Vite com integrações incompletas. Autenticação, autorização, banco canônico, storage privado, pagamentos, Pix, marketplace e afiliados ainda não devem ser considerados operacionais. O diagnóstico completo está em [`docs/audit`](docs/audit).
 
-**Use Lovable**
+## Stack atual
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/444efae5-919c-4d89-ba34-dc01bb737ea7) and start prompting.
+- React 18;
+- TypeScript;
+- Vite;
+- React Router;
+- TanStack React Query;
+- Tailwind CSS e componentes shadcn/Radix;
+- Supabase.
 
-Changes made via Lovable will be committed automatically to this repo.
+## Requisitos locais
 
-**Use your preferred IDE**
+- Node.js `>=22.16.0 <23`;
+- npm `>=10.9.2 <11`.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+O package manager oficial é **npm**. Não utilize Bun, pnpm ou Yarn neste repositório.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Instalação
 
-Follow these steps:
+```bash
+npm ci
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Desenvolvimento
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. Crie localmente o arquivo `.env`;
+2. configure somente as variáveis públicas documentadas em [`docs/environment.md`](docs/environment.md);
+3. execute:
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Arquivos `.env` são locais e não podem ser versionados. Nunca use `service_role`, segredo de webhook ou credencial de provider em variáveis `VITE_*`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Qualidade
 
-**Use GitHub Codespaces**
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+O comando consolidado é:
 
-## What technologies are used for this project?
+```bash
+npm run check
+```
 
-This project is built with:
+A ausência de erro no build não substitui testes, validação de RLS, homologação ou revisão de produção.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Ambientes
 
-## How can I deploy this project?
+| Branch GitHub | Ambiente Supabase | Project ref | Escrita |
+| --- | --- | --- | --- |
+| `dev` | desenvolvimento | `jmtyurketfclaneqxohu` | permitida durante as fases autorizadas |
+| `main` | produção | `tduvfrxagujryfnqpdmc` | proibida sem autorização explícita |
 
-Simply open [Lovable](https://lovable.dev/projects/444efae5-919c-4d89-ba34-dc01bb737ea7) and click on Share -> Publish.
+O projeto legado `uonsgcndzzuclcixoaei` permanece bloqueado para reconciliação e não pode ser utilizado como fallback.
 
-## Can I connect a custom domain to my Lovable project?
+## Fluxo de contribuição
 
-Yes, you can!
+- todas as alterações são realizadas em `dev`;
+- commits devem corresponder a uma fase e responsabilidade;
+- o pipeline deve bloquear falhas;
+- a promoção ocorre por Pull Request `dev → main`;
+- merge e escrita em produção não são automáticos.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Documentação
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- [`docs/audit`](docs/audit): auditoria e matriz de achados;
+- [`docs/refactor`](docs/refactor): execução sequencial da refatoração;
+- [`docs/environment.md`](docs/environment.md): contrato de configuração pública.

@@ -6,91 +6,82 @@ Data operacional: 30 de julho de 2026.
 
 Classificação: **não apto**.
 
-O repositório atual representa um protótipo React/Vite com integração Supabase legada. Os ambientes Supabase oficiais `dev` e produção não possuem o domínio da aplicação. Autenticação e restrições foram removidas do HEAD, páginas privadas estão públicas e múltiplos fluxos exibem sucesso sem persistência.
+O repositório é um protótipo React/Vite ligado a um Supabase legado. Os ambientes oficiais `dev` e produção não possuem o domínio da aplicação. Autenticação e restrições foram removidas do HEAD original, páginas privadas estão públicas e múltiplos fluxos exibem sucesso sem persistência.
 
 ## Confiança
 
-- alta para rotas, páginas, componentes/hooks de domínio, migrations locais, histórico Git e estado dos Supabase atuais;
-- limitada para a árvore física integral do template, porque o checkout privado está bloqueado por DNS e o conector não lista diretórios recursivamente;
-- bloqueada para dados/recursos do projeto legado, por ausência de permissão.
+- alta para a árvore integral do repositório, rotas, páginas, componentes, hooks, migrations, histórico Git e ambientes Supabase atuais;
+- bloqueada somente para recursos e dados do projeto Supabase legado, por ausência de permissão.
 
-## Inventário mínimo comprovado
+## Inventário exato
 
-- 152 commits após o baseline visual inicial;
-- 10 declarações de rota ativas;
-- 13 páginas React comprovadas;
-- 16+ componentes de domínio comprovados;
-- 10+ hooks comprovados, incluindo hook responsivo do template;
+- 149 arquivos em 19 diretórios;
+- 97 arquivos TypeScript/TSX;
+- 10 declarações de rota;
+- 13 páginas React;
+- 65 componentes em `src/components`: 16 de domínio e 49 de UI;
+- 10 hooks;
 - 7 migrations locais;
-- 2 lockfiles;
+- 2 lockfiles no snapshot inicial;
 - 6 tabelas e 1 função descritas apenas nos tipos legados;
 - 0 tabelas `public` de aplicação em Supabase `dev`;
 - 0 tabelas `public` de aplicação em produção;
 - 0 Edge Functions;
-- 0 testes automatizados comprovados;
-- 0 workflows/checks no HEAD de `dev`.
+- 0 testes automatizados;
+- 1 workflow de baseline criado durante a execução.
 
-## Achados por severidade
+## Baseline técnico
 
-### Críticos
+GitHub Actions run `30515816270`:
+
+- `npm ci`: sucesso;
+- lint: falha, 10 erros e 8 avisos;
+- typecheck: sucesso;
+- build: sucesso;
+- gate final: falha, como esperado.
+
+## Achados críticos
 
 - área do aluno e aulas públicas;
 - drift total entre código e ambientes oficiais;
 - falso sucesso de pagamento;
 - materiais protegidos modelados como públicos.
 
-### Altos
-
-- configuração Supabase legada hardcoded;
-- função `SECURITY DEFINER` executável publicamente em produção;
-- logs capazes de expor senha;
-- downloads fabricados;
-- falsos sucessos de contato, perfil, e-mail e certificado;
-- ausência de transações e entidades financeiras;
-- papéis/RLS ausentes;
-- script externo sem governança;
-- claims e depoimentos não comprovados;
-- ausência de testes e CI.
-
 ## Estado por área
 
 | Área | Estado |
 | --- | --- |
-| GitHub | `main` preservada; `dev` criada e contém somente auditoria |
+| GitHub | `main` preservada; execução em `dev` |
 | Supabase `dev` | saudável, porém vazio para o domínio |
 | produção | somente leitura; schema de aplicação vazio; possui event trigger remoto |
 | projeto legado | referenciado, mas inacessível |
 | autenticação | removida das rotas ativas |
 | autorização | ausente |
-| storage | legado, público e não presente nos ambientes oficiais |
+| storage | legado, público e ausente nos ambientes oficiais |
 | cursos | protótipo de curso único; sem CMS/matrícula real |
-| pagamentos | ausente; página de sucesso falsa |
-| Pix | ausente |
+| pagamentos/Pix | ausentes; página de sucesso falsa |
 | marketplace | ausente |
-| afiliados | ausente |
+| afiliados | ausentes |
 | testes | ausentes |
-| CI | ausente |
+| CI | baseline criado; gate falha no lint |
 | observabilidade | ausente |
-| documentação operacional | ausente antes da auditoria |
 
 ## Produção
 
 Nenhuma escrita foi realizada em produção. Não foram executadas migrations, seeds, alterações de Auth, buckets, policies, secrets, funções, registros ou deploy.
 
-## Decisão arquitetural recomendada
+## Direção de remediação
 
-Preservar componentes de UI tecnicamente válidos, mas substituir a fundação operacional:
-
-1. configuração de ambiente tipada;
-2. Auth centralizado;
-3. schema canônico reproduzível;
-4. RLS por ownership e papel;
-5. assets privados;
-6. backend/RPCs transacionais;
-7. domínio financeiro e provider abstrato;
-8. testes e CI;
-9. somente depois funcionalidades completas e redesign.
+1. higienização e configuração reproduzível;
+2. TypeScript/lint/build;
+3. ambientes e Auth;
+4. schema canônico, RLS e contratos;
+5. storage privado;
+6. domínio financeiro e provider;
+7. funcionalidades;
+8. testes, CI e homologação;
+9. identidade e design após estabilização.
 
 ## Próximo passo
 
-Iniciar **FASE B1 — Congelamento e baseline reproduzível**, mantendo execução sequencial e produção somente leitura.
+Executar **FASE B2 — Higienização do repositório**, mantendo produção somente leitura.
