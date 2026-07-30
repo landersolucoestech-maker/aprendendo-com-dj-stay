@@ -79,7 +79,9 @@ const UserProfile = ({ user }: UserProfileProps) => {
         <div className="flex items-start justify-between w-full gap-3">
           <div className="flex items-center space-x-3 flex-1 min-w-0">
             <Avatar className="w-14 h-14 flex-shrink-0">
-              {profileQuery.data?.avatar_url ? <AvatarImage src={profileQuery.data.avatar_url} /> : null}
+              {profileQuery.data?.avatarSignedUrl ? (
+                <AvatarImage src={profileQuery.data.avatarSignedUrl} />
+              ) : null}
               <AvatarFallback className="bg-gradient-brand text-white">
                 <User className="w-7 h-7" />
               </AvatarFallback>
