@@ -81,10 +81,14 @@ if (!publicConfigSource.includes(PRODUCTION_PROJECT_REF)) {
   fail("O project ref de produção não está definido no contrato público.");
 }
 
-const supabaseConfig = read("supabase/config.toml").trim();
-const expectedSupabaseConfig = `project_id = "${DEVELOPMENT_PROJECT_REF}"`;
+const supabaseConfig = read("supabase/config.toml");
+const projectRefMatches = [...supabaseConfig.matchAll(/^project_id\s*=\s*"([a-z0-9]+)"\s*$/gm)];
 
-if (supabaseConfig !== expectedSupabaseConfig) {
+if (
+  projectRefMatches.length !== 1 ||
+  projectRefMatches[0]?.[1] !== DEVELOPMENT_PROJECT_REF ||
+  supabaseConfig.includes(PRODUCTION_PROJECT_REF)
+) {
   fail("supabase/config.toml deve apontar exclusivamente para o projeto dev.");
 }
 
