@@ -1,5 +1,5 @@
-import { ArrowRight, BookOpen, CheckCircle, Clock, Download } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, BookOpen, CheckCircle, Clock, Download, Loader2, ShieldAlert } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { downloadFileFromStorage, useLessonFiles } from "@/hooks/useLessonFiles";
+import { useLessonPlayback } from "@/hooks/useLessonPlayback";
 import { useLessons, type Lesson } from "@/hooks/useLessons";
 import { useUpdateProgress } from "@/hooks/useUserProgress";
 import { getErrorMessage } from "@/lib/error-message";
@@ -21,33 +22,42 @@ interface VideoPlayerProps {
   lesson: LessonPlayerData;
 }
 
-const getYouTubeVideoId = (url: string): string | null => {
-  const match = url.match(
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-  );
-  return match?.[1] ?? null;
-};
-
 const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const [watchProgress, setWatchProgress] = useState(lesson.progressPercent);
+  const lastPlaybackSecond = useRef(lesson.watchedSeconds);
+  const privateVideoRef = useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
   const updateProgress = useUpdateProgress();
   const { toast } = useToast();
   const lessonFilesQuery = useLessonFiles(lesson.id);
   const allLessonsQuery = useLessons();
+  const playbackQuery = useLessonPlayback(lesson.id);
 
   const currentIndex = allLessonsQuery.data?.findIndex((item) => item.id === lesson.id);
   const nextLesson =
     currentIndex !== undefined && currentIndex >= 0
       ? allLessonsQuery.data?.[currentIndex + 1]
       : undefined;
-  const videoId = lesson.videoUrl === null ? null : getYouTubeVideoId(lesson.videoUrl);
-  const embedUrl =
-    lesson.videoUrl === null
-      ? null
-      : videoId === null
-        ? lesson.videoUrl
-        : `https://www.youtube.com/embed/${videoId}`;
+
+  useEffect(() => {
+    const video = privateVideoRef.current;
+    if (!video || playbackQuery.data?.provider !== "private_asset") {
+      return;
+    }
+
+    const restorePosition = () => {
+      const target = Math.min(
+        lastPlaybackSecond.current,
+        Number.isFinite(video.duration) ? video.duration : lastPlaybackSecond.current,
+      );
+      if (target > 0) {
+        video.currentTime = target;
+      }
+    };
+
+    video.addEventListener("loadedmetadata", restorePosition);
+    return () => video.removeEventListener("loadedmetadata", restorePosition);
+  }, [playbackQuery.data?.provider, playbackQuery.data?.streamUrl]);
 
   const handleMarkComplete = async () => {
     try {
@@ -55,7 +65,7 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
         aulaId: lesson.id,
         completada: true,
         progressoPercentual: 100,
-        tempoAssistido: lesson.watchedSeconds,
+        tempoAssistido: Math.max(lesson.watchedSeconds, Math.floor(lastPlaybackSecond.current)),
       });
       setWatchProgress(100);
       toast({
@@ -74,51 +84,27 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const sampleAsset = lessonFilesQuery.data?.find((asset) => asset.purpose === "sample");
   const projectAsset = lessonFilesQuery.data?.find((asset) => asset.purpose === "project");
 
-  const handleDownloadSamples = async () => {
-    if (!sampleAsset) {
+  const handleDownload = async (
+    asset: typeof sampleAsset,
+    unavailableMessage: string,
+    successMessage: string,
+  ) => {
+    if (!asset) {
       toast({
         title: "Arquivo não disponível",
-        description: "Os samples e loops desta aula ainda não foram disponibilizados.",
+        description: unavailableMessage,
         variant: "destructive",
       });
       return;
     }
 
     try {
-      await downloadFileFromStorage(sampleAsset);
-      toast({
-        title: "Download iniciado",
-        description: "Os samples e loops da aula estão sendo baixados.",
-      });
+      await downloadFileFromStorage(asset);
+      toast({ title: "Download iniciado", description: successMessage });
     } catch (error: unknown) {
       toast({
         title: "Erro no download",
-        description: getErrorMessage(error, "Não foi possível baixar os samples."),
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDownloadProject = async () => {
-    if (!projectAsset) {
-      toast({
-        title: "Arquivo não disponível",
-        description: "O projeto desta aula ainda não foi disponibilizado.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      await downloadFileFromStorage(projectAsset);
-      toast({
-        title: "Download iniciado",
-        description: "O projeto da aula está sendo baixado.",
-      });
-    } catch (error: unknown) {
-      toast({
-        title: "Erro no download",
-        description: getErrorMessage(error, "Não foi possível baixar o projeto."),
+        description: getErrorMessage(error, "Não foi possível baixar o arquivo."),
         variant: "destructive",
       });
     }
@@ -137,26 +123,64 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   };
 
   const filesUnavailable = lessonFilesQuery.isLoading || lessonFilesQuery.error !== null;
+  const playback = playbackQuery.data;
 
   return (
     <div className="space-y-6">
       <Card className="glass-card border-white/10">
         <CardContent className="p-0">
-          <div className="aspect-video bg-gray-900 rounded-t-lg overflow-hidden">
-            {embedUrl !== null ? (
+          <div className="relative aspect-video bg-gray-900 rounded-t-lg overflow-hidden">
+            {playbackQuery.isLoading ? (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-gray-900">
+                <Loader2 className="w-8 h-8 animate-spin" />
+                <p className="text-gray-300">Autorizando reprodução...</p>
+              </div>
+            ) : playbackQuery.error ? (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-gray-900 px-6 text-center">
+                <ShieldAlert className="w-10 h-10 text-red-300" />
+                <p className="text-red-200">
+                  {getErrorMessage(playbackQuery.error, "Não foi possível autorizar a reprodução.")}
+                </p>
+                <Button variant="outline" onClick={() => void playbackQuery.refetch()}>
+                  Tentar novamente
+                </Button>
+              </div>
+            ) : playback?.provider === "private_asset" && playback.streamUrl !== null ? (
+              <video
+                ref={privateVideoRef}
+                key={playback.streamUrl}
+                className="w-full h-full bg-black"
+                src={playback.streamUrl}
+                controls
+                controlsList="nodownload noplaybackrate"
+                disablePictureInPicture
+                preload="metadata"
+                crossOrigin="anonymous"
+                onTimeUpdate={(event) => {
+                  lastPlaybackSecond.current = event.currentTarget.currentTime;
+                }}
+              />
+            ) : playback?.embedUrl !== null && playback?.embedUrl !== undefined ? (
               <iframe
                 className="w-full h-full"
-                src={embedUrl}
+                src={playback.embedUrl}
                 title={lesson.title}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                sandbox="allow-scripts allow-same-origin allow-presentation"
+                referrerPolicy="no-referrer"
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                 allowFullScreen
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-800">
-                <p className="text-gray-400">Vídeo não informado para esta aula</p>
+                <p className="text-gray-400">Mídia não disponível para esta aula</p>
               </div>
             )}
+
+            {playback?.watermarkText ? (
+              <div className="pointer-events-none absolute right-4 bottom-4 rounded bg-black/50 px-2 py-1 text-xs font-medium tracking-wider text-white/70">
+                {playback.watermarkText}
+              </div>
+            ) : null}
           </div>
 
           <div className="p-6">
@@ -206,7 +230,13 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
             <Button
               variant="outline"
               className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
-              onClick={handleDownloadSamples}
+              onClick={() =>
+                void handleDownload(
+                  sampleAsset,
+                  "Os samples e loops desta aula ainda não foram disponibilizados.",
+                  "Os samples e loops da aula estão sendo baixados.",
+                )
+              }
               disabled={filesUnavailable || !sampleAsset}
             >
               <Download className="w-4 h-4 mr-2" />
@@ -215,7 +245,13 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
             <Button
               variant="outline"
               className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
-              onClick={handleDownloadProject}
+              onClick={() =>
+                void handleDownload(
+                  projectAsset,
+                  "O projeto desta aula ainda não foi disponibilizado.",
+                  "O projeto da aula está sendo baixado.",
+                )
+              }
               disabled={filesUnavailable || !projectAsset}
             >
               <Download className="w-4 h-4 mr-2" />
