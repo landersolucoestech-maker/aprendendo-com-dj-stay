@@ -21,8 +21,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t chunks < <(find scripts/b10-payload -maxdepth 1 -type f -name 'part-*.b64' | sort)
-          test "${#chunks[@]}" -eq 17
+          mapfile -t chunks < <(find scripts/b10-payload -maxdepth 1 -type f -name 'block-*.b64' | sort)
+          test "${#chunks[@]}" -eq 7
           cat "${chunks[@]}" | base64 --decode > /tmp/b10.tar.gz
           echo "c667cd0215320a6ebdd3f31728cbac26b3a3425a702040a1cf616af1d4073520  /tmp/b10.tar.gz" | sha256sum -c -
           gzip -t /tmp/b10.tar.gz
