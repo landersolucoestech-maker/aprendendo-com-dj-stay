@@ -29,7 +29,7 @@ const DashboardHeader = ({ userName }: DashboardHeaderProps) => {
         });
         navigate('/');
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Erro",
         description: "Erro inesperado ao fazer logout",

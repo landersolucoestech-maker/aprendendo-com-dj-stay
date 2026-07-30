@@ -1,8 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, AlertCircle, Wifi, WifiOff } from "lucide-react";
+import { CheckCircle, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const ConnectionStatus = () => {
@@ -13,7 +12,7 @@ const ConnectionStatus = () => {
     // Testar conexão com Supabase
     const testConnection = async () => {
       try {
-        const { data, error } = await supabase.from('modulos').select('count').limit(1);
+        const { error } = await supabase.from('modulos').select('count').limit(1);
         if (error) throw error;
         setIsConnected(true);
         setLastUpdate(new Date());

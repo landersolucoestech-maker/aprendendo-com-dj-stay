@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Clock, Download, BookOpen, ArrowLeft, ArrowRight } from "lucide-react";
+import { CheckCircle, Clock, ArrowLeft } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import LessonFilesExample from "@/examples/LessonFilesExample";
 import { useLessons } from "@/hooks/useLessons";
@@ -16,9 +16,6 @@ const Lesson = () => {
   const { data: lessons, isLoading } = useLessons();
   
   const currentLesson = lessons?.find(lesson => lesson.id === lessonId);
-  const currentIndex = lessons?.findIndex(lesson => lesson.id === lessonId) || 0;
-  const nextLesson = lessons?.[currentIndex + 1];
-  const prevLesson = lessons?.[currentIndex - 1];
 
   // Estado provisório do protótipo; a persistência canônica será restaurada nas fases de Auth e progresso.
   const lessonCompleted = false;

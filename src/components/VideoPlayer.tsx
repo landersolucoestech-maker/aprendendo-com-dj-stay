@@ -2,13 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Clock, Download, BookOpen, ArrowRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUpdateProgress } from "@/hooks/useUserProgress";
 import { useToast } from "@/hooks/use-toast";
 import { useLessonFiles, downloadFileFromStorage } from "@/hooks/useLessonFiles";
 import { useLessons } from "@/hooks/useLessons";
-import { useUserProgress } from "@/hooks/useUserProgress";
 
 interface Lesson {
   id: string;
@@ -31,25 +30,9 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const { toast } = useToast();
   const { data: lessonFiles, isLoading: filesLoading } = useLessonFiles(lesson.id);
   const { data: allLessons } = useLessons();
-  const { data: userProgress } = useUserProgress();
-  
-  // Check if current lesson is completed
-  const currentLessonProgress = userProgress?.find(p => p.aula_id === lesson.id);
-  const isCurrentLessonCompleted = currentLessonProgress?.completada || lesson.completed || watchProgress === 100;
-  
   // Find next lesson
   const currentIndex = allLessons?.findIndex(l => l.id === lesson.id) || 0;
   const nextLesson = allLessons?.[currentIndex + 1];
-  
-  // Verificar se todas as aulas foram concluídas (para certificados)
-  const areAllLessonsCompleted = () => {
-    if (!allLessons || !userProgress) return false;
-    
-    const completedLessons = userProgress.filter(progress => progress.completada);
-    return completedLessons.length === allLessons.length;
-  };
-
-  const allLessonsCompleted = areAllLessonsCompleted();
   
   // Extract YouTube video ID from URL
   const getYouTubeVideoId = (url: string) => {

@@ -46,7 +46,7 @@ const EditProfile = () => {
             email: user.email || '',
           }));
         }
-      } catch (error) {
+      } catch {
         toast({
           title: "Erro",
           description: "Não foi possível carregar os dados do usuário.",
@@ -108,7 +108,7 @@ const EditProfile = () => {
           description: "Suas informações foram salvas com sucesso.",
         });
       }, 1000);
-    } catch (error) {
+    } catch {
       setIsLoading(false);
       toast({
         title: "Erro",
