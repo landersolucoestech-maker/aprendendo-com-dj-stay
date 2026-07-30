@@ -58,13 +58,13 @@ for (const path of domainFiles) {
 }
 
 const generatedTypes = read("src/integrations/supabase/types.ts");
-for (const table of ["aulas", "lesson_files", "modulos", "progresso_aulas", "user_profiles"]) {
+for (const table of ["asset_access_grants", "asset_events", "assets", "aulas", "modulos", "progresso_aulas", "user_profiles"]) {
   if (!generatedTypes.includes(`${table}: {`)) {
     failures.push(`src/integrations/supabase/types.ts: tabela canônica ausente: ${table}`);
   }
 }
 
-for (const ghostContract of ["user_subscriptions", "course_id", "criado_em"]) {
+for (const ghostContract of ["lesson_files", "user_subscriptions", "course_id", "criado_em", "avatar_url"]) {
   if (generatedTypes.includes(ghostContract)) {
     failures.push(`src/integrations/supabase/types.ts: contrato inexistente encontrado: ${ghostContract}`);
   }
