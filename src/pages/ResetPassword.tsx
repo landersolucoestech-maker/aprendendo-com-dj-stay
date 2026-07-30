@@ -44,7 +44,7 @@ const ResetPassword = () => {
     }
 
     toast({ title: "Senha atualizada", description: "Sua nova senha já está ativa." });
-    navigate("/dashboard", { replace: true });
+    navigate("/portal", { replace: true });
   };
 
   if (status === "loading") {
@@ -74,7 +74,7 @@ const ResetPassword = () => {
             </div>
             <div className="space-y-2"><Label htmlFor="password-confirmation">Confirmar senha</Label><Input id="password-confirmation" type="password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className="bg-white/5 border-white/20 text-white" minLength={8} required /></div>
             <Button type="submit" className="w-full btn-neon" disabled={isLoading}>{isLoading ? "Atualizando..." : "Atualizar senha"}</Button>
-            <Link to="/dashboard" className="block text-center text-sm text-neon-purple">Cancelar</Link>
+            <Link to="/portal" className="block text-center text-sm text-neon-purple">Cancelar</Link>
           </form>
         </CardContent>
       </Card>

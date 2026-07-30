@@ -1,11 +1,11 @@
 export function getSafeReturnPath(state: unknown): string {
   if (!state || typeof state !== "object" || !("from" in state)) {
-    return "/dashboard";
+    return "/portal";
   }
 
   const from = Reflect.get(state, "from");
   if (!from || typeof from !== "object") {
-    return "/dashboard";
+    return "/portal";
   }
 
   const pathname = Reflect.get(from, "pathname");
@@ -13,7 +13,7 @@ export function getSafeReturnPath(state: unknown): string {
   const hash = Reflect.get(from, "hash");
 
   if (typeof pathname !== "string" || !pathname.startsWith("/") || pathname.startsWith("//")) {
-    return "/dashboard";
+    return "/portal";
   }
 
   return `${pathname}${typeof search === "string" ? search : ""}${typeof hash === "string" ? hash : ""}`;

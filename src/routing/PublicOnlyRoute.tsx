@@ -12,7 +12,7 @@ export function PublicOnlyRoute({ children }: PropsWithChildren) {
   }
 
   if (session) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/portal" replace />;
   }
 
   return children;

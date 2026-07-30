@@ -8,7 +8,7 @@ import { AuthLoadingScreen } from "@/routing/AuthLoadingScreen";
 
 function safeNextPath(value: string | null): string {
   if (!value?.startsWith("/") || value.startsWith("//")) {
-    return "/dashboard";
+    return "/portal";
   }
 
   return value;

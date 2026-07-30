@@ -10,14 +10,14 @@ const Navigation = () => {
   const { session } = useAuth();
   const navigate = useNavigate();
 
-  const handleGetStarted = () => navigate(session ? "/dashboard" : "/matricule-se");
+  const handleGetStarted = () => navigate(session ? "/portal" : "/matricule-se");
   const scrollToSection = (sectionId: string) => {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
     setIsOpen(false);
   };
 
   const accountActions = session ? (
-    <Link to="/dashboard" onClick={() => setIsOpen(false)}><Button className="btn-neon">Dashboard</Button></Link>
+    <Link to="/portal" onClick={() => setIsOpen(false)}><Button className="btn-neon">Portal</Button></Link>
   ) : (
     <div className="flex items-center gap-3">
       <Link to="/login" onClick={() => setIsOpen(false)}><Button variant="ghost" className="text-white">Entrar</Button></Link>

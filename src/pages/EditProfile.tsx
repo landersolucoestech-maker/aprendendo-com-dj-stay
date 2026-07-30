@@ -172,8 +172,8 @@ const EditProfile = () => {
               "Não foi possível carregar seu perfil.",
             )}
           </p>
-          <Link to="/dashboard">
-            <Button className="btn-brand">Voltar ao Dashboard</Button>
+          <Link to="/portal">
+            <Button className="btn-brand">Voltar ao portal</Button>
           </Link>
         </div>
       </div>
@@ -184,7 +184,7 @@ const EditProfile = () => {
     <div className="min-h-screen bg-black text-white">
       <div className="bg-gradient-to-r from-black via-gray-900 to-black border-b border-white/10">
         <div className="container mx-auto px-4 py-6 flex items-center gap-4">
-          <Link to="/dashboard">
+          <Link to="/portal">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="w-5 h-5" />
             </Button>
@@ -265,7 +265,7 @@ const EditProfile = () => {
             </CardContent>
           </Card>
           <div className="flex justify-end gap-4">
-            <Link to="/dashboard">
+            <Link to="/portal">
               <Button type="button" variant="outline">Cancelar</Button>
             </Link>
             <Button type="submit" className="btn-brand" disabled={isSaving || isUploading}>

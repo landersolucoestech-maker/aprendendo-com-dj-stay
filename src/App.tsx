@@ -6,8 +6,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { queryClient } from "@/lib/query-client";
-import { PublicOnlyRoute } from "@/routing/PublicOnlyRoute";
-import { RequireAuth } from "@/routing/RequireAuth";
 import AccessDenied from "@/pages/AccessDenied";
 import AuthCallback from "@/pages/AuthCallback";
 import Contact from "@/pages/Contact";
@@ -23,6 +21,10 @@ import Register from "@/pages/Register";
 import ResetPassword from "@/pages/ResetPassword";
 import Verified from "@/pages/Verified";
 import VerifyEmail from "@/pages/VerifyEmail";
+import { PublicOnlyRoute } from "@/routing/PublicOnlyRoute";
+import { RequireAuth } from "@/routing/RequireAuth";
+import { RequireRole } from "@/routing/RequireRole";
+import { RoleLandingRedirect } from "@/routing/RoleLandingRedirect";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -41,13 +43,69 @@ const App = () => (
             <Route path="/acesso-negado" element={<AccessDenied />} />
             <Route path="/pagamento-sucesso" element={<PaymentSuccess />} />
 
-            <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-            <Route path="/matricule-se" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
-            <Route path="/esqueceu-senha" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+            <Route
+              path="/login"
+              element={
+                <PublicOnlyRoute>
+                  <Login />
+                </PublicOnlyRoute>
+              }
+            />
+            <Route
+              path="/matricule-se"
+              element={
+                <PublicOnlyRoute>
+                  <Register />
+                </PublicOnlyRoute>
+              }
+            />
+            <Route
+              path="/esqueceu-senha"
+              element={
+                <PublicOnlyRoute>
+                  <ForgotPassword />
+                </PublicOnlyRoute>
+              }
+            />
 
-            <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-            <Route path="/aula/:lessonId" element={<RequireAuth><Lesson /></RequireAuth>} />
-            <Route path="/editar-perfil" element={<RequireAuth><EditProfile /></RequireAuth>} />
+            <Route
+              path="/portal"
+              element={
+                <RequireAuth>
+                  <RoleLandingRedirect />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAuth>
+                  <RequireRole allowedRoles={["aluno", "administrador_proprietario"]}>
+                    <Dashboard />
+                  </RequireRole>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/aula/:lessonId"
+              element={
+                <RequireAuth>
+                  <RequireRole allowedRoles={["aluno", "administrador_proprietario"]}>
+                    <Lesson />
+                  </RequireRole>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/editar-perfil"
+              element={
+                <RequireAuth>
+                  <RequireRole allowedRoles={["aluno", "afiliado", "administrador_proprietario"]}>
+                    <EditProfile />
+                  </RequireRole>
+                </RequireAuth>
+              }
+            />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

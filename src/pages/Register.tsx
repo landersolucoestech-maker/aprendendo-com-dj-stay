@@ -68,7 +68,7 @@ const Register = () => {
     }
 
     if (data.session) {
-      navigate("/dashboard", { replace: true });
+      navigate("/portal", { replace: true });
       return;
     }
 

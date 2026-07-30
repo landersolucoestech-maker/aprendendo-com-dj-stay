@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 const Verified = () => {
   const { session } = useAuth();
-  const primaryPath = session ? "/dashboard" : "/login";
-  const primaryLabel = session ? "Ir para o dashboard" : "Fazer login";
+  const primaryPath = session ? "/portal" : "/login";
+  const primaryLabel = session ? "Ir para meu portal" : "Fazer login";
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">

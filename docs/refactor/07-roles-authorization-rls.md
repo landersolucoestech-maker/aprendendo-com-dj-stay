@@ -1,6 +1,6 @@
 # FASE B8 — Papéis, autorização e RLS
 
-Status: migration e testes negativos preparados; encerramento condicionado à reconstrução limpa, tipos gerados e validação no Supabase `dev`.
+Status: migration, testes negativos e integração de interface preparados; encerramento condicionado ao gate automático e à validação no Supabase `dev`.
 
 ## Papéis permitidos
 
@@ -41,6 +41,16 @@ A migration revoga privilégios automáticos futuros no schema `public`. Novas t
 ## Testes
 
 A suíte pgTAP valida casos positivos e negativos para aluno, afiliado, administrador proprietário e usuário anônimo autenticado, incluindo isolamento entre usuários, tentativa de autoelevação, escrita indevida de conteúdo e auditoria de `SECURITY DEFINER`.
+
+## Integração de interface
+
+- `/portal` resolve o destino após autenticação a partir de `public.user_roles`;
+- aluno e administrador proprietário acessam dashboard e aulas;
+- afiliado é direcionado ao próprio perfil e não recebe navegação do portal do aluno;
+- perfil exige um dos três papéis válidos;
+- falha ou ausência de papel conduz a uma tela de acesso negado;
+- o frontend valida a resposta de papel com Zod, mas não substitui a RLS;
+- cadastro, callback, confirmação e redefinição de senha deixam de redirecionar diretamente ao dashboard.
 
 ## Limites
 
