@@ -9,13 +9,14 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "check:environment": "node scripts/check-environment-contract.mjs",
-    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && tsc --noEmit",
+    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && npm run check:course-access && tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run build",
     "preview": "vite preview",
     "check:auth": "node scripts/check-auth-contract.mjs",
     "check:contracts": "node scripts/check-data-contracts.mjs",
     "check:authorization": "node scripts/check-authorization-contract.mjs",
-    "check:storage": "node scripts/check-storage-contract.mjs"
+    "check:storage": "node scripts/check-storage-contract.mjs",
+    "check:course-access": "node scripts/check-course-access-contract.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -30,7 +31,7 @@
     "@radix-ui/react-dropdown-menu": "^2.1.1",
     "@radix-ui/react-hover-card": "^1.1.1",
     "@radix-ui/react-label": "^2.1.0",
-    "@radix-ui/react-menubar": "^1.1.1",
+    "@radix-ui/react-menubar": "^1.1.0",
     "@radix-ui/react-navigation-menu": "^1.2.0",
     "@radix-ui/react-popover": "^1.1.1",
     "@radix-ui/react-progress": "^1.1.0",
