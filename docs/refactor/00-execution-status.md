@@ -1,44 +1,67 @@
 # Estado da execução da refatoração
 
-## FASE B1 — Congelamento e baseline reproduzível
+## FASE CONCLUÍDA: B1 — Congelamento e baseline reproduzível
 
-Status: em validação pelo gate sequencial do GitHub Actions.
+Escopo:
+- Congelamento operacional, instalação limpa, lint, typecheck e build em `dev`.
 
-### HEAD de entrada
+Estado anterior:
+- Sem CI comprovado.
+- Checkout local bloqueado por DNS.
+- Nenhum resultado reproduzível de instalação, lint, typecheck ou build.
 
-```text
-Audit HEAD: 2897cec5f0f175b2f6364ca4ec5b608e4fdc76d9
-Baseline workflow commit: a31f75f2f028aaf41a4f5c9b0e2166b96fd7fc94
-Branch: dev
-Base: main@b3a303caff9a19f231616b2b4d9fc65c2d8a557d
-Produção: somente leitura
-```
+Itens analisados ou modificados:
+- `.github/workflows/baseline.yml`.
+- GitHub Actions run `30515816270`.
+- Issue técnica `#2`.
 
-### Congelamento
+Achados ou correções:
+- Criado gate sequencial sem deploy.
+- `npm ci`: sucesso.
+- `npm run lint`: falha.
+- `npx tsc --noEmit`: sucesso.
+- `npm run build`: sucesso.
+- Lint registrou 18 problemas: 10 erros e 8 avisos.
+- Erros confirmados: interfaces vazias, `any` explícito e `require()` incompatível com ESM.
+- Avisos confirmados: exports incompatíveis com Fast Refresh e dependência instável de `useEffect`.
 
-- nenhum workflow de deploy foi identificado por checks/runs no HEAD anterior;
-- o novo workflow não possui etapa de deploy;
-- permissões do workflow limitadas a `contents: read`;
-- execução em um único job, com etapas estritamente sequenciais;
-- `cancel-in-progress: false` para não ocultar resultados.
+Arquivos:
+- `.github/workflows/baseline.yml`.
+- `docs/refactor/00-execution-status.md`.
 
-### Gate criado
+Banco e migrations:
+- Nenhuma alteração.
+- Produção permaneceu somente leitura.
 
-```text
-npm ci
-npm run lint
-npx tsc --noEmit
-npm run build
-```
+Comandos executados:
+- `npm ci`.
+- `npm run lint`.
+- `npx tsc --noEmit`.
+- `npm run build`.
 
-O gate não modifica regras de lint ou TypeScript e não contém testes inexistentes.
+Resultados e códigos de saída:
+- Instalação limpa: código 0.
+- Lint: código 1.
+- Typecheck: código 0.
+- Build: código 0.
+- Gate final: código 1 por falha do lint.
 
-### Limitações
+Testes:
+- Não existem scripts ou infraestrutura de testes nesta fase.
 
-- o executor local não resolve `github.com`;
-- o conector não lista runs de push diretamente;
-- o resultado deverá ser obtido por checks/jobs assim que exposto pela API do GitHub.
+Evidências:
+- Commit do workflow persistente: `8472402ac8e771c702254122a7a5cd0bf6f17932`.
+- Workflow run: `30515816270`.
+- Issue de evidência: `#2 — Baseline B1 — 8472402ac8e7`.
+- Job: `90785248855`.
 
-### Próxima ação permitida
+Bloqueios:
+- Lint não aprovado.
+- Testes automatizados inexistentes.
 
-Registrar o resultado real do gate. Em seguida, iniciar B2 sem misturar correções de TypeScript/build que pertencem a B3.
+Pendências:
+- Higienização do repositório na B2.
+- Correção dos erros de lint somente na B3.
+
+Próxima fase sequencial:
+- FASE B2 — Higienização do repositório.
