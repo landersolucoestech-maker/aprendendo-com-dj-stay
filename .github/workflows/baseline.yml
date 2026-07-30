@@ -1,3 +1,4 @@
+# Pacote B10 completo: sete blocos verificados antes da extração.
 name: Gate técnico
 on:
   workflow_dispatch:
