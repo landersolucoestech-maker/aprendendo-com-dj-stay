@@ -1,84 +1,60 @@
+import { useQuery } from "@tanstack/react-query";
 
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { parseDataContract } from "@/contracts/contract-error";
+import { modulesResponseSchema } from "@/contracts/learning";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ModuleLesson {
   id: string;
   title: string;
-  titulo: string;
-  descricao: string | null;
-  video: string | null;
-  video_url: string | null;
-  duracao: number | null;
-  duration: string;
-  completed: boolean;
-  videoUrl: string;
-  description: string;
-  ordem: number;
+  description: string | null;
+  videoUrl: string | null;
+  durationMinutes: number | null;
+  durationLabel: string | null;
+  order: number;
 }
 
-export interface Module {
+export interface LearningModule {
   id: string;
   title: string;
-  description: string;
-  progress: number;
+  description: string | null;
+  order: number;
   lessons: ModuleLesson[];
 }
 
-export const useModules = () => {
-  return useQuery({
-    queryKey: ['modules'],
-    queryFn: async () => {
-      console.log('Buscando módulos do Supabase...');
-      
+const formatDuration = (minutes: number | null): string | null =>
+  minutes === null ? null : `${minutes} min`;
+
+export const useModules = () =>
+  useQuery({
+    queryKey: ["modules"],
+    queryFn: async (): Promise<LearningModule[]> => {
       const { data, error } = await supabase
-        .from('modulos')
-        .select(`
-          id,
-          titulo,
-          descricao,
-          ordem,
-          aulas (
-            id,
-            titulo,
-            descricao,
-            video,
-            ordem,
-            duracao
-          )
-        `)
-        .order('ordem', { ascending: true });
+        .from("modulos")
+        .select("id,titulo,descricao,ordem,aulas(id,titulo,descricao,video,ordem,duracao)")
+        .order("ordem", { ascending: true })
+        .order("ordem", { foreignTable: "aulas", ascending: true });
 
       if (error) {
-        console.error('Erro ao buscar módulos:', error);
         throw error;
       }
 
-      console.log('Módulos encontrados:', data);
+      const modules = parseDataContract(modulesResponseSchema, data, "listagem de módulos");
 
-      // Transform the data to match the expected format
-      const modules: Module[] = data?.map((modulo) => ({
-        id: modulo.id,
-        title: modulo.titulo || 'Módulo sem título',
-        description: modulo.descricao || 'Descrição não disponível',
-        progress: 0, // Will be calculated by useProgressCalculation
-        lessons: modulo.aulas?.map((aula) => ({
-          id: aula.id,
-          title: aula.titulo || 'Aula sem título',
-          titulo: aula.titulo,
-          descricao: aula.descricao,
-          video: aula.video,
-          video_url: aula.video,
-          duracao: aula.duracao,
-          duration: aula.duracao ? `${aula.duracao}:00` : '15:30',
-          completed: false, // Default value
-          videoUrl: aula.video || '',
-          description: aula.descricao || 'Descrição não disponível',
-          ordem: aula.ordem
-        })) || [],
-      })) || [];
-
-      return modules;
+      return modules.map((module) => ({
+        id: module.id,
+        title: module.titulo,
+        description: module.descricao,
+        order: module.ordem,
+        lessons: module.aulas.map((lesson) => ({
+          id: lesson.id,
+          title: lesson.titulo,
+          description: lesson.descricao,
+          videoUrl: lesson.video,
+          durationMinutes: lesson.duracao,
+          durationLabel: formatDuration(lesson.duracao),
+          order: lesson.ordem,
+        })),
+      }));
     },
   });
-};

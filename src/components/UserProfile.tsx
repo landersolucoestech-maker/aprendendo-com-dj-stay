@@ -1,14 +1,15 @@
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { User, Award, Settings } from "lucide-react";
+import { Award, Settings, User } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useUserProfile } from "@/hooks/useUserProfile";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useLessons } from "@/hooks/useLessons";
-import { useUserProgress } from "@/hooks/useUserProgress";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import { useLessons } from "@/hooks/useLessons";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useUserProgress } from "@/hooks/useUserProgress";
+import { getErrorMessage } from "@/lib/error-message";
 
 interface UserProfileProps {
   user: {
@@ -20,35 +21,55 @@ interface UserProfileProps {
 }
 
 const UserProfile = ({ user }: UserProfileProps) => {
-  const { data: profile } = useUserProfile();
-  const { data: allLessons } = useLessons();
-  const { data: userProgress } = useUserProgress();
+  const profileQuery = useUserProfile();
+  const lessonsQuery = useLessons();
+  const progressQuery = useUserProgress();
   const { toast } = useToast();
-
-  // Verificar se todas as aulas foram concluídas
-  const areAllLessonsCompleted = () => {
-    if (!allLessons || !userProgress) return false;
-    
-    const completedLessons = userProgress.filter(progress => progress.completada);
-    return completedLessons.length === allLessons.length;
-  };
-
-  const allLessonsCompleted = areAllLessonsCompleted();
+  const loadingError = profileQuery.error ?? lessonsQuery.error ?? progressQuery.error;
+  const queriesLoading = profileQuery.isLoading || lessonsQuery.isLoading || progressQuery.isLoading;
+  const allLessonsCompleted =
+    lessonsQuery.data !== undefined &&
+    progressQuery.data !== undefined &&
+    lessonsQuery.data.length > 0 &&
+    lessonsQuery.data.every((lesson) =>
+      progressQuery.data.some(
+        (progress) => progress.aula_id === lesson.id && progress.completada,
+      ),
+    );
 
   const handleCertificatesClick = () => {
-    if (!allLessonsCompleted) {
+    if (loadingError) {
       toast({
-        title: "Acesso restrito",
-        description: "Complete todas as aulas do curso para desbloquear os certificados.",
+        title: "Não foi possível validar o acesso",
+        description: getErrorMessage(
+          loadingError,
+          "Não foi possível consultar seu progresso neste momento.",
+        ),
         variant: "destructive",
       });
       return;
     }
-    
-    // Aqui você pode adicionar a lógica para mostrar/baixar certificados
+
+    if (queriesLoading) {
+      toast({
+        title: "Progresso em carregamento",
+        description: "Aguarde a validação das aulas concluídas.",
+      });
+      return;
+    }
+
+    if (!allLessonsCompleted) {
+      toast({
+        title: "Acesso restrito",
+        description: "Complete todas as aulas disponíveis para desbloquear os certificados.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
-      title: "Certificados disponíveis!",
-      description: "Parabéns por concluir o curso completo!",
+      title: "Conclusão validada",
+      description: "A emissão de certificados será implementada na fase acadêmica correspondente.",
     });
   };
 
@@ -58,14 +79,16 @@ const UserProfile = ({ user }: UserProfileProps) => {
         <div className="flex items-start justify-between w-full gap-3">
           <div className="flex items-center space-x-3 flex-1 min-w-0">
             <Avatar className="w-14 h-14 flex-shrink-0">
-              <AvatarImage src={profile?.avatar_url || ''} />
+              {profileQuery.data?.avatar_url ? <AvatarImage src={profileQuery.data.avatar_url} /> : null}
               <AvatarFallback className="bg-gradient-brand text-white">
                 <User className="w-7 h-7" />
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <CardTitle className="text-white text-base truncate">{user.name}</CardTitle>
-              <CardDescription className="text-gray-400 text-sm truncate">{user.email}</CardDescription>
+              <CardDescription className="text-gray-400 text-sm truncate">
+                {user.email}
+              </CardDescription>
             </div>
           </div>
           <Link to="/editar-perfil" className="flex-shrink-0">
@@ -76,6 +99,11 @@ const UserProfile = ({ user }: UserProfileProps) => {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {loadingError && (
+          <p className="text-xs text-red-300">
+            {getErrorMessage(loadingError, "Não foi possível carregar todos os dados do perfil.")}
+          </p>
+        )}
         <div>
           <p className="text-sm text-gray-400">Membro desde</p>
           <p className="text-white">{user.joinDate}</p>
@@ -85,11 +113,8 @@ const UserProfile = ({ user }: UserProfileProps) => {
           <Progress value={user.progress} className="h-2" />
           <p className="text-xs text-gray-400 mt-1">{user.progress}% concluído</p>
         </div>
-        
-        <Button 
-          className="w-full btn-brand"
-          onClick={handleCertificatesClick}
-        >
+
+        <Button className="w-full btn-brand" onClick={handleCertificatesClick}>
           <Award className="w-4 h-4 mr-2" />
           Certificados
         </Button>

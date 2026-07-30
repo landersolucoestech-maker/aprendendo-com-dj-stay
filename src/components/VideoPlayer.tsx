@@ -1,48 +1,61 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Clock, Download, BookOpen, ArrowRight } from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle, Clock, Download } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUpdateProgress } from "@/hooks/useUserProgress";
-import { useToast } from "@/hooks/use-toast";
-import { useLessonFiles, downloadFileFromStorage } from "@/hooks/useLessonFiles";
-import { useLessons } from "@/hooks/useLessons";
 
-interface Lesson {
-  id: string;
-  title: string;
-  duration?: string;
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
+import { downloadFileFromStorage, useLessonFiles } from "@/hooks/useLessonFiles";
+import { useLessons, type Lesson } from "@/hooks/useLessons";
+import { useUpdateProgress } from "@/hooks/useUserProgress";
+import { getErrorMessage } from "@/lib/error-message";
+
+interface LessonPlayerData extends Lesson {
   completed: boolean;
-  video_url?: string;
-  videoUrl?: string;
-  description: string;
+  progressPercent: number;
+  watchedSeconds: number;
 }
 
 interface VideoPlayerProps {
-  lesson: Lesson;
+  lesson: LessonPlayerData;
 }
 
+const getYouTubeVideoId = (url: string): string | null => {
+  const match = url.match(
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+  );
+  return match?.[1] ?? null;
+};
+
+const slugifyFileName = (title: string): string =>
+  title
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+
 const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
-  const [watchProgress, setWatchProgress] = useState(lesson.completed ? 100 : 0);
+  const [watchProgress, setWatchProgress] = useState(lesson.progressPercent);
   const navigate = useNavigate();
   const updateProgress = useUpdateProgress();
   const { toast } = useToast();
-  const { data: lessonFiles, isLoading: filesLoading } = useLessonFiles(lesson.id);
-  const { data: allLessons } = useLessons();
-  // Find next lesson
-  const currentIndex = allLessons?.findIndex(l => l.id === lesson.id) || 0;
-  const nextLesson = allLessons?.[currentIndex + 1];
-  
-  // Extract YouTube video ID from URL
-  const getYouTubeVideoId = (url: string) => {
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
-    return match ? match[1] : null;
-  };
+  const lessonFilesQuery = useLessonFiles(lesson.id);
+  const allLessonsQuery = useLessons();
 
-  const videoUrl = lesson.video_url || lesson.videoUrl || '';
-  const videoId = getYouTubeVideoId(videoUrl);
-  const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}` : videoUrl;
+  const currentIndex = allLessonsQuery.data?.findIndex((item) => item.id === lesson.id);
+  const nextLesson =
+    currentIndex !== undefined && currentIndex >= 0
+      ? allLessonsQuery.data?.[currentIndex + 1]
+      : undefined;
+  const videoId = lesson.videoUrl === null ? null : getYouTubeVideoId(lesson.videoUrl);
+  const embedUrl =
+    lesson.videoUrl === null
+      ? null
+      : videoId === null
+        ? lesson.videoUrl
+        : `https://www.youtube.com/embed/${videoId}`;
 
   const handleMarkComplete = async () => {
     try {
@@ -50,27 +63,26 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
         aulaId: lesson.id,
         completada: true,
         progressoPercentual: 100,
-        tempoAssistido: 0,
+        tempoAssistido: lesson.watchedSeconds,
       });
-      
       setWatchProgress(100);
-      
       toast({
         title: "Aula concluída!",
         description: "Seu progresso foi salvo com sucesso.",
       });
-    } catch (error) {
-      console.error('Erro ao marcar aula como concluída:', error);
+    } catch (error: unknown) {
       toast({
-        title: "Erro",
-        description: "Não foi possível salvar o progresso. Tente novamente.",
+        title: "Não foi possível salvar o progresso",
+        description: getErrorMessage(error, "Tente novamente em alguns instantes."),
         variant: "destructive",
       });
     }
   };
 
   const handleDownloadSamples = async () => {
-    if (!lessonFiles?.samples_file_path) {
+    const filePath = lessonFilesQuery.data?.samples_file_path;
+
+    if (!filePath) {
       toast({
         title: "Arquivo não disponível",
         description: "Os samples e loops desta aula ainda não foram disponibilizados.",
@@ -80,46 +92,50 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
     }
 
     try {
-      const fileName = `samples-loops-${lesson.title.replace(/\s+/g, '-').toLowerCase()}.zip`;
-      await downloadFileFromStorage('lesson-samples', lessonFiles.samples_file_path, fileName);
-      
+      await downloadFileFromStorage(
+        "lesson-samples",
+        filePath,
+        `samples-loops-${slugifyFileName(lesson.title)}.zip`,
+      );
       toast({
-        title: "Download iniciado!",
+        title: "Download iniciado",
         description: "Os samples e loops da aula estão sendo baixados.",
       });
-    } catch (error) {
-      console.error('Erro ao baixar samples:', error);
+    } catch (error: unknown) {
       toast({
         title: "Erro no download",
-        description: "Não foi possível baixar os samples. Tente novamente.",
+        description: getErrorMessage(error, "Não foi possível baixar os samples."),
         variant: "destructive",
       });
     }
   };
 
   const handleDownloadProject = async () => {
-    if (!lessonFiles?.project_file_path) {
+    const filePath = lessonFilesQuery.data?.project_file_path;
+
+    if (!filePath) {
       toast({
         title: "Arquivo não disponível",
-        description: "O projeto Ableton Live desta aula ainda não foi disponibilizado.",
+        description: "O projeto desta aula ainda não foi disponibilizado.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const fileName = `projeto-ableton-${lesson.title.replace(/\s+/g, '-').toLowerCase()}.als`;
-      await downloadFileFromStorage('lesson-projects', lessonFiles.project_file_path, fileName);
-      
+      await downloadFileFromStorage(
+        "lesson-projects",
+        filePath,
+        `projeto-${slugifyFileName(lesson.title)}.als`,
+      );
       toast({
-        title: "Download iniciado!",
-        description: "O projeto Ableton Live está sendo baixado.",
+        title: "Download iniciado",
+        description: "O projeto da aula está sendo baixado.",
       });
-    } catch (error) {
-      console.error('Erro ao baixar projeto:', error);
+    } catch (error: unknown) {
       toast({
         title: "Erro no download",
-        description: "Não foi possível baixar o projeto. Tente novamente.",
+        description: getErrorMessage(error, "Não foi possível baixar o projeto."),
         variant: "destructive",
       });
     }
@@ -128,21 +144,23 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
   const handleNextLesson = () => {
     if (nextLesson) {
       navigate(`/aula/${nextLesson.id}`);
-    } else {
-      toast({
-        title: "Parabéns!",
-        description: "Você concluiu todas as aulas do curso!",
-      });
+      return;
     }
+
+    toast({
+      title: "Fim do conteúdo disponível",
+      description: "Não existe uma próxima aula cadastrada.",
+    });
   };
-  
+
+  const filesUnavailable = lessonFilesQuery.isLoading || lessonFilesQuery.error !== null;
+
   return (
     <div className="space-y-6">
-      {/* Video Player */}
       <Card className="glass-card border-white/10">
         <CardContent className="p-0">
           <div className="aspect-video bg-gray-900 rounded-t-lg overflow-hidden">
-            {embedUrl ? (
+            {embedUrl !== null ? (
               <iframe
                 className="w-full h-full"
                 src={embedUrl}
@@ -153,25 +171,27 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-800">
-                <p className="text-gray-400">Vídeo não disponível</p>
+                <p className="text-gray-400">Vídeo não informado para esta aula</p>
               </div>
             )}
           </div>
-          
+
           <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 gap-6">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-2">{lesson.title}</h2>
-                <p className="text-gray-300">{lesson.description}</p>
+                {lesson.description !== null && (
+                  <p className="text-gray-300">{lesson.description}</p>
+                )}
               </div>
-              {lesson.duration && (
+              {lesson.durationLabel !== null && (
                 <div className="flex items-center space-x-2 text-sm text-gray-400">
                   <Clock className="w-4 h-4" />
-                  <span>{lesson.duration}</span>
+                  <span>{lesson.durationLabel}</span>
                 </div>
               )}
             </div>
-            
+
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Progresso da aula</span>
@@ -183,7 +203,6 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
         </CardContent>
       </Card>
 
-      {/* Lesson Info and Actions */}
       <div className="grid md:grid-cols-2 gap-6">
         <Card className="glass-card border-white/10">
           <CardHeader>
@@ -193,23 +212,31 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button 
-              variant="outline" 
+            {lessonFilesQuery.error && (
+              <p className="text-sm text-red-300">
+                {getErrorMessage(
+                  lessonFilesQuery.error,
+                  "Não foi possível consultar os materiais desta aula.",
+                )}
+              </p>
+            )}
+            <Button
+              variant="outline"
               className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
               onClick={handleDownloadSamples}
-              disabled={filesLoading || !lessonFiles?.samples_file_path}
+              disabled={filesUnavailable || !lessonFilesQuery.data?.samples_file_path}
             >
               <Download className="w-4 h-4 mr-2" />
-              {filesLoading ? 'Carregando...' : 'Samples e loops da aula'}
+              {lessonFilesQuery.isLoading ? "Carregando..." : "Samples e loops da aula"}
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start border-white/20 bg-transparent hover:bg-white/10"
               onClick={handleDownloadProject}
-              disabled={filesLoading || !lessonFiles?.project_file_path}
+              disabled={filesUnavailable || !lessonFilesQuery.data?.project_file_path}
             >
               <Download className="w-4 h-4 mr-2" />
-              {filesLoading ? 'Carregando...' : 'Projeto Ableton Live'}
+              {lessonFilesQuery.isLoading ? "Carregando..." : "Projeto da aula"}
             </Button>
           </CardContent>
         </Card>
@@ -219,37 +246,45 @@ const VideoPlayer = ({ lesson }: VideoPlayerProps) => {
             <CardTitle className="text-white">Ações</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button 
+            <Button
               className="w-full btn-neon"
               onClick={handleMarkComplete}
               disabled={updateProgress.isPending || watchProgress === 100}
             >
               <CheckCircle className="w-4 h-4 mr-2" />
-              {updateProgress.isPending ? 'Salvando...' : watchProgress === 100 ? 'Concluída!' : 'Marcar como concluída'}
+              {updateProgress.isPending
+                ? "Salvando..."
+                : watchProgress === 100
+                  ? "Concluída"
+                  : "Marcar como concluída"}
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Next Lesson Suggestion */}
       <Card className="glass-card border-white/10">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-white mb-1">
-                {nextLesson ? 'Próxima Aula' : 'Curso Concluído'}
+                {nextLesson ? "Próxima aula" : "Fim do conteúdo disponível"}
               </h3>
               <p className="text-gray-300">
-                {nextLesson ? nextLesson.title : 'Parabéns por concluir todas as aulas!'}
+                {allLessonsQuery.error
+                  ? getErrorMessage(
+                      allLessonsQuery.error,
+                      "Não foi possível identificar a próxima aula.",
+                    )
+                  : nextLesson?.title ?? "Não existe outra aula cadastrada."}
               </p>
             </div>
-            <Button 
+            <Button
               className="btn-neon"
               onClick={handleNextLesson}
-              disabled={!nextLesson}
+              disabled={!nextLesson || allLessonsQuery.isLoading || allLessonsQuery.error !== null}
             >
               <ArrowRight className="w-4 h-4 mr-2" />
-              {nextLesson ? 'Próxima Aula' : 'Curso Concluído'}
+              Próxima aula
             </Button>
           </div>
         </CardContent>

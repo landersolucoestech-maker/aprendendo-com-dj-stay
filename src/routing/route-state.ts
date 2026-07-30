@@ -1,19 +1,20 @@
-import type { Location } from "react-router-dom";
-
-export interface LoginLocationState {
-  readonly from?: Pick<Location, "pathname" | "search" | "hash">;
-}
-
 export function getSafeReturnPath(state: unknown): string {
   if (!state || typeof state !== "object" || !("from" in state)) {
     return "/dashboard";
   }
 
-  const from = (state as LoginLocationState).from;
-
-  if (!from?.pathname?.startsWith("/") || from.pathname.startsWith("//")) {
+  const from = Reflect.get(state, "from");
+  if (!from || typeof from !== "object") {
     return "/dashboard";
   }
 
-  return `${from.pathname}${from.search ?? ""}${from.hash ?? ""}`;
+  const pathname = Reflect.get(from, "pathname");
+  const search = Reflect.get(from, "search");
+  const hash = Reflect.get(from, "hash");
+
+  if (typeof pathname !== "string" || !pathname.startsWith("/") || pathname.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return `${pathname}${typeof search === "string" ? search : ""}${typeof hash === "string" ? hash : ""}`;
 }

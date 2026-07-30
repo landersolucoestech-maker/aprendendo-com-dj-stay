@@ -1,91 +1,84 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { parseDataContract } from "@/contracts/contract-error";
+import {
+  progressResponseSchema,
+  progressRowSchema,
+  progressUpdateInputSchema,
+  type ProgressRow,
+  type ProgressUpdateInput,
+} from "@/contracts/learning";
+import { supabase } from "@/integrations/supabase/client";
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+export type UserProgress = ProgressRow;
 
-export interface UserProgress {
-  id: string;
-  user_id: string;
-  aula_id: string;
-  completada: boolean;
-  progresso_percentual: number;
-  tempo_assistido: number;
-  ultima_visualizacao: string;
-}
+export const useUserProgress = () =>
+  useQuery({
+    queryKey: ["user-progress"],
+    queryFn: async (): Promise<UserProgress[]> => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-export const useUserProgress = () => {
-  return useQuery({
-    queryKey: ['user-progress'],
-    queryFn: async () => {
-      console.log('Buscando progresso do usuário...');
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
-        throw new Error('Usuário não autenticado');
+        throw new Error("Usuário não autenticado");
       }
 
       const { data, error } = await supabase
-        .from('progresso_aulas')
-        .select('*')
-        .eq('user_id', user.id);
+        .from("progresso_aulas")
+        .select("*")
+        .eq("user_id", user.id);
 
       if (error) {
-        console.error('Erro ao buscar progresso:', error);
         throw error;
       }
 
-      console.log('Progresso encontrado:', data);
-      return data as UserProgress[];
+      return parseDataContract(progressResponseSchema, data, "progresso do aluno");
     },
   });
-};
 
 export const useUpdateProgress = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      aulaId, 
-      completada, 
-      progressoPercentual, 
-      tempoAssistido 
-    }: {
-      aulaId: string;
-      completada?: boolean;
-      progressoPercentual?: number;
-      tempoAssistido?: number;
-    }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+    mutationFn: async (input: ProgressUpdateInput): Promise<UserProgress> => {
+      const validatedInput = parseDataContract(
+        progressUpdateInputSchema,
+        input,
+        "parâmetros de atualização de progresso",
+      );
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
-        throw new Error('Usuário não autenticado');
+        throw new Error("Usuário não autenticado");
       }
 
       const { data, error } = await supabase
-        .from('progresso_aulas')
-        .upsert({
-          user_id: user.id,
-          aula_id: aulaId,
-          completada: completada ?? false,
-          progresso_percentual: progressoPercentual ?? 0,
-          tempo_assistido: tempoAssistido ?? 0,
-          ultima_visualizacao: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id,aula_id'
-        })
+        .from("progresso_aulas")
+        .upsert(
+          {
+            user_id: user.id,
+            aula_id: validatedInput.aulaId,
+            completada: validatedInput.completada,
+            progresso_percentual: validatedInput.progressoPercentual,
+            tempo_assistido: validatedInput.tempoAssistido,
+            ultima_visualizacao: new Date().toISOString(),
+          },
+          { onConflict: "user_id,aula_id" },
+        )
         .select()
         .single();
 
       if (error) {
-        console.error('Erro ao atualizar progresso:', error);
         throw error;
       }
 
-      return data;
+      return parseDataContract(progressRowSchema, data, "atualização de progresso");
     },
-    onSuccess: () => {
-      // Invalidate and refetch progress data
-      queryClient.invalidateQueries({ queryKey: ['user-progress'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["user-progress"] });
+      await queryClient.invalidateQueries({ queryKey: ["recent-activities"] });
     },
   });
 };

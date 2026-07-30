@@ -1,47 +1,55 @@
 import { useMemo } from "react";
 
-import type { Module } from "./useModules";
+import type { LearningModule, ModuleLesson } from "./useModules";
 import { useUserProgress } from "./useUserProgress";
 
-export const useProgressCalculation = (modules: Module[] | undefined): Module[] => {
-  const { data: userProgress } = useUserProgress();
+export interface ModuleLessonWithProgress extends ModuleLesson {
+  completed: boolean;
+}
 
-  return useMemo(() => {
-    if (!modules) {
-      return [];
+export interface ModuleWithProgress extends Omit<LearningModule, "lessons"> {
+  progress: number;
+  lessons: ModuleLessonWithProgress[];
+}
+
+export interface ProgressCalculationResult {
+  data: ModuleWithProgress[] | undefined;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export const useProgressCalculation = (
+  modules: LearningModule[] | undefined,
+): ProgressCalculationResult => {
+  const progressQuery = useUserProgress();
+
+  const data = useMemo(() => {
+    if (modules === undefined || progressQuery.data === undefined) {
+      return undefined;
     }
 
     const progressByLesson = new Map(
-      (userProgress ?? []).map((progress) => [progress.aula_id, progress]),
+      progressQuery.data.map((progress) => [progress.aula_id, progress]),
     );
 
     return modules.map((module) => {
-      const lessons = module.lessons.map((lesson) => {
-        const progress = progressByLesson.get(lesson.id);
-
-        return {
-          ...lesson,
-          duration: lesson.duracao
-            ? `${lesson.duracao}:00`
-            : lesson.duration || "15:30",
-          description:
-            lesson.descricao || lesson.description || "Descrição não disponível",
-          videoUrl: lesson.video || lesson.video_url || lesson.videoUrl || "",
-          completed: progress?.completada ?? false,
-        };
-      });
-
+      const lessons = module.lessons.map((lesson) => ({
+        ...lesson,
+        completed: progressByLesson.get(lesson.id)?.completada === true,
+      }));
       const completedLessons = lessons.filter((lesson) => lesson.completed).length;
-      const progress = lessons.length > 0
-        ? Math.round((completedLessons / lessons.length) * 100)
-        : 0;
 
       return {
         ...module,
-        description: module.description || "Descrição não disponível",
-        progress,
+        progress: lessons.length === 0 ? 0 : Math.round((completedLessons / lessons.length) * 100),
         lessons,
       };
     });
-  }, [modules, userProgress]);
+  }, [modules, progressQuery.data]);
+
+  return {
+    data,
+    isLoading: progressQuery.isLoading,
+    error: progressQuery.error,
+  };
 };

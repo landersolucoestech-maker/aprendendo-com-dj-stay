@@ -78,6 +78,23 @@ jobs:
           mkdir -p artifacts
           supabase gen types typescript --local > artifacts/database.types.ts
 
+      - name: Verificar drift dos tipos gerados
+        id: generated_types_contract
+        if: steps.generate_types.outcome == 'success'
+        continue-on-error: true
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const normalize = (value) => value.replace(/\r\n/g, "\n").trimEnd();
+          const committed = normalize(readFileSync("src/integrations/supabase/types.ts", "utf8"));
+          const generated = normalize(readFileSync("artifacts/database.types.ts", "utf8"));
+          if (committed !== generated) {
+            console.error("Os tipos Supabase versionados divergem do schema reconstruído.");
+            process.exit(1);
+          }
+          console.log("Tipos Supabase sincronizados com o schema reconstruído.");
+          NODE
+
       - name: Typecheck
         id: typecheck
         if: steps.install.outcome == 'success'
@@ -127,6 +144,7 @@ jobs:
           DATABASE_RESET_OUTCOME: ${{ steps.database_reset.outcome }}
           DATABASE_TESTS_OUTCOME: ${{ steps.database_tests.outcome }}
           GENERATE_TYPES_OUTCOME: ${{ steps.generate_types.outcome }}
+          GENERATED_TYPES_CONTRACT_OUTCOME: ${{ steps.generated_types_contract.outcome }}
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         with:
@@ -149,6 +167,7 @@ jobs:
               `| supabase db reset --local | ${process.env.DATABASE_RESET_OUTCOME || 'skipped'} |`,
               `| supabase test db | ${process.env.DATABASE_TESTS_OUTCOME || 'skipped'} |`,
               `| gerar tipos TypeScript | ${process.env.GENERATE_TYPES_OUTCOME || 'skipped'} |`,
+              `| tipos gerados sem drift | ${process.env.GENERATED_TYPES_CONTRACT_OUTCOME || 'skipped'} |`,
               `| npm run typecheck | ${process.env.TYPECHECK_OUTCOME || 'skipped'} |`,
               `| npm run build:dev | ${process.env.BUILD_OUTCOME || 'skipped'} |`,
               '',
@@ -172,6 +191,7 @@ jobs:
           DATABASE_RESET_OUTCOME: ${{ steps.database_reset.outcome }}
           DATABASE_TESTS_OUTCOME: ${{ steps.database_tests.outcome }}
           GENERATE_TYPES_OUTCOME: ${{ steps.generate_types.outcome }}
+          GENERATED_TYPES_CONTRACT_OUTCOME: ${{ steps.generated_types_contract.outcome }}
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         run: |
@@ -182,5 +202,6 @@ jobs:
           test "$DATABASE_RESET_OUTCOME" = "success"
           test "$DATABASE_TESTS_OUTCOME" = "success"
           test "$GENERATE_TYPES_OUTCOME" = "success"
+          test "$GENERATED_TYPES_CONTRACT_OUTCOME" = "success"
           test "$TYPECHECK_OUTCOME" = "success"
           test "$BUILD_OUTCOME" = "success"

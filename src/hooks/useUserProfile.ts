@@ -1,70 +1,73 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { parseDataContract } from "@/contracts/contract-error";
+import {
+  avatarUpdateInputSchema,
+  userProfileSchema,
+  type UserProfileRow,
+} from "@/contracts/learning";
+import { supabase } from "@/integrations/supabase/client";
 
-export interface UserProfile {
-  id: string;
-  user_id: string;
-  avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type UserProfile = UserProfileRow;
 
-export const useUserProfile = () => {
-  return useQuery({
-    queryKey: ['user-profile'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+export const useUserProfile = () =>
+  useQuery({
+    queryKey: ["user-profile"],
+    queryFn: async (): Promise<UserProfile | null> => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
-        throw new Error('Usuário não autenticado');
+        throw new Error("Usuário não autenticado");
       }
 
       const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+        .from("user_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        throw new Error('Erro ao buscar perfil do usuário');
+      if (error) {
+        throw error;
       }
 
-      return data as UserProfile | null;
+      return data === null ? null : parseDataContract(userProfileSchema, data, "perfil do aluno");
     },
   });
-};
 
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ avatar_url }: { avatar_url?: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+    mutationFn: async (input: { avatarUrl: string | null }): Promise<UserProfile> => {
+      const validatedInput = parseDataContract(
+        avatarUpdateInputSchema,
+        input,
+        "parâmetros de atualização do avatar",
+      );
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
-        throw new Error('Usuário não autenticado');
+        throw new Error("Usuário não autenticado");
       }
 
       const { data, error } = await supabase
-        .from('user_profiles')
-        .upsert({
-          user_id: user.id,
-          avatar_url: avatar_url || null,
-        }, {
-          onConflict: 'user_id'
-        })
+        .from("user_profiles")
+        .upsert({ user_id: user.id, avatar_url: validatedInput.avatarUrl }, { onConflict: "user_id" })
         .select()
         .single();
 
       if (error) {
-        throw new Error('Erro ao atualizar perfil');
+        throw error;
       }
 
-      return data;
+      return parseDataContract(userProfileSchema, data, "atualização de perfil");
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
     },
   });
 };

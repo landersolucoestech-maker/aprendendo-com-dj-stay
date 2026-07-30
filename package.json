@@ -9,10 +9,11 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "check:environment": "node scripts/check-environment-contract.mjs",
-    "typecheck": "npm run check:environment && npm run check:auth && tsc --noEmit",
+    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run build",
     "preview": "vite preview",
-    "check:auth": "node scripts/check-auth-contract.mjs"
+    "check:auth": "node scripts/check-auth-contract.mjs",
+    "check:contracts": "node scripts/check-data-contracts.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
