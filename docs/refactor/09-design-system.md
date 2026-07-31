@@ -76,28 +76,24 @@ As funções de variantes ficam em `card-variants.ts` e `badge-variants.ts`, sep
 
 ### Campos
 
-`Input` e `Textarea` compartilham:
-
-- superfície semântica;
-- hover e foco por contexto;
-- `aria-invalid` com estado destrutivo;
-- disabled visível;
-- ring consistente;
-- contraste baseado em tokens.
+`Input` e `Textarea` compartilham superfície semântica, hover e foco por contexto, `aria-invalid`, estado disabled, ring consistente e contraste baseado em tokens.
 
 ### Estados de página
 
-`PageState` centraliza loading, erro, vazio e sucesso. O componente fornece iconografia, `role`, `aria-live`, `aria-busy`, ação opcional e apresentação compacta.
+`PageState` centraliza loading, erro, vazio e sucesso. O componente fornece iconografia, `role`, `aria-live`, `aria-atomic`, `aria-busy`, ação opcional e apresentação compacta.
 
 ### Shells
 
 `AppPageShell` centraliza contexto, largura, grid, cabeçalho, eyebrow, título, descrição, navegação, ações e área principal.
 
-Ambientes migrados para o shell e tokens semânticos:
+`StudentPortalShell` centraliza a navegação desktop e móvel do aluno, marca provisória, conta autenticada, logout, foco, estado ativo e o contexto visual `course`.
+
+Ambientes migrados para shells e tokens semânticos:
 
 - administração de cursos por `AdminCourseLayout`;
 - marketplace completo;
 - Portal do Afiliado completo;
+- Portal do Aluno completo;
 - certificados do aluno;
 - biblioteca de produtos digitais;
 - navegação pública;
@@ -111,13 +107,23 @@ Ambientes migrados para o shell e tokens semânticos:
 
 `AffiliatePortal` utiliza contexto `affiliate`, cards financeiros, badges de status, estados de perfil, tabela acessível, ações com rótulos e áreas vazias padronizadas. Perfil, links, ofertas, comissões e repasses continuam usando os mesmos hooks e contratos persistidos.
 
-## Portal do Aluno — páginas isoladas
+## Portal do Aluno
 
-`Certificates` utiliza contexto `course`, estados padronizados, cards de certificado, badges de validade e ações sem aninhamento inválido. Emissões e revogações continuam derivadas exclusivamente do backend.
+`StudentPortalShell` substituiu a estrutura monolítica de sidebar e cabeçalho por um shell contextual reutilizável. A navegação desktop e móvel preserva as mesmas rotas e agora possui foco, estado ativo e contraste baseados em tokens.
 
-`MyDigitalProducts` utiliza contexto `marketplace`, detalhes semânticos de acesso e licença, estados de entregáveis e downloads privados. A página não declara acesso a partir de redirecionamento de pagamento e preserva as validações de grant.
+`StudentPortalPrimitives` centraliza títulos de seção e cartões de indicadores. `StudentPortal.tsx` deixou de declarar componentes locais de loading, erro, vazio e estatística.
 
-O shell principal `StudentPortal` ainda será migrado em lote próprio por concentrar dashboard, cursos, biblioteca, pedidos, pagamentos, histórico e perfil em um arquivo extenso.
+As oito seções foram migradas sem alterar regras de negócio:
+
+- dashboard: matrículas ativas, progresso, conclusões, materiais e atividades;
+- cursos: status, origem, validade e confirmação de pagamento;
+- curso individual: matrícula, módulos, aulas e progresso;
+- biblioteca: grants privados e downloads assinados;
+- pedidos e pagamentos: estados vazios sem conteúdo simulado;
+- perfil: metadados e avatar privado;
+- histórico: atividades persistidas.
+
+`Certificates` utiliza contexto `course`, estados padronizados, cards de certificado, badges de validade e ações sem aninhamento inválido. `MyDigitalProducts` utiliza contexto `marketplace`, detalhes de acesso e licença, estados de entregáveis e downloads privados.
 
 ## Compatibilidade e migração
 
@@ -134,6 +140,7 @@ Mesmo pertencendo formalmente à B24, o núcleo visual já preserva:
 - ícones decorativos ocultos nos shells migrados;
 - cabeçalhos com `scope` em tabelas migradas;
 - nomes acessíveis em botões somente com ícone;
+- `aria-label` em progresso e downloads;
 - touch targets mínimos nos botões padrão.
 
 A validação completa de WCAG, teclado, landmarks, modais, tabelas e leitores de tela permanece na B24.
@@ -153,6 +160,7 @@ A validação completa de WCAG, teclado, landmarks, modais, tabelas e leitores d
 | REQ-DS-008 — afiliados contextual | `src/pages/affiliate/AffiliatePortal.tsx` |
 | REQ-DS-009 — certificados do aluno | `src/pages/student/Certificates.tsx` |
 | REQ-DS-010 — biblioteca digital do aluno | `src/pages/student/MyDigitalProducts.tsx` |
+| REQ-DS-011 — Portal do Aluno contextual e responsivo | `src/components/student/StudentPortalShell.tsx`, `src/components/student/StudentPortalPrimitives.tsx`, `src/pages/student/StudentPortal.tsx` |
 | TEST-DS-001 — contrato estático | `scripts/check-design-system-contract.mjs` |
 
 ## Rollback
@@ -170,7 +178,6 @@ A fase não altera banco, migrations, RLS ou dados. O rollback consiste em rever
 
 ## Pendências sequenciais da B23
 
-- migrar o shell principal do Portal do Aluno;
 - migrar páginas administrativas restantes;
 - migrar autenticação e páginas públicas restantes;
 - migrar player e checkout;
