@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { DigitalProductDeliverable } from "@/contracts/marketplace";
 import {
   useDigitalProductDeliverables,
   useMyDigitalProducts,
@@ -30,9 +31,7 @@ const OwnedProductCard = ({ item }: { item: OwnedDigitalProduct }) => {
   const deliverablesQuery = useDigitalProductDeliverables(item.product.id);
   const { toast } = useToast();
 
-  const handleDownload = async (
-    deliverable: NonNullable<typeof deliverablesQuery.data>[number],
-  ): Promise<void> => {
+  const handleDownload = async (deliverable: DigitalProductDeliverable): Promise<void> => {
     try {
       await downloadPrivateAsset(deliverable.assets);
       toast({
@@ -137,7 +136,7 @@ const MyDigitalProducts = () => {
       <div className="mx-auto max-w-5xl space-y-8">
         <header className="flex flex-col gap-5 border-b border-white/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Portal do Aluno</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Biblioteca digital</p>
             <h1 className="mt-3 flex items-center gap-3 text-4xl font-bold">
               <Library className="h-9 w-9" />
               Meus produtos
@@ -152,7 +151,7 @@ const MyDigitalProducts = () => {
                 Ver marketplace
               </Button>
             </Link>
-            <Link to="/aluno">
+            <Link to="/portal">
               <Button className="btn-brand">Voltar ao portal</Button>
             </Link>
           </div>
