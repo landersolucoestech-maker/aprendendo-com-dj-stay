@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Eye, ImagePlus, Save } from "lucide-react";
+import { ArrowLeft, Eye, ImagePlus, ListTree, Save } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
@@ -25,7 +25,7 @@ import { getErrorMessage } from "@/lib/error-message";
 
 const fieldClass = "border-white/15 bg-black/30 text-white";
 
-const ErrorText = ({ message }: { readonly message?: string | undefined }) => message ? <p className="mt-1 text-xs text-red-300">{message}</p> : null;
+const ErrorText = ({ message }: { readonly message: string | undefined }) => message ? <p className="mt-1 text-xs text-red-300">{message}</p> : null;
 
 const CourseEditor = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -93,6 +93,7 @@ const CourseEditor = () => {
         <>
           <Button variant="outline" onClick={() => navigate("/admin/cursos")}><ArrowLeft className="mr-2 h-4 w-4" /> Voltar</Button>
           {courseId && <Button variant="outline" onClick={() => navigate(`/admin/cursos/${courseId}/preview`)}><Eye className="mr-2 h-4 w-4" /> Preview</Button>}
+          {courseId && <Button variant="outline" onClick={() => navigate(`/admin/cursos/${courseId}/curriculo`)}><ListTree className="mr-2 h-4 w-4" /> Currículo</Button>}
           <Button onClick={form.handleSubmit(onSubmit)} disabled={busy} className="btn-neon"><Save className="mr-2 h-4 w-4" /> Salvar</Button>
         </>
       )}
