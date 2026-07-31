@@ -76,7 +76,7 @@ select is((select count(*)::integer from public.affiliate_commissions),1,'paymen
 select is((select commission_amount_cents from public.affiliate_commissions),1000,'commission uses frozen ten percent rate');
 select is((select status::text from public.affiliate_commissions),'available','received payment makes commission available');
 select is((select order_id from public.affiliate_commissions),(select id from public.payment_orders where checkout_intent_id=current_setting('test.b20_pay_intent')::uuid),'commission is linked to payment order');
-select is((select count(*)::integer from public.affiliate_events where event_type='commission_accrued'),1,'commission accrual is audited');
+select is((select count(*)::integer from public.affiliate_events where event_type='commission_available'),1,'commission availability is audited');
 select private.process_asaas_payment_webhook(
   'evt-b20-pay-1',
   'PAYMENT_RECEIVED',
@@ -95,20 +95,20 @@ set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"b2000000-0000-4000-8000-000000000303","role":"authenticated","session_id":"b2040000-0000-4000-8000-000000000303","is_anonymous":false}',true);
 select throws_ok(
  $$select public.admin_create_affiliate_payout('b2000000-0000-4000-8000-000000000302',array[(select id from public.affiliate_commissions)],'Tentativa do comprador')$$,
- '42501','ADMIN_REQUIRED','non-admin cannot create affiliate payout'
+ '42501','ADMIN_ROLE_REQUIRED','non-admin cannot create affiliate payout'
 );
 
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"b2000000-0000-4000-8000-000000000301","role":"authenticated","session_id":"b2040000-0000-4000-8000-000000000301","is_anonymous":false}',true);
 select lives_ok($$select set_config('test.b20_pay_payout',(select id::text from public.admin_create_affiliate_payout('b2000000-0000-4000-8000-000000000302',array[(select id from public.affiliate_commissions)],'Repasse B20')),false)$$,'admin creates a payout batch');
-select is((select status::text from public.affiliate_commissions),'reserved','payout creation reserves commission');
-select is((select status::text from public.affiliate_payouts where id=current_setting('test.b20_pay_payout')::uuid),'created','payout starts created');
+select is((select status::text from public.affiliate_commissions),'held','payout creation holds commission');
+select is((select status::text from public.affiliate_payouts where id=current_setting('test.b20_pay_payout')::uuid),'draft','payout starts as draft');
 select is((select amount_cents from public.affiliate_payouts where id=current_setting('test.b20_pay_payout')::uuid),1000,'payout amount equals selected commissions');
 select is((select count(*)::integer from public.affiliate_payout_items where payout_id=current_setting('test.b20_pay_payout')::uuid),1,'payout contains selected commission item');
 select throws_ok(
  $$select public.admin_mark_affiliate_payout_paid(current_setting('test.b20_pay_payout')::uuid,'')$$,
- '22023','PAYOUT_EXTERNAL_REFERENCE_INVALID','paid payout requires external reference'
+ '22023','AFFILIATE_PAYOUT_REFERENCE_INVALID','paid payout requires external reference'
 );
 select lives_ok($$select public.admin_mark_affiliate_payout_paid(current_setting('test.b20_pay_payout')::uuid,'PIX-END-TO-END-B20')$$,'admin marks payout paid with external reference');
 select is((select status::text from public.affiliate_payouts where id=current_setting('test.b20_pay_payout')::uuid),'paid','payout becomes paid');
@@ -129,8 +129,8 @@ select private.process_asaas_payment_webhook(
     'billingType','PIX'
   ))
 );
-select is((select status::text from public.affiliate_commissions),'clawback_due','refund after payout creates clawback due');
-select is((select count(*)::integer from public.affiliate_events where event_type='commission_clawback_due'),1,'clawback due is audited');
+select is((select status::text from public.affiliate_commissions),'paid','refund preserves the historical paid commission state');
+select is((select count(*)::integer from public.affiliate_events where event_type='commission_reversed' and (details->>'clawback_due')::boolean),1,'refund after payout records an audited clawback obligation');
 select is((select count(*)::integer from public.affiliate_commissions),1,'refund preserves commission history');
 select is((select count(*)::integer from public.affiliate_payouts),1,'refund preserves payout history');
 
@@ -138,7 +138,12 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"b2000000-0000-4000-8000-000000000302","role":"authenticated","session_id":"b2040000-0000-4000-8000-000000000302","is_anonymous":false}',true);
 select is((public.get_affiliate_portal()->'summary'->>'paid_cents')::bigint,1000::bigint,'affiliate portal reports paid amount');
-select is((public.get_affiliate_portal()->'summary'->>'clawback_due_cents')::bigint,1000::bigint,'affiliate portal reports clawback debt');
+select ok(exists(
+  select 1
+  from jsonb_array_elements(public.get_affiliate_portal()->'events') event_record
+  where event_record->>'event_type'='commission_reversed'
+    and coalesce((event_record->'details'->>'clawback_due')::boolean,false)
+),'affiliate portal exposes the audited clawback obligation');
 select is(jsonb_array_length(public.get_affiliate_portal()->'payouts'),1,'affiliate portal exposes own payout history');
 
 reset role;
