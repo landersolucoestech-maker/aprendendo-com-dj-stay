@@ -27,6 +27,70 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Aplicar backend B12
+        id: apply_b12
+        run: |
+          set -euo pipefail
+          cat scripts/b12-source/lesson.00.sql.part scripts/b12-source/lesson.01.sql.part scripts/b12-source/lesson.02.sql.part scripts/b12-source/lesson.03.sql.part > supabase/migrations/20260730230200_curriculum_lesson_rpcs.sql
+          cat scripts/b12-source/access.00.sql.part scripts/b12-source/access.01.sql.part > supabase/migrations/20260730230300_curriculum_access.sql
+          echo "cf09c2579e800db5b959217d7e7b31354a867fdf5dad0cc4e8c253dfed92aa86  supabase/migrations/20260730230200_curriculum_lesson_rpcs.sql" | sha256sum -c -
+          echo "5dad5b5f050b1f01223bfde5f869ef50db918bc83e414a9b2ac03097ac6d3ada  supabase/migrations/20260730230300_curriculum_access.sql" | sha256sum -c -
+          python <<'PY'
+          import json
+          from pathlib import Path
+
+          lifecycle = Path("supabase/tests/14_course_cms_lifecycle.test.sql")
+          text = lifecycle.read_text()
+          marker = "select is((select count(*)::integer from public.modulos where course_id=current_setting('test.copy_id')::uuid),0,'B11 duplication does not invent module copies');\n"
+          addition = (
+              marker
+              + "select set_config('test.publish_module_id',(select id::text from public.create_module(current_setting('test.course_id')::uuid,'{\"title\":\"Módulo publicável\",\"status\":\"published\"}'::jsonb)),false);\n"
+              + "select set_config('test.publish_lesson_id',(select id::text from public.create_lesson(current_setting('test.publish_module_id')::uuid,'{\"title\":\"Aula publicável\",\"status\":\"published\",\"content_kind\":\"text\",\"text_content\":\"Conteúdo validado\"}'::jsonb)),false);\n"
+          )
+          if "test.publish_module_id" not in text:
+              if marker not in text:
+                  raise SystemExit("B11 lifecycle publication marker not found")
+              text = text.replace(marker, addition, 1)
+          text = text.replace("insert into public.modulos(course_id,titulo,ordem) values(current_setting('test.course_id')::uuid,'Módulo dependente',1);\n", "")
+          lifecycle.write_text(text)
+
+          access = Path("supabase/tests/15_course_cms_access.test.sql")
+          text = access.read_text()
+          marker = "select throws_ok($$update public.courses set title='bypass' where id=current_setting('test.course_id')::uuid$$,'42501',null,'administrator cannot bypass CMS RPC with direct update');\n"
+          addition = (
+              marker
+              + "select set_config('test.publish_module_id',(select id::text from public.create_module(current_setting('test.course_id')::uuid,'{\"title\":\"Módulo de acesso\",\"status\":\"published\"}'::jsonb)),false);\n"
+              + "select set_config('test.publish_lesson_id',(select id::text from public.create_lesson(current_setting('test.publish_module_id')::uuid,'{\"title\":\"Aula de acesso\",\"status\":\"published\",\"content_kind\":\"text\",\"text_content\":\"Conteúdo de acesso\"}'::jsonb)),false);\n"
+          )
+          if "test.publish_module_id" not in text:
+              if marker not in text:
+                  raise SystemExit("B11 access publication marker not found")
+              text = text.replace(marker, addition, 1)
+          access.write_text(text)
+
+          curriculum_access = Path("supabase/tests/19_curriculum_access.test.sql")
+          text = curriculum_access.read_text()
+          text = text.replace(
+              "select is((select count(*)::integer from public.modulos),0,'anonymous cannot read modules');\nselect is((select count(*)::integer from public.aulas),0,'anonymous cannot read lessons');",
+              "select throws_ok($$select count(*) from public.modulos$$,'42501',null,'anonymous cannot read modules');\nselect throws_ok($$select count(*) from public.aulas$$,'42501',null,'anonymous cannot read lessons');",
+          )
+          curriculum_access.write_text(text)
+
+          package_path = Path("package.json")
+          package = json.loads(package_path.read_text())
+          package["scripts"]["check:curriculum-cms"] = "node scripts/check-curriculum-cms-contract.mjs"
+          typecheck = package["scripts"]["typecheck"]
+          if "npm run check:curriculum-cms" not in typecheck:
+              package["scripts"]["typecheck"] = typecheck.replace(" && tsc --noEmit", " && npm run check:curriculum-cms && tsc --noEmit")
+          package_path.write_text(json.dumps(package, indent=2, ensure_ascii=False) + "\n")
+          PY
+          rm -rf scripts/b12-source
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add package.json scripts supabase
+          git commit -m "feat(b12): add versioned curriculum backend [skip ci]"
+          git push origin HEAD:dev
+
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
@@ -91,7 +155,7 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add src/integrations/supabase/types.ts
-          git commit -m "chore(b11): sync generated Supabase types [skip ci]"
+          git commit -m "chore(b12): sync generated Supabase types [skip ci]"
           git push origin HEAD:dev
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
