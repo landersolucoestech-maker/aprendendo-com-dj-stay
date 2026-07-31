@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(22);
+select plan(23);
 
 insert into auth.users(id,email) values
  ('b1600000-0000-4000-8000-000000000201','b16-access-admin@example.test'),
@@ -58,11 +58,11 @@ select throws_ok(
  $$select public.grant_digital_product_access('b1600000-0000-4000-8000-000000000202',(select id from public.digital_products where slug='pack-access-test'),(select id from public.digital_product_licenses where product_id=(select id from public.digital_products where slug='pack-access-test') and status='published'),'manual_grant',null,'duplicate-access','Duplicado')$$,
  '23505',null,'duplicate active access is rejected'
 );
-select results_eq(
- $$select (public.revoke_digital_product_access((select id from public.digital_product_accesses where user_id='b1600000-0000-4000-8000-000000000202'),'Revogação de teste')).status::text$$,
- $$values('revoked'::text)$$,
- 'administrator revokes access with reason'
+select lives_ok(
+ $$select public.revoke_digital_product_access((select id from public.digital_product_accesses where user_id='b1600000-0000-4000-8000-000000000202'),'Revogação de teste')$$,
+ 'administrator can revoke access with reason'
 );
+select is((select status::text from public.digital_product_accesses where user_id='b1600000-0000-4000-8000-000000000202'),'revoked','revoked access records status');
 select is((select count(*)::integer from public.digital_product_events where event_type in ('access_granted','access_revoked')),2,'grant and revocation are audited');
 
 reset role;
