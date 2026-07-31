@@ -33,7 +33,6 @@ export const useCourseImageUpload = () => {
         p_mime_type: file.type.toLowerCase(),
         p_size_bytes: file.size,
         p_idempotency_key: `course-image:${crypto.randomUUID()}`,
-        p_lesson_id: null,
       });
       if (prepareError) throw prepareError;
       prepared = parseDataContract(assetRowSchema, prepareData, "intent da imagem do curso");

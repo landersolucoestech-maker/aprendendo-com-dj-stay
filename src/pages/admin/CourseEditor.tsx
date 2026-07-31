@@ -25,7 +25,7 @@ import { getErrorMessage } from "@/lib/error-message";
 
 const fieldClass = "border-white/15 bg-black/30 text-white";
 
-const ErrorText = ({ message }: { readonly message?: string }) => message ? <p className="mt-1 text-xs text-red-300">{message}</p> : null;
+const ErrorText = ({ message }: { readonly message?: string | undefined }) => message ? <p className="mt-1 text-xs text-red-300">{message}</p> : null;
 
 const CourseEditor = () => {
   const { courseId } = useParams<{ courseId: string }>();

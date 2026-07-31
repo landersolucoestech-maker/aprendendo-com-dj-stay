@@ -63,7 +63,6 @@ export const useAvatarUpload = () => {
           p_mime_type: file.type.toLowerCase(),
           p_size_bytes: file.size,
           p_idempotency_key: idempotencyKey,
-          p_lesson_id: null,
         },
       );
 
