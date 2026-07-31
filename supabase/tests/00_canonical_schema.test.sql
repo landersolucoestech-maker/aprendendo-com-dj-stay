@@ -25,7 +25,7 @@ select has_check('public', 'assets', 'assets have lifecycle and file validation 
 
 select is((select prosecdef from pg_proc where oid='public.set_updated_at()'::regprocedure), false, 'updated_at function is invoker security');
 select is((select proconfig from pg_proc where oid='public.set_updated_at()'::regprocedure), array['search_path=pg_catalog']::text[], 'updated_at function fixes search_path');
-select is((select count(*)::integer from pg_trigger where not tgisinternal and tgfoid='public.set_updated_at()'::regprocedure), 19, 'updated_at trigger is attached to nineteen mutable tables');
+select is((select count(*)::integer from pg_trigger where not tgisinternal and tgfoid='public.set_updated_at()'::regprocedure), 20, 'updated_at trigger is attached to twenty mutable tables');
 
 select * from finish();
 rollback;
