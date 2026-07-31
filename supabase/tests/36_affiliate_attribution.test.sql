@@ -75,11 +75,14 @@ select lives_ok($$select set_config('test.b20_attr_link_two',(select code from p
 reset role;
 set local role anon;
 select ok((public.record_affiliate_click(current_setting('test.b20_attr_link_one'),'b2060000-0000-4000-8000-000000000201','/marketplace','https://source-one.test','Browser One')->>'accepted')::boolean,'first anonymous click is accepted');
+reset role;
 select is((select count(*)::integer from public.affiliate_clicks),1,'first click is persisted once');
 select is((select char_length(visitor_token_hash) from public.affiliate_clicks limit 1),64,'visitor token is stored only as SHA-256');
 select is((select char_length(user_agent_hash) from public.affiliate_clicks limit 1),64,'user agent is stored only as SHA-256');
 select isnt((select visitor_token_hash from public.affiliate_clicks limit 1),'b2060000-0000-4000-8000-000000000201','raw visitor token is not stored');
+set local role anon;
 select ok((public.record_affiliate_click(current_setting('test.b20_attr_link_two'),'b2060000-0000-4000-8000-000000000201','/marketplace','https://source-two.test','Browser Two')->>'accepted')::boolean,'second anonymous click is accepted');
+reset role;
 select is((select count(*)::integer from public.affiliate_attributions),2,'last-click preserves both attribution records');
 select is((select status::text from public.affiliate_attributions where affiliate_user_id='b2000000-0000-4000-8000-000000000202'),'invalidated','older attribution is invalidated');
 select is((select status::text from public.affiliate_attributions where affiliate_user_id='b2000000-0000-4000-8000-000000000203'),'active','most recent attribution remains active');
