@@ -941,6 +941,358 @@ export type Database = {
           },
         ]
       }
+      digital_product_accesses: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          granted_at: string
+          granted_by_user_id: string | null
+          id: string
+          license_id: string
+          license_snapshot: Json
+          product_id: string
+          revocation_reason: string | null
+          revoked_at: string | null
+          source: Database["public"]["Enums"]["digital_product_access_source"]
+          source_reference: string | null
+          status: Database["public"]["Enums"]["digital_product_access_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by_user_id?: string | null
+          id?: string
+          license_id: string
+          license_snapshot: Json
+          product_id: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          source: Database["public"]["Enums"]["digital_product_access_source"]
+          source_reference?: string | null
+          status?: Database["public"]["Enums"]["digital_product_access_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by_user_id?: string | null
+          id?: string
+          license_id?: string
+          license_snapshot?: Json
+          product_id?: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          source?: Database["public"]["Enums"]["digital_product_access_source"]
+          source_reference?: string | null
+          status?: Database["public"]["Enums"]["digital_product_access_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_product_accesses_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "digital_product_licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_product_accesses_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "digital_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_product_deliverables: {
+        Row: {
+          asset_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          position: number
+          product_id: string
+          required: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          position?: number
+          product_id: string
+          required?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          position?: number
+          product_id?: string
+          required?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_product_deliverables_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_product_deliverables_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "digital_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_product_events: {
+        Row: {
+          access_id: string | null
+          actor_user_id: string | null
+          created_at: string
+          deliverable_id: string | null
+          details: Json
+          event_type: Database["public"]["Enums"]["digital_product_event_type"]
+          id: string
+          license_id: string | null
+          product_id: string
+          version: number | null
+        }
+        Insert: {
+          access_id?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          deliverable_id?: string | null
+          details?: Json
+          event_type: Database["public"]["Enums"]["digital_product_event_type"]
+          id?: string
+          license_id?: string | null
+          product_id: string
+          version?: number | null
+        }
+        Update: {
+          access_id?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          deliverable_id?: string | null
+          details?: Json
+          event_type?: Database["public"]["Enums"]["digital_product_event_type"]
+          id?: string
+          license_id?: string | null
+          product_id?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_product_events_access_id_fkey"
+            columns: ["access_id"]
+            isOneToOne: false
+            referencedRelation: "digital_product_accesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_product_events_deliverable_id_fkey"
+            columns: ["deliverable_id"]
+            isOneToOne: false
+            referencedRelation: "digital_product_deliverables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_product_events_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "digital_product_licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_product_events_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "digital_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_product_licenses: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          is_default: boolean
+          kind: Database["public"]["Enums"]["digital_license_kind"]
+          product_id: string
+          published_at: string | null
+          status: Database["public"]["Enums"]["digital_license_status"]
+          summary: string | null
+          terms_text: string
+          title: string
+          version: number
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          is_default?: boolean
+          kind: Database["public"]["Enums"]["digital_license_kind"]
+          product_id: string
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["digital_license_status"]
+          summary?: string | null
+          terms_text: string
+          title: string
+          version: number
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          is_default?: boolean
+          kind?: Database["public"]["Enums"]["digital_license_kind"]
+          product_id?: string
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["digital_license_status"]
+          summary?: string | null
+          terms_text?: string
+          title?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_product_licenses_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "digital_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_products: {
+        Row: {
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["digital_product_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        Insert: {
+          affiliate_eligible?: boolean
+          archived_at?: string | null
+          availability_ends_at?: string | null
+          availability_starts_at?: string | null
+          category?: string | null
+          cover_asset_id?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          currency_code?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          price_amount?: number
+          promotion_ends_at?: string | null
+          promotion_starts_at?: string | null
+          promotional_price_amount?: number | null
+          published_at?: string | null
+          short_description?: string | null
+          slug: string
+          status?: Database["public"]["Enums"]["digital_product_status"]
+          thumbnail_asset_id?: string | null
+          title: string
+          unpublished_at?: string | null
+          updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
+        }
+        Update: {
+          affiliate_eligible?: boolean
+          archived_at?: string | null
+          availability_ends_at?: string | null
+          availability_starts_at?: string | null
+          category?: string | null
+          cover_asset_id?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          currency_code?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          price_amount?: number
+          promotion_ends_at?: string | null
+          promotion_starts_at?: string | null
+          promotional_price_amount?: number | null
+          published_at?: string | null
+          short_description?: string | null
+          slug?: string
+          status?: Database["public"]["Enums"]["digital_product_status"]
+          thumbnail_asset_id?: string | null
+          title?: string
+          unpublished_at?: string | null
+          updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_products_cover_asset_id_fkey"
+            columns: ["cover_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_products_thumbnail_asset_id_fkey"
+            columns: ["thumbnail_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrollment_events: {
         Row: {
           actor_user_id: string | null
@@ -1700,6 +2052,43 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      archive_digital_product: {
+        Args: { p_expected_version: number; p_product_id: string }
+        Returns: {
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["digital_product_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "digital_products"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       archive_lesson: {
         Args: { p_expected_version: number; p_lesson_id: string }
         Returns: {
@@ -1799,6 +2188,28 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "modulos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      attach_digital_product_deliverable: {
+        Args: { p_asset_id: string; p_payload: Json; p_product_id: string }
+        Returns: {
+          asset_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          position: number
+          product_id: string
+          required: boolean
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "digital_product_deliverables"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1990,6 +2401,67 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_digital_product: {
+        Args: { p_payload: Json }
+        Returns: {
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["digital_product_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "digital_products"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_digital_product_license: {
+        Args: { p_payload: Json; p_product_id: string }
+        Returns: {
+          archived_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          is_default: boolean
+          kind: Database["public"]["Enums"]["digital_license_kind"]
+          product_id: string
+          published_at: string | null
+          status: Database["public"]["Enums"]["digital_license_status"]
+          summary: string | null
+          terms_text: string
+          title: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "digital_product_licenses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_lesson: {
         Args: { p_module_id: string; p_payload: Json }
         Returns: {
@@ -2116,6 +2588,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      delete_digital_product: {
+        Args: { p_expected_version: number; p_product_id: string }
+        Returns: boolean
       }
       delete_lesson: {
         Args: { p_expected_version: number; p_lesson_id: string }
@@ -2338,6 +2814,40 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      grant_digital_product_access: {
+        Args: {
+          p_expires_at?: string
+          p_license_id: string
+          p_product_id: string
+          p_reason?: string
+          p_source: Database["public"]["Enums"]["digital_product_access_source"]
+          p_source_reference?: string
+          p_user_id: string
+        }
+        Returns: {
+          created_at: string
+          expires_at: string | null
+          granted_at: string
+          granted_by_user_id: string | null
+          id: string
+          license_id: string
+          license_snapshot: Json
+          product_id: string
+          revocation_reason: string | null
+          revoked_at: string | null
+          source: Database["public"]["Enums"]["digital_product_access_source"]
+          source_reference: string | null
+          status: Database["public"]["Enums"]["digital_product_access_status"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "digital_product_accesses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       move_lesson: {
         Args: {
           p_expected_lesson_version: number
@@ -2511,6 +3021,71 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      publish_digital_product: {
+        Args: { p_expected_version: number; p_product_id: string }
+        Returns: {
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["digital_product_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "digital_products"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      publish_digital_product_license: {
+        Args: { p_license_id: string }
+        Returns: {
+          archived_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          is_default: boolean
+          kind: Database["public"]["Enums"]["digital_license_kind"]
+          product_id: string
+          published_at: string | null
+          status: Database["public"]["Enums"]["digital_license_status"]
+          summary: string | null
+          terms_text: string
+          title: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "digital_product_licenses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      remove_digital_product_deliverable: {
+        Args: { p_deliverable_id: string; p_expected_product_version: number }
+        Returns: boolean
+      }
       renew_course_enrollment: {
         Args: { p_enrollment_id: string; p_expires_at: string }
         Returns: {
@@ -2573,6 +3148,47 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "assessments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      reorder_digital_product_deliverables: {
+        Args: {
+          p_expected_product_version: number
+          p_items: Json
+          p_product_id: string
+        }
+        Returns: {
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["digital_product_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "digital_products"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2717,6 +3333,32 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "enrollments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      revoke_digital_product_access: {
+        Args: { p_access_id: string; p_reason: string }
+        Returns: {
+          created_at: string
+          expires_at: string | null
+          granted_at: string
+          granted_by_user_id: string | null
+          id: string
+          license_id: string
+          license_snapshot: Json
+          product_id: string
+          revocation_reason: string | null
+          revoked_at: string | null
+          source: Database["public"]["Enums"]["digital_product_access_source"]
+          source_reference: string | null
+          status: Database["public"]["Enums"]["digital_product_access_status"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "digital_product_accesses"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -3066,6 +3708,43 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      unpublish_digital_product: {
+        Args: { p_expected_version: number; p_product_id: string }
+        Returns: {
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["digital_product_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "digital_products"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_assessment: {
         Args: {
           p_assessment_id: string
@@ -3185,6 +3864,73 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "courses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_digital_product: {
+        Args: {
+          p_expected_version: number
+          p_patch: Json
+          p_product_id: string
+        }
+        Returns: {
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["digital_product_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "digital_products"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_digital_product_deliverable: {
+        Args: {
+          p_deliverable_id: string
+          p_expected_product_version: number
+          p_patch: Json
+        }
+        Returns: {
+          asset_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          position: number
+          product_id: string
+          required: boolean
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "digital_product_deliverables"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -3407,6 +4153,29 @@ export type Database = {
         | "scheduled"
         | "drip"
         | "after_prerequisites"
+      digital_license_kind: "personal" | "commercial" | "extended" | "custom"
+      digital_license_status: "draft" | "published" | "archived"
+      digital_product_access_source:
+        | "manual_grant"
+        | "complimentary"
+        | "purchase"
+      digital_product_access_status: "active" | "revoked"
+      digital_product_event_type:
+        | "created"
+        | "updated"
+        | "published"
+        | "unpublished"
+        | "archived"
+        | "deleted"
+        | "deliverable_attached"
+        | "deliverable_updated"
+        | "deliverable_removed"
+        | "license_created"
+        | "license_published"
+        | "license_archived"
+        | "access_granted"
+        | "access_revoked"
+      digital_product_status: "draft" | "published" | "archived"
       enrollment_event_type:
         | "created"
         | "payment_confirmed"
@@ -3659,6 +4428,31 @@ export const Constants = {
         "drip",
         "after_prerequisites",
       ],
+      digital_license_kind: ["personal", "commercial", "extended", "custom"],
+      digital_license_status: ["draft", "published", "archived"],
+      digital_product_access_source: [
+        "manual_grant",
+        "complimentary",
+        "purchase",
+      ],
+      digital_product_access_status: ["active", "revoked"],
+      digital_product_event_type: [
+        "created",
+        "updated",
+        "published",
+        "unpublished",
+        "archived",
+        "deleted",
+        "deliverable_attached",
+        "deliverable_updated",
+        "deliverable_removed",
+        "license_created",
+        "license_published",
+        "license_archived",
+        "access_granted",
+        "access_revoked",
+      ],
+      digital_product_status: ["draft", "published", "archived"],
       enrollment_event_type: [
         "created",
         "payment_confirmed",
