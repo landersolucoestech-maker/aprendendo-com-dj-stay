@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { DigitalProduct } from "@/contracts/marketplace";
 import { useMarketplaceProductLicenses, useMarketplaceProducts } from "@/hooks/useDigitalMarketplace";
 import { getErrorMessage } from "@/lib/error-message";
 
@@ -19,7 +20,7 @@ const licenseKindLabel: Readonly<Record<string, string>> = {
   custom: "Personalizada",
 };
 
-const ProductCard = ({ product }: { product: NonNullable<ReturnType<typeof useMarketplaceProducts>["data"]>[number] }) => {
+const ProductCard = ({ product }: { product: DigitalProduct }) => {
   const licensesQuery = useMarketplaceProductLicenses(product.id);
   const activePrice = product.promotional_price_amount ?? product.price_amount;
 
@@ -117,7 +118,7 @@ const DigitalMarketplace = () => {
                 Voltar ao portal
               </Button>
             </Link>
-            <Link to="/aluno/produtos">
+            <Link to="/meus-produtos">
               <Button className="btn-brand">Meus produtos</Button>
             </Link>
           </div>
