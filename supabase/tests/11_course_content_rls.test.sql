@@ -39,16 +39,16 @@ select is((select count(*)::integer from public.modulos),1,'active student reads
 select is((select count(*)::integer from public.aulas),1,'active student reads lesson');
 select is((select count(*)::integer from public.assets),1,'active student reads granted lesson asset');
 select lives_ok(
-  $$insert into public.progresso_aulas(user_id,aula_id,progresso_percentual) values ('18000000-0000-4000-8000-000000000002','48000000-0000-4000-8000-000000000001',10)$$,
-  'active student inserts own progress'
+  $$select public.save_lesson_progress_event('48000000-0000-4000-8000-000000000001','69000000-0000-4000-8000-000000000001','79000000-0000-4000-8000-000000000001',1,'heartbeat',10,100,statement_timestamp())$$,
+  'active student inserts own progress through RPC'
 );
 select lives_ok(
-  $$update public.progresso_aulas set progresso_percentual=75 where user_id='18000000-0000-4000-8000-000000000002'$$,
-  'active student updates own progress'
+  $$select public.save_lesson_progress_event('48000000-0000-4000-8000-000000000001','69000000-0000-4000-8000-000000000002','79000000-0000-4000-8000-000000000001',2,'heartbeat',75,100,statement_timestamp())$$,
+  'active student updates own progress through RPC'
 );
-select is_empty(
-  $$update public.progresso_aulas set progresso_percentual=99 where user_id='18000000-0000-4000-8000-000000000003' returning id$$,
-  'active student cannot update another student progress'
+select throws_ok(
+  $$update public.progresso_aulas set progresso_percentual=99 where user_id='18000000-0000-4000-8000-000000000003'$$,
+  '42501',null,'active student cannot update progress aggregates directly'
 );
 reset role;
 
@@ -58,7 +58,7 @@ select is((select count(*)::integer from public.modulos),0,'expired student cann
 select is((select count(*)::integer from public.aulas),0,'expired student cannot read lessons');
 select is((select count(*)::integer from public.assets),0,'expired student cannot read assets');
 select throws_ok(
-  $$insert into public.progresso_aulas(user_id,aula_id) values ('18000000-0000-4000-8000-000000000003','48000000-0000-4000-8000-000000000001')$$,
+  $$select public.save_lesson_progress_event('48000000-0000-4000-8000-000000000001','69000000-0000-4000-8000-000000000003','79000000-0000-4000-8000-000000000003',1,'heartbeat',10,100,statement_timestamp())$$,
   '42501',null,'expired student cannot create progress'
 );
 reset role;
