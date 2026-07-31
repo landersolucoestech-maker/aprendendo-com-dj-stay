@@ -11,8 +11,8 @@ select ok((select array_agg(enumlabel::text order by enumsortorder) from pg_enum
 select ok((select array_agg(enumlabel::text order by enumsortorder) from pg_enum where enumtypid='public.course_completion_mode'::regtype)=array['all_required_lessons','percentage','manual']::text[],'completion modes are closed');
 select has_table('public','course_editor_events','course editor audit table exists');
 select ok((select relrowsecurity and relforcerowsecurity from pg_class where oid='public.course_editor_events'::regclass),'course editor events has forced RLS');
-select col_type_is('public','courses','price_amount','numeric','price uses numeric');
-select col_type_is('public','courses','promotional_price_amount','numeric','promotional price uses numeric');
+select col_type_is('public','courses','price_amount','numeric(12,2)','price uses numeric');
+select col_type_is('public','courses','promotional_price_amount','numeric(12,2)','promotional price uses numeric');
 select col_not_null('public','courses','language_code','language is required');
 select col_not_null('public','courses','level','level is required');
 select col_not_null('public','courses','objectives','objectives array is required');
