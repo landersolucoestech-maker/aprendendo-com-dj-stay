@@ -43,9 +43,7 @@ const resolvePlayback = async (
     body: { token, fingerprint },
   });
 
-  if (error) {
-    throw error;
-  }
+  if (error) throw error;
 
   const resolved = parseDataContract(
     playbackGatewayResponseSchema,
@@ -74,9 +72,7 @@ const issuePlayback = async (lessonId: string): Promise<LessonPlaybackSession> =
     p_fingerprint_hash: fingerprint,
   });
 
-  if (error) {
-    throw error;
-  }
+  if (error) throw error;
 
   const [issued] = parseDataContract(
     playbackTokenResponseSchema,
@@ -112,28 +108,23 @@ const issuePlayback = async (lessonId: string): Promise<LessonPlaybackSession> =
 
 const revokePlayback = async (token: string): Promise<void> => {
   const { error } = await supabase.rpc("revoke_lesson_playback_token", { p_token: token });
-  if (error) {
-    console.warn("Não foi possível revogar o token de reprodução.");
-  }
+  if (error) console.warn("Não foi possível revogar o token de reprodução.");
 };
 
-export const useLessonPlayback = (lessonId: string) => {
+export const useLessonPlayback = (lessonId: string, enabled = true) => {
   const query = useQuery({
     queryKey: ["lesson-playback", lessonId],
     queryFn: () => issuePlayback(lessonId),
-    enabled: lessonId.length > 0,
+    enabled: enabled && lessonId.length > 0,
     staleTime: 3 * 60 * 1000,
-    refetchInterval: 4 * 60 * 1000,
+    refetchInterval: enabled ? 4 * 60 * 1000 : false,
     refetchIntervalInBackground: false,
     retry: false,
   });
 
   const token = query.data?.token;
   useEffect(() => {
-    if (!token) {
-      return;
-    }
-
+    if (!token) return;
     return () => {
       void revokePlayback(token);
     };
