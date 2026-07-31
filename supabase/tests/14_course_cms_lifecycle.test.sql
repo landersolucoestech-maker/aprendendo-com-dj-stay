@@ -54,7 +54,10 @@ select is(current_setting('test.archived_status'),'archived','course can be arch
 select ok((select archived_at is not null and version=5 from public.courses where id=current_setting('test.course_id')::uuid),'archive is timestamped');
 select set_config('test.copy_deleted',(select (deleted_at is not null)::text from public.delete_course(current_setting('test.copy_id')::uuid,1)),false);
 select is(current_setting('test.copy_deleted')::boolean,true,'empty duplicate is soft deleted');
+reset role;
 select ok((select slug like 'curso-cms-copia-deleted-%' from public.courses where id=current_setting('test.copy_id')::uuid),'soft deletion releases original slug');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"1a000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"7a000000-0000-4000-8000-000000000001","is_anonymous":false}',true);
 insert into public.modulos(course_id,titulo,ordem) values(current_setting('test.course_id')::uuid,'Módulo dependente',1);
 select throws_ok($$select public.delete_course(current_setting('test.course_id')::uuid,5)$$,'23503',null,'course with modules requires archive instead of deletion');
 select is((select count(*)::integer from public.course_editor_events where course_id=current_setting('test.course_id')::uuid),5,'main course lifecycle is fully audited');
