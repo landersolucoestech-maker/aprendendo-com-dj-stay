@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "check:environment": "node scripts/check-environment-contract.mjs",
-    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && npm run check:course-access && npm run check:course-cms && npm run check:curriculum-cms && npm run check:student-portal && tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && npm run check:course-access && npm run check:course-cms && npm run check:curriculum-cms && npm run check:student-portal && npm run check:player-progress && tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "check": "npm run lint && npm run typecheck && npm run build",
     "preview": "vite preview",
     "check:auth": "node scripts/check-auth-contract.mjs",
@@ -19,7 +19,8 @@
     "check:course-access": "node scripts/check-course-access-contract.mjs",
     "check:course-cms": "node scripts/check-course-cms-contract.mjs",
     "check:curriculum-cms": "node scripts/check-curriculum-cms-contract.mjs",
-    "check:student-portal": "node scripts/check-student-portal-contract.mjs"
+    "check:student-portal": "node scripts/check-student-portal-contract.mjs",
+    "check:player-progress": "node scripts/check-player-progress-contract.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
