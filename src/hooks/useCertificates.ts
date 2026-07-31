@@ -85,7 +85,7 @@ export const useGrantCourseEnrollment = () => {
         p_user_id: input.userId,
         p_course_id: input.courseId,
         p_starts_at: input.startsAt,
-        p_expires_at: input.expiresAt,
+        ...(input.expiresAt === null ? {} : { p_expires_at: input.expiresAt }),
         p_reason: input.reason,
       });
       if (error) throw error;
