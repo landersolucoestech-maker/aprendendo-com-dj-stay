@@ -8,6 +8,7 @@ import {
 } from "@/contracts/checkout";
 import { parseDataContract } from "@/contracts/contract-error";
 import { supabase } from "@/integrations/supabase/client";
+import { getStoredAffiliateVisitorToken } from "@/lib/affiliate-attribution";
 
 const checkoutStorageKey = (
   subjectType: HostedCheckoutInput["subjectType"],
@@ -47,7 +48,10 @@ export const useHostedCheckout = () =>
       );
 
       const { data, error } = await supabase.functions.invoke("create-asaas-checkout", {
-        body: value,
+        body: {
+          ...value,
+          affiliateVisitorToken: getStoredAffiliateVisitorToken(),
+        },
       });
 
       if (error) throw error;
