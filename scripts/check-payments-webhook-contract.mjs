@@ -183,3 +183,4 @@ if (failures.length) {
 }
 
 console.log("Contrato estático da FASE B18 aprovado.");
+await import("./check-payment-fulfillment-contract.mjs");
