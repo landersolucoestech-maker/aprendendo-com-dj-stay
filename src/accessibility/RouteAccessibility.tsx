@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import { useLocation } from "react-router-dom";
 
 type RouteAccessibilityProps = {
@@ -13,7 +20,7 @@ export const RouteAccessibility = ({ children }: RouteAccessibilityProps) => {
   const previousPathRef = useRef(location.pathname);
   const [announcement, setAnnouncement] = useState("");
 
-  const preparePrimaryContent = (): HTMLElement | null => {
+  const preparePrimaryContent = useCallback((): HTMLElement | null => {
     const boundary = boundaryRef.current;
     if (!boundary) return null;
 
@@ -29,6 +36,16 @@ export const RouteAccessibility = ({ children }: RouteAccessibilityProps) => {
       }
     }
 
+    if (semanticMain) {
+      if (boundary.dataset.routeMainFallback === "true") {
+        boundary.removeAttribute("role");
+        delete boundary.dataset.routeMainFallback;
+      }
+    } else {
+      boundary.setAttribute("role", "main");
+      boundary.dataset.routeMainFallback = "true";
+    }
+
     target.id = focusTargetId;
     if (!target.hasAttribute("tabindex")) {
       target.tabIndex = -1;
@@ -36,7 +53,7 @@ export const RouteAccessibility = ({ children }: RouteAccessibilityProps) => {
     }
 
     return target;
-  };
+  }, []);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -51,9 +68,9 @@ export const RouteAccessibility = ({ children }: RouteAccessibilityProps) => {
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [location.pathname]);
+  }, [location.pathname, preparePrimaryContent]);
 
-  const handleSkipToContent = (event: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleSkipToContent = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     const target = preparePrimaryContent();
     if (!target) return;
