@@ -6,6 +6,10 @@ insert into auth.users(id,email) values
  ('b1800000-0000-4000-8000-000000000101','b18-admin@example.test'),
  ('b1800000-0000-4000-8000-000000000102','b18-student@example.test');
 update public.user_roles set role='administrador_proprietario' where user_id='b1800000-0000-4000-8000-000000000101';
+insert into public.assets(id,owner_user_id,created_by_user_id,purpose,state,original_name,normalized_name,extension,mime_type,size_bytes,idempotency_key,uploaded_at,published_at)
+values
+ ('b1870000-0000-4000-8000-000000000101','b1800000-0000-4000-8000-000000000101','b1800000-0000-4000-8000-000000000101','image','published','b18-cover.webp','b18-cover.webp','webp','image/webp',2000,'b18:checkout:cover',statement_timestamp(),statement_timestamp()),
+ ('b1870000-0000-4000-8000-000000000102','b1800000-0000-4000-8000-000000000101','b1800000-0000-4000-8000-000000000101','image','published','b18-thumbnail.webp','b18-thumbnail.webp','webp','image/webp',1000,'b18:checkout:thumbnail',statement_timestamp(),statement_timestamp());
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"b1800000-0000-4000-8000-000000000101","role":"authenticated","session_id":"b1840000-0000-4000-8000-000000000101","is_anonymous":false}',true);
@@ -13,7 +17,8 @@ select set_config('test.b18_course_id',(select id::text from public.create_cours
  'title','Curso Checkout B18','slug','curso-checkout-b18','short_description','Curso para validar cotação e checkout.',
  'description','Curso publicado usado pelo teste transacional da fase B18.','category','Produção musical',
  'language_code','pt-BR','level','beginner','objectives',jsonb_build_array('Concluir um checkout seguro'),
- 'prerequisites',jsonb_build_array('Conta autenticada'),'price_amount',199.90,'promotional_price_amount',149.90,
+ 'prerequisites',jsonb_build_array('Conta autenticada'),'cover_asset_id','b1870000-0000-4000-8000-000000000101',
+ 'thumbnail_asset_id','b1870000-0000-4000-8000-000000000102','price_amount',199.90,'promotional_price_amount',149.90,
  'currency_code','BRL','completion_mode','percentage','completion_required_percent',80,
  'certificate_enabled',false,'release_mode','immediate','affiliate_eligible',false,'preview_enabled',false
 ))),false);
