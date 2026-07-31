@@ -1,0 +1,35 @@
+revoke all on function private.assert_course_admin() from public,anon,authenticated;
+revoke all on function private.assert_course_payload_keys(jsonb,text[]) from public,anon,authenticated;
+revoke all on function private.create_course(jsonb) from public,anon,authenticated;
+revoke all on function private.update_course(uuid,integer,jsonb) from public,anon,authenticated;
+revoke all on function private.duplicate_course(uuid,text,text) from public,anon,authenticated;
+revoke all on function private.transition_course_status(uuid,integer,public.course_status) from public,anon,authenticated;
+revoke all on function private.delete_course(uuid,integer) from public,anon,authenticated;
+grant execute on function private.create_course(jsonb) to authenticated;
+grant execute on function private.update_course(uuid,integer,jsonb) to authenticated;
+grant execute on function private.duplicate_course(uuid,text,text) to authenticated;
+grant execute on function private.transition_course_status(uuid,integer,public.course_status) to authenticated;
+grant execute on function private.delete_course(uuid,integer) to authenticated;
+
+create function public.create_course(p_payload jsonb) returns public.courses language sql security invoker set search_path='' as $$select private.create_course(p_payload)$$;
+create function public.update_course(p_course_id uuid,p_expected_version integer,p_patch jsonb) returns public.courses language sql security invoker set search_path='' as $$select private.update_course(p_course_id,p_expected_version,p_patch)$$;
+create function public.duplicate_course(p_course_id uuid,p_title text,p_slug text) returns public.courses language sql security invoker set search_path='' as $$select private.duplicate_course(p_course_id,p_title,p_slug)$$;
+create function public.publish_course(p_course_id uuid,p_expected_version integer) returns public.courses language sql security invoker set search_path='' as $$select private.transition_course_status(p_course_id,p_expected_version,'published')$$;
+create function public.unpublish_course(p_course_id uuid,p_expected_version integer) returns public.courses language sql security invoker set search_path='' as $$select private.transition_course_status(p_course_id,p_expected_version,'draft')$$;
+create function public.archive_course(p_course_id uuid,p_expected_version integer) returns public.courses language sql security invoker set search_path='' as $$select private.transition_course_status(p_course_id,p_expected_version,'archived')$$;
+create function public.delete_course(p_course_id uuid,p_expected_version integer) returns public.courses language sql security invoker set search_path='' as $$select private.delete_course(p_course_id,p_expected_version)$$;
+
+revoke all on function public.create_course(jsonb) from public,anon;
+revoke all on function public.update_course(uuid,integer,jsonb) from public,anon;
+revoke all on function public.duplicate_course(uuid,text,text) from public,anon;
+revoke all on function public.publish_course(uuid,integer) from public,anon;
+revoke all on function public.unpublish_course(uuid,integer) from public,anon;
+revoke all on function public.archive_course(uuid,integer) from public,anon;
+revoke all on function public.delete_course(uuid,integer) from public,anon;
+grant execute on function public.create_course(jsonb) to authenticated;
+grant execute on function public.update_course(uuid,integer,jsonb) to authenticated;
+grant execute on function public.duplicate_course(uuid,text,text) to authenticated;
+grant execute on function public.publish_course(uuid,integer) to authenticated;
+grant execute on function public.unpublish_course(uuid,integer) to authenticated;
+grant execute on function public.archive_course(uuid,integer) to authenticated;
+grant execute on function public.delete_course(uuid,integer) to authenticated;

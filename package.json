@@ -9,14 +9,15 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "check:environment": "node scripts/check-environment-contract.mjs",
-    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && npm run check:course-access && tsc --noEmit",
+    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && npm run check:course-access && npm run check:course-cms && tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run build",
     "preview": "vite preview",
     "check:auth": "node scripts/check-auth-contract.mjs",
     "check:contracts": "node scripts/check-data-contracts.mjs",
     "check:authorization": "node scripts/check-authorization-contract.mjs",
     "check:storage": "node scripts/check-storage-contract.mjs",
-    "check:course-access": "node scripts/check-course-access-contract.mjs"
+    "check:course-access": "node scripts/check-course-access-contract.mjs",
+    "check:course-cms": "node scripts/check-course-cms-contract.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -54,7 +55,7 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
-    "input-otp": "^1.2.4",
+    "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",

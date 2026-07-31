@@ -1,0 +1,38 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(31);
+
+select has_type('public','course_level','course level enum exists');
+select has_type('public','course_release_mode','course release mode enum exists');
+select has_type('public','course_completion_mode','course completion mode enum exists');
+select has_type('public','course_editor_event_type','course editor event enum exists');
+select ok((select array_agg(enumlabel::text order by enumsortorder) from pg_enum where enumtypid='public.course_level'::regtype)=array['beginner','intermediate','advanced','all_levels']::text[],'course levels are closed');
+select ok((select array_agg(enumlabel::text order by enumsortorder) from pg_enum where enumtypid='public.course_release_mode'::regtype)=array['immediate','scheduled','drip']::text[],'release modes are closed');
+select ok((select array_agg(enumlabel::text order by enumsortorder) from pg_enum where enumtypid='public.course_completion_mode'::regtype)=array['all_required_lessons','percentage','manual']::text[],'completion modes are closed');
+select has_table('public','course_editor_events','course editor audit table exists');
+select ok((select relrowsecurity and relforcerowsecurity from pg_class where oid='public.course_editor_events'::regclass),'course editor events has forced RLS');
+select col_type_is('public','courses','price_amount','numeric','price uses numeric');
+select col_type_is('public','courses','promotional_price_amount','numeric','promotional price uses numeric');
+select col_not_null('public','courses','language_code','language is required');
+select col_not_null('public','courses','level','level is required');
+select col_not_null('public','courses','objectives','objectives array is required');
+select col_not_null('public','courses','prerequisites','prerequisites array is required');
+select col_not_null('public','courses','version','optimistic version is required');
+select has_fk('public','courses','course images and duplicate source use foreign keys');
+select has_index('public','courses','courses_status_updated_idx','course list has status index');
+select has_index('public','course_editor_events','course_editor_events_course_created_idx','course history has timeline index');
+select is((select count(*)::integer from pg_trigger where not tgisinternal and tgname='courses_set_lifecycle_timestamps'),1,'course lifecycle timestamp trigger exists once');
+select ok(not has_table_privilege('authenticated','public.courses','INSERT') and not has_table_privilege('authenticated','public.courses','UPDATE') and not has_table_privilege('authenticated','public.courses','DELETE'),'authenticated cannot mutate course table directly');
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and not p.prosecdef and p.proname in ('create_course','update_course','duplicate_course','publish_course','unpublish_course','archive_course','delete_course')),7,'CMS exposes seven invoker wrappers');
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prosecdef),0,'no public security definer exists');
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and p.prosecdef and p.proconfig is distinct from array['search_path=""']::text[]),0,'all private security definers fix empty search path');
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('create_course','update_course','duplicate_course','publish_course','unpublish_course','archive_course','delete_course') and has_function_privilege('anon',p.oid,'EXECUTE')),0,'anon cannot invoke CMS wrappers');
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('create_course','update_course','duplicate_course','publish_course','unpublish_course','archive_course','delete_course') and has_function_privilege('authenticated',p.oid,'EXECUTE')),7,'authenticated may reach wrappers and backend role validation');
+select is((select count(*)::integer from pg_policies where schemaname='public' and tablename='course_editor_events'),1,'audit table has one admin read policy');
+select is((select count(*)::integer from (select tablename,roles,cmd from pg_policies where schemaname='public' and permissive='PERMISSIVE' group by tablename,roles,cmd having count(*)>1) x),0,'CMS introduces no overlapping permissive policies');
+select ok(not exists(select 1 from information_schema.role_table_grants where grantee='anon' and table_schema='public' and table_name='course_editor_events'),'anon has no course audit privileges');
+select is((select proconfig from pg_proc where oid='private.assert_course_publishable(uuid)'::regprocedure),array['search_path=""']::text[],'publish validator fixes search path');
+select is((select prosecdef from pg_proc where oid='private.create_course(jsonb)'::regprocedure),true,'course creation implementation is privileged and private');
+
+select * from finish();
+rollback;

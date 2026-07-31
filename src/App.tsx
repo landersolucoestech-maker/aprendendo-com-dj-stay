@@ -21,6 +21,9 @@ import Register from "@/pages/Register";
 import ResetPassword from "@/pages/ResetPassword";
 import Verified from "@/pages/Verified";
 import VerifyEmail from "@/pages/VerifyEmail";
+import CourseEditor from "@/pages/admin/CourseEditor";
+import CoursePreview from "@/pages/admin/CoursePreview";
+import CoursesAdmin from "@/pages/admin/CoursesAdmin";
 import { PublicOnlyRoute } from "@/routing/PublicOnlyRoute";
 import { RequireAuth } from "@/routing/RequireAuth";
 import { RequireRole } from "@/routing/RequireRole";
@@ -105,6 +108,47 @@ const App = () => (
                 </RequireAuth>
               }
             />
+            <Route
+              path="/admin/cursos"
+              element={
+                <RequireAuth>
+                  <RequireRole allowedRoles={["administrador_proprietario"]}>
+                    <CoursesAdmin />
+                  </RequireRole>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/cursos/novo"
+              element={
+                <RequireAuth>
+                  <RequireRole allowedRoles={["administrador_proprietario"]}>
+                    <CourseEditor />
+                  </RequireRole>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/cursos/:courseId/editar"
+              element={
+                <RequireAuth>
+                  <RequireRole allowedRoles={["administrador_proprietario"]}>
+                    <CourseEditor />
+                  </RequireRole>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/cursos/:courseId/preview"
+              element={
+                <RequireAuth>
+                  <RequireRole allowedRoles={["administrador_proprietario"]}>
+                    <CoursePreview />
+                  </RequireRole>
+                </RequireAuth>
+              }
+            />
+
             <Route
               path="/editar-perfil"
               element={

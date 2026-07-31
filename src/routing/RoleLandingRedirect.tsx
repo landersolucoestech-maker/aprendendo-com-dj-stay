@@ -26,6 +26,10 @@ export function RoleLandingRedirect() {
     );
   }
 
+  if (roleQuery.data.role === "administrador_proprietario") {
+    return <Navigate to="/admin/cursos" replace />;
+  }
+
   if (roleQuery.data.role === "afiliado") {
     return <Navigate to="/editar-perfil" replace />;
   }
