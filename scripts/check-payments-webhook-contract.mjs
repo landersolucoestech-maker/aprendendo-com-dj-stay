@@ -73,12 +73,12 @@ expect(
 );
 expect(
   webhookRpcs.includes("fulfillment_performed', false"),
-  "B18 deve declarar explicitamente que não executa fulfillment.",
+  "B18 deve manter sua fronteira original antes da extensão atômica da B19.",
 );
 expect(
   !webhookRpcs.includes("grant_course_enrollment") &&
     !webhookRpcs.includes("grant_digital_product_access"),
-  "Webhook B18 não pode conceder curso ou produto.",
+  "Migration B18 não pode conceder curso ou produto diretamente.",
 );
 
 expect(
@@ -149,9 +149,9 @@ expect(
 expect(
   tests.includes("duplicate webhook is acknowledged idempotently") &&
     tests.includes("old created event cannot regress received payment") &&
-    tests.includes("payment confirmation does not grant course access in B18") &&
-    tests.includes("payment confirmation does not grant product access in B18"),
-  "Testes B18 devem cobrir idempotência, ordem de eventos e ausência de fulfillment.",
+    tests.includes("snapshot mismatch remains persisted for audit") &&
+    tests.includes("conflicting provider payment is rejected"),
+  "Testes B18 devem cobrir idempotência, reordenação e divergências financeiras.",
 );
 
 const combined = [
