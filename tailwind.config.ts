@@ -37,6 +37,18 @@ export default {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
@@ -56,6 +68,22 @@ export default {
         surface: {
           raised: "hsl(var(--surface-raised))",
           overlay: "hsl(var(--surface-overlay))",
+          subtle: "hsl(var(--surface-subtle))",
+        },
+        context: {
+          DEFAULT: "hsl(var(--context-accent))",
+        },
+        course: {
+          DEFAULT: "hsl(var(--course-accent))",
+        },
+        marketplace: {
+          DEFAULT: "hsl(var(--marketplace-accent))",
+        },
+        affiliate: {
+          DEFAULT: "hsl(var(--affiliate-accent))",
+        },
+        admin: {
+          DEFAULT: "hsl(var(--admin-accent))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -83,6 +111,13 @@ export default {
           "linear-gradient(135deg, hsl(var(--brand-light)) 0%, hsl(var(--brand-medium)) 100%)",
         "gradient-brand-dark":
           "linear-gradient(135deg, hsl(var(--brand-medium)) 0%, hsl(var(--brand-dark)) 100%)",
+        "gradient-context":
+          "linear-gradient(135deg, hsl(var(--context-accent)) 0%, hsl(var(--context-accent) / 0.72) 100%)",
+      },
+      boxShadow: {
+        soft: "var(--shadow-soft)",
+        raised: "var(--shadow-raised)",
+        focus: "var(--shadow-focus)",
       },
       borderRadius: {
         lg: "var(--radius)",
