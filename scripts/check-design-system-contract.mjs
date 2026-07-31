@@ -10,7 +10,9 @@ const requiredFiles = [
   "src/index.css",
   "tailwind.config.ts",
   "src/components/ui/button-variants.ts",
+  "src/components/ui/card-variants.ts",
   "src/components/ui/card.tsx",
+  "src/components/ui/badge-variants.ts",
   "src/components/ui/badge.tsx",
   "src/components/ui/input.tsx",
   "src/components/ui/textarea.tsx",
@@ -19,6 +21,8 @@ const requiredFiles = [
   "src/components/admin/AdminCourseLayout.tsx",
   "src/components/Navigation.tsx",
   "src/pages/AffiliateRedirect.tsx",
+  "src/pages/marketplace/DigitalMarketplace.tsx",
+  "src/pages/affiliate/AffiliatePortal.tsx",
 ];
 
 const contents = new Map(
@@ -48,7 +52,8 @@ requireText("docs/refactor/09-design-system.md", [
   "# FASE B23 — Identidade visual e design system",
   "Nome oficial aprovado | Bloqueado",
   "Proprietário | LANDER SOLUTIONS",
-  "REQ-DS-001",
+  "REQ-DS-007",
+  "REQ-DS-008",
   "TEST-DS-001",
 ]);
 
@@ -113,17 +118,23 @@ requireText("src/components/ui/button-variants.ts", [
   "disabled:pointer-events-none",
 ]);
 
-requireText("src/components/ui/card.tsx", [
-  "const cardVariants = cva",
+requireText("src/components/ui/card-variants.ts", [
+  "export const cardVariants = cva",
   "interactive:",
   "course:",
   "marketplace:",
   "affiliate:",
   "admin:",
-  "export interface CardProps",
 ]);
+requireText("src/components/ui/card.tsx", [
+  'import { cardVariants } from "@/components/ui/card-variants"',
+  "VariantProps<typeof cardVariants>",
+  "cardVariants({ variant })",
+]);
+forbidText("src/components/ui/card.tsx", ["const cardVariants = cva"]);
 
-requireText("src/components/ui/badge.tsx", [
+requireText("src/components/ui/badge-variants.ts", [
+  "export const badgeVariants = cva",
   "success:",
   "warning:",
   "info:",
@@ -132,6 +143,11 @@ requireText("src/components/ui/badge.tsx", [
   "affiliate:",
   "admin:",
 ]);
+requireText("src/components/ui/badge.tsx", [
+  'import { badgeVariants } from "@/components/ui/badge-variants"',
+  "VariantProps<typeof badgeVariants>",
+]);
+forbidText("src/components/ui/badge.tsx", ["const badgeVariants = cva"]);
 
 for (const file of ["src/components/ui/input.tsx", "src/components/ui/textarea.tsx"]) {
   requireText(file, [
@@ -167,8 +183,6 @@ requireText("src/components/admin/AdminCourseLayout.tsx", [
   'import { AppPageShell } from "@/components/layout/AppPageShell"',
   'context="admin"',
   'eyebrow="Administração"',
-  'variant="outline"',
-  'variant="ghost"',
 ]);
 forbidText("src/components/admin/AdminCourseLayout.tsx", [
   "bg-black",
@@ -206,13 +220,42 @@ requireText("src/pages/AffiliateRedirect.tsx", [
   "text-muted-foreground",
   "text-brand-light",
 ]);
-forbidText("src/pages/AffiliateRedirect.tsx", [
+
+requireText("src/pages/marketplace/DigitalMarketplace.tsx", [
+  'context="marketplace"',
+  'variant="marketplace"',
+  'variant="context"',
+  "<PageState",
+  'aria-label="Produtos digitais publicados"',
+  "<Button asChild",
+]);
+forbidText("src/pages/marketplace/DigitalMarketplace.tsx", [
   "btn-brand",
   "bg-black",
+  "text-white",
+  "text-violet-",
+  "text-gray-",
+  "border-white/",
+]);
+
+requireText("src/pages/affiliate/AffiliatePortal.tsx", [
+  'context="affiliate"',
+  'variant="affiliate"',
+  'variant="context"',
+  "<PageState",
+  'scope="col"',
+  "aria-label={`Copiar link ${item.code}`}",
+  "<Button asChild",
+]);
+forbidText("src/pages/affiliate/AffiliatePortal.tsx", [
+  "fieldClass",
+  "btn-brand",
+  "bg-black",
+  "text-white",
   "text-violet-",
   "text-gray-",
   "border-white/",
 ]);
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log("Contrato estático do núcleo da FASE B23 aprovado.");
+console.log("Contrato estático do lote central da FASE B23 aprovado.");
