@@ -57,7 +57,7 @@ select is((select count(*)::integer from public.courses),0,'unpublished course i
 reset role;
 
 set local role anon;
-select is((select count(*)::integer from public.courses),0,'anonymous role cannot read courses');
+select throws_ok($$select count(*) from public.courses$$,'42501',null,'anonymous cannot read courses');
 select ok(not has_function_privilege('anon','public.create_course(jsonb)','EXECUTE'),'anonymous cannot create course');
 select ok(not has_function_privilege('anon','public.publish_course(uuid,integer)','EXECUTE'),'anonymous cannot publish course');
 reset role;
