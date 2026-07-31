@@ -39,6 +39,8 @@ const ExternalLessonMedia = ({
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      if (event.source !== iframeRef.current?.contentWindow) return;
+
       const message = parseExternalPlayerMessage(event, provider);
       if (!message) return;
 
