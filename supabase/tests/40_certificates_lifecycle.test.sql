@@ -22,10 +22,10 @@ values (
 );
 
 insert into auth.users(instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
-select '00000000-0000-0000-0000-000000000000',admin_id,'authenticated','authenticated','admin-b21@example.test','',now(),'{}','{"full_name":"Administrador B21"}',now(),now()
+select '00000000-0000-0000-0000-000000000000'::uuid,admin_id,'authenticated','authenticated','admin-b21@example.test','',now(),'{}'::jsonb,'{"full_name":"Administrador B21"}'::jsonb,now(),now()
 from b21_fixture
 union all
-select '00000000-0000-0000-0000-000000000000',student_id,'authenticated','authenticated','aluno-b21@example.test','',now(),'{}','{"full_name":"Aluno Certificado"}',now(),now()
+select '00000000-0000-0000-0000-000000000000'::uuid,student_id,'authenticated','authenticated','aluno-b21@example.test','',now(),'{}'::jsonb,'{"full_name":"Aluno Certificado"}'::jsonb,now(),now()
 from b21_fixture;
 
 update public.user_roles
