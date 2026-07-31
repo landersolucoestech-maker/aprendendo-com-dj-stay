@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(31);
+select plan(32);
 
 select has_type('public','checkout_subject_type','checkout subject enum exists');
 select has_type('public','checkout_intent_status','checkout intent status enum exists');
@@ -39,6 +39,7 @@ select has_pk('public','payment_attempts','payment attempts have primary key');
 select has_pk('public','payment_provider_events','provider events have primary key');
 
 select has_index('public','checkout_intents','checkout_intents_user_idempotency_uidx','checkout is idempotent per user');
+select has_index('public','payment_orders','payment_orders_license_id_idx','payment order license foreign key is indexed');
 select has_index('public','payment_attempts','payment_attempts_provider_checkout_uidx','provider checkout is unique');
 select has_index('public','payment_attempts','payment_attempts_provider_payment_uidx','provider payment is unique');
 select has_index('public','payment_provider_events','payment_provider_events_provider_event_uidx','provider events are idempotent');
