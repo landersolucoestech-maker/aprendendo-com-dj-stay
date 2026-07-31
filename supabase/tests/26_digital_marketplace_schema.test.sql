@@ -30,7 +30,7 @@ select has_pk('public','digital_product_deliverables','digital product deliverab
 select has_pk('public','digital_product_accesses','digital product accesses have a primary key');
 select has_pk('public','digital_product_events','digital product events have a primary key');
 select has_index('public','digital_products','digital_products_slug_uidx','active product slugs are unique and indexed');
-select has_index('public','digital_product_accesses','digital_product_accesses_one_active_uidx','active product access is unique per user');
+select ok(not exists(select 1 from pg_indexes where schemaname='public' and indexname='digital_product_accesses_one_active_uidx'),'marketplace preserves independent purchase access history per order');
 select is((select count(*)::integer from public.digital_products)+(select count(*)::integer from public.digital_product_licenses)+(select count(*)::integer from public.digital_product_deliverables)+(select count(*)::integer from public.digital_product_accesses)+(select count(*)::integer from public.digital_product_events),0,'marketplace schema starts empty');
 
 select * from finish();
