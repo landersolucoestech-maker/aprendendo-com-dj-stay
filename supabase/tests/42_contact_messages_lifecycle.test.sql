@@ -89,8 +89,8 @@ select lives_ok(
   format('select public.update_contact_message_status(%L::uuid,%L::public.contact_message_status,null)',current_setting('test.b22_contact_id'),'in_progress'),
   'admin starts contact treatment'
 );
-select is((select status::text from public.contact_messages where id=current_setting('test.b22_contact_id')::uuid),'in_progress','contact moves to in progress');
-select is((select count(*)::integer from public.contact_message_events where contact_message_id=current_setting('test.b22_contact_id')::uuid),2,'progress transition is audited');
+select is((public.get_contact_messages_admin(null,null,100,0)->'messages'->0->>'status'),'in_progress','contact moves to in progress');
+select is((public.get_contact_messages_admin(null,null,100,0)->'messages'->0->>'event_count')::integer,2,'progress transition is audited');
 select throws_ok(
   format('select public.update_contact_message_status(%L::uuid,%L::public.contact_message_status,null)',current_setting('test.b22_contact_id'),'resolved'),
   '22023','CONTACT_RESOLUTION_NOTE_REQUIRED','resolution requires treatment note'
@@ -99,22 +99,22 @@ select lives_ok(
   format('select public.update_contact_message_status(%L::uuid,%L::public.contact_message_status,%L)',current_setting('test.b22_contact_id'),'resolved','Solicitação analisada e tratamento registrado.'),
   'admin resolves contact with note'
 );
-select is((select status::text from public.contact_messages where id=current_setting('test.b22_contact_id')::uuid),'resolved','contact becomes resolved');
-select ok((select handled_at is not null from public.contact_messages where id=current_setting('test.b22_contact_id')::uuid),'resolved contact stores handled timestamp');
-select is((select resolution_note from public.contact_messages where id=current_setting('test.b22_contact_id')::uuid),'Solicitação analisada e tratamento registrado.','resolution note is preserved');
-select is((select count(*)::integer from public.contact_message_events where contact_message_id=current_setting('test.b22_contact_id')::uuid),3,'resolution appends audit event');
+select is((public.get_contact_messages_admin(null,null,100,0)->'messages'->0->>'status'),'resolved','contact becomes resolved');
+select ok((public.get_contact_messages_admin(null,null,100,0)->'messages'->0->>'handled_at') is not null,'resolved contact stores handled timestamp');
+select is((public.get_contact_messages_admin(null,null,100,0)->'messages'->0->>'resolution_note'),'Solicitação analisada e tratamento registrado.','resolution note is preserved');
+select is((public.get_contact_messages_admin(null,null,100,0)->'messages'->0->>'event_count')::integer,3,'resolution appends audit event');
 select lives_ok(
   format('select public.update_contact_message_status(%L::uuid,%L::public.contact_message_status,%L)',current_setting('test.b22_contact_id'),'resolved','Repetição idempotente'),
   'repeated resolution is idempotent'
 );
-select is((select count(*)::integer from public.contact_message_events where contact_message_id=current_setting('test.b22_contact_id')::uuid),3,'idempotent status update does not duplicate event');
+select is((public.get_contact_messages_admin(null,null,100,0)->'messages'->0->>'event_count')::integer,3,'idempotent status update does not duplicate event');
 select lives_ok(
   format('select public.update_contact_message_status(%L::uuid,%L::public.contact_message_status,null)',current_setting('test.b22_contact_id'),'new'),
   'admin can reopen resolved contact'
 );
-select is((select status::text from public.contact_messages where id=current_setting('test.b22_contact_id')::uuid),'new','reopened contact returns to new');
-select ok((select handled_at is null from public.contact_messages where id=current_setting('test.b22_contact_id')::uuid),'reopened contact clears handled timestamp');
-select is((select count(*)::integer from public.contact_message_events where contact_message_id=current_setting('test.b22_contact_id')::uuid),4,'reopening appends audit event');
+select is((public.get_contact_messages_admin(null,null,100,0)->'messages'->0->>'status'),'new','reopened contact returns to new');
+select ok((public.get_contact_messages_admin(null,null,100,0)->'messages'->0->>'handled_at') is null,'reopened contact clears handled timestamp');
+select is((public.get_contact_messages_admin(null,null,100,0)->'messages'->0->>'event_count')::integer,4,'reopening appends audit event');
 select throws_ok(
   format('select public.update_contact_message_status(%L::uuid,%L::public.contact_message_status,null)',current_setting('test.b22_contact_id'),'spam'),
   '22023','CONTACT_RESOLUTION_NOTE_REQUIRED','spam classification requires note'
@@ -123,8 +123,8 @@ select lives_ok(
   format('select public.update_contact_message_status(%L::uuid,%L::public.contact_message_status,%L)',current_setting('test.b22_contact_id'),'spam','Conteúdo classificado como spam pelo administrador.'),
   'admin marks contact as spam with note'
 );
-select is((select status::text from public.contact_messages where id=current_setting('test.b22_contact_id')::uuid),'spam','contact becomes spam');
-select is((select count(*)::integer from public.contact_message_events where contact_message_id=current_setting('test.b22_contact_id')::uuid),5,'spam classification appends audit event');
+select is((public.get_contact_messages_admin(null,null,100,0)->'messages'->0->>'status'),'spam','contact becomes spam');
+select is((public.get_contact_messages_admin(null,null,100,0)->'messages'->0->>'event_count')::integer,5,'spam classification appends audit event');
 select is((public.get_contact_messages_admin(null,null,100,0)->'summary'->>'spam')::integer,1,'admin summary counts spam request');
 select is(jsonb_array_length(public.get_contact_messages_admin(null,'CONTATO-',100,0)->'messages'),1,'admin search finds protocol');
 
