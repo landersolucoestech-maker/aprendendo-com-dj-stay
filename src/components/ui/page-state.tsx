@@ -72,6 +72,7 @@ export const PageState = ({
       className={cn("state-panel", compact && "min-h-0 py-6", className)}
       role={definition.role}
       aria-live={variant === "error" ? "assertive" : "polite"}
+      aria-atomic="true"
       aria-busy={variant === "loading"}
     >
       <Icon
