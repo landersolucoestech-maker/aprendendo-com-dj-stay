@@ -9,6 +9,11 @@ export interface ExternalPlayerMessage {
   state?: ExternalPlayerState;
 }
 
+const PLAYER_ORIGINS: Readonly<Record<ExternalMediaProvider, string>> = {
+  youtube: "https://www.youtube-nocookie.com",
+  vimeo: "https://player.vimeo.com",
+};
+
 const parsePayload = (data: unknown): Record<string, unknown> | null => {
   if (typeof data === "string") {
     try {
@@ -54,17 +59,24 @@ export const initializeExternalPlayer = (
 ): void => {
   if (!iframe.contentWindow) return;
 
+  const targetOrigin = PLAYER_ORIGINS[provider];
   if (provider === "youtube") {
-    iframe.contentWindow.postMessage(JSON.stringify({ event: "listening", id: playerId }), "*");
+    iframe.contentWindow.postMessage(
+      JSON.stringify({ event: "listening", id: playerId }),
+      targetOrigin,
+    );
     iframe.contentWindow.postMessage(
       JSON.stringify({ event: "command", func: "addEventListener", args: ["onStateChange"] }),
-      "*",
+      targetOrigin,
     );
     return;
   }
 
   for (const eventName of ["play", "pause", "ended", "timeupdate"]) {
-    iframe.contentWindow.postMessage({ method: "addEventListener", value: eventName }, "*");
+    iframe.contentWindow.postMessage(
+      { method: "addEventListener", value: eventName },
+      targetOrigin,
+    );
   }
 };
 
@@ -74,13 +86,14 @@ export const requestExternalPlayerTime = (
 ): void => {
   if (!iframe.contentWindow || provider !== "youtube") return;
 
+  const targetOrigin = PLAYER_ORIGINS.youtube;
   iframe.contentWindow.postMessage(
     JSON.stringify({ event: "command", func: "getCurrentTime", args: [] }),
-    "*",
+    targetOrigin,
   );
   iframe.contentWindow.postMessage(
     JSON.stringify({ event: "command", func: "getDuration", args: [] }),
-    "*",
+    targetOrigin,
   );
 };
 
@@ -115,7 +128,7 @@ export const parseExternalPlayerMessage = (
     return Object.keys(message).length > 0 ? message : null;
   }
 
-  if (event.origin !== "https://player.vimeo.com") return null;
+  if (event.origin !== PLAYER_ORIGINS.vimeo) return null;
 
   const eventName = typeof payload.event === "string" ? payload.event : null;
   const data =
