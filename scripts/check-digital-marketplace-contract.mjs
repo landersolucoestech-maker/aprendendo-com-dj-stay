@@ -10,6 +10,7 @@ const app = read("src/App.tsx");
 const hooks = read("src/hooks/useDigitalMarketplace.ts");
 const contracts = read("src/contracts/marketplace.ts");
 const catalog = read("src/pages/marketplace/DigitalMarketplace.tsx");
+const normalizedCatalog = catalog.replace(/\s+/g, " ");
 const owned = read("src/pages/student/MyDigitalProducts.tsx");
 const admin = read("src/pages/admin/DigitalProductsAdmin.tsx");
 const privateAssets = read("src/lib/private-assets.ts");
@@ -50,8 +51,8 @@ expect(schemaMigration.includes("force row level security"), "Tabelas do marketp
 expect(accessRpcs.includes("DIGITAL_PRODUCT_PURCHASE_SOURCE_RESERVED"), "Concessão administrativa não pode simular compra.");
 expect(accessRpcs.includes("license_snapshot"), "Concessão deve persistir termos licenciados.");
 expect(
-  catalog.includes("O redirecionamento de retorno não confirma a compra nem libera arquivos") ||
-    catalog.includes("Nenhum acesso é liberado por redirecionamento ou simulação"),
+  normalizedCatalog.includes("O redirecionamento de retorno não confirma a compra nem libera arquivos") ||
+    normalizedCatalog.includes("Nenhum acesso é liberado por redirecionamento ou simulação"),
   "Catálogo deve informar que redirect não confirma compra nem libera acesso.",
 );
 expect(!catalog.includes("confirm_course_purchase"), "Catálogo não pode confirmar compra.");
