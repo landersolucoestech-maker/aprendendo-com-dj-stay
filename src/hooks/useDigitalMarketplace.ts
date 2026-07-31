@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { parseDataContract } from "@/contracts/contract-error";
 import {
   digitalProductAccessesSchema,
+  digitalProductDeliverableRowSchema,
   digitalProductDeliverablesSchema,
   digitalProductLicensesSchema,
   digitalProductSchema,
@@ -21,56 +22,6 @@ import {
 import { assetRowsSchema, type AssetRow } from "@/contracts/storage";
 import { supabase } from "@/integrations/supabase/client";
 
-const productSelect = [
-  "id",
-  "title",
-  "slug",
-  "short_description",
-  "description",
-  "category",
-  "status",
-  "cover_asset_id",
-  "thumbnail_asset_id",
-  "price_amount",
-  "currency_code",
-  "promotional_price_amount",
-  "promotion_starts_at",
-  "promotion_ends_at",
-  "availability_starts_at",
-  "availability_ends_at",
-  "affiliate_eligible",
-  "version",
-  "published_at",
-].join(",");
-
-const licenseSelect = [
-  "id",
-  "product_id",
-  "kind",
-  "title",
-  "summary",
-  "terms_text",
-  "version",
-  "status",
-  "is_default",
-  "published_at",
-].join(",");
-
-const accessSelect = [
-  "id",
-  "product_id",
-  "user_id",
-  "license_id",
-  "status",
-  "source",
-  "source_reference",
-  "license_snapshot",
-  "granted_at",
-  "expires_at",
-  "revoked_at",
-  "revocation_reason",
-].join(",");
-
 export interface OwnedDigitalProduct {
   access: DigitalProductAccess;
   product: DigitalProduct;
@@ -83,7 +34,7 @@ export const useMarketplaceProducts = () =>
     queryFn: async (): Promise<DigitalProduct[]> => {
       const { data, error } = await supabase
         .from("digital_products")
-        .select(productSelect)
+        .select("*")
         .eq("status", "published")
         .is("deleted_at", null)
         .order("published_at", { ascending: false });
@@ -99,7 +50,7 @@ export const useMarketplaceAdminProducts = () =>
     queryFn: async (): Promise<DigitalProduct[]> => {
       const { data, error } = await supabase
         .from("digital_products")
-        .select(productSelect)
+        .select("*")
         .is("deleted_at", null)
         .order("updated_at", { ascending: false });
 
@@ -116,7 +67,7 @@ export const useMarketplaceProductLicenses = (productId: string | undefined) =>
       if (!productId) return [];
       const { data, error } = await supabase
         .from("digital_product_licenses")
-        .select(licenseSelect)
+        .select("*")
         .eq("product_id", productId)
         .order("kind")
         .order("version", { ascending: false });
@@ -134,7 +85,7 @@ export const useDigitalProductDeliverables = (productId: string | undefined) =>
       if (!productId) return [];
       const { data, error } = await supabase
         .from("digital_product_deliverables")
-        .select("id,product_id,asset_id,title,description,position,required,assets(*)")
+        .select("*,assets(*)")
         .eq("product_id", productId)
         .is("deleted_at", null)
         .order("position");
@@ -177,7 +128,7 @@ export const useMyDigitalProducts = () =>
 
       const { data: accessData, error: accessError } = await supabase
         .from("digital_product_accesses")
-        .select(accessSelect)
+        .select("*")
         .eq("user_id", user.id)
         .eq("status", "active")
         .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
@@ -193,13 +144,17 @@ export const useMyDigitalProducts = () =>
 
       const productIds = [...new Set(accesses.map((access) => access.product_id))];
       const licenseIds = [...new Set(accesses.map((access) => access.license_id))];
-      const [{ data: productData, error: productError }, { data: licenseData, error: licenseError }] =
-        await Promise.all([
-          supabase.from("digital_products").select(productSelect).in("id", productIds),
-          supabase.from("digital_product_licenses").select(licenseSelect).in("id", licenseIds),
-        ]);
 
+      const { data: productData, error: productError } = await supabase
+        .from("digital_products")
+        .select("*")
+        .in("id", productIds);
       if (productError) throw productError;
+
+      const { data: licenseData, error: licenseError } = await supabase
+        .from("digital_product_licenses")
+        .select("*")
+        .in("id", licenseIds);
       if (licenseError) throw licenseError;
 
       const products = parseDataContract(digitalProductsSchema, productData, "produtos adquiridos");
@@ -275,8 +230,12 @@ export const useCreateDigitalProductLicense = () => {
       return parseDataContract(digitalProductLicenseSchema, data, "licença digital criada");
     },
     onSuccess: async (_data, input) => {
-      await queryClient.invalidateQueries({ queryKey: ["digital-marketplace", "licenses", input.productId] });
-      await queryClient.invalidateQueries({ queryKey: ["digital-marketplace", "admin-products"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["digital-marketplace", "licenses", input.productId],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["digital-marketplace", "admin-products"],
+      });
     },
   });
 };
@@ -292,8 +251,12 @@ export const usePublishDigitalProductLicense = () => {
       return parseDataContract(digitalProductLicenseSchema, data, "licença digital publicada");
     },
     onSuccess: async (license) => {
-      await queryClient.invalidateQueries({ queryKey: ["digital-marketplace", "licenses", license.product_id] });
-      await queryClient.invalidateQueries({ queryKey: ["digital-marketplace", "admin-products"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["digital-marketplace", "licenses", license.product_id],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["digital-marketplace", "admin-products"],
+      });
     },
   });
 };
@@ -313,11 +276,19 @@ export const useAttachDigitalProductDeliverable = () => {
         p_payload: { title: value.title, description: value.description || null },
       });
       if (error) throw error;
-      return data;
+      return parseDataContract(
+        digitalProductDeliverableRowSchema,
+        data,
+        "entregável digital associado",
+      );
     },
     onSuccess: async (_data, input) => {
-      await queryClient.invalidateQueries({ queryKey: ["digital-marketplace", "deliverables", input.productId] });
-      await queryClient.invalidateQueries({ queryKey: ["digital-marketplace", "admin-products"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["digital-marketplace", "deliverables", input.productId],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["digital-marketplace", "admin-products"],
+      });
     },
   });
 };
