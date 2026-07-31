@@ -19,12 +19,15 @@ const requiredFiles = [
   "src/components/ui/page-state.tsx",
   "src/components/layout/AppPageShell.tsx",
   "src/components/admin/AdminCourseLayout.tsx",
+  "src/components/student/StudentPortalShell.tsx",
+  "src/components/student/StudentPortalPrimitives.tsx",
   "src/components/Navigation.tsx",
   "src/pages/AffiliateRedirect.tsx",
   "src/pages/marketplace/DigitalMarketplace.tsx",
   "src/pages/affiliate/AffiliatePortal.tsx",
   "src/pages/student/Certificates.tsx",
   "src/pages/student/MyDigitalProducts.tsx",
+  "src/pages/student/StudentPortal.tsx",
 ];
 
 const contents = new Map(
@@ -59,8 +62,7 @@ requireText("docs/refactor/09-design-system.md", [
   "# FASE B23 — Identidade visual e design system",
   "Nome oficial aprovado | Bloqueado",
   "Proprietário | LANDER SOLUTIONS",
-  "REQ-DS-009",
-  "REQ-DS-010",
+  "REQ-DS-011",
   "TEST-DS-001",
 ]);
 
@@ -170,6 +172,7 @@ requireText("src/components/ui/page-state.tsx", [
   'role: "alert"',
   'role: "status"',
   "aria-live=",
+  'aria-atomic="true"',
   "aria-busy=",
   'className={cn("state-panel"',
 ]);
@@ -197,6 +200,36 @@ forbidText("src/components/admin/AdminCourseLayout.tsx", [
   "text-purple-",
   "text-gray-",
   "border-white/",
+]);
+
+requireText("src/components/student/StudentPortalShell.tsx", [
+  'import { brandConfig } from "@/config/brand"',
+  'className="app-shell"',
+  'data-context="course"',
+  "src={brandConfig.logoPath}",
+  "{brandConfig.name}",
+  "const StudentNavigation",
+  'aria-label="Navegação do Portal do Aluno"',
+  '"Navegação móvel do Portal do Aluno"',
+  "bg-course text-primary-foreground",
+  "focus-visible:ring-ring",
+]);
+forbidText("src/components/student/StudentPortalShell.tsx", [
+  "bg-black",
+  "text-white",
+  "text-gray-",
+  "border-white/",
+  "btn-brand",
+]);
+
+requireText("src/components/student/StudentPortalPrimitives.tsx", [
+  "export const StudentSectionHeader",
+  "export const StudentStatCard",
+  'className="page-eyebrow"',
+  'className="page-title mt-1"',
+  'variant="course"',
+  "bg-course/15",
+  "text-course",
 ]);
 
 requireText("src/components/Navigation.tsx", [
@@ -303,5 +336,40 @@ forbidText("src/pages/student/MyDigitalProducts.tsx", [
   "border-white/",
 ]);
 
+requireText("src/pages/student/StudentPortal.tsx", [
+  'import { StudentPortalShell } from "@/components/student/StudentPortalShell"',
+  "StudentSectionHeader",
+  "StudentStatCard",
+  "<StudentPortalShell",
+  "<PageState",
+  "<Badge",
+  "<Button asChild",
+  'variant="context"',
+  'aria-label="Resumo acadêmico"',
+  'aria-label="Matrículas do aluno"',
+  'aria-label="Materiais liberados"',
+  "downloadPrivateAsset",
+]);
+requirePattern(
+  "src/pages/student/StudentPortal.tsx",
+  /const renderSection = \(section: StudentPortalSection\)[\s\S]*case "dashboard"[\s\S]*case "courses"[\s\S]*case "course"[\s\S]*case "library"[\s\S]*case "orders"[\s\S]*case "payments"[\s\S]*case "profile"[\s\S]*case "history"/,
+  "preservação das oito seções do Portal do Aluno",
+);
+forbidText("src/pages/student/StudentPortal.tsx", [
+  "const LoadingState",
+  "const ErrorState",
+  "const EmptyState",
+  "const StatCard",
+  "const NAVIGATION",
+  "NavLink",
+  "btn-brand",
+  "bg-black",
+  "text-white",
+  "text-gray-",
+  "bg-green-",
+  "bg-red-",
+  "border-white/",
+]);
+
 if (process.exitCode) process.exit(process.exitCode);
-console.log("Contrato estático do lote aluno da FASE B23 aprovado.");
+console.log("Contrato estático do Portal do Aluno na FASE B23 aprovado.");
