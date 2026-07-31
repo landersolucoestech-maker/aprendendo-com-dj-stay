@@ -1,6 +1,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
+import { RouteAccessibility } from "@/accessibility/RouteAccessibility";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -73,279 +74,283 @@ const App = () => (
         <AuthProvider>
           <Toaster />
           <Sonner />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/contato" element={<Contact />} />
-            <Route path="/r/:code" element={<AffiliateRedirect />} />
-            <Route path="/certificado" element={<CertificateValidation />} />
-            <Route path="/certificado/:code" element={<CertificateValidation />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/verificar-email" element={<VerifyEmail />} />
-            <Route path="/verificado" element={<Verified />} />
-            <Route path="/redefinir-senha" element={<ResetPassword />} />
-            <Route path="/acesso-negado" element={<AccessDenied />} />
-            <Route
-              path="/pagamento-sucesso"
-              element={
-                <RequireAuth>
-                  <RequireRole allowedRoles={["aluno", "administrador_proprietario"]}>
-                    <PaymentSuccess />
-                  </RequireRole>
-                </RequireAuth>
-              }
-            />
+          <RouteAccessibility>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/contato" element={<Contact />} />
+              <Route path="/r/:code" element={<AffiliateRedirect />} />
+              <Route path="/certificado" element={<CertificateValidation />} />
+              <Route path="/certificado/:code" element={<CertificateValidation />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/verificar-email" element={<VerifyEmail />} />
+              <Route path="/verificado" element={<Verified />} />
+              <Route path="/redefinir-senha" element={<ResetPassword />} />
+              <Route path="/acesso-negado" element={<AccessDenied />} />
+              <Route
+                path="/pagamento-sucesso"
+                element={
+                  <RequireAuth>
+                    <RequireRole allowedRoles={["aluno", "administrador_proprietario"]}>
+                      <PaymentSuccess />
+                    </RequireRole>
+                  </RequireAuth>
+                }
+              />
 
-            <Route
-              path="/login"
-              element={
-                <PublicOnlyRoute>
-                  <Login />
-                </PublicOnlyRoute>
-              }
-            />
-            <Route
-              path="/matricule-se"
-              element={
-                <PublicOnlyRoute>
-                  <Register />
-                </PublicOnlyRoute>
-              }
-            />
-            <Route
-              path="/esqueceu-senha"
-              element={
-                <PublicOnlyRoute>
-                  <ForgotPassword />
-                </PublicOnlyRoute>
-              }
-            />
+              <Route
+                path="/login"
+                element={
+                  <PublicOnlyRoute>
+                    <Login />
+                  </PublicOnlyRoute>
+                }
+              />
+              <Route
+                path="/matricule-se"
+                element={
+                  <PublicOnlyRoute>
+                    <Register />
+                  </PublicOnlyRoute>
+                }
+              />
+              <Route
+                path="/esqueceu-senha"
+                element={
+                  <PublicOnlyRoute>
+                    <ForgotPassword />
+                  </PublicOnlyRoute>
+                }
+              />
 
-            <Route
-              path="/portal"
-              element={
-                <RequireAuth>
-                  <RoleLandingRedirect />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/marketplace"
-              element={
-                <MarketplaceRoute>
-                  <DigitalMarketplace />
-                </MarketplaceRoute>
-              }
-            />
-            <Route
-              path="/meus-produtos"
-              element={
-                <MarketplaceRoute>
-                  <MyDigitalProducts />
-                </MarketplaceRoute>
-              }
-            />
-            <Route
-              path="/afiliado"
-              element={
-                <AffiliateRoute>
-                  <AffiliatePortal />
-                </AffiliateRoute>
-              }
-            />
+              <Route
+                path="/portal"
+                element={
+                  <RequireAuth>
+                    <RoleLandingRedirect />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/marketplace"
+                element={
+                  <MarketplaceRoute>
+                    <DigitalMarketplace />
+                  </MarketplaceRoute>
+                }
+              />
+              <Route
+                path="/meus-produtos"
+                element={
+                  <MarketplaceRoute>
+                    <MyDigitalProducts />
+                  </MarketplaceRoute>
+                }
+              />
+              <Route
+                path="/afiliado"
+                element={
+                  <AffiliateRoute>
+                    <AffiliatePortal />
+                  </AffiliateRoute>
+                }
+              />
 
-            <Route
-              path="/aluno"
-              element={
-                <StudentRoute>
-                  <StudentPortal section="dashboard" />
-                </StudentRoute>
-              }
-            />
-            <Route
-              path="/aluno/cursos"
-              element={
-                <StudentRoute>
-                  <StudentPortal section="courses" />
-                </StudentRoute>
-              }
-            />
-            <Route
-              path="/aluno/cursos/:courseId"
-              element={
-                <StudentRoute>
-                  <StudentPortal section="course" />
-                </StudentRoute>
-              }
-            />
-            <Route
-              path="/aluno/biblioteca"
-              element={
-                <StudentRoute>
-                  <StudentPortal section="library" />
-                </StudentRoute>
-              }
-            />
-            <Route
-              path="/aluno/certificados"
-              element={
-                <StudentRoute>
-                  <Certificates />
-                </StudentRoute>
-              }
-            />
-            <Route
-              path="/aluno/produtos"
-              element={
-                <StudentRoute>
-                  <MyDigitalProducts />
-                </StudentRoute>
-              }
-            />
-            <Route
-              path="/aluno/pedidos"
-              element={
-                <StudentRoute>
-                  <StudentPortal section="orders" />
-                </StudentRoute>
-              }
-            />
-            <Route
-              path="/aluno/pagamentos"
-              element={
-                <StudentRoute>
-                  <StudentPortal section="payments" />
-                </StudentRoute>
-              }
-            />
-            <Route
-              path="/aluno/perfil"
-              element={
-                <StudentRoute>
-                  <StudentPortal section="profile" />
-                </StudentRoute>
-              }
-            />
-            <Route
-              path="/aluno/perfil/editar"
-              element={
-                <StudentRoute>
-                  <EditProfile />
-                </StudentRoute>
-              }
-            />
-            <Route
-              path="/aluno/historico"
-              element={
-                <StudentRoute>
-                  <StudentPortal section="history" />
-                </StudentRoute>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <StudentRoute>
-                  <Navigate to="/aluno" replace />
-                </StudentRoute>
-              }
-            />
-            <Route
-              path="/aula/:lessonId"
-              element={
-                <RequireAuth>
-                  <RequireRole allowedRoles={["aluno", "administrador_proprietario"]}>
-                    <Lesson />
-                  </RequireRole>
-                </RequireAuth>
-              }
-            />
-
-            <Route
-              path="/admin/cursos"
-              element={
-                <AdminRoute>
-                  <CoursesAdmin />
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/cursos/novo"
-              element={
-                <AdminRoute>
-                  <CourseEditor />
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/cursos/:courseId/editar"
-              element={
-                <AdminRoute>
-                  <CourseEditor />
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/cursos/:courseId/preview"
-              element={
-                <AdminRoute>
-                  <CoursePreview />
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/cursos/:courseId/curriculo"
-              element={
-                <AdminRoute>
-                  <CourseCurriculum />
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/produtos"
-              element={
-                <AdminRoute>
-                  <DigitalProductsAdmin />
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/afiliados"
-              element={
-                <AdminRoute>
-                  <AffiliatesAdmin />
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/alunos"
-              element={
-                <AdminRoute>
-                  <StudentsAdmin />
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/contatos"
-              element={
-                <AdminRoute>
-                  <ContactsAdmin />
-                </AdminRoute>
-              }
-            />
-
-            <Route
-              path="/editar-perfil"
-              element={
-                <RequireAuth>
-                  <RequireRole allowedRoles={["aluno", "afiliado", "administrador_proprietario"]}>
+              <Route
+                path="/aluno"
+                element={
+                  <StudentRoute>
+                    <StudentPortal section="dashboard" />
+                  </StudentRoute>
+                }
+              />
+              <Route
+                path="/aluno/cursos"
+                element={
+                  <StudentRoute>
+                    <StudentPortal section="courses" />
+                  </StudentRoute>
+                }
+              />
+              <Route
+                path="/aluno/cursos/:courseId"
+                element={
+                  <StudentRoute>
+                    <StudentPortal section="course" />
+                  </StudentRoute>
+                }
+              />
+              <Route
+                path="/aluno/biblioteca"
+                element={
+                  <StudentRoute>
+                    <StudentPortal section="library" />
+                  </StudentRoute>
+                }
+              />
+              <Route
+                path="/aluno/certificados"
+                element={
+                  <StudentRoute>
+                    <Certificates />
+                  </StudentRoute>
+                }
+              />
+              <Route
+                path="/aluno/produtos"
+                element={
+                  <StudentRoute>
+                    <MyDigitalProducts />
+                  </StudentRoute>
+                }
+              />
+              <Route
+                path="/aluno/pedidos"
+                element={
+                  <StudentRoute>
+                    <StudentPortal section="orders" />
+                  </StudentRoute>
+                }
+              />
+              <Route
+                path="/aluno/pagamentos"
+                element={
+                  <StudentRoute>
+                    <StudentPortal section="payments" />
+                  </StudentRoute>
+                }
+              />
+              <Route
+                path="/aluno/perfil"
+                element={
+                  <StudentRoute>
+                    <StudentPortal section="profile" />
+                  </StudentRoute>
+                }
+              />
+              <Route
+                path="/aluno/perfil/editar"
+                element={
+                  <StudentRoute>
                     <EditProfile />
-                  </RequireRole>
-                </RequireAuth>
-              }
-            />
+                  </StudentRoute>
+                }
+              />
+              <Route
+                path="/aluno/historico"
+                element={
+                  <StudentRoute>
+                    <StudentPortal section="history" />
+                  </StudentRoute>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <StudentRoute>
+                    <Navigate to="/aluno" replace />
+                  </StudentRoute>
+                }
+              />
+              <Route
+                path="/aula/:lessonId"
+                element={
+                  <RequireAuth>
+                    <RequireRole allowedRoles={["aluno", "administrador_proprietario"]}>
+                      <Lesson />
+                    </RequireRole>
+                  </RequireAuth>
+                }
+              />
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              <Route
+                path="/admin/cursos"
+                element={
+                  <AdminRoute>
+                    <CoursesAdmin />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/cursos/novo"
+                element={
+                  <AdminRoute>
+                    <CourseEditor />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/cursos/:courseId/editar"
+                element={
+                  <AdminRoute>
+                    <CourseEditor />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/cursos/:courseId/preview"
+                element={
+                  <AdminRoute>
+                    <CoursePreview />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/cursos/:courseId/curriculo"
+                element={
+                  <AdminRoute>
+                    <CourseCurriculum />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/produtos"
+                element={
+                  <AdminRoute>
+                    <DigitalProductsAdmin />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/afiliados"
+                element={
+                  <AdminRoute>
+                    <AffiliatesAdmin />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/alunos"
+                element={
+                  <AdminRoute>
+                    <StudentsAdmin />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/contatos"
+                element={
+                  <AdminRoute>
+                    <ContactsAdmin />
+                  </AdminRoute>
+                }
+              />
+
+              <Route
+                path="/editar-perfil"
+                element={
+                  <RequireAuth>
+                    <RequireRole
+                      allowedRoles={["aluno", "afiliado", "administrador_proprietario"]}
+                    >
+                      <EditProfile />
+                    </RequireRole>
+                  </RequireAuth>
+                }
+              />
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </RouteAccessibility>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
