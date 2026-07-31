@@ -1,13 +1,10 @@
-# Gate sequencial de qualidade e reconstrução local do banco. Não contém deploy.
 name: Gate técnico
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - dev
-    paths-ignore:
-      - "docs/**"
+    branches: [dev]
+    paths-ignore: ["docs/**"]
 
 permissions:
   contents: write
@@ -19,80 +16,84 @@ concurrency:
 
 jobs:
   quality:
-    name: Banco limpo, testes, tipos e aplicação
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Aplicar backend B12
-        id: apply_b12
+      - name: Alinhar fixtures legadas à B12
+        id: fixtures
         run: |
           set -euo pipefail
-          cat scripts/b12-source/lesson.00.sql.part scripts/b12-source/lesson.01.sql.part scripts/b12-source/lesson.02.sql.part scripts/b12-source/lesson.03.sql.part > supabase/migrations/20260730230200_curriculum_lesson_rpcs.sql
-          cat scripts/b12-source/access.00.sql.part scripts/b12-source/access.01.sql.part > supabase/migrations/20260730230300_curriculum_access.sql
-          echo "cf09c2579e800db5b959217d7e7b31354a867fdf5dad0cc4e8c253dfed92aa86  supabase/migrations/20260730230200_curriculum_lesson_rpcs.sql" | sha256sum -c -
-          echo "5dad5b5f050b1f01223bfde5f869ef50db918bc83e414a9b2ac03097ac6d3ada  supabase/migrations/20260730230300_curriculum_access.sql" | sha256sum -c -
           python <<'PY'
-          import json
           from pathlib import Path
+          root = Path('supabase/tests')
 
-          lifecycle = Path("supabase/tests/14_course_cms_lifecycle.test.sql")
-          text = lifecycle.read_text()
-          marker = "select is((select count(*)::integer from public.modulos where course_id=current_setting('test.copy_id')::uuid),0,'B11 duplication does not invent module copies');\n"
-          addition = (
-              marker
-              + "select set_config('test.publish_module_id',(select id::text from public.create_module(current_setting('test.course_id')::uuid,'{\"title\":\"Módulo publicável\",\"status\":\"published\"}'::jsonb)),false);\n"
-              + "select set_config('test.publish_lesson_id',(select id::text from public.create_lesson(current_setting('test.publish_module_id')::uuid,'{\"title\":\"Aula publicável\",\"status\":\"published\",\"content_kind\":\"text\",\"text_content\":\"Conteúdo validado\"}'::jsonb)),false);\n"
-          )
-          if "test.publish_module_id" not in text:
-              if marker not in text:
-                  raise SystemExit("B11 lifecycle publication marker not found")
-              text = text.replace(marker, addition, 1)
-          text = text.replace("insert into public.modulos(course_id,titulo,ordem) values(current_setting('test.course_id')::uuid,'Módulo dependente',1);\n", "")
-          lifecycle.write_text(text)
+          def patch(name, replacements):
+              path = root / name
+              text = path.read_text()
+              for old, new in replacements:
+                  if old not in text:
+                      raise SystemExit(f'{name}: marcador não encontrado: {old[:80]}')
+                  text = text.replace(old, new, 1)
+              path.write_text(text)
 
-          access = Path("supabase/tests/15_course_cms_access.test.sql")
-          text = access.read_text()
-          marker = "select throws_ok($$update public.courses set title='bypass' where id=current_setting('test.course_id')::uuid$$,'42501',null,'administrator cannot bypass CMS RPC with direct update');\n"
-          addition = (
-              marker
-              + "select set_config('test.publish_module_id',(select id::text from public.create_module(current_setting('test.course_id')::uuid,'{\"title\":\"Módulo de acesso\",\"status\":\"published\"}'::jsonb)),false);\n"
-              + "select set_config('test.publish_lesson_id',(select id::text from public.create_lesson(current_setting('test.publish_module_id')::uuid,'{\"title\":\"Aula de acesso\",\"status\":\"published\",\"content_kind\":\"text\",\"text_content\":\"Conteúdo de acesso\"}'::jsonb)),false);\n"
-          )
-          if "test.publish_module_id" not in text:
-              if marker not in text:
-                  raise SystemExit("B11 access publication marker not found")
-              text = text.replace(marker, addition, 1)
-          access.write_text(text)
-
-          curriculum_access = Path("supabase/tests/19_curriculum_access.test.sql")
-          text = curriculum_access.read_text()
-          text = text.replace(
-              "select is((select count(*)::integer from public.modulos),0,'anonymous cannot read modules');\nselect is((select count(*)::integer from public.aulas),0,'anonymous cannot read lessons');",
-              "select throws_ok($$select count(*) from public.modulos$$,'42501',null,'anonymous cannot read modules');\nselect throws_ok($$select count(*) from public.aulas$$,'42501',null,'anonymous cannot read lessons');",
-          )
-          curriculum_access.write_text(text)
-
-          package_path = Path("package.json")
-          package = json.loads(package_path.read_text())
-          package["scripts"]["check:curriculum-cms"] = "node scripts/check-curriculum-cms-contract.mjs"
-          typecheck = package["scripts"]["typecheck"]
-          if "npm run check:curriculum-cms" not in typecheck:
-              package["scripts"]["typecheck"] = typecheck.replace(" && tsc --noEmit", " && npm run check:curriculum-cms && tsc --noEmit")
-          package_path.write_text(json.dumps(package, indent=2, ensure_ascii=False) + "\n")
+          patch('02_roles_student.test.sql', [
+              ("insert into public.modulos (id, course_id, titulo, ordem)\nvalues ('21000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', 'Módulo protegido', 1);",
+               "insert into public.modulos (id, course_id, titulo, ordem, status)\nvalues ('21000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', 'Módulo protegido', 1, 'published');"),
+              ("insert into public.aulas (id, modulo_id, titulo, ordem, duracao)\nvalues ('31000000-0000-4000-8000-000000000001', '21000000-0000-4000-8000-000000000001', 'Aula protegida', 1, 10);",
+               "insert into public.aulas (id, modulo_id, titulo, ordem, duracao, status)\nvalues ('31000000-0000-4000-8000-000000000001', '21000000-0000-4000-8000-000000000001', 'Aula protegida', 1, 10, 'published');"),
+          ])
+          patch('04_roles_admin.test.sql', [
+              ("insert into public.modulos (id, course_id, titulo, ordem)\nvalues ('23000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000003', 'Módulo protegido', 1);",
+               "insert into public.modulos (id, course_id, titulo, ordem, status)\nvalues ('23000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000003', 'Módulo protegido', 1, 'published');"),
+              ("insert into public.aulas (id, modulo_id, titulo, ordem)\nvalues ('33000000-0000-4000-8000-000000000001', '23000000-0000-4000-8000-000000000001', 'Aula protegida', 1);",
+               "insert into public.aulas (id, modulo_id, titulo, ordem, status)\nvalues ('33000000-0000-4000-8000-000000000001', '23000000-0000-4000-8000-000000000001', 'Aula protegida', 1, 'published');"),
+              ("$$insert into public.modulos (course_id, titulo, ordem) values ('20000000-0000-4000-8000-000000000003', 'Módulo administrativo', 2)$$",
+               "$$select public.create_module('20000000-0000-4000-8000-000000000003','{\"title\":\"Módulo administrativo\"}'::jsonb)$$"),
+          ])
+          patch('07_storage_lesson_grants.test.sql', [
+              ("insert into public.modulos (id, course_id, titulo, ordem)\nvalues ('25000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', 'Módulo com materiais', 1);",
+               "insert into public.modulos (id, course_id, titulo, ordem, status)\nvalues ('25000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', 'Módulo com materiais', 1, 'published');"),
+              ("insert into public.aulas (id, modulo_id, titulo, ordem)\nvalues ('35000000-0000-4000-8000-000000000001', '25000000-0000-4000-8000-000000000001', 'Aula com material privado', 1);",
+               "insert into public.aulas (id, modulo_id, titulo, ordem, status)\nvalues ('35000000-0000-4000-8000-000000000001', '25000000-0000-4000-8000-000000000001', 'Aula com material privado', 1, 'published');\ninsert into public.enrollments (id,user_id,course_id,status,source,starts_at,granted_by_user_id)\nvalues ('45000000-0000-4000-8000-000000000001','15000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000005','active','manual_grant',statement_timestamp()-interval '1 minute','15000000-0000-4000-8000-000000000001');"),
+          ])
+          patch('10_enrollment_lifecycle.test.sql', [
+              ("insert into public.modulos (id,course_id,titulo,ordem)\nvalues ('37000000-0000-4000-8000-000000000001','27000000-0000-4000-8000-000000000001','Módulo matriculado',1);",
+               "insert into public.modulos (id,course_id,titulo,ordem,status)\nvalues ('37000000-0000-4000-8000-000000000001','27000000-0000-4000-8000-000000000001','Módulo matriculado',1,'published');"),
+              ("insert into public.aulas (id,modulo_id,titulo,ordem)\nvalues ('47000000-0000-4000-8000-000000000001','37000000-0000-4000-8000-000000000001','Aula matriculada',1);",
+               "insert into public.aulas (id,modulo_id,titulo,ordem,status)\nvalues ('47000000-0000-4000-8000-000000000001','37000000-0000-4000-8000-000000000001','Aula matriculada',1,'published');"),
+          ])
+          patch('11_course_content_rls.test.sql', [
+              ("insert into public.modulos (id,course_id,titulo,ordem)\nvalues ('38000000-0000-4000-8000-000000000001','28000000-0000-4000-8000-000000000001','Módulo protegido por matrícula',1);",
+               "insert into public.modulos (id,course_id,titulo,ordem,status)\nvalues ('38000000-0000-4000-8000-000000000001','28000000-0000-4000-8000-000000000001','Módulo protegido por matrícula',1,'published');"),
+              ("insert into public.aulas (id,modulo_id,titulo,ordem)\nvalues ('48000000-0000-4000-8000-000000000001','38000000-0000-4000-8000-000000000001','Aula protegida por matrícula',1);",
+               "insert into public.aulas (id,modulo_id,titulo,ordem,status)\nvalues ('48000000-0000-4000-8000-000000000001','38000000-0000-4000-8000-000000000001','Aula protegida por matrícula',1,'published');"),
+              ("$$insert into public.modulos(course_id,titulo,ordem) values ('28000000-0000-4000-8000-000000000001','Segundo módulo',2)$$",
+               "$$select public.create_module('28000000-0000-4000-8000-000000000001','{\"title\":\"Segundo módulo\"}'::jsonb)$$"),
+          ])
+          patch('12_lesson_media_playback.test.sql', [
+              ("insert into public.modulos (id,course_id,titulo,ordem)\nvalues ('39000000-0000-4000-8000-000000000001','29000000-0000-4000-8000-000000000001','Módulo de mídia',1);",
+               "insert into public.modulos (id,course_id,titulo,ordem,status)\nvalues ('39000000-0000-4000-8000-000000000001','29000000-0000-4000-8000-000000000001','Módulo de mídia',1,'published');"),
+              ("insert into public.aulas (id,modulo_id,titulo,ordem)\nvalues ('49000000-0000-4000-8000-000000000001','39000000-0000-4000-8000-000000000001','Aula de mídia',1);",
+               "insert into public.aulas (id,modulo_id,titulo,ordem,status)\nvalues ('49000000-0000-4000-8000-000000000001','39000000-0000-4000-8000-000000000001','Aula de mídia',1,'published');"),
+          ])
+          patch('16_curriculum_schema.test.sql', [(
+              ") overlaps),0,'curriculum introduces no overlapping permissive policies');",
+              ") duplicate_policies),0,'curriculum introduces no overlapping permissive policies');",
+          )])
+          patch('19_curriculum_access.test.sql', [(
+              "'active','manual',statement_timestamp()",
+              "'active','manual_grant',statement_timestamp()",
+          )])
           PY
-          rm -rf scripts/b12-source
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add package.json scripts supabase
-          git commit -m "feat(b12): add versioned curriculum backend [skip ci]"
+          git add supabase/tests
+          git commit -m "test(b12): align legacy curriculum fixtures [skip ci]"
           git push origin HEAD:dev
 
-      - name: Configurar Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22.16.0
           cache: npm
@@ -109,72 +110,38 @@ jobs:
         run: npm run lint
 
       - name: Configurar Supabase CLI
-        id: supabase_cli
+        id: cli
         if: steps.install.outcome == 'success'
         continue-on-error: true
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
-      - name: Iniciar Supabase local
-        id: database_start
-        if: steps.supabase_cli.outcome == 'success'
+      - name: Reconstruir banco e executar pgTAP
+        id: db
+        if: steps.cli.outcome == 'success'
         continue-on-error: true
-        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+        run: |
+          supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+          supabase db reset --local --no-seed
+          supabase test db
 
-      - name: Reconstruir banco do zero
-        id: database_reset
-        if: steps.database_start.outcome == 'success'
-        continue-on-error: true
-        run: supabase db reset --local --no-seed
-
-      - name: Testes SQL pgTAP
-        id: database_tests
-        if: steps.database_reset.outcome == 'success'
-        continue-on-error: true
-        run: supabase test db
-
-      - name: Gerar tipos TypeScript do schema local
-        id: generate_types
-        if: steps.database_tests.outcome == 'success'
+      - name: Gerar e sincronizar tipos
+        id: types
+        if: steps.db.outcome == 'success'
         continue-on-error: true
         run: |
           mkdir -p artifacts
           supabase gen types typescript --local > artifacts/database.types.ts
-
-      - name: Sincronizar tipos TypeScript gerados
-        id: synchronize_types
-        if: steps.generate_types.outcome == 'success'
-        continue-on-error: true
-        run: |
           cp artifacts/database.types.ts src/integrations/supabase/types.ts
-          if git diff --quiet -- src/integrations/supabase/types.ts; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          if ! git diff --quiet -- src/integrations/supabase/types.ts; then
+            git config user.name github-actions[bot]
+            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git add src/integrations/supabase/types.ts
+            git commit -m "chore(b12): sync generated Supabase types [skip ci]"
+            git push origin HEAD:dev
           fi
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/integrations/supabase/types.ts
-          git commit -m "chore(b12): sync generated Supabase types [skip ci]"
-          git push origin HEAD:dev
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-
-      - name: Verificar drift dos tipos gerados
-        id: generated_types_contract
-        if: steps.synchronize_types.outcome == 'success'
-        continue-on-error: true
-        run: |
-          node --input-type=module <<'NODE'
-          import { readFileSync } from "node:fs";
-          const normalize = (value) => value.replace(/\r\n/g, "\n").trimEnd();
-          const committed = normalize(readFileSync("src/integrations/supabase/types.ts", "utf8"));
-          const generated = normalize(readFileSync("artifacts/database.types.ts", "utf8"));
-          if (committed !== generated) {
-            console.error("Os tipos Supabase versionados divergem do schema reconstruído.");
-            process.exit(1);
-          }
-          console.log("Tipos Supabase sincronizados com o schema reconstruído.");
-          NODE
+          diff -u artifacts/database.types.ts src/integrations/supabase/types.ts
 
       - name: Typecheck
         id: typecheck
@@ -192,101 +159,47 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_DEV_PUBLISHABLE_KEY }}
         run: npm run build:dev
 
-      - name: Exportar tipos gerados
-        if: steps.generate_types.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: database-types-${{ github.sha }}
-          path: artifacts/database.types.ts
-          retention-days: 1
-
-      - name: Exportar snapshot integral do código-fonte
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: source-${{ github.sha }}
-          path: |
-            .
-            !.git/**
-            !node_modules/**
-            !dist/**
-            !supabase/.temp/**
-          include-hidden-files: true
-          retention-days: 1
-
-      - name: Registrar evidência do gate
+      - name: Evidência
         if: always()
         uses: actions/github-script@v7
         env:
-          INSTALL_OUTCOME: ${{ steps.install.outcome }}
-          LINT_OUTCOME: ${{ steps.lint.outcome }}
-          SUPABASE_CLI_OUTCOME: ${{ steps.supabase_cli.outcome }}
-          DATABASE_START_OUTCOME: ${{ steps.database_start.outcome }}
-          DATABASE_RESET_OUTCOME: ${{ steps.database_reset.outcome }}
-          DATABASE_TESTS_OUTCOME: ${{ steps.database_tests.outcome }}
-          GENERATE_TYPES_OUTCOME: ${{ steps.generate_types.outcome }}
-          SYNCHRONIZE_TYPES_OUTCOME: ${{ steps.synchronize_types.outcome }}
-          GENERATED_TYPES_CONTRACT_OUTCOME: ${{ steps.generated_types_contract.outcome }}
-          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
-          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          INSTALL: ${{ steps.install.outcome }}
+          LINT: ${{ steps.lint.outcome }}
+          DB: ${{ steps.db.outcome }}
+          TYPES: ${{ steps.types.outcome }}
+          TYPECHECK: ${{ steps.typecheck.outcome }}
+          BUILD: ${{ steps.build.outcome }}
         with:
           script: |
-            const shortSha = context.sha.slice(0, 12);
-            const title = `Gate técnico — ${shortSha}`;
-            const body = [
-              '## Evidência automática do gate técnico',
-              '',
-              `- Commit validado: \`${context.sha}\``,
-              `- Branch: \`${context.ref.replace('refs/heads/', '')}\``,
-              `- Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              '',
-              '| Etapa | Resultado |',
-              '| --- | --- |',
-              `| npm ci | ${process.env.INSTALL_OUTCOME || 'skipped'} |`,
-              `| npm run lint | ${process.env.LINT_OUTCOME || 'skipped'} |`,
-              `| Supabase CLI | ${process.env.SUPABASE_CLI_OUTCOME || 'skipped'} |`,
-              `| supabase start | ${process.env.DATABASE_START_OUTCOME || 'skipped'} |`,
-              `| supabase db reset --local | ${process.env.DATABASE_RESET_OUTCOME || 'skipped'} |`,
-              `| supabase test db | ${process.env.DATABASE_TESTS_OUTCOME || 'skipped'} |`,
-              `| gerar tipos TypeScript | ${process.env.GENERATE_TYPES_OUTCOME || 'skipped'} |`,
-              `| sincronizar tipos gerados | ${process.env.SYNCHRONIZE_TYPES_OUTCOME || 'skipped'} |`,
-              `| tipos gerados sem drift | ${process.env.GENERATED_TYPES_CONTRACT_OUTCOME || 'skipped'} |`,
-              `| npm run typecheck | ${process.env.TYPECHECK_OUTCOME || 'skipped'} |`,
-              `| npm run build:dev | ${process.env.BUILD_OUTCOME || 'skipped'} |`,
-              '',
-              'Esta issue é evidência técnica automática. Não representa aprovação de produção.'
-            ].join('\n');
-
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title,
-              body
+              title: `Gate técnico — ${context.sha.slice(0,12)}`,
+              body: [
+                `Commit controlador: \`${context.sha}\``,
+                `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                `npm ci: **${process.env.INSTALL}**`,
+                `lint: **${process.env.LINT}**`,
+                `banco + pgTAP: **${process.env.DB}**`,
+                `tipos: **${process.env.TYPES}**`,
+                `TypeScript: **${process.env.TYPECHECK}**`,
+                `build: **${process.env.BUILD}**`
+              ].join('\n')
             });
 
-      - name: Aplicar gate final
+      - name: Gate final
         if: always()
         env:
-          INSTALL_OUTCOME: ${{ steps.install.outcome }}
-          LINT_OUTCOME: ${{ steps.lint.outcome }}
-          SUPABASE_CLI_OUTCOME: ${{ steps.supabase_cli.outcome }}
-          DATABASE_START_OUTCOME: ${{ steps.database_start.outcome }}
-          DATABASE_RESET_OUTCOME: ${{ steps.database_reset.outcome }}
-          DATABASE_TESTS_OUTCOME: ${{ steps.database_tests.outcome }}
-          GENERATE_TYPES_OUTCOME: ${{ steps.generate_types.outcome }}
-          SYNCHRONIZE_TYPES_OUTCOME: ${{ steps.synchronize_types.outcome }}
-          GENERATED_TYPES_CONTRACT_OUTCOME: ${{ steps.generated_types_contract.outcome }}
-          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
-          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          INSTALL: ${{ steps.install.outcome }}
+          LINT: ${{ steps.lint.outcome }}
+          DB: ${{ steps.db.outcome }}
+          TYPES: ${{ steps.types.outcome }}
+          TYPECHECK: ${{ steps.typecheck.outcome }}
+          BUILD: ${{ steps.build.outcome }}
         run: |
-          test "$INSTALL_OUTCOME" = "success"
-          test "$LINT_OUTCOME" = "success"
-          test "$SUPABASE_CLI_OUTCOME" = "success"
-          test "$DATABASE_START_OUTCOME" = "success"
-          test "$DATABASE_RESET_OUTCOME" = "success"
-          test "$DATABASE_TESTS_OUTCOME" = "success"
-          test "$GENERATE_TYPES_OUTCOME" = "success"
-          test "$SYNCHRONIZE_TYPES_OUTCOME" = "success"
-          test "$GENERATED_TYPES_CONTRACT_OUTCOME" = "success"
-          test "$TYPECHECK_OUTCOME" = "success"
-          test "$BUILD_OUTCOME" = "success"
+          test "$INSTALL" = success
+          test "$LINT" = success
+          test "$DB" = success
+          test "$TYPES" = success
+          test "$TYPECHECK" = success
+          test "$BUILD" = success
