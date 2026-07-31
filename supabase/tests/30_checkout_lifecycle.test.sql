@@ -12,7 +12,8 @@ select set_config('request.jwt.claims','{"sub":"b1800000-0000-4000-8000-00000000
 select set_config('test.b18_course_id',(select id::text from public.create_course(jsonb_build_object(
  'title','Curso Checkout B18','slug','curso-checkout-b18','short_description','Curso para validar cotação e checkout.',
  'description','Curso publicado usado pelo teste transacional da fase B18.','category','Produção musical',
- 'language_code','pt-BR','level','beginner','price_amount',199.90,'promotional_price_amount',149.90,
+ 'language_code','pt-BR','level','beginner','objectives',jsonb_build_array('Concluir um checkout seguro'),
+ 'prerequisites',jsonb_build_array('Conta autenticada'),'price_amount',199.90,'promotional_price_amount',149.90,
  'currency_code','BRL','completion_mode','percentage','completion_required_percent',80,
  'certificate_enabled',false,'release_mode','immediate','affiliate_eligible',false,'preview_enabled',false
 ))),false);
