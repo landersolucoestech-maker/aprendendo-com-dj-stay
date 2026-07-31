@@ -33,7 +33,14 @@ export const digitalProductSchema = z
     availability_ends_at: nullableTimestampSchema,
     affiliate_eligible: z.boolean(),
     version: z.number().int().positive(),
+    created_by_user_id: uuidSchema.nullable(),
+    updated_by_user_id: uuidSchema.nullable(),
+    created_at: timestampSchema,
+    updated_at: timestampSchema,
     published_at: nullableTimestampSchema,
+    unpublished_at: nullableTimestampSchema,
+    archived_at: nullableTimestampSchema,
+    deleted_at: nullableTimestampSchema,
   })
   .strict();
 
@@ -50,13 +57,16 @@ export const digitalProductLicenseSchema = z
     version: z.number().int().positive(),
     status: digitalLicenseStatusSchema,
     is_default: z.boolean(),
+    created_by_user_id: uuidSchema.nullable(),
+    created_at: timestampSchema,
     published_at: nullableTimestampSchema,
+    archived_at: nullableTimestampSchema,
   })
   .strict();
 
 export const digitalProductLicensesSchema = z.array(digitalProductLicenseSchema);
 
-export const digitalProductDeliverableSchema = z
+export const digitalProductDeliverableRowSchema = z
   .object({
     id: uuidSchema,
     product_id: uuidSchema,
@@ -65,8 +75,15 @@ export const digitalProductDeliverableSchema = z
     description: nullableTextSchema,
     position: z.number().int().nonnegative(),
     required: z.boolean(),
-    assets: assetRowSchema,
+    created_by_user_id: uuidSchema.nullable(),
+    created_at: timestampSchema,
+    updated_at: timestampSchema,
+    deleted_at: nullableTimestampSchema,
   })
+  .strict();
+
+export const digitalProductDeliverableSchema = digitalProductDeliverableRowSchema
+  .extend({ assets: assetRowSchema })
   .strict();
 
 export const digitalProductDeliverablesSchema = z.array(digitalProductDeliverableSchema);
@@ -81,10 +98,13 @@ export const digitalProductAccessSchema = z
     source: digitalProductAccessSourceSchema,
     source_reference: nullableTextSchema,
     license_snapshot: z.record(z.string(), z.unknown()),
+    granted_by_user_id: uuidSchema.nullable(),
     granted_at: timestampSchema,
     expires_at: nullableTimestampSchema,
     revoked_at: nullableTimestampSchema,
     revocation_reason: nullableTextSchema,
+    created_at: timestampSchema,
+    updated_at: timestampSchema,
   })
   .strict();
 
@@ -125,6 +145,7 @@ export const marketplaceAttachDeliverableInputSchema = z
 
 export type DigitalProduct = z.infer<typeof digitalProductSchema>;
 export type DigitalProductLicense = z.infer<typeof digitalProductLicenseSchema>;
+export type DigitalProductDeliverableRow = z.infer<typeof digitalProductDeliverableRowSchema>;
 export type DigitalProductDeliverable = z.infer<typeof digitalProductDeliverableSchema>;
 export type DigitalProductAccess = z.infer<typeof digitalProductAccessSchema>;
 export type MarketplaceCreateProductInput = z.infer<typeof marketplaceCreateProductInputSchema>;
