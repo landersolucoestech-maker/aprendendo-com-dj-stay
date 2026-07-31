@@ -1,0 +1,90 @@
+  if v_source.version<>p_expected_source_module_version or v_target.version<>p_expected_target_module_version then raise exception 'MODULE_VERSION_CONFLICT' using errcode='40001'; end if;
+  if v_source.id=v_target.id then return v_lesson; end if;
+  if exists(select 1 from public.lesson_prerequisites lp join public.aulas p on p.id=lp.prerequisite_lesson_id join public.modulos m on m.id=p.modulo_id where lp.lesson_id=p_lesson_id and m.course_id<>v_target.course_id) then raise exception 'LESSON_DEPENDENCY_MOVE_INVALID' using errcode='23503'; end if;
+  select coalesce(max(ordem),-1)+1 into v_order from public.aulas where modulo_id=p_target_module_id;
+  update public.aulas set modulo_id=p_target_module_id,ordem=v_order,version=version+1,updated_by_user_id=v_actor where id=p_lesson_id returning * into v_lesson;
+  update public.modulos set version=version+1,updated_by_user_id=v_actor where id in(v_source.id,v_target.id);
+  perform private.log_curriculum_event(v_target.course_id,'lesson',v_lesson.id,'moved',v_lesson.version,jsonb_build_object('from_module_id',v_source.id,'to_module_id',v_target.id));
+  return v_lesson;
+end;
+$$;
+
+create or replace function private.duplicate_lesson(p_lesson_id uuid,p_title text)
+returns public.aulas language plpgsql security definer set search_path=''
+as $$
+declare
+  v_actor uuid:=private.assert_curriculum_admin();
+  v_source public.aulas;
+  v_copy public.aulas;
+  v_course_id uuid;
+  v_order integer;
+begin
+  if nullif(btrim(p_title),'') is null then raise exception 'LESSON_TITLE_REQUIRED' using errcode='22023'; end if;
+  select * into v_source from public.aulas where id=p_lesson_id and deleted_at is null;
+  if not found then raise exception 'LESSON_NOT_FOUND' using errcode='P0002'; end if;
+  select course_id into v_course_id from public.modulos where id=v_source.modulo_id;
+  select coalesce(max(ordem),-1)+1 into v_order from public.aulas where modulo_id=v_source.modulo_id;
+  insert into public.aulas(modulo_id,titulo,descricao,conteudo_texto,ordem,duracao,status,content_kind,obrigatoria,completion_mode,completion_percent,preview_enabled,release_mode,duplicated_from_lesson_id,created_by_user_id,updated_by_user_id)
+  values(v_source.modulo_id,btrim(p_title),v_source.descricao,v_source.conteudo_texto,v_order,v_source.duracao,'draft',v_source.content_kind,v_source.obrigatoria,v_source.completion_mode,v_source.completion_percent,false,'immediate',v_source.id,v_actor,v_actor)
+  returning * into v_copy;
+  perform private.log_curriculum_event(v_course_id,'lesson',v_copy.id,'duplicated',v_copy.version,jsonb_build_object('source_lesson_id',v_source.id,'media_and_assets_copied',false));
+  return v_copy;
+end;
+$$;
+
+create or replace function private.archive_lesson(p_lesson_id uuid,p_expected_version integer)
+returns public.aulas language plpgsql security definer set search_path=''
+as $$
+declare
+  v_actor uuid:=private.assert_curriculum_admin();
+  v_lesson public.aulas;
+  v_course_id uuid;
+  v_max integer;
+begin
+  select * into v_lesson from public.aulas where id=p_lesson_id and deleted_at is null for update;
+  if not found then raise exception 'LESSON_NOT_FOUND' using errcode='P0002'; end if;
+  if v_lesson.version<>p_expected_version then raise exception 'LESSON_VERSION_CONFLICT' using errcode='40001'; end if;
+  select course_id into v_course_id from public.modulos where id=v_lesson.modulo_id;
+  select coalesce(max(ordem),-1)+1 into v_max from public.aulas where modulo_id=v_lesson.modulo_id;
+  update public.aulas set status='archived',ordem=v_max,version=version+1,updated_by_user_id=v_actor where id=p_lesson_id returning * into v_lesson;
+  update public.lesson_media set is_active=false where lesson_id=p_lesson_id;
+  perform private.log_curriculum_event(v_course_id,'lesson',v_lesson.id,'archived',v_lesson.version,'{}');
+  return v_lesson;
+end;
+$$;
+
+create or replace function private.delete_lesson(p_lesson_id uuid,p_expected_version integer)
+returns boolean language plpgsql security definer set search_path=''
+as $$
+declare
+  v_lesson public.aulas;
+  v_course_id uuid;
+begin
+  perform private.assert_curriculum_admin();
+  select * into v_lesson from public.aulas where id=p_lesson_id for update;
+  if not found then raise exception 'LESSON_NOT_FOUND' using errcode='P0002'; end if;
+  if v_lesson.version<>p_expected_version then raise exception 'LESSON_VERSION_CONFLICT' using errcode='40001'; end if;
+  select course_id into v_course_id from public.modulos where id=v_lesson.modulo_id;
+  if v_lesson.status<>'archived' or exists(select 1 from public.progresso_aulas where aula_id=p_lesson_id) or exists(select 1 from public.lesson_media where lesson_id=p_lesson_id) or exists(select 1 from public.assets where lesson_id=p_lesson_id and deleted_at is null) or exists(select 1 from public.lesson_prerequisites where prerequisite_lesson_id=p_lesson_id) then raise exception 'LESSON_HAS_DEPENDENCIES_ARCHIVE_REQUIRED' using errcode='23503'; end if;
+  perform private.log_curriculum_event(v_course_id,'lesson',v_lesson.id,'deleted',v_lesson.version,'{}');
+  delete from public.aulas where id=p_lesson_id;
+  return true;
+end;
+$$;
+
+create or replace function private.archive_lesson_material(p_asset_id uuid,p_lesson_id uuid)
+returns public.assets language plpgsql security definer set search_path=''
+as $$
+declare
+  v_asset public.assets;
+  v_course_id uuid;
+begin
+  perform private.assert_curriculum_admin();
+  select * into v_asset from public.assets where id=p_asset_id and lesson_id=p_lesson_id and purpose in('document','sample','preset','stem','project','archive','template','support_file') and deleted_at is null for update;
+  if not found then raise exception 'LESSON_MATERIAL_NOT_FOUND' using errcode='P0002'; end if;
+  update public.assets set deleted_at=statement_timestamp() where id=p_asset_id returning * into v_asset;
+  delete from public.asset_access_grants where asset_id=p_asset_id;
+  select m.course_id into v_course_id from public.aulas a join public.modulos m on m.id=a.modulo_id where a.id=p_lesson_id;
+  perform private.log_curriculum_event(v_course_id,'lesson',p_lesson_id,'material_archived',(select version from public.aulas where id=p_lesson_id),jsonb_build_object('asset_id',p_asset_id));
+  return v_asset;
+end;
