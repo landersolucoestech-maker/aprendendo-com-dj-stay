@@ -24,15 +24,21 @@ export interface LearningModule {
 const formatDuration = (minutes: number | null): string | null =>
   minutes === null ? null : `${minutes} min`;
 
-export const useModules = () =>
+export const useModules = (courseId?: string, enabled = true) =>
   useQuery({
-    queryKey: ["modules"],
+    queryKey: ["modules", courseId ?? "all"],
     queryFn: async (): Promise<LearningModule[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("modulos")
         .select("id,titulo,descricao,ordem,aulas(id,titulo,descricao,ordem,duracao)")
         .order("ordem", { ascending: true })
         .order("ordem", { foreignTable: "aulas", ascending: true });
+
+      if (courseId !== undefined) {
+        query = query.eq("course_id", courseId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         throw error;
@@ -55,4 +61,5 @@ export const useModules = () =>
         })),
       }));
     },
+    enabled,
   });
