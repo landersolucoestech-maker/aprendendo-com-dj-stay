@@ -67,7 +67,7 @@ const PaymentSuccess = () => {
 
           <div className="space-y-3">
             {activeEnrollment ? (
-              <Link to="/dashboard" className="block">
+              <Link to={`/aluno/cursos/${activeEnrollment.course_id}`} className="block">
                 <Button className="w-full btn-brand">
                   <ReceiptText className="w-4 h-4 mr-2" />
                   Acessar curso
@@ -88,10 +88,10 @@ const PaymentSuccess = () => {
             >
               {accessQuery.isFetching ? "Atualizando..." : "Verificar novamente"}
             </Button>
-            <Link to="/" className="block">
+            <Link to="/aluno" className="block">
               <Button variant="secondary" className="w-full">
                 <Home className="w-4 h-4 mr-2" />
-                Voltar ao início
+                Voltar ao portal
               </Button>
             </Link>
           </div>
