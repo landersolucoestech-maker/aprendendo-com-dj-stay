@@ -67,6 +67,8 @@ for (const table of [
   "enrollment_events",
   "enrollments",
   "lesson_media",
+  "lesson_progress_events",
+  "lesson_progress_streams",
   "modulos",
   "playback_events",
   "playback_tokens",
@@ -85,7 +87,7 @@ for (const ghostContract of ["lesson_files", "user_subscriptions", "criado_em", 
 }
 
 requireText("src/contracts/contract-error.ts", "issues");
-requireText("src/contracts/learning.ts", "progressUpdateInputSchema");
+requireText("src/contracts/learning.ts", "lessonProgressEventInputSchema");
 requireText("src/contracts/learning.ts", "profileMetadataInputSchema");
 requireText("src/lib/error-message.ts", "DataContractError");
 
