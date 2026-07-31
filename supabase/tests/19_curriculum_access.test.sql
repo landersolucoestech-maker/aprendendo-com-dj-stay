@@ -42,8 +42,8 @@ select is((select count(*)::integer from public.aulas),2,'student sees available
 select ok(not exists(select 1 from public.aulas where id='6e000000-0000-4000-8000-000000000005'),'expired availability window is never bypassed by preview');
 select is((select count(*)::integer from public.lesson_media),1,'student sees media only for available lessons');
 select is((select count(*)::integer from public.assets),1,'student sees enrollment-granted material for available lesson');
-select throws_ok($$insert into public.progresso_aulas(user_id,aula_id,completada,progresso_percentual) values('1e000000-0000-4000-8000-000000000002','6e000000-0000-4000-8000-000000000003',true,100)$$,'42501',null,'student cannot record progress for hidden lesson');
-select lives_ok($$insert into public.progresso_aulas(user_id,aula_id,completada,progresso_percentual) values('1e000000-0000-4000-8000-000000000002','6e000000-0000-4000-8000-000000000001',true,100)$$,'student records progress for available lesson');
+select throws_ok($$select public.save_lesson_progress_event('6e000000-0000-4000-8000-000000000003','9e000000-0000-4000-8000-000000000003','ae000000-0000-4000-8000-000000000003',1,'manual_complete',0,null,statement_timestamp())$$,'42501',null,'student cannot record progress for hidden lesson');
+select lives_ok($$select public.save_lesson_progress_event('6e000000-0000-4000-8000-000000000001','9e000000-0000-4000-8000-000000000001','ae000000-0000-4000-8000-000000000001',1,'manual_complete',0,null,statement_timestamp())$$,'student records progress for available lesson through RPC');
 select is((select count(*)::integer from public.modulos),3,'completing required module unlocks dependent module');
 select ok(exists(select 1 from public.modulos where id='5e000000-0000-4000-8000-000000000002'),'dependent module becomes visible');
 select is((select count(*)::integer from public.aulas),3,'lesson prerequisite unlocks dependent lesson');
