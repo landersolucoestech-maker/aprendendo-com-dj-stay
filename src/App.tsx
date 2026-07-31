@@ -9,6 +9,7 @@ import { queryClient } from "@/lib/query-client";
 import AccessDenied from "@/pages/AccessDenied";
 import AffiliateRedirect from "@/pages/AffiliateRedirect";
 import AuthCallback from "@/pages/AuthCallback";
+import CertificateValidation from "@/pages/CertificateValidation";
 import Contact from "@/pages/Contact";
 import EditProfile from "@/pages/EditProfile";
 import ForgotPassword from "@/pages/ForgotPassword";
@@ -27,8 +28,10 @@ import CourseEditor from "@/pages/admin/CourseEditor";
 import CoursePreview from "@/pages/admin/CoursePreview";
 import CoursesAdmin from "@/pages/admin/CoursesAdmin";
 import DigitalProductsAdmin from "@/pages/admin/DigitalProductsAdmin";
+import StudentsAdmin from "@/pages/admin/StudentsAdmin";
 import AffiliatePortal from "@/pages/affiliate/AffiliatePortal";
 import DigitalMarketplace from "@/pages/marketplace/DigitalMarketplace";
+import Certificates from "@/pages/student/Certificates";
 import MyDigitalProducts from "@/pages/student/MyDigitalProducts";
 import StudentPortal from "@/pages/student/StudentPortal";
 import { PublicOnlyRoute } from "@/routing/PublicOnlyRoute";
@@ -73,6 +76,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/contato" element={<Contact />} />
             <Route path="/r/:code" element={<AffiliateRedirect />} />
+            <Route path="/certificado" element={<CertificateValidation />} />
+            <Route path="/certificado/:code" element={<CertificateValidation />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/verificar-email" element={<VerifyEmail />} />
             <Route path="/verificado" element={<Verified />} />
@@ -176,6 +181,14 @@ const App = () => (
               element={
                 <StudentRoute>
                   <StudentPortal section="library" />
+                </StudentRoute>
+              }
+            />
+            <Route
+              path="/aluno/certificados"
+              element={
+                <StudentRoute>
+                  <Certificates />
                 </StudentRoute>
               }
             />
@@ -299,6 +312,14 @@ const App = () => (
               element={
                 <AdminRoute>
                   <AffiliatesAdmin />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/alunos"
+              element={
+                <AdminRoute>
+                  <StudentsAdmin />
                 </AdminRoute>
               }
             />
