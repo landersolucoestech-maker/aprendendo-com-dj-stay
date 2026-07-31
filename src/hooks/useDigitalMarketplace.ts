@@ -5,6 +5,7 @@ import {
   digitalProductAccessesSchema,
   digitalProductDeliverableRowSchema,
   digitalProductDeliverablesSchema,
+  digitalProductLicenseSchema,
   digitalProductLicensesSchema,
   digitalProductSchema,
   digitalProductsSchema,
@@ -287,8 +288,7 @@ export const useAttachDigitalProductDeliverable = () => {
         queryKey: ["digital-marketplace", "deliverables", input.productId],
       });
       await queryClient.invalidateQueries({
-        queryKey: ["digital-marketplace", "admin-products"],
-      });
+        queryKey: ["digital-marketplace", "admin-products"] });
     },
   });
 };
