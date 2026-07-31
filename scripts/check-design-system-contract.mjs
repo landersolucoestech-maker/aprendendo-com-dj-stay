@@ -23,6 +23,8 @@ const requiredFiles = [
   "src/pages/AffiliateRedirect.tsx",
   "src/pages/marketplace/DigitalMarketplace.tsx",
   "src/pages/affiliate/AffiliatePortal.tsx",
+  "src/pages/student/Certificates.tsx",
+  "src/pages/student/MyDigitalProducts.tsx",
 ];
 
 const contents = new Map(
@@ -52,8 +54,8 @@ requireText("docs/refactor/09-design-system.md", [
   "# FASE B23 — Identidade visual e design system",
   "Nome oficial aprovado | Bloqueado",
   "Proprietário | LANDER SOLUTIONS",
-  "REQ-DS-007",
-  "REQ-DS-008",
+  "REQ-DS-009",
+  "REQ-DS-010",
   "TEST-DS-001",
 ]);
 
@@ -257,5 +259,41 @@ forbidText("src/pages/affiliate/AffiliatePortal.tsx", [
   "border-white/",
 ]);
 
+requireText("src/pages/student/Certificates.tsx", [
+  'context="course"',
+  'variant="course"',
+  'variant="success"',
+  'variant="destructive"',
+  "<PageState",
+  "<Button asChild",
+  'aria-label="Certificados do aluno"',
+]);
+forbidText("src/pages/student/Certificates.tsx", [
+  "btn-brand",
+  "bg-black",
+  "text-white",
+  "text-gray-",
+  "bg-red-",
+  "border-white/",
+]);
+
+requireText("src/pages/student/MyDigitalProducts.tsx", [
+  'context="marketplace"',
+  'variant="marketplace"',
+  'variant="success"',
+  "<PageState",
+  "<Button asChild",
+  'aria-label="Produtos digitais adquiridos"',
+  "downloadPrivateAsset",
+]);
+forbidText("src/pages/student/MyDigitalProducts.tsx", [
+  "btn-brand",
+  "bg-black",
+  "text-white",
+  "text-gray-",
+  "bg-green-",
+  "border-white/",
+]);
+
 if (process.exitCode) process.exit(process.exitCode);
-console.log("Contrato estático do lote central da FASE B23 aprovado.");
+console.log("Contrato estático do lote aluno da FASE B23 aprovado.");
