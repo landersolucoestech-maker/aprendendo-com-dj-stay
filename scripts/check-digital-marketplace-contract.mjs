@@ -49,7 +49,11 @@ expect(accessMigration.includes("has_active_digital_product_access"), "RLS deve 
 expect(schemaMigration.includes("force row level security"), "Tabelas do marketplace devem forçar RLS.");
 expect(accessRpcs.includes("DIGITAL_PRODUCT_PURCHASE_SOURCE_RESERVED"), "Concessão administrativa não pode simular compra.");
 expect(accessRpcs.includes("license_snapshot"), "Concessão deve persistir termos licenciados.");
-expect(catalog.includes("Nenhum acesso é liberado por redirecionamento ou simulação"), "Catálogo deve informar que redirect não libera acesso.");
+expect(
+  catalog.includes("O redirecionamento de retorno não confirma a compra nem libera arquivos") ||
+    catalog.includes("Nenhum acesso é liberado por redirecionamento ou simulação"),
+  "Catálogo deve informar que redirect não confirma compra nem libera acesso.",
+);
 expect(!catalog.includes("confirm_course_purchase"), "Catálogo não pode confirmar compra.");
 expect(!catalog.includes("grant_digital_product_access"), "Catálogo não pode conceder acesso.");
 expect(!owned.includes("getPublicUrl("), "Produtos adquiridos não podem usar URL pública.");
