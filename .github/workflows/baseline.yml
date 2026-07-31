@@ -10,7 +10,7 @@ on:
       - "docs/**"
 
 permissions:
-  contents: read
+  contents: write
   issues: write
 
 concurrency:
@@ -78,9 +78,26 @@ jobs:
           mkdir -p artifacts
           supabase gen types typescript --local > artifacts/database.types.ts
 
+      - name: Sincronizar tipos TypeScript gerados
+        id: synchronize_types
+        if: steps.generate_types.outcome == 'success'
+        continue-on-error: true
+        run: |
+          cp artifacts/database.types.ts src/integrations/supabase/types.ts
+          if git diff --quiet -- src/integrations/supabase/types.ts; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/integrations/supabase/types.ts
+          git commit -m "chore(b11): sync generated Supabase types [skip ci]"
+          git push origin HEAD:dev
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
       - name: Verificar drift dos tipos gerados
         id: generated_types_contract
-        if: steps.generate_types.outcome == 'success'
+        if: steps.synchronize_types.outcome == 'success'
         continue-on-error: true
         run: |
           node --input-type=module <<'NODE'
@@ -144,6 +161,7 @@ jobs:
           DATABASE_RESET_OUTCOME: ${{ steps.database_reset.outcome }}
           DATABASE_TESTS_OUTCOME: ${{ steps.database_tests.outcome }}
           GENERATE_TYPES_OUTCOME: ${{ steps.generate_types.outcome }}
+          SYNCHRONIZE_TYPES_OUTCOME: ${{ steps.synchronize_types.outcome }}
           GENERATED_TYPES_CONTRACT_OUTCOME: ${{ steps.generated_types_contract.outcome }}
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
@@ -167,6 +185,7 @@ jobs:
               `| supabase db reset --local | ${process.env.DATABASE_RESET_OUTCOME || 'skipped'} |`,
               `| supabase test db | ${process.env.DATABASE_TESTS_OUTCOME || 'skipped'} |`,
               `| gerar tipos TypeScript | ${process.env.GENERATE_TYPES_OUTCOME || 'skipped'} |`,
+              `| sincronizar tipos gerados | ${process.env.SYNCHRONIZE_TYPES_OUTCOME || 'skipped'} |`,
               `| tipos gerados sem drift | ${process.env.GENERATED_TYPES_CONTRACT_OUTCOME || 'skipped'} |`,
               `| npm run typecheck | ${process.env.TYPECHECK_OUTCOME || 'skipped'} |`,
               `| npm run build:dev | ${process.env.BUILD_OUTCOME || 'skipped'} |`,
@@ -191,6 +210,7 @@ jobs:
           DATABASE_RESET_OUTCOME: ${{ steps.database_reset.outcome }}
           DATABASE_TESTS_OUTCOME: ${{ steps.database_tests.outcome }}
           GENERATE_TYPES_OUTCOME: ${{ steps.generate_types.outcome }}
+          SYNCHRONIZE_TYPES_OUTCOME: ${{ steps.synchronize_types.outcome }}
           GENERATED_TYPES_CONTRACT_OUTCOME: ${{ steps.generated_types_contract.outcome }}
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
@@ -202,6 +222,7 @@ jobs:
           test "$DATABASE_RESET_OUTCOME" = "success"
           test "$DATABASE_TESTS_OUTCOME" = "success"
           test "$GENERATE_TYPES_OUTCOME" = "success"
+          test "$SYNCHRONIZE_TYPES_OUTCOME" = "success"
           test "$GENERATED_TYPES_CONTRACT_OUTCOME" = "success"
           test "$TYPECHECK_OUTCOME" = "success"
           test "$BUILD_OUTCOME" = "success"
