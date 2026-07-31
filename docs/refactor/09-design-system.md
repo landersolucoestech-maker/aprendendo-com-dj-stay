@@ -68,22 +68,11 @@ Tamanhos disponíveis: `xs`, `sm`, `default`, `lg`, `xl` e `icon`.
 
 Estados de foco, hover, active e disabled são definidos no componente, não nas páginas.
 
-### Cards
+### Cards e badges
 
-Variantes disponíveis:
+Cards possuem variantes `default`, `raised`, `muted`, `interactive`, `course`, `marketplace`, `affiliate` e `admin`. Badges possuem variantes semânticas para sucesso, alerta, informação, destruição e os quatro contextos de produto.
 
-- `default`;
-- `raised`;
-- `muted`;
-- `interactive`;
-- `course`;
-- `marketplace`;
-- `affiliate`;
-- `admin`.
-
-### Badges
-
-Variantes semânticas para status e contextos: `success`, `warning`, `info`, `destructive`, `course`, `marketplace`, `affiliate` e `admin`.
+As funções de variantes ficam em `card-variants.ts` e `badge-variants.ts`, separadas dos componentes para preservar Fast Refresh sem warnings.
 
 ### Campos
 
@@ -102,23 +91,27 @@ Variantes semânticas para status e contextos: `success`, `warning`, `info`, `de
 
 ### Shells
 
-`AppPageShell` centraliza:
+`AppPageShell` centraliza contexto, largura, grid, cabeçalho, eyebrow, título, descrição, navegação, ações e área principal.
 
-- contexto do produto;
-- largura e grid;
-- cabeçalho;
-- eyebrow;
-- título;
-- descrição;
-- navegação;
-- ações;
-- área principal.
+Ambientes migrados para o shell e tokens semânticos:
 
-`AdminCourseLayout` já utiliza esse shell. Navegação pública e redirecionamento de afiliado também foram migrados para tokens semânticos.
+- administração de cursos por `AdminCourseLayout`;
+- marketplace completo;
+- Portal do Afiliado completo;
+- navegação pública;
+- redirecionamento de afiliado.
+
+## Marketplace
+
+`DigitalMarketplace` agora utiliza contexto `marketplace`, cards semânticos, badges de licença, estados de catálogo/licença/checkout, botões válidos com `asChild` e grid responsivo. Nenhuma classe preta, branca ou violeta ad hoc permanece na página.
+
+## Portal do Afiliado
+
+`AffiliatePortal` agora utiliza contexto `affiliate`, cards financeiros, badges de status, estados de perfil, tabela acessível, ações com rótulos e áreas vazias padronizadas. Perfil, links, ofertas, comissões e repasses continuam usando os mesmos hooks e contratos persistidos.
 
 ## Compatibilidade e migração
 
-As classes legadas `btn-brand`, `btn-neon` e `glass-card` permanecem temporariamente como aliases semânticos para não quebrar telas ainda não migradas. Novos componentes não devem utilizá-las. A remoção ocorrerá após a migração dos ambientes público, aluno, marketplace, afiliados, administração, player e checkout.
+As classes legadas `btn-brand`, `btn-neon` e `glass-card` permanecem temporariamente como aliases semânticos para não quebrar telas ainda não migradas. Novos componentes não devem utilizá-las. A remoção ocorrerá após a migração dos ambientes restantes.
 
 ## Acessibilidade incorporada
 
@@ -128,7 +121,9 @@ Mesmo pertencendo formalmente à B24, o núcleo visual já preserva:
 - ring semântico;
 - `prefers-reduced-motion`;
 - estados ARIA em campos e estados de página;
-- ícones decorativos ocultos de tecnologias assistivas nos shells migrados;
+- ícones decorativos ocultos nos shells migrados;
+- cabeçalhos com `scope` em tabelas migradas;
+- nomes acessíveis em botões somente com ícone;
 - touch targets mínimos nos botões padrão.
 
 A validação completa de WCAG, teclado, landmarks, modais, tabelas e leitores de tela permanece na B24.
@@ -144,6 +139,8 @@ A validação completa de WCAG, teclado, landmarks, modais, tabelas e leitores d
 | REQ-DS-004 — estados vazios/loading/erro/sucesso | `src/components/ui/page-state.tsx` |
 | REQ-DS-005 — shell responsivo comum | `src/components/layout/AppPageShell.tsx` |
 | REQ-DS-006 — administração sem hardcodes de cor | `src/components/admin/AdminCourseLayout.tsx` |
+| REQ-DS-007 — marketplace contextual | `src/pages/marketplace/DigitalMarketplace.tsx` |
+| REQ-DS-008 — afiliados contextual | `src/pages/affiliate/AffiliatePortal.tsx` |
 | TEST-DS-001 — contrato estático | `scripts/check-design-system-contract.mjs` |
 
 ## Rollback
@@ -162,10 +159,8 @@ A fase não altera banco, migrations, RLS ou dados. O rollback consiste em rever
 ## Pendências sequenciais da B23
 
 - migrar shells do Portal do Aluno;
-- migrar marketplace;
-- migrar Portal de Afiliados;
 - migrar páginas administrativas restantes;
-- migrar autenticação e páginas públicas;
+- migrar autenticação e páginas públicas restantes;
 - migrar player e checkout;
 - eliminar aliases legados após comprovar ausência de uso;
 - revisar responsividade em desktop, tablet e mobile;
