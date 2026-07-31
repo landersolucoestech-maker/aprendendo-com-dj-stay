@@ -45,6 +45,7 @@ select set_config('request.jwt.claims','{"sub":"b2000000-0000-4000-8000-00000000
 select set_config('test.b20_pay_link',(select code from public.create_affiliate_link('course',current_setting('test.b20_pay_course_id')::uuid,'/marketplace')),false);
 
 reset role;
+select set_config('request.jwt.claims','{"role":"anon","is_anonymous":true}',true);
 set local role anon;
 select public.record_affiliate_click(current_setting('test.b20_pay_link'),'b2060000-0000-4000-8000-000000000301','/marketplace','https://pay-source.test','Payment Browser');
 
@@ -58,14 +59,34 @@ select set_config('request.jwt.claims','{"sub":"b2000000-0000-4000-8000-00000000
 select set_config('test.b20_pay_claim',(private.claim_checkout_provider_request(current_setting('test.b20_pay_intent')::uuid,'b2000000-0000-4000-8000-000000000303',120)->>'request_token'),false);
 select private.complete_checkout_provider_request(current_setting('test.b20_pay_intent')::uuid,'b2000000-0000-4000-8000-000000000303',current_setting('test.b20_pay_claim')::uuid,'pay-checkout-b20','https://sandbox.asaas.com/checkout/pay-b20',statement_timestamp()+interval '30 minutes');
 select set_config('test.b20_pay_attempt',(select id::text from public.payment_attempts where checkout_intent_id=current_setting('test.b20_pay_intent')::uuid),false);
-select private.process_asaas_payment_event('evt-b20-pay-1','PAYMENT_RECEIVED','pay-b20-1','pay-checkout-b20',10000,'BRL',statement_timestamp(),'{"payment":{"status":"RECEIVED"}}'::jsonb,'hash-b20-pay-1');
+select private.process_asaas_payment_webhook(
+  'evt-b20-pay-1',
+  'PAYMENT_RECEIVED',
+  jsonb_build_object('payment',jsonb_build_object(
+    'id','pay-b20-1',
+    'externalReference',current_setting('test.b20_pay_intent'),
+    'status','RECEIVED',
+    'value',100,
+    'billingType','PIX'
+  ))
+);
 
 select is((select count(*)::integer from public.affiliate_commissions),1,'payment creates one affiliate commission');
 select is((select amount_cents from public.affiliate_commissions),1000,'commission uses frozen ten percent rate');
 select is((select status::text from public.affiliate_commissions),'available','received payment makes commission available');
 select is((select order_id from public.affiliate_commissions),(select id from public.payment_orders where checkout_intent_id=current_setting('test.b20_pay_intent')::uuid),'commission is linked to payment order');
 select is((select count(*)::integer from public.affiliate_events where event_type='commission_accrued'),1,'commission accrual is audited');
-select private.process_asaas_payment_event('evt-b20-pay-1','PAYMENT_RECEIVED','pay-b20-1','pay-checkout-b20',10000,'BRL',statement_timestamp(),'{"payment":{"status":"RECEIVED"}}'::jsonb,'hash-b20-pay-1');
+select private.process_asaas_payment_webhook(
+  'evt-b20-pay-1',
+  'PAYMENT_RECEIVED',
+  jsonb_build_object('payment',jsonb_build_object(
+    'id','pay-b20-1',
+    'externalReference',current_setting('test.b20_pay_intent'),
+    'status','RECEIVED',
+    'value',100,
+    'billingType','PIX'
+  ))
+);
 select is((select count(*)::integer from public.affiliate_commissions),1,'duplicate provider event does not duplicate commission');
 
 reset role;
@@ -96,7 +117,17 @@ select is((select count(*)::integer from public.affiliate_events where event_typ
 
 reset role;
 select set_config('request.jwt.claims','{"sub":"b2000000-0000-4000-8000-000000000301","role":"service_role"}',true);
-select private.process_asaas_payment_event('evt-b20-refund-1','PAYMENT_REFUNDED','pay-b20-1','pay-checkout-b20',10000,'BRL',statement_timestamp(),'{"payment":{"status":"REFUNDED"}}'::jsonb,'hash-b20-refund-1');
+select private.process_asaas_payment_webhook(
+  'evt-b20-refund-1',
+  'PAYMENT_REFUNDED',
+  jsonb_build_object('payment',jsonb_build_object(
+    'id','pay-b20-1',
+    'externalReference',current_setting('test.b20_pay_intent'),
+    'status','REFUNDED',
+    'value',100,
+    'billingType','PIX'
+  ))
+);
 select is((select status::text from public.affiliate_commissions),'clawback_due','refund after payout creates clawback due');
 select is((select count(*)::integer from public.affiliate_events where event_type='commission_clawback_due'),1,'clawback due is audited');
 select is((select count(*)::integer from public.affiliate_commissions),1,'refund preserves commission history');
