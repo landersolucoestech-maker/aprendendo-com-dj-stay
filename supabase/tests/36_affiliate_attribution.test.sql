@@ -73,6 +73,7 @@ select set_config('request.jwt.claims','{"sub":"b2000000-0000-4000-8000-00000000
 select lives_ok($$select set_config('test.b20_attr_link_two',(select code from public.create_affiliate_link('course',current_setting('test.b20_attr_course_id')::uuid,'/marketplace')),false)$$,'second affiliate creates a link');
 
 reset role;
+select set_config('request.jwt.claim.sub','',true);
 select set_config('request.jwt.claims','{"role":"anon","is_anonymous":true}',true);
 set local role anon;
 select ok((public.record_affiliate_click(current_setting('test.b20_attr_link_one'),'b2060000-0000-4000-8000-000000000201','/marketplace','https://source-one.test','Browser One')->>'accepted')::boolean,'first anonymous click is accepted');
@@ -99,6 +100,7 @@ select is((select attribution.affiliate_user_id from public.checkout_intents int
 select is((select item_snapshot->'affiliate'->>'affiliate_user_id' from public.checkout_intents where id=current_setting('test.b20_attr_buyer_intent')::uuid),'b2000000-0000-4000-8000-000000000203','checkout snapshot freezes affiliate identity');
 
 reset role;
+select set_config('request.jwt.claim.sub','',true);
 select set_config('request.jwt.claims','{"role":"anon","is_anonymous":true}',true);
 set local role anon;
 select ok((public.record_affiliate_click(current_setting('test.b20_attr_link_two'),'b2060000-0000-4000-8000-000000000202','/marketplace','https://self.test','Self Browser')->>'accepted')::boolean,'self-referral click can be recorded before authentication is known');
