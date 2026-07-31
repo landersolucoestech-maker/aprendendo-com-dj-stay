@@ -65,6 +65,16 @@
   h6 {
     @apply font-bold tracking-tight;
   }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 3px;
+  }
 }
 
 @layer components {
@@ -87,12 +97,27 @@
 
   .btn-brand,
   .btn-neon {
-    @apply rounded-xl bg-gradient-to-r from-brand-light to-brand-medium px-8 py-4 font-semibold text-white transition-[transform,filter,box-shadow] duration-300 hover:scale-[1.02] hover:brightness-110;
+    @apply rounded-xl bg-gradient-to-r from-brand-light to-brand-medium px-8 py-4 font-semibold text-primary-foreground transition-[transform,filter,box-shadow] duration-300 hover:scale-[1.02] hover:brightness-110;
     box-shadow: 0 0 0 1px hsl(var(--brand-light) / 0.2);
   }
 
   .btn-brand:hover,
   .btn-neon:hover {
     box-shadow: 0 0 30px hsl(var(--brand-light) / 0.4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
