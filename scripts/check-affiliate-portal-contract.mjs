@@ -24,6 +24,7 @@ const requiredFiles = [
   "supabase/migrations/20260731060931_affiliate_admin_invoker_wrappers.sql",
   "supabase/migrations/20260731060932_affiliate_portal_invoker_wrappers.sql",
   "supabase/migrations/20260731060940_affiliate_foreign_key_indexes.sql",
+  "supabase/migrations/20260731061020_private_schema_usage_for_invoker_wrappers.sql",
   "supabase/tests/35_affiliate_schema.test.sql",
   "supabase/tests/36_affiliate_attribution.test.sql",
   "supabase/tests/37_affiliate_commissions_payouts.test.sql",
@@ -114,6 +115,9 @@ requireText("supabase/migrations/20260731060940_affiliate_foreign_key_indexes.sq
   "affiliate_payouts_paid_by_idx",
   "affiliate_events_actor_idx",
 ]);
+requireText("supabase/migrations/20260731061020_private_schema_usage_for_invoker_wrappers.sql", [
+  "grant usage on schema private to anon, authenticated",
+]);
 requireText("src/hooks/useHostedCheckout.ts", [
   '"prepare_checkout_intent_with_attribution"',
   'supabase.functions.invoke("create-asaas-checkout"',
@@ -133,7 +137,8 @@ requireText("src/pages/AffiliateRedirect.tsx", [
   "window.location.replace(result.destination_path)",
 ]);
 requireText("src/pages/admin/AffiliatesAdmin.tsx", [
-  "administração",
+  "Programa de afiliados",
+  "Comissões disponíveis",
   "externalReference",
   "createAffiliatePayout",
   "suspendProfile",
