@@ -20,6 +20,10 @@ const requiredFiles = [
   "supabase/migrations/20260731060910_affiliate_admin_portal_rpc.sql",
   "supabase/migrations/20260731060920_fix_affiliate_path_validation.sql",
   "supabase/migrations/20260731060921_fix_affiliate_checkout_execution.sql",
+  "supabase/migrations/20260731060930_affiliate_public_invoker_wrappers.sql",
+  "supabase/migrations/20260731060931_affiliate_admin_invoker_wrappers.sql",
+  "supabase/migrations/20260731060932_affiliate_portal_invoker_wrappers.sql",
+  "supabase/migrations/20260731060940_affiliate_foreign_key_indexes.sql",
   "supabase/tests/35_affiliate_schema.test.sql",
   "supabase/tests/36_affiliate_attribution.test.sql",
   "supabase/tests/37_affiliate_commissions_payouts.test.sql",
@@ -89,6 +93,27 @@ requireText("supabase/migrations/20260731060810_affiliate_payout_rpcs.sql", [
   "admin_cancel_affiliate_payout",
   "for update of commission_record",
 ]);
+requireText("supabase/migrations/20260731060930_affiliate_public_invoker_wrappers.sql", [
+  "set schema private",
+  "security invoker",
+  "private.record_affiliate_click",
+]);
+requireText("supabase/migrations/20260731060931_affiliate_admin_invoker_wrappers.sql", [
+  "set schema private",
+  "security invoker",
+  "private.admin_mark_affiliate_payout_paid",
+]);
+requireText("supabase/migrations/20260731060932_affiliate_portal_invoker_wrappers.sql", [
+  "private.get_affiliate_portal",
+  "private.get_affiliate_admin_dashboard",
+  "language sql security invoker",
+]);
+requireText("supabase/migrations/20260731060940_affiliate_foreign_key_indexes.sql", [
+  "affiliate_profiles_created_by_idx",
+  "affiliate_subject_terms_updated_by_idx",
+  "affiliate_payouts_paid_by_idx",
+  "affiliate_events_actor_idx",
+]);
 requireText("src/hooks/useHostedCheckout.ts", [
   '"prepare_checkout_intent_with_attribution"',
   'supabase.functions.invoke("create-asaas-checkout"',
@@ -121,6 +146,15 @@ const allMigrationText = [...contents.entries()]
   .toLowerCase();
 if (allMigrationText.includes("ip_address") || /\binet\b/.test(allMigrationText)) {
   fail("o programa de afiliados não pode persistir IP bruto");
+}
+
+const finalInvokerMigrations = [
+  contents.get("supabase/migrations/20260731060930_affiliate_public_invoker_wrappers.sql") ?? "",
+  contents.get("supabase/migrations/20260731060931_affiliate_admin_invoker_wrappers.sql") ?? "",
+  contents.get("supabase/migrations/20260731060932_affiliate_portal_invoker_wrappers.sql") ?? "",
+].join("\n").toLowerCase();
+if (finalInvokerMigrations.includes("security definer")) {
+  fail("os wrappers públicos finais da B20 não podem usar SECURITY DEFINER");
 }
 
 const collectSourceFiles = async (directory) => {
