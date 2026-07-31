@@ -25,11 +25,14 @@ const AffiliateRedirect = () => {
 
       try {
         const visitorToken = ensureAffiliateVisitorToken();
+        const referrerOrigin = document.referrer
+          ? new URL(document.referrer).origin
+          : undefined;
         const { data, error: rpcError } = await supabase.rpc("record_affiliate_click", {
           p_link_code: code,
           p_visitor_token: visitorToken,
           p_landing_path: window.location.pathname,
-          p_referrer_origin: document.referrer ? new URL(document.referrer).origin : null,
+          ...(referrerOrigin ? { p_referrer_origin: referrerOrigin } : {}),
           p_user_agent: navigator.userAgent.slice(0, 1000),
         });
         if (rpcError) throw rpcError;
