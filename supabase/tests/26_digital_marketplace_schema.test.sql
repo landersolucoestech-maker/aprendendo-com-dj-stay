@@ -1,0 +1,37 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(30);
+
+select has_type('public','digital_product_status','digital product status enum exists');
+select has_type('public','digital_license_status','digital license status enum exists');
+select has_type('public','digital_license_kind','digital license kind enum exists');
+select has_type('public','digital_product_access_status','digital product access status enum exists');
+select has_type('public','digital_product_access_source','digital product access source enum exists');
+select has_type('public','digital_product_event_type','digital product event enum exists');
+select has_table('public','digital_products','digital products table exists');
+select has_table('public','digital_product_licenses','digital product licenses table exists');
+select has_table('public','digital_product_deliverables','digital product deliverables table exists');
+select has_table('public','digital_product_accesses','digital product accesses table exists');
+select has_table('public','digital_product_events','digital product events table exists');
+select ok((select bool_and(relrowsecurity and relforcerowsecurity) from pg_class where oid in ('public.digital_products'::regclass,'public.digital_product_licenses'::regclass,'public.digital_product_deliverables'::regclass,'public.digital_product_accesses'::regclass,'public.digital_product_events'::regclass)),'marketplace tables force RLS');
+select is((select count(*)::integer from information_schema.role_table_grants where grantee='authenticated' and table_schema='public' and table_name in ('digital_products','digital_product_licenses','digital_product_deliverables','digital_product_accesses','digital_product_events') and privilege_type in ('INSERT','UPDATE','DELETE','TRUNCATE')),0,'authenticated cannot mutate marketplace tables directly');
+select is((select count(*)::integer from information_schema.role_table_grants where grantee='anon' and table_schema='public' and table_name in ('digital_products','digital_product_licenses','digital_product_deliverables','digital_product_accesses','digital_product_events')),0,'anonymous has no marketplace table grants');
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('create_digital_product','update_digital_product','create_digital_product_license','publish_digital_product_license','attach_digital_product_deliverable','update_digital_product_deliverable','reorder_digital_product_deliverables','remove_digital_product_deliverable','publish_digital_product','unpublish_digital_product','archive_digital_product','delete_digital_product','grant_digital_product_access','revoke_digital_product_access')),14,'fourteen public marketplace RPCs exist');
+select ok((select bool_and(not p.prosecdef) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('create_digital_product','update_digital_product','create_digital_product_license','publish_digital_product_license','attach_digital_product_deliverable','update_digital_product_deliverable','reorder_digital_product_deliverables','remove_digital_product_deliverable','publish_digital_product','unpublish_digital_product','archive_digital_product','delete_digital_product','grant_digital_product_access','revoke_digital_product_access')),'public marketplace RPCs are security invoker');
+select is((select count(*)::integer from information_schema.role_routine_grants where specific_schema='public' and grantee='anon' and routine_name in ('create_digital_product','update_digital_product','create_digital_product_license','publish_digital_product_license','attach_digital_product_deliverable','update_digital_product_deliverable','reorder_digital_product_deliverables','remove_digital_product_deliverable','publish_digital_product','unpublish_digital_product','archive_digital_product','delete_digital_product','grant_digital_product_access','revoke_digital_product_access')),0,'anonymous cannot execute marketplace RPCs');
+select is((select count(*)::integer from information_schema.role_routine_grants where specific_schema='public' and grantee='authenticated' and routine_name in ('create_digital_product','update_digital_product','create_digital_product_license','publish_digital_product_license','attach_digital_product_deliverable','update_digital_product_deliverable','reorder_digital_product_deliverables','remove_digital_product_deliverable','publish_digital_product','unpublish_digital_product','archive_digital_product','delete_digital_product','grant_digital_product_access','revoke_digital_product_access')),14,'authenticated can execute marketplace RPCs through role checks');
+select ok((select bool_and(p.prosecdef) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and (p.proname like '%digital_product%' or p.proname like '%marketplace%') and p.proname not like 'set_%' and p.proname not like 'freeze_%' and p.proname not like 'validate_%'),'private marketplace operations are security definer');
+select ok((select bool_and(p.proconfig=array['search_path=""']::text[]) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and p.prosecdef and (p.proname like '%digital_product%' or p.proname like '%marketplace%')),'private marketplace security definers fix empty search path');
+select is((select count(*)::integer from pg_policies where schemaname='public' and tablename in ('digital_products','digital_product_licenses','digital_product_deliverables','digital_product_accesses','digital_product_events')),5,'marketplace tables expose five read policies');
+select is((select count(*)::integer from pg_policies where schemaname='public' and tablename='assets' and policyname='assets_select'),1,'assets retain one consolidated read policy');
+select has_pk('public','digital_products','digital products have a primary key');
+select has_pk('public','digital_product_licenses','digital product licenses have a primary key');
+select has_pk('public','digital_product_deliverables','digital product deliverables have a primary key');
+select has_pk('public','digital_product_accesses','digital product accesses have a primary key');
+select has_pk('public','digital_product_events','digital product events have a primary key');
+select has_index('public','digital_products','digital_products_slug_uidx','active product slugs are unique and indexed');
+select has_index('public','digital_product_accesses','digital_product_accesses_one_active_uidx','active product access is unique per user');
+select is((select count(*)::integer from public.digital_products)+(select count(*)::integer from public.digital_product_licenses)+(select count(*)::integer from public.digital_product_deliverables)+(select count(*)::integer from public.digital_product_accesses)+(select count(*)::integer from public.digital_product_events),0,'marketplace schema starts empty');
+
+select * from finish();
+rollback;
