@@ -28,6 +28,8 @@ const migrations = [
   "20260730200800_harden_playback_resolution_pgcrypto.sql",
 ].map((name) => read(`supabase/migrations/${name}`)).join("\n");
 
+const protectedPaymentRoute = /path="\/pagamento-sucesso"[\s\S]*?<RequireAuth>[\s\S]*?<RequireRole\s+allowedRoles=\{\["aluno",\s*"administrador_proprietario"\]\}>[\s\S]*?<PaymentSuccess\s*\/>[\s\S]*?<\/RequireRole>[\s\S]*?<\/RequireAuth>/;
+
 expect(migrations.includes("private.has_active_course_access"), "A autorização de curso deve ser resolvida no banco.");
 expect(migrations.includes("SERVICE_ROLE_REQUIRED"), "A confirmação de compra deve exigir service_role.");
 expect(migrations.includes("request_lesson_playback_token"), "A reprodução deve exigir token curto e opaco.");
@@ -35,7 +37,7 @@ expect(migrations.includes("ACTIVE_ENROLLMENT_REQUIRED"), "A mídia deve exigir 
 expect(migrations.includes("extensions.gen_random_bytes"), "Tokens devem usar pgcrypto com schema explícito.");
 expect(migrations.includes("extensions.digest"), "Hashes devem usar pgcrypto com schema explícito.");
 expect(!app.includes("VITE_DISABLE_AUTH"), "Bypass de autenticação não pode existir.");
-expect(app.includes("<RequireAuth>\n                  <RequireRole"), "A confirmação de pagamento deve exigir autenticação e papel permitido.");
+expect(protectedPaymentRoute.test(app), "A confirmação de pagamento deve exigir autenticação e papel permitido.");
 expect(!paymentSuccess.includes("Pagamento Realizado!"), "A página de retorno não pode declarar pagamento sem confirmação confiável.");
 expect(!paymentSuccess.includes("Acesso vitalício"), "A interface não pode inventar prazo vitalício.");
 expect(!lesson.includes("getPublicUrl("), "A página de aula não pode gerar URL pública.");
