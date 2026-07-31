@@ -5,6 +5,13 @@ const failures = [];
 const expect = (condition, message) => {
   if (!condition) failures.push(message);
 };
+const extractSection = (source, startMarker, endMarker) => {
+  const start = source.indexOf(startMarker);
+  if (start < 0) return "";
+
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  return end > start ? source.slice(start, end) : "";
+};
 
 const app = read("src/App.tsx");
 const hooks = read("src/hooks/useDigitalMarketplace.ts");
@@ -17,12 +24,27 @@ const privateAssets = read("src/lib/private-assets.ts");
 const schemaMigration = read("supabase/migrations/20260731050000_digital_marketplace_schema.sql");
 const accessMigration = read("supabase/migrations/20260731050100_digital_marketplace_access.sql");
 const accessRpcs = read("supabase/migrations/20260731050300_digital_marketplace_access_rpcs.sql");
+const marketplaceGuard = extractSection(
+  app,
+  "const MarketplaceRoute",
+  "const AdminRoute",
+);
+const adminProductsRoute = extractSection(
+  app,
+  'path="/admin/produtos"',
+  'path="/admin/afiliados"',
+);
+const marketplaceAllowedRoles =
+  /allowedRoles\s*=\s*\{\s*\[\s*"aluno"\s*,\s*"afiliado"\s*,\s*"administrador_proprietario"\s*\]\s*\}/;
 
 for (const route of ["/marketplace", "/meus-produtos", "/aluno/produtos", "/admin/produtos"]) {
   expect(app.includes(`path=\"${route}\"`), `Rota ${route} deve existir.`);
 }
-expect(app.includes('allowedRoles={["aluno", "afiliado", "administrador_proprietario"]}'), "Marketplace deve exigir usuário autenticado com papel permitido.");
-expect(app.includes('<AdminRoute>\n                  <DigitalProductsAdmin />'), "CMS de produtos deve exigir administrador proprietário.");
+expect(marketplaceGuard.includes("<RequireAuth>"), "Marketplace deve exigir autenticação.");
+expect(marketplaceAllowedRoles.test(marketplaceGuard), "Marketplace deve exigir usuário autenticado com papel permitido.");
+expect(adminProductsRoute.includes("<AdminRoute>"), "CMS de produtos deve exigir administrador proprietário.");
+expect(adminProductsRoute.includes("<DigitalProductsAdmin />"), "Rota administrativa deve renderizar o CMS de produtos.");
+expect(adminProductsRoute.includes("</AdminRoute>"), "Guard administrativo do CMS de produtos deve permanecer fechado.");
 
 for (const table of [
   "digital_products",
