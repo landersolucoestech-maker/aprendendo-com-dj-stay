@@ -1,46 +1,137 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { useAuth } from "@/auth/use-auth";
 import { Button } from "@/components/ui/button";
+import { brandConfig } from "@/config/brand";
+
+const sectionLinks = [
+  { label: "Início", sectionId: "home" },
+  { label: "Curso", sectionId: "curso" },
+  { label: "Instrutor", sectionId: "instrutor" },
+  { label: "Depoimentos", sectionId: "depoimentos" },
+] as const;
+
+const navigationItemClassName =
+  "rounded-md text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { session } = useAuth();
-  const navigate = useNavigate();
 
-  const handleGetStarted = () => navigate(session ? "/portal" : "/matricule-se");
+  const closeMenu = () => setIsOpen(false);
+
   const scrollToSection = (sectionId: string) => {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
-    setIsOpen(false);
+    closeMenu();
   };
 
-  const accountActions = session ? (
-    <Link to="/portal" onClick={() => setIsOpen(false)}><Button className="btn-neon">Portal</Button></Link>
-  ) : (
-    <div className="flex items-center gap-3">
-      <Link to="/login" onClick={() => setIsOpen(false)}><Button variant="ghost" className="text-white">Entrar</Button></Link>
-      <Button onClick={() => { handleGetStarted(); setIsOpen(false); }} className="btn-neon">Matricular</Button>
-    </div>
-  );
+  const renderAccountActions = (mobile = false) => {
+    const buttonClassName = mobile ? "w-full" : undefined;
+
+    if (session) {
+      return (
+        <Button asChild variant="brand" className={buttonClassName}>
+          <Link to="/portal" onClick={closeMenu}>
+            Portal
+          </Link>
+        </Button>
+      );
+    }
+
+    return (
+      <div className={mobile ? "grid gap-3" : "flex items-center gap-3"}>
+        <Button asChild variant="ghost" className={buttonClassName}>
+          <Link to="/login" onClick={closeMenu}>
+            Entrar
+          </Link>
+        </Button>
+        <Button asChild variant="brand" className={buttonClassName}>
+          <Link to="/matricule-se" onClick={closeMenu}>
+            Matricular
+          </Link>
+        </Button>
+      </div>
+    );
+  };
 
   return (
-    <nav className="fixed top-0 w-full bg-black/90 backdrop-blur-md border-b border-white/10 z-50">
+    <nav
+      aria-label="Navegação principal"
+      className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background/90 backdrop-blur-md"
+    >
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-[85px]">
-          <Link to="/" className="flex items-center space-x-2"><img src="/lovable-uploads/db1b3703-f32b-43e4-bc00-ee4e8e08c366.png" alt="Aprendendo com DJ Stay" className="w-20 h-20 object-contain" /><span className="text-2xl font-bold gradient-text">Aprendendo com DJ Stay</span></Link>
-          <div className="hidden md:flex items-center space-x-8">
-            <button onClick={() => scrollToSection("home")} className="text-gray-300 hover:text-white">Início</button>
-            <button onClick={() => scrollToSection("curso")} className="text-gray-300 hover:text-white">Curso</button>
-            <button onClick={() => scrollToSection("instrutor")} className="text-gray-300 hover:text-white">Instrutor</button>
-            <button onClick={() => scrollToSection("depoimentos")} className="text-gray-300 hover:text-white">Depoimentos</button>
-            <Link to="/contato" className="text-gray-300 hover:text-white">Contato</Link>
-            {accountActions}
+        <div className="flex h-[85px] items-center justify-between gap-4">
+          <Link
+            to="/"
+            onClick={closeMenu}
+            className="flex min-w-0 items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <img
+              src={brandConfig.logoPath}
+              alt={brandConfig.logoAlt}
+              className="h-20 w-20 shrink-0 object-contain"
+            />
+            <span className="gradient-text hidden truncate text-xl font-bold sm:inline lg:text-2xl">
+              {brandConfig.name}
+            </span>
+          </Link>
+
+          <div className="hidden items-center gap-6 md:flex lg:gap-8">
+            {sectionLinks.map((item) => (
+              <button
+                key={item.sectionId}
+                type="button"
+                onClick={() => scrollToSection(item.sectionId)}
+                className={navigationItemClassName}
+              >
+                {item.label}
+              </button>
+            ))}
+            <Link to="/contato" className={navigationItemClassName}>
+              Contato
+            </Link>
+            {renderAccountActions()}
           </div>
-          <button className="md:hidden text-white" onClick={() => setIsOpen((current) => !current)} aria-label="Abrir menu">{isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}</button>
+
+          <button
+            type="button"
+            className="rounded-md p-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:hidden"
+            onClick={() => setIsOpen((current) => !current)}
+            aria-label={isOpen ? "Fechar menu" : "Abrir menu"}
+            aria-controls="mobile-navigation"
+            aria-expanded={isOpen}
+          >
+            {isOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+          </button>
         </div>
-        {isOpen && <div className="md:hidden py-4 space-y-4 border-t border-white/10"><button onClick={() => scrollToSection("home")} className="block w-full text-left text-gray-300">Início</button><button onClick={() => scrollToSection("curso")} className="block w-full text-left text-gray-300">Curso</button><button onClick={() => scrollToSection("instrutor")} className="block w-full text-left text-gray-300">Instrutor</button><Link to="/contato" onClick={() => setIsOpen(false)} className="block text-gray-300">Contato</Link>{accountActions}</div>}
+
+        {isOpen ? (
+          <div
+            id="mobile-navigation"
+            className="space-y-2 border-t border-border py-4 md:hidden"
+          >
+            {sectionLinks.map((item) => (
+              <button
+                key={item.sectionId}
+                type="button"
+                onClick={() => scrollToSection(item.sectionId)}
+                className={`${navigationItemClassName} block w-full px-3 py-2 text-left`}
+              >
+                {item.label}
+              </button>
+            ))}
+            <Link
+              to="/contato"
+              onClick={closeMenu}
+              className={`${navigationItemClassName} block px-3 py-2`}
+            >
+              Contato
+            </Link>
+            <div className="pt-2">{renderAccountActions(true)}</div>
+          </div>
+        ) : null}
       </div>
     </nav>
   );
