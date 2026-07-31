@@ -5,6 +5,13 @@ const failures = [];
 const expect = (condition, message) => {
   if (!condition) failures.push(message);
 };
+const extractSection = (source, startMarker, endMarker) => {
+  const start = source.indexOf(startMarker);
+  if (start < 0) return "";
+
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  return end > start ? source.slice(start, end) : "";
+};
 
 const app = read("src/App.tsx");
 const paymentSuccess = read("src/pages/PaymentSuccess.tsx");
@@ -28,12 +35,11 @@ const migrations = [
   "20260730200800_harden_playback_resolution_pgcrypto.sql",
 ].map((name) => read(`supabase/migrations/${name}`)).join("\n");
 
-const paymentRouteStart = app.indexOf('path="/pagamento-sucesso"');
-const nextRouteStart = app.indexOf('path="/login"', paymentRouteStart);
-const paymentRoute =
-  paymentRouteStart >= 0 && nextRouteStart > paymentRouteStart
-    ? app.slice(paymentRouteStart, nextRouteStart)
-    : "";
+const paymentRoute = extractSection(
+  app,
+  'path="/pagamento-sucesso"',
+  'path="/login"',
+);
 const paymentAllowedRoles =
   /allowedRoles\s*=\s*\{\s*\[\s*"aluno"\s*,\s*"administrador_proprietario"\s*\]\s*\}/;
 
@@ -44,7 +50,7 @@ expect(migrations.includes("ACTIVE_ENROLLMENT_REQUIRED"), "A mídia deve exigir 
 expect(migrations.includes("extensions.gen_random_bytes"), "Tokens devem usar pgcrypto com schema explícito.");
 expect(migrations.includes("extensions.digest"), "Hashes devem usar pgcrypto com schema explícito.");
 expect(!app.includes("VITE_DISABLE_AUTH"), "Bypass de autenticação não pode existir.");
-expect(paymentRouteStart >= 0, "A rota de confirmação de pagamento deve existir.");
+expect(paymentRoute.length > 0, "A rota de confirmação de pagamento deve existir.");
 expect(paymentRoute.includes("<RequireAuth>"), "A confirmação de pagamento deve exigir autenticação.");
 expect(paymentAllowedRoles.test(paymentRoute), "A confirmação de pagamento deve permitir somente aluno e administrador proprietário.");
 expect(paymentRoute.includes("<PaymentSuccess />"), "A rota protegida deve renderizar a confirmação de pagamento.");
