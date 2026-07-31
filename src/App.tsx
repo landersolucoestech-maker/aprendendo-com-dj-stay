@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AuthProvider } from "@/auth/AuthProvider";
 import { Toaster } from "@/components/ui/toaster";
@@ -9,7 +9,6 @@ import { queryClient } from "@/lib/query-client";
 import AccessDenied from "@/pages/AccessDenied";
 import AuthCallback from "@/pages/AuthCallback";
 import Contact from "@/pages/Contact";
-import Dashboard from "@/pages/Dashboard";
 import EditProfile from "@/pages/EditProfile";
 import ForgotPassword from "@/pages/ForgotPassword";
 import Index from "@/pages/Index";
@@ -25,10 +24,17 @@ import CourseCurriculum from "@/pages/admin/CourseCurriculum";
 import CourseEditor from "@/pages/admin/CourseEditor";
 import CoursePreview from "@/pages/admin/CoursePreview";
 import CoursesAdmin from "@/pages/admin/CoursesAdmin";
+import StudentPortal from "@/pages/student/StudentPortal";
 import { PublicOnlyRoute } from "@/routing/PublicOnlyRoute";
 import { RequireAuth } from "@/routing/RequireAuth";
 import { RequireRole } from "@/routing/RequireRole";
 import { RoleLandingRedirect } from "@/routing/RoleLandingRedirect";
+
+const StudentRoute = ({ children }: { children: React.ReactNode }) => (
+  <RequireAuth>
+    <RequireRole allowedRoles={["aluno"]}>{children}</RequireRole>
+  </RequireAuth>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -89,14 +95,85 @@ const App = () => (
                 </RequireAuth>
               }
             />
+
+            <Route
+              path="/aluno"
+              element={
+                <StudentRoute>
+                  <StudentPortal section="dashboard" />
+                </StudentRoute>
+              }
+            />
+            <Route
+              path="/aluno/cursos"
+              element={
+                <StudentRoute>
+                  <StudentPortal section="courses" />
+                </StudentRoute>
+              }
+            />
+            <Route
+              path="/aluno/cursos/:courseId"
+              element={
+                <StudentRoute>
+                  <StudentPortal section="course" />
+                </StudentRoute>
+              }
+            />
+            <Route
+              path="/aluno/biblioteca"
+              element={
+                <StudentRoute>
+                  <StudentPortal section="library" />
+                </StudentRoute>
+              }
+            />
+            <Route
+              path="/aluno/pedidos"
+              element={
+                <StudentRoute>
+                  <StudentPortal section="orders" />
+                </StudentRoute>
+              }
+            />
+            <Route
+              path="/aluno/pagamentos"
+              element={
+                <StudentRoute>
+                  <StudentPortal section="payments" />
+                </StudentRoute>
+              }
+            />
+            <Route
+              path="/aluno/perfil"
+              element={
+                <StudentRoute>
+                  <StudentPortal section="profile" />
+                </StudentRoute>
+              }
+            />
+            <Route
+              path="/aluno/perfil/editar"
+              element={
+                <StudentRoute>
+                  <EditProfile />
+                </StudentRoute>
+              }
+            />
+            <Route
+              path="/aluno/historico"
+              element={
+                <StudentRoute>
+                  <StudentPortal section="history" />
+                </StudentRoute>
+              }
+            />
             <Route
               path="/dashboard"
               element={
-                <RequireAuth>
-                  <RequireRole allowedRoles={["aluno", "administrador_proprietario"]}>
-                    <Dashboard />
-                  </RequireRole>
-                </RequireAuth>
+                <StudentRoute>
+                  <Navigate to="/aluno" replace />
+                </StudentRoute>
               }
             />
             <Route
@@ -109,6 +186,7 @@ const App = () => (
                 </RequireAuth>
               }
             />
+
             <Route
               path="/admin/cursos"
               element={
