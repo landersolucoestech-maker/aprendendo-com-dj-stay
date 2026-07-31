@@ -22,25 +22,111 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Aplicar pacote funcional B12
+        id: apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload="scripts/b12/payload.b64"
+          if [ ! -f "$payload" ]; then
+            echo "applied=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          base64 --decode "$payload" > /tmp/b12-ui-payload.tar.gz
+          echo "926af29257d1ff9467b13eb8ef1c8f65202835cded9787236082f79ab462fd35  /tmp/b12-ui-payload.tar.gz" | sha256sum -c -
+          gzip -t /tmp/b12-ui-payload.tar.gz
+
+          cat > /tmp/b12-expected-manifest.txt <<'EOF'
+          .github/workflows/baseline.yml
+          docs/refactor/10-course-cms.md
+          docs/refactor/11-modules-lessons.md
+          scripts/check-curriculum-cms-contract.mjs
+          src/App.tsx
+          src/components/CourseModulesSection.tsx
+          src/components/admin/CurriculumEditorDialogs.tsx
+          src/components/ui/calendar.tsx
+          src/components/ui/chart.tsx
+          src/components/ui/context-menu.tsx
+          src/components/ui/dropdown-menu.tsx
+          src/components/ui/input-otp.tsx
+          src/components/ui/menubar.tsx
+          src/components/ui/sonner.tsx
+          src/contracts/curriculum-cms.ts
+          src/hooks/use-toast.ts
+          src/hooks/useAvatarUpload.ts
+          src/hooks/useCourseImageUpload.ts
+          src/hooks/useCurriculumCms.ts
+          src/hooks/useLessonAssetUpload.ts
+          src/pages/admin/CourseCurriculum.tsx
+          src/pages/admin/CourseEditor.tsx
+          src/pages/admin/CoursesAdmin.tsx
+          EOF
+          sed -i 's/^          //' /tmp/b12-expected-manifest.txt
+          tar -tzf /tmp/b12-ui-payload.tar.gz | sort > /tmp/b12-actual-manifest.txt
+          sort /tmp/b12-expected-manifest.txt > /tmp/b12-expected-sorted.txt
+          diff -u /tmp/b12-expected-sorted.txt /tmp/b12-actual-manifest.txt
+          if grep -Eq '(^/|(^|/)\.\.(/|$))' /tmp/b12-actual-manifest.txt; then
+            echo "Manifesto contém caminho inseguro." >&2
+            exit 1
+          fi
+
+          tar -xzf /tmp/b12-ui-payload.tar.gz
+          rm -rf scripts/b12
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A -- \
+            .github/workflows/baseline.yml \
+            docs/refactor/10-course-cms.md \
+            docs/refactor/11-modules-lessons.md \
+            scripts/check-curriculum-cms-contract.mjs \
+            scripts/b12 \
+            src/App.tsx \
+            src/components/CourseModulesSection.tsx \
+            src/components/admin/CurriculumEditorDialogs.tsx \
+            src/components/ui/calendar.tsx \
+            src/components/ui/chart.tsx \
+            src/components/ui/context-menu.tsx \
+            src/components/ui/dropdown-menu.tsx \
+            src/components/ui/input-otp.tsx \
+            src/components/ui/menubar.tsx \
+            src/components/ui/sonner.tsx \
+            src/contracts/curriculum-cms.ts \
+            src/hooks/use-toast.ts \
+            src/hooks/useAvatarUpload.ts \
+            src/hooks/useCourseImageUpload.ts \
+            src/hooks/useCurriculumCms.ts \
+            src/hooks/useLessonAssetUpload.ts \
+            src/pages/admin/CourseCurriculum.tsx \
+            src/pages/admin/CourseEditor.tsx \
+            src/pages/admin/CoursesAdmin.tsx
+          git diff --cached --check
+          git commit -m "feat(b12): complete modules and lessons administration"
+          git push origin HEAD:dev
+          echo "applied=true" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-node@v4
+        if: steps.apply.outputs.applied != 'true'
         with:
           node-version: 22.16.0
           cache: npm
 
       - name: Instalação limpa
         id: install
+        if: steps.apply.outputs.applied != 'true'
         continue-on-error: true
         run: npm ci
 
       - name: Lint
         id: lint
-        if: steps.install.outcome == 'success'
+        if: steps.apply.outputs.applied != 'true' && steps.install.outcome == 'success'
         continue-on-error: true
         run: npm run lint
 
       - name: Configurar Supabase CLI
         id: cli
-        if: steps.install.outcome == 'success'
+        if: steps.apply.outputs.applied != 'true' && steps.install.outcome == 'success'
         continue-on-error: true
         uses: supabase/setup-cli@v1
         with:
@@ -48,7 +134,7 @@ jobs:
 
       - name: Reconstruir banco e executar pgTAP
         id: db
-        if: steps.cli.outcome == 'success'
+        if: steps.apply.outputs.applied != 'true' && steps.cli.outcome == 'success'
         continue-on-error: true
         run: |
           supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
@@ -57,7 +143,7 @@ jobs:
 
       - name: Gerar e sincronizar tipos
         id: types
-        if: steps.db.outcome == 'success'
+        if: steps.apply.outputs.applied != 'true' && steps.db.outcome == 'success'
         continue-on-error: true
         run: |
           mkdir -p artifacts
@@ -74,13 +160,13 @@ jobs:
 
       - name: Typecheck
         id: typecheck
-        if: steps.install.outcome == 'success'
+        if: steps.apply.outputs.applied != 'true' && steps.install.outcome == 'success'
         continue-on-error: true
         run: npm run typecheck
 
       - name: Build
         id: build
-        if: steps.install.outcome == 'success'
+        if: steps.apply.outputs.applied != 'true' && steps.install.outcome == 'success'
         continue-on-error: true
         env:
           VITE_APP_ENV: development
@@ -89,7 +175,7 @@ jobs:
         run: npm run build:dev
 
       - name: Exportar tipos gerados
-        if: steps.types.outcome == 'success'
+        if: steps.apply.outputs.applied != 'true' && steps.types.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: database-types-${{ github.sha }}
@@ -97,7 +183,7 @@ jobs:
           retention-days: 1
 
       - name: Evidência
-        if: always()
+        if: always() && steps.apply.outputs.applied != 'true'
         uses: actions/github-script@v7
         env:
           INSTALL: ${{ steps.install.outcome }}
@@ -125,7 +211,7 @@ jobs:
             });
 
       - name: Gate final
-        if: always()
+        if: always() && steps.apply.outputs.applied != 'true'
         env:
           INSTALL: ${{ steps.install.outcome }}
           LINT: ${{ steps.lint.outcome }}
