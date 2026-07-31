@@ -1,0 +1,90 @@
+    drip_delay_days=case when p_payload?'drip_delay_days' then case when p_payload->'drip_delay_days'='null'::jsonb then null else (p_payload->>'drip_delay_days')::integer end else drip_delay_days end,
+    availability_starts_at=case when p_payload?'availability_starts_at' then case when p_payload->'availability_starts_at'='null'::jsonb then null else (p_payload->>'availability_starts_at')::timestamptz end else availability_starts_at end,
+    availability_ends_at=case when p_payload?'availability_ends_at' then case when p_payload->'availability_ends_at'='null'::jsonb then null else (p_payload->>'availability_ends_at')::timestamptz end else availability_ends_at end,
+    updated_by_user_id=v_actor,version=version+1
+  where id=p_lesson_id returning * into v_updated;
+  perform private.log_curriculum_event(v_course_id,'lesson',v_updated.id,'updated',v_updated.version,jsonb_build_object('fields',(select jsonb_agg(key order by key) from jsonb_object_keys(p_payload) key)));
+  return v_updated;
+end;
+$$;
+
+create or replace function private.set_lesson_prerequisites(p_lesson_id uuid,p_expected_version integer,p_prerequisite_ids uuid[])
+returns public.aulas
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_actor uuid:=private.assert_curriculum_admin();
+  v_lesson public.aulas;
+  v_updated public.aulas;
+  v_course_id uuid;
+  v_id uuid;
+begin
+  select * into v_lesson from public.aulas where id=p_lesson_id and deleted_at is null for update;
+  if not found then raise exception 'LESSON_NOT_FOUND' using errcode='P0002'; end if;
+  if v_lesson.version<>p_expected_version then raise exception 'LESSON_VERSION_CONFLICT' using errcode='40001'; end if;
+  select course_id into v_course_id from public.modulos where id=v_lesson.modulo_id;
+  if coalesce(cardinality(p_prerequisite_ids),0)<>coalesce((select count(distinct x) from unnest(coalesce(p_prerequisite_ids,'{}'::uuid[])) x),0) then raise exception 'DUPLICATE_LESSON_PREREQUISITE' using errcode='22023'; end if;
+  foreach v_id in array coalesce(p_prerequisite_ids,'{}'::uuid[]) loop
+    if v_id=p_lesson_id then raise exception 'LESSON_CANNOT_REQUIRE_ITSELF' using errcode='22023'; end if;
+    if not exists(select 1 from public.aulas a join public.modulos m on m.id=a.modulo_id where a.id=v_id and m.course_id=v_course_id and a.deleted_at is null and a.status<>'archived') then raise exception 'LESSON_PREREQUISITE_INVALID' using errcode='22023'; end if;
+    if exists(with recursive ancestors(id) as (select prerequisite_lesson_id from public.lesson_prerequisites where lesson_id=v_id union select lp.prerequisite_lesson_id from public.lesson_prerequisites lp join ancestors a on lp.lesson_id=a.id) select 1 from ancestors where id=p_lesson_id) then raise exception 'LESSON_PREREQUISITE_CYCLE' using errcode='23514'; end if;
+  end loop;
+  delete from public.lesson_prerequisites where lesson_id=p_lesson_id;
+  insert into public.lesson_prerequisites(lesson_id,prerequisite_lesson_id,created_by_user_id) select p_lesson_id,x,v_actor from unnest(coalesce(p_prerequisite_ids,'{}'::uuid[])) x;
+  update public.aulas set version=version+1,updated_by_user_id=v_actor where id=p_lesson_id returning * into v_updated;
+  perform private.log_curriculum_event(v_course_id,'lesson',v_updated.id,'prerequisites_updated',v_updated.version,jsonb_build_object('prerequisite_ids',coalesce(to_jsonb(p_prerequisite_ids),'[]'::jsonb)));
+  return v_updated;
+end;
+$$;
+
+create or replace function private.reorder_lessons(p_module_id uuid,p_expected_module_version integer,p_items jsonb)
+returns public.modulos
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_actor uuid:=private.assert_curriculum_admin();
+  v_module public.modulos;
+  v_count integer;
+  v_max integer;
+  v_item jsonb;
+  v_lesson public.aulas;
+begin
+  if jsonb_typeof(p_items)<>'array' then raise exception 'LESSON_ORDER_ARRAY_REQUIRED' using errcode='22023'; end if;
+  select * into v_module from public.modulos where id=p_module_id and deleted_at is null for update;
+  if not found then raise exception 'MODULE_NOT_FOUND' using errcode='P0002'; end if;
+  if v_module.version<>p_expected_module_version then raise exception 'MODULE_VERSION_CONFLICT' using errcode='40001'; end if;
+  select count(*) into v_count from public.aulas where modulo_id=p_module_id and deleted_at is null and status<>'archived';
+  if jsonb_array_length(p_items)<>v_count then raise exception 'LESSON_ORDER_MUST_COVER_ACTIVE_MODULE' using errcode='22023'; end if;
+  if (select count(distinct item->>'id') from jsonb_array_elements(p_items) item)<>v_count or (select count(distinct (item->>'order')::integer) from jsonb_array_elements(p_items) item)<>v_count or exists(select 1 from jsonb_array_elements(p_items) item where (item->>'order')::integer<0 or (item->>'order')::integer>=v_count) then raise exception 'LESSON_ORDER_INVALID' using errcode='22023'; end if;
+  for v_item in select value from jsonb_array_elements(p_items) loop
+    select * into v_lesson from public.aulas where id=(v_item->>'id')::uuid and modulo_id=p_module_id and deleted_at is null and status<>'archived' for update;
+    if not found then raise exception 'LESSON_ORDER_ITEM_INVALID' using errcode='22023'; end if;
+    if v_lesson.version<>(v_item->>'version')::integer then raise exception 'LESSON_VERSION_CONFLICT' using errcode='40001'; end if;
+  end loop;
+  select coalesce(max(ordem),0)+1000 into v_max from public.aulas where modulo_id=p_module_id;
+  update public.aulas set ordem=v_max+ordem,version=version+1,updated_by_user_id=v_actor where modulo_id=p_module_id and deleted_at is null and status<>'archived';
+  for v_item in select value from jsonb_array_elements(p_items) loop update public.aulas set ordem=(v_item->>'order')::integer where id=(v_item->>'id')::uuid; end loop;
+  update public.modulos set version=version+1,updated_by_user_id=v_actor where id=p_module_id returning * into v_module;
+  perform private.log_curriculum_event(v_module.course_id,'lesson',p_module_id,'reordered',v_module.version,jsonb_build_object('items',p_items));
+  return v_module;
+end;
+$$;
+
+create or replace function private.move_lesson(p_lesson_id uuid,p_expected_lesson_version integer,p_target_module_id uuid,p_expected_source_module_version integer,p_expected_target_module_version integer)
+returns public.aulas
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_actor uuid:=private.assert_curriculum_admin();
+  v_lesson public.aulas;
+  v_source public.modulos;
+  v_target public.modulos;
+  v_order integer;
+begin
+  select * into v_lesson from public.aulas where id=p_lesson_id and deleted_at is null for update;
+  if not found then raise exception 'LESSON_NOT_FOUND' using errcode='P0002'; end if;
+  if v_lesson.version<>p_expected_lesson_version then raise exception 'LESSON_VERSION_CONFLICT' using errcode='40001'; end if;
+  select * into v_source from public.modulos where id=v_lesson.modulo_id and deleted_at is null for update;
+  select * into v_target from public.modulos where id=p_target_module_id and deleted_at is null for update;
+  if not found then raise exception 'TARGET_MODULE_NOT_FOUND' using errcode='P0002'; end if;
+  if v_source.course_id<>v_target.course_id then raise exception 'LESSON_MOVE_COURSE_MISMATCH' using errcode='22023'; end if;
