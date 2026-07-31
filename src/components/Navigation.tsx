@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useAuth } from "@/auth/use-auth";
@@ -16,14 +16,44 @@ const sectionLinks = [
 const navigationItemClassName =
   "rounded-md text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
+const mobileFocusableSelector =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { session } = useAuth();
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    mobileMenuRef.current
+      ?.querySelector<HTMLElement>(mobileFocusableSelector)
+      ?.focus();
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+
+      event.preventDefault();
+      setIsOpen(false);
+      window.requestAnimationFrame(() => menuButtonRef.current?.focus());
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isOpen]);
 
   const closeMenu = () => setIsOpen(false);
 
   const scrollToSection = (sectionId: string) => {
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+    });
     closeMenu();
   };
 
@@ -96,6 +126,7 @@ const Navigation = () => {
           </div>
 
           <button
+            ref={menuButtonRef}
             type="button"
             className="rounded-md p-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:hidden"
             onClick={() => setIsOpen((current) => !current)}
@@ -109,6 +140,7 @@ const Navigation = () => {
 
         {isOpen ? (
           <div
+            ref={mobileMenuRef}
             id="mobile-navigation"
             className="space-y-2 border-t border-border py-4 md:hidden"
           >
