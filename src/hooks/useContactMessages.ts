@@ -48,9 +48,10 @@ export const useContactMessagesAdmin = (
   useQuery({
     queryKey: contactKeys.admin(status, search),
     queryFn: async () => {
+      const normalizedSearch = search.trim();
       const { data, error } = await supabase.rpc("get_contact_messages_admin", {
-        p_status: status,
-        p_search: search.trim() || null,
+        ...(status === null ? {} : { p_status: status }),
+        ...(normalizedSearch ? { p_search: normalizedSearch } : {}),
         p_limit: 100,
         p_offset: 0,
       });
@@ -71,10 +72,11 @@ export const useUpdateContactMessageStatus = () => {
       status: ContactMessageStatus;
       note: string | null;
     }) => {
+      const normalizedNote = input.note?.trim();
       const { data, error } = await supabase.rpc("update_contact_message_status", {
         p_contact_message_id: input.contactMessageId,
         p_status: input.status,
-        p_note: input.note,
+        ...(normalizedNote ? { p_note: normalizedNote } : {}),
       });
       if (error) throw error;
       return parseDataContract(
