@@ -4,9 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [dev]
-    paths-ignore:
-      - "docs/**"
-      - "scripts/b12/**"
+    paths-ignore: ["docs/**"]
 
 permissions:
   contents: write
