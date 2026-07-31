@@ -20,12 +20,20 @@ interface ExternalLessonMediaProps {
   onEnded: () => void;
 }
 
-const ExternalLessonMedia = ({ lesson, playback, isPlaying, onPosition, onPlay, onPause, onEnded }: ExternalLessonMediaProps) => {
+const ExternalLessonMedia = ({
+  lesson,
+  playback,
+  isPlaying,
+  onPosition,
+  onPlay,
+  onPause,
+  onEnded,
+}: ExternalLessonMediaProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const provider = playback.provider as ExternalMediaProvider;
   const playerId = `lesson-player-${lesson.id}`;
   const embedUrl = useMemo(
-    () => playback.embedUrl ? buildTrackableEmbedUrl(playback.embedUrl, provider, playerId) : null,
+    () => (playback.embedUrl ? buildTrackableEmbedUrl(playback.embedUrl, provider, playerId) : null),
     [playback.embedUrl, playerId, provider],
   );
 
@@ -33,20 +41,31 @@ const ExternalLessonMedia = ({ lesson, playback, isPlaying, onPosition, onPlay, 
     const handleMessage = (event: MessageEvent) => {
       const message = parseExternalPlayerMessage(event, provider);
       if (!message) return;
-      if (message.currentTime !== undefined) onPosition(message.currentTime, message.duration);
+
+      if (message.currentTime !== undefined) {
+        if (message.duration === undefined) {
+          onPosition(message.currentTime);
+        } else {
+          onPosition(message.currentTime, message.duration);
+        }
+      }
+
       if (message.state === "playing") onPlay();
       if (message.state === "paused") onPause();
       if (message.state === "ended") onEnded();
     };
+
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [onEnded, onPause, onPlay, onPosition, provider]);
 
   useEffect(() => {
     if (provider !== "youtube" || !isPlaying) return;
+
     const interval = window.setInterval(() => {
       if (iframeRef.current) requestExternalPlayerTime(iframeRef.current, provider);
     }, 5_000);
+
     return () => window.clearInterval(interval);
   }, [isPlaying, provider]);
 
