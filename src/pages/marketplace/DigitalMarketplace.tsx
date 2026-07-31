@@ -1,10 +1,17 @@
-import { BadgeCheck, PackageOpen, ShoppingBag, Tag } from "lucide-react";
+import { BadgeCheck, CreditCard, Loader2, PackageOpen, ShoppingBag, Tag } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DigitalProduct } from "@/contracts/marketplace";
-import { useMarketplaceProductLicenses, useMarketplaceProducts } from "@/hooks/useDigitalMarketplace";
+import {
+  useMarketplaceProductLicenses,
+  useMarketplaceProducts,
+} from "@/hooks/useDigitalMarketplace";
+import {
+  getHostedCheckoutIdempotencyKey,
+  useHostedCheckout,
+} from "@/hooks/useHostedCheckout";
 import { getErrorMessage } from "@/lib/error-message";
 
 const formatCurrency = (amount: number, currencyCode: string): string =>
@@ -20,9 +27,51 @@ const licenseKindLabel: Readonly<Record<string, string>> = {
   custom: "Personalizada",
 };
 
+const getDisplayedPrice = (product: DigitalProduct): number => {
+  const now = Date.now();
+  const startsAt = product.promotion_starts_at
+    ? Date.parse(product.promotion_starts_at)
+    : Number.NEGATIVE_INFINITY;
+  const endsAt = product.promotion_ends_at
+    ? Date.parse(product.promotion_ends_at)
+    : Number.POSITIVE_INFINITY;
+  const promotionIsActive =
+    product.promotional_price_amount !== null && now >= startsAt && now < endsAt;
+
+  return promotionIsActive
+    ? product.promotional_price_amount ?? product.price_amount
+    : product.price_amount;
+};
+
 const ProductCard = ({ product }: { product: DigitalProduct }) => {
   const licensesQuery = useMarketplaceProductLicenses(product.id);
-  const activePrice = product.promotional_price_amount ?? product.price_amount;
+  const checkoutMutation = useHostedCheckout();
+  const publishedLicenses = (licensesQuery.data ?? []).filter(
+    (license) => license.status === "published",
+  );
+  const checkoutLicense =
+    publishedLicenses.find((license) => license.is_default) ?? publishedLicenses[0] ?? null;
+  const displayedPrice = getDisplayedPrice(product);
+
+  const startCheckout = async (): Promise<void> => {
+    if (!checkoutLicense) return;
+
+    try {
+      const result = await checkoutMutation.mutateAsync({
+        subjectType: "digital_product",
+        subjectId: product.id,
+        licenseId: checkoutLicense.id,
+        idempotencyKey: getHostedCheckoutIdempotencyKey(
+          "digital_product",
+          product.id,
+          checkoutLicense.id,
+        ),
+      });
+      window.location.assign(result.checkoutUrl);
+    } catch {
+      // The mutation exposes the validated error below without fabricating a successful checkout.
+    }
+  };
 
   return (
     <Card className="flex h-full flex-col border-white/10 bg-white/5">
@@ -43,13 +92,18 @@ const ProductCard = ({ product }: { product: DigitalProduct }) => {
         </div>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-5">
-        {product.description ? <p className="text-sm leading-6 text-gray-300">{product.description}</p> : null}
+        {product.description ? (
+          <p className="text-sm leading-6 text-gray-300">{product.description}</p>
+        ) : null}
 
         <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 p-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Valor</p>
             <p className="mt-1 text-2xl font-bold text-white">
-              {formatCurrency(activePrice, product.currency_code)}
+              {formatCurrency(displayedPrice, product.currency_code)}
+            </p>
+            <p className="mt-1 text-xs text-gray-500">
+              O valor definitivo é validado novamente pelo servidor.
             </p>
           </div>
           {product.category ? (
@@ -68,27 +122,58 @@ const ProductCard = ({ product }: { product: DigitalProduct }) => {
             <p className="text-sm text-red-300">
               {getErrorMessage(licensesQuery.error, "Não foi possível carregar as licenças.")}
             </p>
-          ) : (licensesQuery.data ?? []).length === 0 ? (
+          ) : publishedLicenses.length === 0 ? (
             <p className="text-sm text-gray-400">Nenhuma licença publicada está disponível.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {(licensesQuery.data ?? [])
-                .filter((license) => license.status === "published")
-                .map((license) => (
-                  <span
-                    key={license.id}
-                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-200"
-                  >
-                    {licenseKindLabel[license.kind] ?? license.title}
-                    {license.is_default ? " · padrão" : ""}
-                  </span>
-                ))}
+              {publishedLicenses.map((license) => (
+                <span
+                  key={license.id}
+                  className={`rounded-full border px-3 py-1 text-xs ${
+                    license.id === checkoutLicense?.id
+                      ? "border-violet-400/40 bg-violet-500/15 text-violet-100"
+                      : "border-white/10 bg-white/5 text-gray-200"
+                  }`}
+                >
+                  {licenseKindLabel[license.kind] ?? license.title}
+                  {license.is_default ? " · padrão" : ""}
+                </span>
+              ))}
             </div>
           )}
         </div>
 
-        <div className="mt-auto rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
-          A compra será disponibilizada somente pelo checkout confiável das fases de pedidos e pagamentos. Nenhum acesso é liberado por redirecionamento ou simulação.
+        {checkoutMutation.error ? (
+          <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-100">
+            {getErrorMessage(
+              checkoutMutation.error,
+              "Não foi possível abrir o checkout. Tente novamente.",
+            )}
+          </div>
+        ) : null}
+
+        <div className="mt-auto space-y-3">
+          <Button
+            type="button"
+            className="btn-brand w-full"
+            disabled={
+              licensesQuery.isLoading || checkoutLicense === null || checkoutMutation.isPending
+            }
+            onClick={() => void startCheckout()}
+          >
+            {checkoutMutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <CreditCard className="mr-2 h-4 w-4" />
+            )}
+            {checkoutMutation.isPending
+              ? "Preparando checkout..."
+              : "Comprar com Pix ou cartão"}
+          </Button>
+          <p className="text-xs leading-5 text-gray-500">
+            O pagamento é concluído no checkout hospedado. O redirecionamento de retorno não
+            confirma a compra nem libera arquivos.
+          </p>
         </div>
       </CardContent>
     </Card>
@@ -109,7 +194,8 @@ const DigitalMarketplace = () => {
               Produtos digitais
             </h1>
             <p className="mt-3 max-w-2xl text-gray-400">
-              Catálogo oficial de packs, samples, presets, projetos e outros materiais digitais publicados.
+              Catálogo oficial de packs, samples, presets, projetos e outros materiais digitais
+              publicados.
             </p>
           </div>
           <div className="flex gap-3">
@@ -136,10 +222,15 @@ const DigitalMarketplace = () => {
           <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/5 p-12 text-center">
             <PackageOpen className="mb-4 h-10 w-10 text-gray-500" />
             <h2 className="text-xl font-semibold">Nenhum produto publicado</h2>
-            <p className="mt-2 text-sm text-gray-400">O catálogo será preenchido pelo CMS administrativo.</p>
+            <p className="mt-2 text-sm text-gray-400">
+              O catálogo será preenchido pelo CMS administrativo.
+            </p>
           </div>
         ) : (
-          <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3" aria-label="Produtos digitais publicados">
+          <section
+            className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"
+            aria-label="Produtos digitais publicados"
+          >
             {(productsQuery.data ?? []).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
