@@ -22,8 +22,14 @@
     --muted-foreground: 240 5% 64.9%;
     --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
+    --success: 142 71% 45%;
+    --success-foreground: 144 70% 10%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 32 81% 10%;
+    --info: 202 100% 61%;
+    --info-foreground: 240 10% 4%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 202 100% 61%;
@@ -34,6 +40,13 @@
     --brand-dark: 214 100% 34%;
     --surface-raised: 240 8% 7%;
     --surface-overlay: 240 6% 11%;
+    --surface-subtle: 240 5% 13%;
+
+    --course-accent: 202 100% 61%;
+    --marketplace-accent: 269 91% 65%;
+    --affiliate-accent: 38 92% 50%;
+    --admin-accent: 189 90% 46%;
+    --context-accent: var(--brand-light);
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -43,6 +56,26 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 202 100% 61%;
+
+    --shadow-soft: 0 12px 40px hsl(240 10% 1% / 0.24);
+    --shadow-raised: 0 18px 60px hsl(240 10% 1% / 0.38);
+    --shadow-focus: 0 0 0 3px hsl(var(--ring) / 0.24);
+  }
+
+  [data-context="course"] {
+    --context-accent: var(--course-accent);
+  }
+
+  [data-context="marketplace"] {
+    --context-accent: var(--marketplace-accent);
+  }
+
+  [data-context="affiliate"] {
+    --context-accent: var(--affiliate-accent);
+  }
+
+  [data-context="admin"] {
+    --context-accent: var(--admin-accent);
   }
 
   * {
@@ -66,6 +99,11 @@
     @apply font-bold tracking-tight;
   }
 
+  ::selection {
+    background: hsl(var(--context-accent) / 0.28);
+    color: hsl(var(--foreground));
+  }
+
   a:focus-visible,
   button:focus-visible,
   input:focus-visible,
@@ -78,13 +116,60 @@
 }
 
 @layer components {
+  .app-shell {
+    @apply min-h-screen bg-background text-foreground;
+  }
+
+  .app-header {
+    @apply border-b border-border bg-background/90 backdrop-blur-xl;
+  }
+
+  .app-container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .page-eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.22em] text-context;
+  }
+
+  .page-title {
+    @apply text-3xl font-bold tracking-tight text-foreground sm:text-4xl;
+  }
+
+  .page-description {
+    @apply max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base;
+  }
+
+  .surface-card {
+    @apply rounded-xl border border-border bg-card text-card-foreground;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .surface-raised {
+    @apply rounded-xl border border-border bg-surface-raised text-foreground;
+    box-shadow: var(--shadow-raised);
+  }
+
+  .surface-muted {
+    @apply rounded-xl border border-border bg-muted/45 text-muted-foreground;
+  }
+
+  .state-panel {
+    @apply flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/70 px-6 py-10 text-center;
+  }
+
+  .interactive-surface {
+    @apply transition-[border-color,background-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-context/50 hover:shadow-lg focus-within:border-context/60;
+  }
+
   .glass-card {
-    @apply rounded-xl border border-white/10 bg-white/5 backdrop-blur-lg;
+    @apply rounded-xl border border-border bg-card/80 backdrop-blur-lg;
+    box-shadow: var(--shadow-soft);
   }
 
   .brand-border {
-    @apply border border-brand-light/50;
-    box-shadow: 0 0 15px hsl(var(--brand-light) / 0.3);
+    @apply border border-context/50;
+    box-shadow: 0 0 15px hsl(var(--context-accent) / 0.24);
   }
 
   .gradient-text {
@@ -97,13 +182,13 @@
 
   .btn-brand,
   .btn-neon {
-    @apply rounded-xl bg-gradient-to-r from-brand-light to-brand-medium px-8 py-4 font-semibold text-primary-foreground transition-[transform,filter,box-shadow] duration-300 hover:scale-[1.02] hover:brightness-110;
+    @apply rounded-md bg-gradient-brand-light px-6 py-3 font-semibold text-primary-foreground transition-[transform,filter,box-shadow] duration-200 hover:brightness-110 active:scale-[0.98];
     box-shadow: 0 0 0 1px hsl(var(--brand-light) / 0.2);
   }
 
   .btn-brand:hover,
   .btn-neon:hover {
-    box-shadow: 0 0 30px hsl(var(--brand-light) / 0.4);
+    box-shadow: 0 0 24px hsl(var(--brand-light) / 0.32);
   }
 }
 
