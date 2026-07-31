@@ -211,36 +211,107 @@ export type Database = {
       }
       aulas: {
         Row: {
+          archived_at: string | null
+          audio_asset_id: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          completion_mode: Database["public"]["Enums"]["lesson_completion_mode"]
+          completion_percent: number | null
+          content_kind: Database["public"]["Enums"]["lesson_content_kind"]
+          conteudo_texto: string | null
           created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
           descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_lesson_id: string | null
           duracao: number | null
           id: string
           modulo_id: string
+          obrigatoria: boolean
           ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
           titulo: string
           updated_at: string
+          updated_by_user_id: string | null
+          version: number
         }
         Insert: {
+          archived_at?: string | null
+          audio_asset_id?: string | null
+          availability_ends_at?: string | null
+          availability_starts_at?: string | null
+          completion_mode?: Database["public"]["Enums"]["lesson_completion_mode"]
+          completion_percent?: number | null
+          content_kind?: Database["public"]["Enums"]["lesson_content_kind"]
+          conteudo_texto?: string | null
           created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
           descricao?: string | null
+          drip_delay_days?: number | null
+          duplicated_from_lesson_id?: string | null
           duracao?: number | null
           id?: string
           modulo_id: string
+          obrigatoria?: boolean
           ordem?: number
+          preview_enabled?: boolean
+          release_at?: string | null
+          release_mode?: Database["public"]["Enums"]["curriculum_release_mode"]
+          status?: Database["public"]["Enums"]["curriculum_item_status"]
           titulo: string
           updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
         }
         Update: {
+          archived_at?: string | null
+          audio_asset_id?: string | null
+          availability_ends_at?: string | null
+          availability_starts_at?: string | null
+          completion_mode?: Database["public"]["Enums"]["lesson_completion_mode"]
+          completion_percent?: number | null
+          content_kind?: Database["public"]["Enums"]["lesson_content_kind"]
+          conteudo_texto?: string | null
           created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
           descricao?: string | null
+          drip_delay_days?: number | null
+          duplicated_from_lesson_id?: string | null
           duracao?: number | null
           id?: string
           modulo_id?: string
+          obrigatoria?: boolean
           ordem?: number
+          preview_enabled?: boolean
+          release_at?: string | null
+          release_mode?: Database["public"]["Enums"]["curriculum_release_mode"]
+          status?: Database["public"]["Enums"]["curriculum_item_status"]
           titulo?: string
           updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "aulas_audio_asset_id_fkey"
+            columns: ["audio_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aulas_duplicated_from_lesson_id_fkey"
+            columns: ["duplicated_from_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "aulas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "aulas_modulo_id_fkey"
             columns: ["modulo_id"]
@@ -439,6 +510,50 @@ export type Database = {
           },
         ]
       }
+      curriculum_editor_events: {
+        Row: {
+          actor_user_id: string | null
+          course_id: string
+          created_at: string
+          details: Json
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["curriculum_entity_type"]
+          event_type: Database["public"]["Enums"]["curriculum_editor_event_type"]
+          id: string
+          version: number
+        }
+        Insert: {
+          actor_user_id?: string | null
+          course_id: string
+          created_at?: string
+          details?: Json
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["curriculum_entity_type"]
+          event_type: Database["public"]["Enums"]["curriculum_editor_event_type"]
+          id?: string
+          version: number
+        }
+        Update: {
+          actor_user_id?: string | null
+          course_id?: string
+          created_at?: string
+          details?: Json
+          entity_id?: string
+          entity_type?: Database["public"]["Enums"]["curriculum_entity_type"]
+          event_type?: Database["public"]["Enums"]["curriculum_editor_event_type"]
+          id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_editor_events_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrollment_events: {
         Row: {
           actor_user_id: string | null
@@ -596,33 +711,141 @@ export type Database = {
           },
         ]
       }
-      modulos: {
+      lesson_prerequisites: {
         Row: {
-          course_id: string
           created_at: string
-          descricao: string | null
-          id: string
-          ordem: number
-          titulo: string
-          updated_at: string
+          created_by_user_id: string
+          lesson_id: string
+          prerequisite_lesson_id: string
         }
         Insert: {
-          course_id: string
           created_at?: string
-          descricao?: string | null
-          id?: string
-          ordem?: number
-          titulo: string
-          updated_at?: string
+          created_by_user_id: string
+          lesson_id: string
+          prerequisite_lesson_id: string
         }
         Update: {
+          created_at?: string
+          created_by_user_id?: string
+          lesson_id?: string
+          prerequisite_lesson_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_prerequisites_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "aulas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_prerequisites_prerequisite_lesson_id_fkey"
+            columns: ["prerequisite_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "aulas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      module_prerequisites: {
+        Row: {
+          created_at: string
+          created_by_user_id: string
+          module_id: string
+          prerequisite_module_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id: string
+          module_id: string
+          prerequisite_module_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string
+          module_id?: string
+          prerequisite_module_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_prerequisites_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modulos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "module_prerequisites_prerequisite_module_id_fkey"
+            columns: ["prerequisite_module_id"]
+            isOneToOne: false
+            referencedRelation: "modulos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modulos: {
+        Row: {
+          archived_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_module_id: string | null
+          id: string
+          obrigatorio: boolean
+          ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        Insert: {
+          archived_at?: string | null
+          course_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          descricao?: string | null
+          drip_delay_days?: number | null
+          duplicated_from_module_id?: string | null
+          id?: string
+          obrigatorio?: boolean
+          ordem?: number
+          preview_enabled?: boolean
+          release_at?: string | null
+          release_mode?: Database["public"]["Enums"]["curriculum_release_mode"]
+          status?: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
+        }
+        Update: {
+          archived_at?: string | null
           course_id?: string
           created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
           descricao?: string | null
+          drip_delay_days?: number | null
+          duplicated_from_module_id?: string | null
           id?: string
+          obrigatorio?: boolean
           ordem?: number
+          preview_enabled?: boolean
+          release_at?: string | null
+          release_mode?: Database["public"]["Enums"]["curriculum_release_mode"]
+          status?: Database["public"]["Enums"]["curriculum_item_status"]
           titulo?: string
           updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -630,6 +853,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "modulos_duplicated_from_module_id_fkey"
+            columns: ["duplicated_from_module_id"]
+            isOneToOne: false
+            referencedRelation: "modulos"
             referencedColumns: ["id"]
           },
         ]
@@ -898,6 +1128,36 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      archive_module: {
+        Args: { p_expected_version: number; p_module_id: string }
+        Returns: {
+          archived_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_module_id: string | null
+          id: string
+          obrigatorio: boolean
+          ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "modulos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       confirm_asset_upload: {
         Args: { p_asset_id: string }
         Returns: {
@@ -1017,6 +1277,36 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_module: {
+        Args: { p_course_id: string; p_payload: Json }
+        Returns: {
+          archived_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_module_id: string | null
+          id: string
+          obrigatorio: boolean
+          ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "modulos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_course: {
         Args: { p_course_id: string; p_expected_version: number }
         Returns: {
@@ -1068,6 +1358,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_module: {
+        Args: { p_expected_version: number; p_module_id: string }
+        Returns: boolean
+      }
       disable_lesson_media: { Args: { p_lesson_id: string }; Returns: boolean }
       duplicate_course: {
         Args: { p_course_id: string; p_slug: string; p_title: string }
@@ -1116,6 +1410,36 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "courses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      duplicate_module: {
+        Args: { p_module_id: string; p_title: string }
+        Returns: {
+          archived_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_module_id: string | null
+          id: string
+          obrigatorio: boolean
+          ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "modulos"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1328,6 +1652,61 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      reorder_modules: {
+        Args: {
+          p_course_id: string
+          p_expected_course_version: number
+          p_items: Json
+        }
+        Returns: {
+          access_duration_days: number | null
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          certificate_enabled: boolean
+          certificate_min_completion_percent: number
+          completion_mode: Database["public"]["Enums"]["course_completion_mode"]
+          completion_required_percent: number
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          drip_interval_days: number | null
+          duplicated_from_course_id: string | null
+          id: string
+          language_code: string
+          level: Database["public"]["Enums"]["course_level"]
+          objectives: string[]
+          prerequisites: string[]
+          preview_enabled: boolean
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["course_release_mode"]
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["course_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "courses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       request_lesson_playback_token: {
         Args: { p_fingerprint_hash: string; p_lesson_id: string }
         Returns: {
@@ -1386,6 +1765,40 @@ export type Database = {
       revoke_lesson_playback_token: {
         Args: { p_token: string }
         Returns: boolean
+      }
+      set_module_prerequisites: {
+        Args: {
+          p_expected_version: number
+          p_module_id: string
+          p_prerequisite_ids: string[]
+        }
+        Returns: {
+          archived_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_module_id: string | null
+          id: string
+          obrigatorio: boolean
+          ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "modulos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       suspend_course_enrollment: {
         Args: { p_enrollment_id: string; p_reason: string }
@@ -1553,6 +1966,40 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      update_module: {
+        Args: {
+          p_expected_version: number
+          p_module_id: string
+          p_payload: Json
+        }
+        Returns: {
+          archived_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_module_id: string | null
+          id: string
+          obrigatorio: boolean
+          ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "modulos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       upsert_external_lesson_media: {
         Args: {
           p_lesson_id: string
@@ -1648,6 +2095,24 @@ export type Database = {
       course_level: "beginner" | "intermediate" | "advanced" | "all_levels"
       course_release_mode: "immediate" | "scheduled" | "drip"
       course_status: "draft" | "published" | "archived"
+      curriculum_editor_event_type:
+        | "created"
+        | "updated"
+        | "duplicated"
+        | "reordered"
+        | "moved"
+        | "archived"
+        | "deleted"
+        | "prerequisites_updated"
+        | "media_updated"
+        | "material_archived"
+      curriculum_entity_type: "module" | "lesson"
+      curriculum_item_status: "draft" | "published" | "archived"
+      curriculum_release_mode:
+        | "immediate"
+        | "scheduled"
+        | "drip"
+        | "after_prerequisites"
       enrollment_event_type:
         | "created"
         | "payment_confirmed"
@@ -1658,6 +2123,12 @@ export type Database = {
         | "access_denied"
       enrollment_source: "manual_grant" | "purchase"
       enrollment_status: "pending" | "active" | "suspended" | "revoked"
+      lesson_completion_mode:
+        | "manual"
+        | "media_progress"
+        | "reading_acknowledgement"
+        | "any_activity"
+      lesson_content_kind: "text" | "video" | "audio" | "mixed"
       lesson_media_provider: "private_asset" | "youtube" | "vimeo"
       playback_event_type:
         | "issued"
@@ -1835,6 +2306,26 @@ export const Constants = {
       course_level: ["beginner", "intermediate", "advanced", "all_levels"],
       course_release_mode: ["immediate", "scheduled", "drip"],
       course_status: ["draft", "published", "archived"],
+      curriculum_editor_event_type: [
+        "created",
+        "updated",
+        "duplicated",
+        "reordered",
+        "moved",
+        "archived",
+        "deleted",
+        "prerequisites_updated",
+        "media_updated",
+        "material_archived",
+      ],
+      curriculum_entity_type: ["module", "lesson"],
+      curriculum_item_status: ["draft", "published", "archived"],
+      curriculum_release_mode: [
+        "immediate",
+        "scheduled",
+        "drip",
+        "after_prerequisites",
+      ],
       enrollment_event_type: [
         "created",
         "payment_confirmed",
@@ -1846,6 +2337,13 @@ export const Constants = {
       ],
       enrollment_source: ["manual_grant", "purchase"],
       enrollment_status: ["pending", "active", "suspended", "revoked"],
+      lesson_completion_mode: [
+        "manual",
+        "media_progress",
+        "reading_acknowledgement",
+        "any_activity",
+      ],
+      lesson_content_kind: ["text", "video", "audio", "mixed"],
       lesson_media_provider: ["private_asset", "youtube", "vimeo"],
       playback_event_type: [
         "issued",
