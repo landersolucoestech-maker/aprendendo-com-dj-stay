@@ -1128,6 +1128,79 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      archive_lesson: {
+        Args: { p_expected_version: number; p_lesson_id: string }
+        Returns: {
+          archived_at: string | null
+          audio_asset_id: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          completion_mode: Database["public"]["Enums"]["lesson_completion_mode"]
+          completion_percent: number | null
+          content_kind: Database["public"]["Enums"]["lesson_content_kind"]
+          conteudo_texto: string | null
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_lesson_id: string | null
+          duracao: number | null
+          id: string
+          modulo_id: string
+          obrigatoria: boolean
+          ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "aulas"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      archive_lesson_material: {
+        Args: { p_asset_id: string; p_lesson_id: string }
+        Returns: {
+          bucket_id: string
+          checksum_sha256: string | null
+          created_at: string
+          created_by_user_id: string
+          deleted_at: string | null
+          extension: string
+          failed_at: string | null
+          failure_reason: string | null
+          id: string
+          idempotency_key: string
+          lesson_id: string | null
+          metadata: Json
+          mime_type: string
+          normalized_name: string
+          object_path: string | null
+          original_name: string
+          owner_user_id: string
+          processing_started_at: string | null
+          published_at: string | null
+          purpose: Database["public"]["Enums"]["asset_purpose"]
+          size_bytes: number
+          state: Database["public"]["Enums"]["asset_state"]
+          updated_at: string
+          uploaded_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       archive_module: {
         Args: { p_expected_version: number; p_module_id: string }
         Returns: {
@@ -1277,6 +1350,44 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_lesson: {
+        Args: { p_module_id: string; p_payload: Json }
+        Returns: {
+          archived_at: string | null
+          audio_asset_id: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          completion_mode: Database["public"]["Enums"]["lesson_completion_mode"]
+          completion_percent: number | null
+          content_kind: Database["public"]["Enums"]["lesson_content_kind"]
+          conteudo_texto: string | null
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_lesson_id: string | null
+          duracao: number | null
+          id: string
+          modulo_id: string
+          obrigatoria: boolean
+          ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "aulas"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_module: {
         Args: { p_course_id: string; p_payload: Json }
         Returns: {
@@ -1358,6 +1469,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_lesson: {
+        Args: { p_expected_version: number; p_lesson_id: string }
+        Returns: boolean
+      }
       delete_module: {
         Args: { p_expected_version: number; p_module_id: string }
         Returns: boolean
@@ -1410,6 +1525,44 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "courses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      duplicate_lesson: {
+        Args: { p_lesson_id: string; p_title: string }
+        Returns: {
+          archived_at: string | null
+          audio_asset_id: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          completion_mode: Database["public"]["Enums"]["lesson_completion_mode"]
+          completion_percent: number | null
+          content_kind: Database["public"]["Enums"]["lesson_content_kind"]
+          conteudo_texto: string | null
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_lesson_id: string | null
+          duracao: number | null
+          id: string
+          modulo_id: string
+          obrigatoria: boolean
+          ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "aulas"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1533,6 +1686,50 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      move_lesson: {
+        Args: {
+          p_expected_lesson_version: number
+          p_expected_source_module_version: number
+          p_expected_target_module_version: number
+          p_lesson_id: string
+          p_target_module_id: string
+        }
+        Returns: {
+          archived_at: string | null
+          audio_asset_id: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          completion_mode: Database["public"]["Enums"]["lesson_completion_mode"]
+          completion_percent: number | null
+          content_kind: Database["public"]["Enums"]["lesson_content_kind"]
+          conteudo_texto: string | null
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_lesson_id: string | null
+          duracao: number | null
+          id: string
+          modulo_id: string
+          obrigatoria: boolean
+          ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "aulas"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       prepare_asset_upload: {
         Args: {
           p_idempotency_key: string
@@ -1652,6 +1849,40 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      reorder_lessons: {
+        Args: {
+          p_expected_module_version: number
+          p_items: Json
+          p_module_id: string
+        }
+        Returns: {
+          archived_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_module_id: string | null
+          id: string
+          obrigatorio: boolean
+          ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "modulos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       reorder_modules: {
         Args: {
           p_course_id: string
@@ -1765,6 +1996,48 @@ export type Database = {
       revoke_lesson_playback_token: {
         Args: { p_token: string }
         Returns: boolean
+      }
+      set_lesson_prerequisites: {
+        Args: {
+          p_expected_version: number
+          p_lesson_id: string
+          p_prerequisite_ids: string[]
+        }
+        Returns: {
+          archived_at: string | null
+          audio_asset_id: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          completion_mode: Database["public"]["Enums"]["lesson_completion_mode"]
+          completion_percent: number | null
+          content_kind: Database["public"]["Enums"]["lesson_content_kind"]
+          conteudo_texto: string | null
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_lesson_id: string | null
+          duracao: number | null
+          id: string
+          modulo_id: string
+          obrigatoria: boolean
+          ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "aulas"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       set_module_prerequisites: {
         Args: {
@@ -1962,6 +2235,48 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "courses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_lesson: {
+        Args: {
+          p_expected_version: number
+          p_lesson_id: string
+          p_payload: Json
+        }
+        Returns: {
+          archived_at: string | null
+          audio_asset_id: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          completion_mode: Database["public"]["Enums"]["lesson_completion_mode"]
+          completion_percent: number | null
+          content_kind: Database["public"]["Enums"]["lesson_content_kind"]
+          conteudo_texto: string | null
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          descricao: string | null
+          drip_delay_days: number | null
+          duplicated_from_lesson_id: string | null
+          duracao: number | null
+          id: string
+          modulo_id: string
+          obrigatoria: boolean
+          ordem: number
+          preview_enabled: boolean
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["curriculum_release_mode"]
+          status: Database["public"]["Enums"]["curriculum_item_status"]
+          titulo: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "aulas"
           isOneToOne: true
           isSetofReturn: false
         }
