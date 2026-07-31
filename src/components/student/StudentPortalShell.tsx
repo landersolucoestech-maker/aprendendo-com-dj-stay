@@ -86,6 +86,7 @@ export const StudentPortalShell = ({
       <aside className="hidden w-72 shrink-0 border-r border-border bg-sidebar p-6 lg:flex lg:flex-col">
         <Link
           to="/aluno"
+          aria-label={`Ir para o início de ${brandConfig.name}`}
           className="flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-sidebar"
         >
           <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl border border-course/30 bg-course/10">
