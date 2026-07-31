@@ -3,7 +3,13 @@ import { Link } from "react-router-dom";
 
 import { useAuth } from "@/auth/use-auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const Verified = () => {
   const { session } = useAuth();
@@ -11,19 +17,37 @@ const Verified = () => {
   const primaryLabel = session ? "Ir para meu portal" : "Fazer login";
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-      <Card className="glass-card border-white/10 max-w-md w-full text-center">
+    <main className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground">
+      <Card
+        className="glass-card w-full max-w-md border-border text-center"
+        role="status"
+        aria-live="polite"
+      >
         <CardHeader>
-          <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4"><CheckCircle className="w-10 h-10 text-green-400" /></div>
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
+            <CheckCircle className="h-10 w-10" aria-hidden="true" />
+          </div>
           <CardTitle className="text-2xl">Email confirmado</CardTitle>
-          <CardDescription className="text-gray-300">A confirmação foi processada pelo Supabase Auth.</CardDescription>
+          <CardDescription className="text-muted-foreground">
+            A confirmação foi processada pelo Supabase Auth.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Link to={primaryPath} className="block"><Button className="w-full btn-brand"><ArrowRight className="w-4 h-4 mr-2" />{primaryLabel}</Button></Link>
-          <Link to="/" className="block"><Button variant="secondary" className="w-full"><Home className="w-4 h-4 mr-2" />Voltar ao início</Button></Link>
+          <Button asChild variant="brand" className="w-full">
+            <Link to={primaryPath}>
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              {primaryLabel}
+            </Link>
+          </Button>
+          <Button asChild variant="secondary" className="w-full">
+            <Link to="/">
+              <Home className="h-4 w-4" aria-hidden="true" />
+              Voltar ao início
+            </Link>
+          </Button>
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 };
 
