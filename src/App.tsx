@@ -24,6 +24,9 @@ import CourseCurriculum from "@/pages/admin/CourseCurriculum";
 import CourseEditor from "@/pages/admin/CourseEditor";
 import CoursePreview from "@/pages/admin/CoursePreview";
 import CoursesAdmin from "@/pages/admin/CoursesAdmin";
+import DigitalProductsAdmin from "@/pages/admin/DigitalProductsAdmin";
+import DigitalMarketplace from "@/pages/marketplace/DigitalMarketplace";
+import MyDigitalProducts from "@/pages/student/MyDigitalProducts";
 import StudentPortal from "@/pages/student/StudentPortal";
 import { PublicOnlyRoute } from "@/routing/PublicOnlyRoute";
 import { RequireAuth } from "@/routing/RequireAuth";
@@ -33,6 +36,20 @@ import { RoleLandingRedirect } from "@/routing/RoleLandingRedirect";
 const StudentRoute = ({ children }: { children: React.ReactNode }) => (
   <RequireAuth>
     <RequireRole allowedRoles={["aluno"]}>{children}</RequireRole>
+  </RequireAuth>
+);
+
+const MarketplaceRoute = ({ children }: { children: React.ReactNode }) => (
+  <RequireAuth>
+    <RequireRole allowedRoles={["aluno", "afiliado", "administrador_proprietario"]}>
+      {children}
+    </RequireRole>
+  </RequireAuth>
+);
+
+const AdminRoute = ({ children }: { children: React.ReactNode }) => (
+  <RequireAuth>
+    <RequireRole allowedRoles={["administrador_proprietario"]}>{children}</RequireRole>
   </RequireAuth>
 );
 
@@ -95,6 +112,22 @@ const App = () => (
                 </RequireAuth>
               }
             />
+            <Route
+              path="/marketplace"
+              element={
+                <MarketplaceRoute>
+                  <DigitalMarketplace />
+                </MarketplaceRoute>
+              }
+            />
+            <Route
+              path="/meus-produtos"
+              element={
+                <MarketplaceRoute>
+                  <MyDigitalProducts />
+                </MarketplaceRoute>
+              }
+            />
 
             <Route
               path="/aluno"
@@ -125,6 +158,14 @@ const App = () => (
               element={
                 <StudentRoute>
                   <StudentPortal section="library" />
+                </StudentRoute>
+              }
+            />
+            <Route
+              path="/aluno/produtos"
+              element={
+                <StudentRoute>
+                  <MyDigitalProducts />
                 </StudentRoute>
               }
             />
@@ -190,51 +231,49 @@ const App = () => (
             <Route
               path="/admin/cursos"
               element={
-                <RequireAuth>
-                  <RequireRole allowedRoles={["administrador_proprietario"]}>
-                    <CoursesAdmin />
-                  </RequireRole>
-                </RequireAuth>
+                <AdminRoute>
+                  <CoursesAdmin />
+                </AdminRoute>
               }
             />
             <Route
               path="/admin/cursos/novo"
               element={
-                <RequireAuth>
-                  <RequireRole allowedRoles={["administrador_proprietario"]}>
-                    <CourseEditor />
-                  </RequireRole>
-                </RequireAuth>
+                <AdminRoute>
+                  <CourseEditor />
+                </AdminRoute>
               }
             />
             <Route
               path="/admin/cursos/:courseId/editar"
               element={
-                <RequireAuth>
-                  <RequireRole allowedRoles={["administrador_proprietario"]}>
-                    <CourseEditor />
-                  </RequireRole>
-                </RequireAuth>
+                <AdminRoute>
+                  <CourseEditor />
+                </AdminRoute>
               }
             />
             <Route
               path="/admin/cursos/:courseId/preview"
               element={
-                <RequireAuth>
-                  <RequireRole allowedRoles={["administrador_proprietario"]}>
-                    <CoursePreview />
-                  </RequireRole>
-                </RequireAuth>
+                <AdminRoute>
+                  <CoursePreview />
+                </AdminRoute>
               }
             />
             <Route
               path="/admin/cursos/:courseId/curriculo"
               element={
-                <RequireAuth>
-                  <RequireRole allowedRoles={["administrador_proprietario"]}>
-                    <CourseCurriculum />
-                  </RequireRole>
-                </RequireAuth>
+                <AdminRoute>
+                  <CourseCurriculum />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/produtos"
+              element={
+                <AdminRoute>
+                  <DigitalProductsAdmin />
+                </AdminRoute>
               }
             />
 
