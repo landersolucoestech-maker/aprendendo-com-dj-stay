@@ -838,6 +838,54 @@ export type Database = {
           },
         ]
       }
+      commission_adjustment_events: {
+        Row: {
+          basis_amount_cents: number
+          created_at: string
+          currency_code: string
+          details: Json
+          id: string
+          kind: Database["public"]["Enums"]["commission_adjustment_kind"]
+          order_id: string
+          payment_provider_event_id: string | null
+        }
+        Insert: {
+          basis_amount_cents: number
+          created_at?: string
+          currency_code: string
+          details?: Json
+          id?: string
+          kind: Database["public"]["Enums"]["commission_adjustment_kind"]
+          order_id: string
+          payment_provider_event_id?: string | null
+        }
+        Update: {
+          basis_amount_cents?: number
+          created_at?: string
+          currency_code?: string
+          details?: Json
+          id?: string
+          kind?: Database["public"]["Enums"]["commission_adjustment_kind"]
+          order_id?: string
+          payment_provider_event_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_adjustment_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "payment_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_adjustment_events_payment_provider_event_id_fkey"
+            columns: ["payment_provider_event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_provider_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_editor_events: {
         Row: {
           actor_user_id: string | null
@@ -1086,6 +1134,8 @@ export type Database = {
           source: Database["public"]["Enums"]["digital_product_access_source"]
           source_reference: string | null
           status: Database["public"]["Enums"]["digital_product_access_status"]
+          suspended_at: string | null
+          suspension_reason: string | null
           updated_at: string
           user_id: string
         }
@@ -1103,6 +1153,8 @@ export type Database = {
           source: Database["public"]["Enums"]["digital_product_access_source"]
           source_reference?: string | null
           status?: Database["public"]["Enums"]["digital_product_access_status"]
+          suspended_at?: string | null
+          suspension_reason?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1120,6 +1172,8 @@ export type Database = {
           source?: Database["public"]["Enums"]["digital_product_access_source"]
           source_reference?: string | null
           status?: Database["public"]["Enums"]["digital_product_access_status"]
+          suspended_at?: string | null
+          suspension_reason?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1918,6 +1972,143 @@ export type Database = {
             foreignKeyName: "payment_attempts_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "payment_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_entitlement_events: {
+        Row: {
+          created_at: string
+          details: Json
+          entitlement_id: string
+          event_type: Database["public"]["Enums"]["payment_entitlement_event_type"]
+          from_status:
+            | Database["public"]["Enums"]["payment_entitlement_status"]
+            | null
+          id: string
+          order_id: string
+          payment_provider_event_id: string | null
+          to_status: Database["public"]["Enums"]["payment_entitlement_status"]
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          entitlement_id: string
+          event_type: Database["public"]["Enums"]["payment_entitlement_event_type"]
+          from_status?:
+            | Database["public"]["Enums"]["payment_entitlement_status"]
+            | null
+          id?: string
+          order_id: string
+          payment_provider_event_id?: string | null
+          to_status: Database["public"]["Enums"]["payment_entitlement_status"]
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          entitlement_id?: string
+          event_type?: Database["public"]["Enums"]["payment_entitlement_event_type"]
+          from_status?:
+            | Database["public"]["Enums"]["payment_entitlement_status"]
+            | null
+          id?: string
+          order_id?: string
+          payment_provider_event_id?: string | null
+          to_status?: Database["public"]["Enums"]["payment_entitlement_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_entitlement_events_entitlement_id_fkey"
+            columns: ["entitlement_id"]
+            isOneToOne: false
+            referencedRelation: "payment_entitlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_entitlement_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "payment_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_entitlement_events_payment_provider_event_id_fkey"
+            columns: ["payment_provider_event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_provider_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_entitlements: {
+        Row: {
+          controls_access: boolean
+          created_at: string
+          digital_product_access_id: string | null
+          enrollment_id: string | null
+          granted_at: string
+          id: string
+          order_id: string
+          revoked_at: string | null
+          status: Database["public"]["Enums"]["payment_entitlement_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          suspended_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          controls_access?: boolean
+          created_at?: string
+          digital_product_access_id?: string | null
+          enrollment_id?: string | null
+          granted_at?: string
+          id?: string
+          order_id: string
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["payment_entitlement_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          suspended_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          controls_access?: boolean
+          created_at?: string
+          digital_product_access_id?: string | null
+          enrollment_id?: string | null
+          granted_at?: string
+          id?: string
+          order_id?: string
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["payment_entitlement_status"]
+          subject_id?: string
+          subject_type?: Database["public"]["Enums"]["checkout_subject_type"]
+          suspended_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_entitlements_digital_product_access_id_fkey"
+            columns: ["digital_product_access_id"]
+            isOneToOne: false
+            referencedRelation: "digital_product_accesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_entitlements_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_entitlements_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
             referencedRelation: "payment_orders"
             referencedColumns: ["id"]
           },
@@ -3258,6 +3449,8 @@ export type Database = {
           source: Database["public"]["Enums"]["digital_product_access_source"]
           source_reference: string | null
           status: Database["public"]["Enums"]["digital_product_access_status"]
+          suspended_at: string | null
+          suspension_reason: string | null
           updated_at: string
           user_id: string
         }
@@ -3815,6 +4008,8 @@ export type Database = {
           source: Database["public"]["Enums"]["digital_product_access_source"]
           source_reference: string | null
           status: Database["public"]["Enums"]["digital_product_access_status"]
+          suspended_at: string | null
+          suspension_reason: string | null
           updated_at: string
           user_id: string
         }
@@ -4600,6 +4795,7 @@ export type Database = {
         | "expired"
         | "cancelled"
       checkout_subject_type: "course" | "digital_product"
+      commission_adjustment_kind: "accrue" | "hold" | "reverse" | "restore"
       course_completion_mode: "all_required_lessons" | "percentage" | "manual"
       course_editor_event_type:
         | "created"
@@ -4636,7 +4832,7 @@ export type Database = {
         | "manual_grant"
         | "complimentary"
         | "purchase"
-      digital_product_access_status: "active" | "revoked"
+      digital_product_access_status: "active" | "suspended" | "revoked"
       digital_product_event_type:
         | "created"
         | "updated"
@@ -4692,6 +4888,13 @@ export type Database = {
         | "chargeback_won"
         | "chargeback_lost"
       payment_billing_type: "unknown" | "pix" | "credit_card"
+      payment_entitlement_event_type:
+        | "granted"
+        | "suspended"
+        | "revoked"
+        | "restored"
+        | "unchanged"
+      payment_entitlement_status: "active" | "suspended" | "revoked"
       payment_order_status:
         | "checkout_pending"
         | "payment_pending"
@@ -4920,6 +5123,7 @@ export const Constants = {
         "cancelled",
       ],
       checkout_subject_type: ["course", "digital_product"],
+      commission_adjustment_kind: ["accrue", "hold", "reverse", "restore"],
       course_completion_mode: ["all_required_lessons", "percentage", "manual"],
       course_editor_event_type: [
         "created",
@@ -4960,7 +5164,7 @@ export const Constants = {
         "complimentary",
         "purchase",
       ],
-      digital_product_access_status: ["active", "revoked"],
+      digital_product_access_status: ["active", "suspended", "revoked"],
       digital_product_event_type: [
         "created",
         "updated",
@@ -5021,6 +5225,14 @@ export const Constants = {
         "chargeback_lost",
       ],
       payment_billing_type: ["unknown", "pix", "credit_card"],
+      payment_entitlement_event_type: [
+        "granted",
+        "suspended",
+        "revoked",
+        "restored",
+        "unchanged",
+      ],
+      payment_entitlement_status: ["active", "suspended", "revoked"],
       payment_order_status: [
         "checkout_pending",
         "payment_pending",
