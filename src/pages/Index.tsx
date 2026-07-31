@@ -1,24 +1,23 @@
-
-import Navigation from "@/components/Navigation";
-import HeroSection from "@/components/HeroSection";
 import BenefitsSection from "@/components/BenefitsSection";
 import CourseModulesSection from "@/components/CourseModulesSection";
-import InstructorSection from "@/components/InstructorSection";
-import TestimonialsSection from "@/components/TestimonialsSection";
 import Footer from "@/components/Footer";
+import HeroSection from "@/components/HeroSection";
+import InstructorSection from "@/components/InstructorSection";
+import Navigation from "@/components/Navigation";
+import TestimonialsSection from "@/components/TestimonialsSection";
 
-const Index = () => {
-  return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden">
-      <Navigation />
+const Index = () => (
+  <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
+    <Navigation />
+    <main id="main-content" tabIndex={-1}>
       <HeroSection />
       <BenefitsSection />
       <CourseModulesSection />
       <InstructorSection />
       <TestimonialsSection />
-      <Footer />
-    </div>
-  );
-};
+    </main>
+    <Footer />
+  </div>
+);
 
 export default Index;
