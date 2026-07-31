@@ -56,22 +56,25 @@ const AffiliateRedirect = () => {
   }, [code]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-black px-4 text-white">
-      <section className="w-full max-w-lg rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
+      <section className="w-full max-w-lg rounded-2xl border border-border bg-card p-8 text-center text-card-foreground shadow-2xl">
         {error ? (
           <>
-            <ShieldCheck className="mx-auto h-10 w-10 text-violet-300" />
+            <ShieldCheck className="mx-auto h-10 w-10 text-brand-light" aria-hidden="true" />
             <h1 className="mt-4 text-2xl font-bold">Link indisponível</h1>
-            <p className="mt-3 text-sm leading-6 text-gray-400">{error}</p>
-            <Link to="/marketplace" className="mt-6 inline-block">
-              <Button className="btn-brand">Acessar o marketplace</Button>
-            </Link>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">{error}</p>
+            <Button asChild variant="brand" className="mt-6">
+              <Link to="/marketplace">Acessar o marketplace</Link>
+            </Button>
           </>
         ) : (
           <>
-            <Loader2 className="mx-auto h-10 w-10 animate-spin text-violet-300" />
+            <Loader2
+              className="mx-auto h-10 w-10 animate-spin text-brand-light"
+              aria-hidden="true"
+            />
             <h1 className="mt-4 text-2xl font-bold">Validando o acesso</h1>
-            <p className="mt-3 text-sm text-gray-400">
+            <p className="mt-3 text-sm text-muted-foreground">
               O link está sendo validado antes do redirecionamento.
             </p>
           </>
