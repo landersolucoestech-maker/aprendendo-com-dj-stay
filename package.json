@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "check:environment": "node scripts/check-environment-contract.mjs",
-    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && npm run check:course-access && npm run check:course-cms && npm run check:curriculum-cms && npm run check:student-portal && npm run check:player-progress && npm run check:digital-marketplace && npm run check:payment-provider-adr && npm run check:payments-webhook && npm run check:affiliate-portal && tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && npm run check:course-access && npm run check:course-cms && npm run check:curriculum-cms && npm run check:student-portal && npm run check:player-progress && npm run check:digital-marketplace && npm run check:payment-provider-adr && npm run check:payments-webhook && npm run check:affiliate-portal && npm run check:students-certificates && tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "check": "npm run lint && npm run typecheck && npm run build",
     "preview": "vite preview",
     "check:auth": "node scripts/check-auth-contract.mjs",
@@ -24,7 +24,8 @@
     "check:digital-marketplace": "node scripts/check-digital-marketplace-contract.mjs",
     "check:payment-provider-adr": "node scripts/check-payment-provider-adr.mjs",
     "check:payments-webhook": "node scripts/check-payments-webhook-contract.mjs",
-    "check:affiliate-portal": "node scripts/check-affiliate-portal-contract.mjs"
+    "check:affiliate-portal": "node scripts/check-affiliate-portal-contract.mjs",
+    "check:students-certificates": "node scripts/check-students-certificates-contract.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
