@@ -5,6 +5,24 @@ const timestampSchema = z.string().datetime({ offset: true });
 const nonBlankTextSchema = z.string().trim().min(1);
 export const lessonIdSchema = uuidSchema;
 
+export const lessonCompletionModeSchema = z.enum([
+  "manual",
+  "media_progress",
+  "reading_acknowledgement",
+  "any_activity",
+]);
+
+export const lessonContentKindSchema = z.enum(["text", "video", "audio", "mixed"]);
+
+export const lessonProgressEventTypeSchema = z.enum([
+  "heartbeat",
+  "pause",
+  "ended",
+  "manual_complete",
+  "reading_acknowledgement",
+  "visibility_hidden",
+]);
+
 export const lessonRowSchema = z
   .object({
     id: uuidSchema,
@@ -13,6 +31,9 @@ export const lessonRowSchema = z
     descricao: z.string().nullable(),
     ordem: z.number().int().nonnegative(),
     duracao: z.number().int().min(1).max(1440).nullable(),
+    completion_mode: lessonCompletionModeSchema,
+    completion_percent: z.number().int().min(1).max(100).nullable(),
+    content_kind: lessonContentKindSchema,
     created_at: timestampSchema,
     updated_at: timestampSchema,
   })
@@ -26,6 +47,9 @@ export const lessonsResponseSchema = z.array(
     descricao: true,
     ordem: true,
     duracao: true,
+    completion_mode: true,
+    completion_percent: true,
+    content_kind: true,
   }),
 );
 
@@ -58,6 +82,10 @@ export const progressRowSchema = z
     progresso_percentual: z.number().int().min(0).max(100),
     tempo_assistido: z.number().int().nonnegative(),
     ultima_visualizacao: timestampSchema,
+    revision: z.number().int().nonnegative(),
+    last_event_id: uuidSchema.nullable(),
+    last_event_received_at: timestampSchema.nullable(),
+    last_client_instance_id: uuidSchema.nullable(),
     created_at: timestampSchema,
     updated_at: timestampSchema,
   })
@@ -65,12 +93,16 @@ export const progressRowSchema = z
 
 export const progressResponseSchema = z.array(progressRowSchema);
 
-export const progressUpdateInputSchema = z
+export const lessonProgressEventInputSchema = z
   .object({
-    aulaId: uuidSchema,
-    completada: z.boolean(),
-    progressoPercentual: z.number().int().min(0).max(100),
-    tempoAssistido: z.number().int().nonnegative(),
+    lessonId: uuidSchema,
+    eventId: uuidSchema,
+    clientInstanceId: uuidSchema,
+    eventSequence: z.number().int().positive(),
+    eventType: lessonProgressEventTypeSchema,
+    positionSeconds: z.number().int().min(0).max(604800),
+    durationSeconds: z.number().int().min(1).max(604800),
+    observedAt: timestampSchema,
   })
   .strict();
 
@@ -120,8 +152,11 @@ export const profileMetadataInputSchema = z
   })
   .strict();
 
+export type LessonCompletionMode = z.infer<typeof lessonCompletionModeSchema>;
+export type LessonContentKind = z.infer<typeof lessonContentKindSchema>;
+export type LessonProgressEventType = z.infer<typeof lessonProgressEventTypeSchema>;
 export type LessonRow = z.infer<typeof lessonRowSchema>;
 export type ProgressRow = z.infer<typeof progressRowSchema>;
-export type ProgressUpdateInput = z.infer<typeof progressUpdateInputSchema>;
+export type LessonProgressEventInput = z.infer<typeof lessonProgressEventInputSchema>;
 export type UserProfileRow = z.infer<typeof userProfileSchema>;
 export type ProfileMetadataInput = z.infer<typeof profileMetadataInputSchema>;
