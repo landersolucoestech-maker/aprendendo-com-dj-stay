@@ -47,8 +47,8 @@ select is((select count(*)::integer from public.courses),1,'active student reads
 select is((select count(*)::integer from public.modulos),1,'active student reads enrolled module');
 select is((select count(*)::integer from public.aulas),1,'active student reads enrolled lesson');
 select lives_ok(
-  $$insert into public.progresso_aulas(user_id,aula_id,progresso_percentual) values ('17000000-0000-4000-8000-000000000002','47000000-0000-4000-8000-000000000001',25)$$,
-  'active student can create progress'
+  $$select public.save_lesson_progress_event('47000000-0000-4000-8000-000000000001','57000000-0000-4000-8000-000000000001','67000000-0000-4000-8000-000000000001',1,'heartbeat',25,100,statement_timestamp())$$,
+  'active student creates progress through ordered RPC'
 );
 select is((select count(*)::integer from public.progresso_aulas),1,'active student reads own progress');
 reset role;
