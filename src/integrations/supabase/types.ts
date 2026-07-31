@@ -250,35 +250,194 @@ export type Database = {
           },
         ]
       }
+      course_editor_events: {
+        Row: {
+          actor_user_id: string | null
+          course_id: string
+          created_at: string
+          details: Json
+          event_type: Database["public"]["Enums"]["course_editor_event_type"]
+          id: string
+          version: number
+        }
+        Insert: {
+          actor_user_id?: string | null
+          course_id: string
+          created_at?: string
+          details?: Json
+          event_type: Database["public"]["Enums"]["course_editor_event_type"]
+          id?: string
+          version: number
+        }
+        Update: {
+          actor_user_id?: string | null
+          course_id?: string
+          created_at?: string
+          details?: Json
+          event_type?: Database["public"]["Enums"]["course_editor_event_type"]
+          id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_editor_events_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           access_duration_days: number | null
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          certificate_enabled: boolean
+          certificate_min_completion_percent: number
+          completion_mode: Database["public"]["Enums"]["course_completion_mode"]
+          completion_required_percent: number
+          cover_asset_id: string | null
           created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          drip_interval_days: number | null
+          duplicated_from_course_id: string | null
           id: string
+          language_code: string
+          level: Database["public"]["Enums"]["course_level"]
+          objectives: string[]
+          prerequisites: string[]
+          preview_enabled: boolean
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["course_release_mode"]
+          short_description: string | null
           slug: string
           status: Database["public"]["Enums"]["course_status"]
+          thumbnail_asset_id: string | null
           title: string
+          unpublished_at: string | null
           updated_at: string
+          updated_by_user_id: string | null
+          version: number
         }
         Insert: {
           access_duration_days?: number | null
+          affiliate_eligible?: boolean
+          archived_at?: string | null
+          availability_ends_at?: string | null
+          availability_starts_at?: string | null
+          category?: string | null
+          certificate_enabled?: boolean
+          certificate_min_completion_percent?: number
+          completion_mode?: Database["public"]["Enums"]["course_completion_mode"]
+          completion_required_percent?: number
+          cover_asset_id?: string | null
           created_at?: string
+          created_by_user_id?: string | null
+          currency_code?: string
+          deleted_at?: string | null
+          description?: string | null
+          drip_interval_days?: number | null
+          duplicated_from_course_id?: string | null
           id?: string
+          language_code?: string
+          level?: Database["public"]["Enums"]["course_level"]
+          objectives?: string[]
+          prerequisites?: string[]
+          preview_enabled?: boolean
+          price_amount?: number
+          promotion_ends_at?: string | null
+          promotion_starts_at?: string | null
+          promotional_price_amount?: number | null
+          published_at?: string | null
+          release_at?: string | null
+          release_mode?: Database["public"]["Enums"]["course_release_mode"]
+          short_description?: string | null
           slug: string
           status?: Database["public"]["Enums"]["course_status"]
+          thumbnail_asset_id?: string | null
           title: string
+          unpublished_at?: string | null
           updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
         }
         Update: {
           access_duration_days?: number | null
+          affiliate_eligible?: boolean
+          archived_at?: string | null
+          availability_ends_at?: string | null
+          availability_starts_at?: string | null
+          category?: string | null
+          certificate_enabled?: boolean
+          certificate_min_completion_percent?: number
+          completion_mode?: Database["public"]["Enums"]["course_completion_mode"]
+          completion_required_percent?: number
+          cover_asset_id?: string | null
           created_at?: string
+          created_by_user_id?: string | null
+          currency_code?: string
+          deleted_at?: string | null
+          description?: string | null
+          drip_interval_days?: number | null
+          duplicated_from_course_id?: string | null
           id?: string
+          language_code?: string
+          level?: Database["public"]["Enums"]["course_level"]
+          objectives?: string[]
+          prerequisites?: string[]
+          preview_enabled?: boolean
+          price_amount?: number
+          promotion_ends_at?: string | null
+          promotion_starts_at?: string | null
+          promotional_price_amount?: number | null
+          published_at?: string | null
+          release_at?: string | null
+          release_mode?: Database["public"]["Enums"]["course_release_mode"]
+          short_description?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["course_status"]
+          thumbnail_asset_id?: string | null
           title?: string
+          unpublished_at?: string | null
           updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "courses_cover_asset_id_fkey"
+            columns: ["cover_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_duplicated_from_course_id_fkey"
+            columns: ["duplicated_from_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_thumbnail_asset_id_fkey"
+            columns: ["thumbnail_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       enrollment_events: {
         Row: {
@@ -688,6 +847,57 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archive_course: {
+        Args: { p_course_id: string; p_expected_version: number }
+        Returns: {
+          access_duration_days: number | null
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          certificate_enabled: boolean
+          certificate_min_completion_percent: number
+          completion_mode: Database["public"]["Enums"]["course_completion_mode"]
+          completion_required_percent: number
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          drip_interval_days: number | null
+          duplicated_from_course_id: string | null
+          id: string
+          language_code: string
+          level: Database["public"]["Enums"]["course_level"]
+          objectives: string[]
+          prerequisites: string[]
+          preview_enabled: boolean
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["course_release_mode"]
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["course_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "courses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       confirm_asset_upload: {
         Args: { p_asset_id: string }
         Returns: {
@@ -756,7 +966,160 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_course: {
+        Args: { p_payload: Json }
+        Returns: {
+          access_duration_days: number | null
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          certificate_enabled: boolean
+          certificate_min_completion_percent: number
+          completion_mode: Database["public"]["Enums"]["course_completion_mode"]
+          completion_required_percent: number
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          drip_interval_days: number | null
+          duplicated_from_course_id: string | null
+          id: string
+          language_code: string
+          level: Database["public"]["Enums"]["course_level"]
+          objectives: string[]
+          prerequisites: string[]
+          preview_enabled: boolean
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["course_release_mode"]
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["course_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "courses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      delete_course: {
+        Args: { p_course_id: string; p_expected_version: number }
+        Returns: {
+          access_duration_days: number | null
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          certificate_enabled: boolean
+          certificate_min_completion_percent: number
+          completion_mode: Database["public"]["Enums"]["course_completion_mode"]
+          completion_required_percent: number
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          drip_interval_days: number | null
+          duplicated_from_course_id: string | null
+          id: string
+          language_code: string
+          level: Database["public"]["Enums"]["course_level"]
+          objectives: string[]
+          prerequisites: string[]
+          preview_enabled: boolean
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["course_release_mode"]
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["course_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "courses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       disable_lesson_media: { Args: { p_lesson_id: string }; Returns: boolean }
+      duplicate_course: {
+        Args: { p_course_id: string; p_slug: string; p_title: string }
+        Returns: {
+          access_duration_days: number | null
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          certificate_enabled: boolean
+          certificate_min_completion_percent: number
+          completion_mode: Database["public"]["Enums"]["course_completion_mode"]
+          completion_required_percent: number
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          drip_interval_days: number | null
+          duplicated_from_course_id: string | null
+          id: string
+          language_code: string
+          level: Database["public"]["Enums"]["course_level"]
+          objectives: string[]
+          prerequisites: string[]
+          preview_enabled: boolean
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["course_release_mode"]
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["course_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "courses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       fail_asset_upload: {
         Args: {
           p_asset_id: string
@@ -884,6 +1247,57 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "assets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      publish_course: {
+        Args: { p_course_id: string; p_expected_version: number }
+        Returns: {
+          access_duration_days: number | null
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          certificate_enabled: boolean
+          certificate_min_completion_percent: number
+          completion_mode: Database["public"]["Enums"]["course_completion_mode"]
+          completion_required_percent: number
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          drip_interval_days: number | null
+          duplicated_from_course_id: string | null
+          id: string
+          language_code: string
+          level: Database["public"]["Enums"]["course_level"]
+          objectives: string[]
+          prerequisites: string[]
+          preview_enabled: boolean
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["course_release_mode"]
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["course_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "courses"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1037,6 +1451,108 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      unpublish_course: {
+        Args: { p_course_id: string; p_expected_version: number }
+        Returns: {
+          access_duration_days: number | null
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          certificate_enabled: boolean
+          certificate_min_completion_percent: number
+          completion_mode: Database["public"]["Enums"]["course_completion_mode"]
+          completion_required_percent: number
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          drip_interval_days: number | null
+          duplicated_from_course_id: string | null
+          id: string
+          language_code: string
+          level: Database["public"]["Enums"]["course_level"]
+          objectives: string[]
+          prerequisites: string[]
+          preview_enabled: boolean
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["course_release_mode"]
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["course_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "courses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_course: {
+        Args: { p_course_id: string; p_expected_version: number; p_patch: Json }
+        Returns: {
+          access_duration_days: number | null
+          affiliate_eligible: boolean
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          category: string | null
+          certificate_enabled: boolean
+          certificate_min_completion_percent: number
+          completion_mode: Database["public"]["Enums"]["course_completion_mode"]
+          completion_required_percent: number
+          cover_asset_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          deleted_at: string | null
+          description: string | null
+          drip_interval_days: number | null
+          duplicated_from_course_id: string | null
+          id: string
+          language_code: string
+          level: Database["public"]["Enums"]["course_level"]
+          objectives: string[]
+          prerequisites: string[]
+          preview_enabled: boolean
+          price_amount: number
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotional_price_amount: number | null
+          published_at: string | null
+          release_at: string | null
+          release_mode: Database["public"]["Enums"]["course_release_mode"]
+          short_description: string | null
+          slug: string
+          status: Database["public"]["Enums"]["course_status"]
+          thumbnail_asset_id: string | null
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "courses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       upsert_external_lesson_media: {
         Args: {
           p_lesson_id: string
@@ -1120,6 +1636,17 @@ export type Database = {
         | "processing"
         | "published"
         | "failed"
+      course_completion_mode: "all_required_lessons" | "percentage" | "manual"
+      course_editor_event_type:
+        | "created"
+        | "updated"
+        | "duplicated"
+        | "published"
+        | "unpublished"
+        | "archived"
+        | "deleted"
+      course_level: "beginner" | "intermediate" | "advanced" | "all_levels"
+      course_release_mode: "immediate" | "scheduled" | "drip"
       course_status: "draft" | "published" | "archived"
       enrollment_event_type:
         | "created"
@@ -1295,6 +1822,18 @@ export const Constants = {
         "digital_product",
       ],
       asset_state: ["pending", "uploaded", "processing", "published", "failed"],
+      course_completion_mode: ["all_required_lessons", "percentage", "manual"],
+      course_editor_event_type: [
+        "created",
+        "updated",
+        "duplicated",
+        "published",
+        "unpublished",
+        "archived",
+        "deleted",
+      ],
+      course_level: ["beginner", "intermediate", "advanced", "all_levels"],
+      course_release_mode: ["immediate", "scheduled", "drip"],
       course_status: ["draft", "published", "archived"],
       enrollment_event_type: [
         "created",
