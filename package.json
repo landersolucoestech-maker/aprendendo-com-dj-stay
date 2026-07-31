@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "check:environment": "node scripts/check-environment-contract.mjs",
-    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && npm run check:course-access && npm run check:course-cms && npm run check:curriculum-cms && npm run check:student-portal && npm run check:player-progress && npm run check:digital-marketplace && tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && npm run check:course-access && npm run check:course-cms && npm run check:curriculum-cms && npm run check:student-portal && npm run check:player-progress && npm run check:digital-marketplace && npm run check:payment-provider-adr && npm run check:payments-webhook && tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "check": "npm run lint && npm run typecheck && npm run build",
     "preview": "vite preview",
     "check:auth": "node scripts/check-auth-contract.mjs",
@@ -21,7 +21,9 @@
     "check:curriculum-cms": "node scripts/check-curriculum-cms-contract.mjs",
     "check:student-portal": "node scripts/check-student-portal-contract.mjs",
     "check:player-progress": "node scripts/check-player-progress-contract.mjs",
-    "check:digital-marketplace": "node scripts/check-digital-marketplace-contract.mjs"
+    "check:digital-marketplace": "node scripts/check-digital-marketplace-contract.mjs",
+    "check:payment-provider-adr": "node scripts/check-payment-provider-adr.mjs",
+    "check:payments-webhook": "node scripts/check-payments-webhook-contract.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -71,7 +73,6 @@
     "recharts": "^2.12.7",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
-    "tailwindcss": "^3.4.11",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.3",
     "zod": "^3.23.8"
