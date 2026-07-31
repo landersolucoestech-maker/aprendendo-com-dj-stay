@@ -47,11 +47,20 @@ export const useHostedCheckout = () =>
         "solicitação de checkout hospedado",
       );
 
-      const { data, error } = await supabase.functions.invoke("create-asaas-checkout", {
-        body: {
-          ...value,
-          affiliateVisitorToken: getStoredAffiliateVisitorToken(),
+      const { error: attributionError } = await supabase.rpc(
+        "prepare_checkout_intent_with_attribution",
+        {
+          p_subject_type: value.subjectType,
+          p_subject_id: value.subjectId,
+          p_license_id: value.licenseId,
+          p_idempotency_key: value.idempotencyKey,
+          p_affiliate_visitor_token: getStoredAffiliateVisitorToken(),
         },
+      );
+      if (attributionError) throw attributionError;
+
+      const { data, error } = await supabase.functions.invoke("create-asaas-checkout", {
+        body: value,
       });
 
       if (error) throw error;
