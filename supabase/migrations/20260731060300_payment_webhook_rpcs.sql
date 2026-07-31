@@ -299,12 +299,10 @@ begin
     return jsonb_build_object('duplicate', false, 'ignored', true, 'reason', 'ASAAS_EXTERNAL_REFERENCE_INVALID');
   end;
 
-  select a, o
-  into v_attempt, v_order
-  from public.payment_attempts a
-  join public.payment_orders o on o.id = a.order_id
-  where a.checkout_intent_id = v_intent_id
-  for update of a, o;
+  select * into v_attempt
+  from public.payment_attempts
+  where checkout_intent_id = v_intent_id
+  for update;
 
   if not found then
     update public.payment_provider_events
@@ -316,6 +314,30 @@ begin
     where id = v_event.id;
 
     return jsonb_build_object('duplicate', false, 'ignored', true, 'reason', 'CHECKOUT_INTENT_NOT_LINKED');
+  end if;
+
+  select * into v_order
+  from public.payment_orders
+  where id = v_attempt.order_id
+  for update;
+
+  if not found then
+    update public.payment_provider_events
+    set status = 'failed'::public.payment_provider_event_status,
+        provider_payment_id = v_payment_id,
+        external_reference = v_external_reference,
+        payment_attempt_id = v_attempt.id,
+        error_code = 'PAYMENT_ORDER_NOT_LINKED',
+        processed_at = statement_timestamp()
+    where id = v_event.id;
+
+    return jsonb_build_object(
+      'duplicate', false,
+      'failed', true,
+      'event_id', btrim(p_event_id),
+      'reason', 'PAYMENT_ORDER_NOT_LINKED',
+      'fulfillment_performed', false
+    );
   end if;
 
   if v_attempt.provider_payment_id is not null
