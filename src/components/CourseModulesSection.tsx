@@ -54,9 +54,9 @@ const CourseModulesSection = () => {
   };
 
   const totalDuration = modules.reduce((total, module) => {
-    const [, hoursText = "0", minutesText = "0"] = module.duration.match(/^(\d+)h\s+(\d+)min$/) ?? [];
-    const hours = Number.parseInt(hoursText, 10);
-    const minutes = Number.parseInt(minutesText, 10);
+    const match = /^(\d+)h\s+(\d+)min$/.exec(module.duration);
+    const hours = Number(match?.[1] ?? 0);
+    const minutes = Number(match?.[2] ?? 0);
     return total + hours + minutes / 60;
   }, 0);
   const totalLessons = modules.reduce((total, module) => total + module.lessons, 0);
