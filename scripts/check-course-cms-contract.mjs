@@ -14,6 +14,9 @@ const contract = read("src/contracts/course-cms.ts");
 const migrations = [
   read("supabase/migrations/20260730220000_course_cms_schema.sql"),
   read("supabase/migrations/20260730220100_course_cms_rpcs.sql"),
+  read("supabase/migrations/20260730220110_course_cms_update_rpc.sql"),
+  read("supabase/migrations/20260730220120_course_cms_lifecycle_rpcs.sql"),
+  read("supabase/migrations/20260730220130_course_cms_rpc_grants.sql"),
   read("supabase/migrations/20260730220200_course_cms_access.sql"),
 ].join("\n");
 
