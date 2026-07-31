@@ -708,6 +708,136 @@ export type Database = {
           },
         ]
       }
+      checkout_intent_events: {
+        Row: {
+          actor_user_id: string | null
+          checkout_intent_id: string
+          created_at: string
+          details: Json
+          event_type: Database["public"]["Enums"]["checkout_intent_event_type"]
+          from_status:
+            | Database["public"]["Enums"]["checkout_intent_status"]
+            | null
+          id: string
+          to_status: Database["public"]["Enums"]["checkout_intent_status"]
+        }
+        Insert: {
+          actor_user_id?: string | null
+          checkout_intent_id: string
+          created_at?: string
+          details?: Json
+          event_type: Database["public"]["Enums"]["checkout_intent_event_type"]
+          from_status?:
+            | Database["public"]["Enums"]["checkout_intent_status"]
+            | null
+          id?: string
+          to_status: Database["public"]["Enums"]["checkout_intent_status"]
+        }
+        Update: {
+          actor_user_id?: string | null
+          checkout_intent_id?: string
+          created_at?: string
+          details?: Json
+          event_type?: Database["public"]["Enums"]["checkout_intent_event_type"]
+          from_status?:
+            | Database["public"]["Enums"]["checkout_intent_status"]
+            | null
+          id?: string
+          to_status?: Database["public"]["Enums"]["checkout_intent_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkout_intent_events_checkout_intent_id_fkey"
+            columns: ["checkout_intent_id"]
+            isOneToOne: false
+            referencedRelation: "checkout_intents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checkout_intents: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency_code: string
+          expires_at: string | null
+          failure_code: string | null
+          failure_reason: string | null
+          id: string
+          idempotency_key: string
+          item_snapshot: Json
+          license_id: string | null
+          provider: string
+          provider_checkout_id: string | null
+          provider_checkout_url: string | null
+          provider_request_started_at: string | null
+          provider_request_token: string | null
+          status: Database["public"]["Enums"]["checkout_intent_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          title_snapshot: string
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency_code: string
+          expires_at?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
+          id?: string
+          idempotency_key: string
+          item_snapshot: Json
+          license_id?: string | null
+          provider?: string
+          provider_checkout_id?: string | null
+          provider_checkout_url?: string | null
+          provider_request_started_at?: string | null
+          provider_request_token?: string | null
+          status?: Database["public"]["Enums"]["checkout_intent_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          title_snapshot: string
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency_code?: string
+          expires_at?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
+          id?: string
+          idempotency_key?: string
+          item_snapshot?: Json
+          license_id?: string | null
+          provider?: string
+          provider_checkout_id?: string | null
+          provider_checkout_url?: string | null
+          provider_request_started_at?: string | null
+          provider_request_token?: string | null
+          status?: Database["public"]["Enums"]["checkout_intent_status"]
+          subject_id?: string
+          subject_type?: Database["public"]["Enums"]["checkout_subject_type"]
+          title_snapshot?: string
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkout_intents_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "digital_product_licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_editor_events: {
         Row: {
           actor_user_id: string | null
@@ -1712,6 +1842,209 @@ export type Database = {
           },
         ]
       }
+      payment_attempts: {
+        Row: {
+          amount_cents: number
+          billing_type: Database["public"]["Enums"]["payment_billing_type"]
+          checkout_intent_id: string
+          confirmed_at: string | null
+          created_at: string
+          currency_code: string
+          failure_code: string | null
+          id: string
+          last_provider_event_at: string | null
+          last_provider_event_id: string | null
+          order_id: string
+          provider: string
+          provider_checkout_id: string
+          provider_payment_id: string | null
+          provider_status: string | null
+          received_at: string | null
+          status: Database["public"]["Enums"]["payment_attempt_status"]
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          amount_cents: number
+          billing_type?: Database["public"]["Enums"]["payment_billing_type"]
+          checkout_intent_id: string
+          confirmed_at?: string | null
+          created_at?: string
+          currency_code: string
+          failure_code?: string | null
+          id?: string
+          last_provider_event_at?: string | null
+          last_provider_event_id?: string | null
+          order_id: string
+          provider?: string
+          provider_checkout_id: string
+          provider_payment_id?: string | null
+          provider_status?: string | null
+          received_at?: string | null
+          status?: Database["public"]["Enums"]["payment_attempt_status"]
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          amount_cents?: number
+          billing_type?: Database["public"]["Enums"]["payment_billing_type"]
+          checkout_intent_id?: string
+          confirmed_at?: string | null
+          created_at?: string
+          currency_code?: string
+          failure_code?: string | null
+          id?: string
+          last_provider_event_at?: string | null
+          last_provider_event_id?: string | null
+          order_id?: string
+          provider?: string
+          provider_checkout_id?: string
+          provider_payment_id?: string | null
+          provider_status?: string | null
+          received_at?: string | null
+          status?: Database["public"]["Enums"]["payment_attempt_status"]
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_attempts_checkout_intent_id_fkey"
+            columns: ["checkout_intent_id"]
+            isOneToOne: true
+            referencedRelation: "checkout_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_attempts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "payment_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_orders: {
+        Row: {
+          amount_cents: number
+          checkout_intent_id: string
+          created_at: string
+          currency_code: string
+          id: string
+          item_snapshot: Json
+          license_id: string | null
+          payment_confirmed_at: string | null
+          status: Database["public"]["Enums"]["payment_order_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          title_snapshot: string
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          amount_cents: number
+          checkout_intent_id: string
+          created_at?: string
+          currency_code: string
+          id?: string
+          item_snapshot: Json
+          license_id?: string | null
+          payment_confirmed_at?: string | null
+          status?: Database["public"]["Enums"]["payment_order_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          title_snapshot: string
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          amount_cents?: number
+          checkout_intent_id?: string
+          created_at?: string
+          currency_code?: string
+          id?: string
+          item_snapshot?: Json
+          license_id?: string | null
+          payment_confirmed_at?: string | null
+          status?: Database["public"]["Enums"]["payment_order_status"]
+          subject_id?: string
+          subject_type?: Database["public"]["Enums"]["checkout_subject_type"]
+          title_snapshot?: string
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_orders_checkout_intent_id_fkey"
+            columns: ["checkout_intent_id"]
+            isOneToOne: true
+            referencedRelation: "checkout_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_orders_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "digital_product_licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_provider_events: {
+        Row: {
+          error_code: string | null
+          event_type: string
+          external_reference: string | null
+          id: string
+          payload: Json
+          payment_attempt_id: string | null
+          processed_at: string | null
+          provider: string
+          provider_event_id: string
+          provider_payment_id: string | null
+          received_at: string
+          status: Database["public"]["Enums"]["payment_provider_event_status"]
+        }
+        Insert: {
+          error_code?: string | null
+          event_type: string
+          external_reference?: string | null
+          id?: string
+          payload: Json
+          payment_attempt_id?: string | null
+          processed_at?: string | null
+          provider?: string
+          provider_event_id: string
+          provider_payment_id?: string | null
+          received_at?: string
+          status?: Database["public"]["Enums"]["payment_provider_event_status"]
+        }
+        Update: {
+          error_code?: string | null
+          event_type?: string
+          external_reference?: string | null
+          id?: string
+          payload?: Json
+          payment_attempt_id?: string | null
+          processed_at?: string | null
+          provider?: string
+          provider_event_id?: string
+          provider_payment_id?: string | null
+          received_at?: string
+          status?: Database["public"]["Enums"]["payment_provider_event_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_provider_events_payment_attempt_id_fkey"
+            columns: ["payment_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "payment_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       playback_events: {
         Row: {
           created_at: string
@@ -2210,6 +2543,54 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "digital_product_deliverables"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      claim_checkout_provider_request: {
+        Args: {
+          p_intent_id: string
+          p_lease_seconds?: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      complete_checkout_provider_request: {
+        Args: {
+          p_expires_at: string
+          p_intent_id: string
+          p_provider_checkout_id: string
+          p_provider_checkout_url: string
+          p_request_token: string
+          p_user_id: string
+        }
+        Returns: {
+          amount_cents: number
+          created_at: string
+          currency_code: string
+          expires_at: string | null
+          failure_code: string | null
+          failure_reason: string | null
+          id: string
+          idempotency_key: string
+          item_snapshot: Json
+          license_id: string | null
+          provider: string
+          provider_checkout_id: string | null
+          provider_checkout_url: string | null
+          provider_request_started_at: string | null
+          provider_request_token: string | null
+          status: Database["public"]["Enums"]["checkout_intent_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          title_snapshot: string
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "checkout_intents"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2760,6 +3141,45 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      fail_checkout_provider_request: {
+        Args: {
+          p_failure_code: string
+          p_failure_reason: string
+          p_intent_id: string
+          p_request_token: string
+          p_user_id: string
+        }
+        Returns: {
+          amount_cents: number
+          created_at: string
+          currency_code: string
+          expires_at: string | null
+          failure_code: string | null
+          failure_reason: string | null
+          id: string
+          idempotency_key: string
+          item_snapshot: Json
+          license_id: string | null
+          provider: string
+          provider_checkout_id: string | null
+          provider_checkout_url: string | null
+          provider_request_started_at: string | null
+          provider_request_token: string | null
+          status: Database["public"]["Enums"]["checkout_intent_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          title_snapshot: string
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "checkout_intents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_assessment_attempt_result: {
         Args: { p_attempt_id: string }
         Returns: Json
@@ -2933,6 +3353,48 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      prepare_checkout_intent: {
+        Args: {
+          p_idempotency_key: string
+          p_license_id: string
+          p_subject_id: string
+          p_subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+        }
+        Returns: {
+          amount_cents: number
+          created_at: string
+          currency_code: string
+          expires_at: string | null
+          failure_code: string | null
+          failure_reason: string | null
+          id: string
+          idempotency_key: string
+          item_snapshot: Json
+          license_id: string | null
+          provider: string
+          provider_checkout_id: string | null
+          provider_checkout_url: string | null
+          provider_request_started_at: string | null
+          provider_request_token: string | null
+          status: Database["public"]["Enums"]["checkout_intent_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          title_snapshot: string
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "checkout_intents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      process_asaas_payment_webhook: {
+        Args: { p_event_id: string; p_event_type: string; p_payload: Json }
+        Returns: Json
       }
       publish_assessment: {
         Args: { p_assessment_id: string; p_expected_version: number }
@@ -4123,6 +4585,21 @@ export type Database = {
         | "processing"
         | "published"
         | "failed"
+      checkout_intent_event_type:
+        | "prepared"
+        | "provider_claimed"
+        | "provider_created"
+        | "provider_failed"
+        | "expired"
+        | "cancelled"
+      checkout_intent_status:
+        | "prepared"
+        | "provider_creating"
+        | "checkout_created"
+        | "provider_failed"
+        | "expired"
+        | "cancelled"
+      checkout_subject_type: "course" | "digital_product"
       course_completion_mode: "all_required_lessons" | "percentage" | "manual"
       course_editor_event_type:
         | "created"
@@ -4200,6 +4677,37 @@ export type Database = {
         | "manual_complete"
         | "reading_acknowledgement"
         | "visibility_hidden"
+      payment_attempt_status:
+        | "checkout_created"
+        | "pending"
+        | "confirmed"
+        | "received"
+        | "failed"
+        | "expired"
+        | "cancelled"
+        | "refund_pending"
+        | "refunded"
+        | "chargeback_pending"
+        | "chargeback_dispute"
+        | "chargeback_won"
+        | "chargeback_lost"
+      payment_billing_type: "unknown" | "pix" | "credit_card"
+      payment_order_status:
+        | "checkout_pending"
+        | "payment_pending"
+        | "paid"
+        | "cancelled"
+        | "expired"
+        | "refund_pending"
+        | "refunded"
+        | "chargeback_pending"
+        | "chargeback_won"
+        | "chargeback_lost"
+      payment_provider_event_status:
+        | "received"
+        | "processed"
+        | "ignored"
+        | "failed"
       playback_event_type:
         | "issued"
         | "resolved"
@@ -4395,6 +4903,23 @@ export const Constants = {
         "digital_product",
       ],
       asset_state: ["pending", "uploaded", "processing", "published", "failed"],
+      checkout_intent_event_type: [
+        "prepared",
+        "provider_claimed",
+        "provider_created",
+        "provider_failed",
+        "expired",
+        "cancelled",
+      ],
+      checkout_intent_status: [
+        "prepared",
+        "provider_creating",
+        "checkout_created",
+        "provider_failed",
+        "expired",
+        "cancelled",
+      ],
+      checkout_subject_type: ["course", "digital_product"],
       course_completion_mode: ["all_required_lessons", "percentage", "manual"],
       course_editor_event_type: [
         "created",
@@ -4479,6 +5004,40 @@ export const Constants = {
         "manual_complete",
         "reading_acknowledgement",
         "visibility_hidden",
+      ],
+      payment_attempt_status: [
+        "checkout_created",
+        "pending",
+        "confirmed",
+        "received",
+        "failed",
+        "expired",
+        "cancelled",
+        "refund_pending",
+        "refunded",
+        "chargeback_pending",
+        "chargeback_dispute",
+        "chargeback_won",
+        "chargeback_lost",
+      ],
+      payment_billing_type: ["unknown", "pix", "credit_card"],
+      payment_order_status: [
+        "checkout_pending",
+        "payment_pending",
+        "paid",
+        "cancelled",
+        "expired",
+        "refund_pending",
+        "refunded",
+        "chargeback_pending",
+        "chargeback_won",
+        "chargeback_lost",
+      ],
+      payment_provider_event_status: [
+        "received",
+        "processed",
+        "ignored",
+        "failed",
       ],
       playback_event_type: [
         "issued",
