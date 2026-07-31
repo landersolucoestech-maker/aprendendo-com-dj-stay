@@ -31,7 +31,7 @@ export function RoleLandingRedirect() {
   }
 
   if (roleQuery.data.role === "afiliado") {
-    return <Navigate to="/editar-perfil" replace />;
+    return <Navigate to="/afiliado" replace />;
   }
 
   return <Navigate to="/aluno" replace />;
