@@ -22,6 +22,9 @@ insert into public.aulas(id,modulo_id,titulo,ordem,status,content_kind,completio
  ('6e000000-0000-4000-8000-000000000003','5e000000-0000-4000-8000-000000000001','Aula futura',1,'published','text','manual',false,'scheduled',statement_timestamp()+interval '1 day',false,null),
  ('6e000000-0000-4000-8000-000000000004','5e000000-0000-4000-8000-000000000004','Aula preview',0,'published','text','manual',false,'immediate',null,true,null),
  ('6e000000-0000-4000-8000-000000000005','5e000000-0000-4000-8000-000000000001','Aula encerrada',2,'published','text','manual',false,'immediate',null,true,statement_timestamp()-interval '1 minute');
+insert into public.module_prerequisites(module_id,prerequisite_module_id,created_by_user_id)
+values('5e000000-0000-4000-8000-000000000002','5e000000-0000-4000-8000-000000000001','1e000000-0000-4000-8000-000000000001')
+on conflict do nothing;
 insert into public.lesson_prerequisites(lesson_id,prerequisite_lesson_id,created_by_user_id)
 values('6e000000-0000-4000-8000-000000000002','6e000000-0000-4000-8000-000000000001','1e000000-0000-4000-8000-000000000001');
 insert into public.lesson_media(id,lesson_id,provider,external_video_id,is_active,watermark_enabled,created_by_user_id) values
@@ -29,8 +32,6 @@ insert into public.lesson_media(id,lesson_id,provider,external_video_id,is_activ
  ('8e000000-0000-4000-8000-000000000003','6e000000-0000-4000-8000-000000000003','youtube','dQw4w9WgXcQ',true,true,'1e000000-0000-4000-8000-000000000001');
 insert into public.assets(id,owner_user_id,created_by_user_id,lesson_id,purpose,state,original_name,normalized_name,extension,mime_type,size_bytes,idempotency_key,uploaded_at,published_at)
 values('2e000000-0000-4000-8000-000000000001','1e000000-0000-4000-8000-000000000001','1e000000-0000-4000-8000-000000000001','6e000000-0000-4000-8000-000000000001','document','published','guia.pdf','guia.pdf','pdf','application/pdf',1000,'curriculum:guide:001',statement_timestamp(),statement_timestamp());
-insert into public.asset_access_grants(asset_id,user_id,granted_by_user_id,enrollment_id)
-values('2e000000-0000-4000-8000-000000000001','1e000000-0000-4000-8000-000000000002','1e000000-0000-4000-8000-000000000001','4e000000-0000-4000-8000-000000000001');
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"1e000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"7e000000-0000-4000-8000-000000000002","is_anonymous":false}',true);
@@ -40,7 +41,7 @@ select ok(not exists(select 1 from public.modulos where id='5e000000-0000-4000-8
 select is((select count(*)::integer from public.aulas),2,'student sees available lesson and preview lesson before prerequisites');
 select ok(not exists(select 1 from public.aulas where id='6e000000-0000-4000-8000-000000000005'),'expired availability window is never bypassed by preview');
 select is((select count(*)::integer from public.lesson_media),1,'student sees media only for available lessons');
-select is((select count(*)::integer from public.assets),1,'student sees granted material for available lesson');
+select is((select count(*)::integer from public.assets),1,'student sees enrollment-granted material for available lesson');
 select throws_ok($$insert into public.progresso_aulas(user_id,aula_id,completada,progresso_percentual) values('1e000000-0000-4000-8000-000000000002','6e000000-0000-4000-8000-000000000003',true,100)$$,'42501',null,'student cannot record progress for hidden lesson');
 select lives_ok($$insert into public.progresso_aulas(user_id,aula_id,completada,progresso_percentual) values('1e000000-0000-4000-8000-000000000002','6e000000-0000-4000-8000-000000000001',true,100)$$,'student records progress for available lesson');
 select is((select count(*)::integer from public.modulos),3,'completing required module unlocks dependent module');
