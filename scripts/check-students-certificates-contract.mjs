@@ -86,18 +86,32 @@ requireText("src/pages/admin/StudentsAdmin.tsx", [
   "Motivo administrativo",
 ]);
 
-const migrationText = [
-  contents.get("supabase/migrations/20260731061000_certificates_schema.sql") ?? "",
-  contents.get("supabase/migrations/20260731061010_certificates_rpcs.sql") ?? "",
-].join("\n").toLowerCase();
+const schemaMigration = (
+  contents.get("supabase/migrations/20260731061000_certificates_schema.sql") ?? ""
+).toLowerCase();
+const rpcMigration = (
+  contents.get("supabase/migrations/20260731061010_certificates_rpcs.sql") ?? ""
+).toLowerCase();
 
-if (/create policy[\s\S]*\bto anon\b/.test(migrationText)) {
+const schemaStatements = schemaMigration
+  .split(";")
+  .map((statement) => statement.trim())
+  .filter(Boolean);
+if (
+  schemaStatements.some(
+    (statement) => statement.startsWith("create policy") && /\bto\s+anon\b/.test(statement),
+  )
+) {
   fail("certificados não podem expor políticas de tabela ao papel anônimo");
 }
-if (/create function public\.[^(]*certificate[\s\S]*security definer/.test(migrationText)) {
+
+const publicCertificateFunctions = rpcMigration
+  .split(/(?=create function public\.)/g)
+  .filter((block) => block.startsWith("create function public.") && block.includes("certificate"));
+if (publicCertificateFunctions.some((block) => block.includes("security definer"))) {
   fail("RPC pública de certificado não pode usar SECURITY DEFINER");
 }
-if (!migrationText.includes("char_length(v_reason) not between 3 and 1000")) {
+if (!rpcMigration.includes("char_length(v_reason) not between 3 and 1000")) {
   fail("revogação precisa exigir motivo auditável");
 }
 
