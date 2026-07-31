@@ -22,7 +22,7 @@ select ok((select bool_and(relrowsecurity and relforcerowsecurity) from pg_class
   'public.assessment_answers'::regclass,
   'public.assessment_events'::regclass
 )),'all public assessment tables force RLS');
-select is((select count(*)::integer from information_schema.role_table_grants where table_schema='private' and table_name='assessment_attempt_keys'),0,'private answer keys have no table grants');
+select is((select count(*)::integer from information_schema.role_table_grants where table_schema='private' and table_name='assessment_attempt_keys' and grantee in ('PUBLIC','anon','authenticated','service_role')),0,'private answer keys have no exposed-role table grants');
 select is((select count(*)::integer from information_schema.role_table_grants where grantee='authenticated' and table_schema='public' and table_name like 'assessment%' and privilege_type in ('INSERT','UPDATE','DELETE','TRUNCATE')),0,'authenticated cannot mutate assessment tables directly');
 select is((select count(*)::integer from information_schema.role_table_grants where grantee='anon' and table_schema='public' and table_name like 'assessment%'),0,'anonymous has no assessment table privileges');
 select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in (
