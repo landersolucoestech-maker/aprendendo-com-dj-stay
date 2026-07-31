@@ -13,6 +13,7 @@ const catalog = read("src/pages/marketplace/DigitalMarketplace.tsx");
 const owned = read("src/pages/student/MyDigitalProducts.tsx");
 const admin = read("src/pages/admin/DigitalProductsAdmin.tsx");
 const privateAssets = read("src/lib/private-assets.ts");
+const schemaMigration = read("supabase/migrations/20260731050000_digital_marketplace_schema.sql");
 const accessMigration = read("supabase/migrations/20260731050100_digital_marketplace_access.sql");
 const accessRpcs = read("supabase/migrations/20260731050300_digital_marketplace_access_rpcs.sql");
 
@@ -45,7 +46,7 @@ expect(contracts.includes("affiliate_eligible"), "Produto deve expor elegibilida
 expect(owned.includes("downloadPrivateAsset"), "Downloads devem usar helper privado assinado.");
 expect(privateAssets.includes("createSignedUrl"), "Download privado deve usar URL assinada de curta duração.");
 expect(accessMigration.includes("has_active_digital_product_access"), "RLS deve verificar acesso ativo ao produto.");
-expect(accessMigration.includes("force row level security"), "Tabelas do marketplace devem forçar RLS.");
+expect(schemaMigration.includes("force row level security"), "Tabelas do marketplace devem forçar RLS.");
 expect(accessRpcs.includes("DIGITAL_PRODUCT_PURCHASE_SOURCE_RESERVED"), "Concessão administrativa não pode simular compra.");
 expect(accessRpcs.includes("license_snapshot"), "Concessão deve persistir termos licenciados.");
 expect(catalog.includes("Nenhum acesso é liberado por redirecionamento ou simulação"), "Catálogo deve informar que redirect não libera acesso.");
