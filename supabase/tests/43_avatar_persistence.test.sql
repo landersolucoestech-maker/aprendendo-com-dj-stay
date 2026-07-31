@@ -13,11 +13,11 @@ values
 
 insert into public.assets(
   id,owner_user_id,created_by_user_id,purpose,state,original_name,normalized_name,
-  extension,mime_type,size_bytes,idempotency_key,object_path,uploaded_at
+  extension,mime_type,size_bytes,idempotency_key,uploaded_at
 )
 values
- ('b2270000-0000-4000-8000-000000000201','b2200000-0000-4000-8000-000000000201','b2200000-0000-4000-8000-000000000201','avatar','uploaded','first.webp','first.webp','webp','image/webp',1200,'b22:test:avatar:first:0001','users/b2200000-0000-4000-8000-000000000201/avatar/first.webp',statement_timestamp()),
- ('b2270000-0000-4000-8000-000000000202','b2200000-0000-4000-8000-000000000201','b2200000-0000-4000-8000-000000000201','avatar','uploaded','second.webp','second.webp','webp','image/webp',1400,'b22:test:avatar:second:0001','users/b2200000-0000-4000-8000-000000000201/avatar/second.webp',statement_timestamp());
+ ('b2270000-0000-4000-8000-000000000201','b2200000-0000-4000-8000-000000000201','b2200000-0000-4000-8000-000000000201','avatar','uploaded','first.webp','first.webp','webp','image/webp',1200,'b22:test:avatar:first:0001',statement_timestamp()),
+ ('b2270000-0000-4000-8000-000000000202','b2200000-0000-4000-8000-000000000201','b2200000-0000-4000-8000-000000000201','avatar','uploaded','second.webp','second.webp','webp','image/webp',1400,'b22:test:avatar:second:0001',statement_timestamp());
 
 select ok(exists(select 1 from public.user_profiles where user_id='b2200000-0000-4000-8000-000000000201'),'owner profile exists');
 
