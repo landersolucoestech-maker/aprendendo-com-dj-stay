@@ -27,7 +27,6 @@ if (existsSync(ADR_PATH)) {
     "PAYMENT_CONFIRMED",
     "PAYMENT_REFUNDED",
     "PAYMENT_CHARGEBACK_REQUESTED",
-    "DIGITAL_PRODUCT_PURCHASE_SOURCE_RESERVED",
     "Mercado Pago",
     "Stripe",
     "Pagar.me",
@@ -76,8 +75,18 @@ if (existsSync(ADR_PATH)) {
     "Próximas fases devem usar adapter interno.",
   );
   expect(
-    adr.includes("Somente acessos ativos e comprovados" ) || adr.includes("acesso somente"),
-    "ADR deve preservar a regra de entitlement comprovado.",
+    adr.includes("usar `purchase` em concessão administrativa sem evidência do provedor") ||
+      adr.includes("origem `purchase` sem evidência do provedor"),
+    "Origem purchase deve exigir evidência financeira do provedor.",
+  );
+  expect(
+    adr.includes("nunca poderão liberar curso ou produto digital") &&
+      adr.includes("retorno para `callbackUrl`"),
+    "Curso e produto digital não podem ser liberados por sinais do navegador.",
+  );
+  expect(
+    adr.includes("Um pagamento somente poderá mudar para estado confirmado"),
+    "Confirmação financeira deve depender de fonte server-side autorizada.",
   );
 
   const secretAssignmentPattern = /ASAAS_(?:API_KEY|WEBHOOK_TOKEN)\s*=\s*[^\s`]+/;
