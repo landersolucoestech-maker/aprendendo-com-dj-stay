@@ -10,7 +10,7 @@ const nullableTextSchema = z.string().nullable();
 export const digitalProductStatusSchema = z.enum(["draft", "published", "archived"]);
 export const digitalLicenseStatusSchema = z.enum(["draft", "published", "archived"]);
 export const digitalLicenseKindSchema = z.enum(["personal", "commercial", "extended", "custom"]);
-export const digitalProductAccessStatusSchema = z.enum(["active", "revoked"]);
+export const digitalProductAccessStatusSchema = z.enum(["active", "suspended", "revoked"]);
 export const digitalProductAccessSourceSchema = z.enum(["manual_grant", "complimentary", "purchase"]);
 
 export const digitalProductSchema = z
@@ -101,6 +101,8 @@ export const digitalProductAccessSchema = z
     granted_by_user_id: uuidSchema.nullable(),
     granted_at: timestampSchema,
     expires_at: nullableTimestampSchema,
+    suspended_at: nullableTimestampSchema,
+    suspension_reason: nullableTextSchema,
     revoked_at: nullableTimestampSchema,
     revocation_reason: nullableTextSchema,
     created_at: timestampSchema,
