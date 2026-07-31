@@ -18,80 +18,9 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v4
-
-      - name: Alinhar fixtures legadas à B12
-        id: fixtures
-        run: |
-          set -euo pipefail
-          python <<'PY'
-          from pathlib import Path
-          root = Path('supabase/tests')
-
-          def patch(name, replacements):
-              path = root / name
-              text = path.read_text()
-              for old, new in replacements:
-                  if old not in text:
-                      raise SystemExit(f'{name}: marcador não encontrado: {old[:80]}')
-                  text = text.replace(old, new, 1)
-              path.write_text(text)
-
-          patch('02_roles_student.test.sql', [
-              ("insert into public.modulos (id, course_id, titulo, ordem)\nvalues ('21000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', 'Módulo protegido', 1);",
-               "insert into public.modulos (id, course_id, titulo, ordem, status)\nvalues ('21000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', 'Módulo protegido', 1, 'published');"),
-              ("insert into public.aulas (id, modulo_id, titulo, ordem, duracao)\nvalues ('31000000-0000-4000-8000-000000000001', '21000000-0000-4000-8000-000000000001', 'Aula protegida', 1, 10);",
-               "insert into public.aulas (id, modulo_id, titulo, ordem, duracao, status)\nvalues ('31000000-0000-4000-8000-000000000001', '21000000-0000-4000-8000-000000000001', 'Aula protegida', 1, 10, 'published');"),
-          ])
-          patch('04_roles_admin.test.sql', [
-              ("insert into public.modulos (id, course_id, titulo, ordem)\nvalues ('23000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000003', 'Módulo protegido', 1);",
-               "insert into public.modulos (id, course_id, titulo, ordem, status)\nvalues ('23000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000003', 'Módulo protegido', 1, 'published');"),
-              ("insert into public.aulas (id, modulo_id, titulo, ordem)\nvalues ('33000000-0000-4000-8000-000000000001', '23000000-0000-4000-8000-000000000001', 'Aula protegida', 1);",
-               "insert into public.aulas (id, modulo_id, titulo, ordem, status)\nvalues ('33000000-0000-4000-8000-000000000001', '23000000-0000-4000-8000-000000000001', 'Aula protegida', 1, 'published');"),
-              ("$$insert into public.modulos (course_id, titulo, ordem) values ('20000000-0000-4000-8000-000000000003', 'Módulo administrativo', 2)$$",
-               "$$select public.create_module('20000000-0000-4000-8000-000000000003','{\"title\":\"Módulo administrativo\"}'::jsonb)$$"),
-          ])
-          patch('07_storage_lesson_grants.test.sql', [
-              ("insert into public.modulos (id, course_id, titulo, ordem)\nvalues ('25000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', 'Módulo com materiais', 1);",
-               "insert into public.modulos (id, course_id, titulo, ordem, status)\nvalues ('25000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', 'Módulo com materiais', 1, 'published');"),
-              ("insert into public.aulas (id, modulo_id, titulo, ordem)\nvalues ('35000000-0000-4000-8000-000000000001', '25000000-0000-4000-8000-000000000001', 'Aula com material privado', 1);",
-               "insert into public.aulas (id, modulo_id, titulo, ordem, status)\nvalues ('35000000-0000-4000-8000-000000000001', '25000000-0000-4000-8000-000000000001', 'Aula com material privado', 1, 'published');\ninsert into public.enrollments (id,user_id,course_id,status,source,starts_at,granted_by_user_id)\nvalues ('45000000-0000-4000-8000-000000000001','15000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000005','active','manual_grant',statement_timestamp()-interval '1 minute','15000000-0000-4000-8000-000000000001');"),
-          ])
-          patch('10_enrollment_lifecycle.test.sql', [
-              ("insert into public.modulos (id,course_id,titulo,ordem)\nvalues ('37000000-0000-4000-8000-000000000001','27000000-0000-4000-8000-000000000001','Módulo matriculado',1);",
-               "insert into public.modulos (id,course_id,titulo,ordem,status)\nvalues ('37000000-0000-4000-8000-000000000001','27000000-0000-4000-8000-000000000001','Módulo matriculado',1,'published');"),
-              ("insert into public.aulas (id,modulo_id,titulo,ordem)\nvalues ('47000000-0000-4000-8000-000000000001','37000000-0000-4000-8000-000000000001','Aula matriculada',1);",
-               "insert into public.aulas (id,modulo_id,titulo,ordem,status)\nvalues ('47000000-0000-4000-8000-000000000001','37000000-0000-4000-8000-000000000001','Aula matriculada',1,'published');"),
-          ])
-          patch('11_course_content_rls.test.sql', [
-              ("insert into public.modulos (id,course_id,titulo,ordem)\nvalues ('38000000-0000-4000-8000-000000000001','28000000-0000-4000-8000-000000000001','Módulo protegido por matrícula',1);",
-               "insert into public.modulos (id,course_id,titulo,ordem,status)\nvalues ('38000000-0000-4000-8000-000000000001','28000000-0000-4000-8000-000000000001','Módulo protegido por matrícula',1,'published');"),
-              ("insert into public.aulas (id,modulo_id,titulo,ordem)\nvalues ('48000000-0000-4000-8000-000000000001','38000000-0000-4000-8000-000000000001','Aula protegida por matrícula',1);",
-               "insert into public.aulas (id,modulo_id,titulo,ordem,status)\nvalues ('48000000-0000-4000-8000-000000000001','38000000-0000-4000-8000-000000000001','Aula protegida por matrícula',1,'published');"),
-              ("$$insert into public.modulos(course_id,titulo,ordem) values ('28000000-0000-4000-8000-000000000001','Segundo módulo',2)$$",
-               "$$select public.create_module('28000000-0000-4000-8000-000000000001','{\"title\":\"Segundo módulo\"}'::jsonb)$$"),
-          ])
-          patch('12_lesson_media_playback.test.sql', [
-              ("insert into public.modulos (id,course_id,titulo,ordem)\nvalues ('39000000-0000-4000-8000-000000000001','29000000-0000-4000-8000-000000000001','Módulo de mídia',1);",
-               "insert into public.modulos (id,course_id,titulo,ordem,status)\nvalues ('39000000-0000-4000-8000-000000000001','29000000-0000-4000-8000-000000000001','Módulo de mídia',1,'published');"),
-              ("insert into public.aulas (id,modulo_id,titulo,ordem)\nvalues ('49000000-0000-4000-8000-000000000001','39000000-0000-4000-8000-000000000001','Aula de mídia',1);",
-               "insert into public.aulas (id,modulo_id,titulo,ordem,status)\nvalues ('49000000-0000-4000-8000-000000000001','39000000-0000-4000-8000-000000000001','Aula de mídia',1,'published');"),
-          ])
-          patch('16_curriculum_schema.test.sql', [(
-              ") overlaps),0,'curriculum introduces no overlapping permissive policies');",
-              ") duplicate_policies),0,'curriculum introduces no overlapping permissive policies');",
-          )])
-          patch('19_curriculum_access.test.sql', [(
-              "'active','manual',statement_timestamp()",
-              "'active','manual_grant',statement_timestamp()",
-          )])
-          PY
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add supabase/tests
-          git commit -m "test(b12): align legacy curriculum fixtures [skip ci]"
-          git push origin HEAD:dev
 
       - uses: actions/setup-node@v4
         with:
@@ -159,6 +88,14 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_DEV_PUBLISHABLE_KEY }}
         run: npm run build:dev
 
+      - name: Exportar tipos gerados
+        if: steps.types.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-types-${{ github.sha }}
+          path: artifacts/database.types.ts
+          retention-days: 1
+
       - name: Evidência
         if: always()
         uses: actions/github-script@v7
@@ -176,7 +113,7 @@ jobs:
               repo: context.repo.repo,
               title: `Gate técnico — ${context.sha.slice(0,12)}`,
               body: [
-                `Commit controlador: \`${context.sha}\``,
+                `Commit validado: \`${context.sha}\``,
                 `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
                 `npm ci: **${process.env.INSTALL}**`,
                 `lint: **${process.env.LINT}**`,
