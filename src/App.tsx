@@ -21,6 +21,7 @@ import Register from "@/pages/Register";
 import ResetPassword from "@/pages/ResetPassword";
 import Verified from "@/pages/Verified";
 import VerifyEmail from "@/pages/VerifyEmail";
+import CourseCurriculum from "@/pages/admin/CourseCurriculum";
 import CourseEditor from "@/pages/admin/CourseEditor";
 import CoursePreview from "@/pages/admin/CoursePreview";
 import CoursesAdmin from "@/pages/admin/CoursesAdmin";
@@ -144,6 +145,16 @@ const App = () => (
                 <RequireAuth>
                   <RequireRole allowedRoles={["administrador_proprietario"]}>
                     <CoursePreview />
+                  </RequireRole>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/cursos/:courseId/curriculo"
+              element={
+                <RequireAuth>
+                  <RequireRole allowedRoles={["administrador_proprietario"]}>
+                    <CourseCurriculum />
                   </RequireRole>
                 </RequireAuth>
               }
