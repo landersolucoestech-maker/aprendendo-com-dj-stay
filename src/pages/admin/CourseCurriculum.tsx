@@ -35,8 +35,8 @@ const CourseCurriculum = () => {
   const [assetsLesson, setAssetsLesson] = useState<CurriculumLessonRow | null>(null);
 
   const snapshot = curriculumQuery.data;
-  const modules = snapshot?.modules ?? [];
-  const lessons = snapshot?.lessons ?? [];
+  const modules = useMemo(() => snapshot?.modules ?? [], [snapshot?.modules]);
+  const lessons = useMemo(() => snapshot?.lessons ?? [], [snapshot?.lessons]);
   const modulePrerequisites = snapshot?.modulePrerequisites ?? [];
   const lessonPrerequisites = snapshot?.lessonPrerequisites ?? [];
   const media = snapshot?.media ?? [];
