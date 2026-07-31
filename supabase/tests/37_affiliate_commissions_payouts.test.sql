@@ -45,6 +45,7 @@ select set_config('request.jwt.claims','{"sub":"b2000000-0000-4000-8000-00000000
 select set_config('test.b20_pay_link',(select code from public.create_affiliate_link('course',current_setting('test.b20_pay_course_id')::uuid,'/marketplace')),false);
 
 reset role;
+select set_config('request.jwt.claim.sub','',true);
 select set_config('request.jwt.claims','{"role":"anon","is_anonymous":true}',true);
 set local role anon;
 select public.record_affiliate_click(current_setting('test.b20_pay_link'),'b2060000-0000-4000-8000-000000000301','/marketplace','https://pay-source.test','Payment Browser');
@@ -72,7 +73,7 @@ select private.process_asaas_payment_webhook(
 );
 
 select is((select count(*)::integer from public.affiliate_commissions),1,'payment creates one affiliate commission');
-select is((select amount_cents from public.affiliate_commissions),1000,'commission uses frozen ten percent rate');
+select is((select commission_amount_cents from public.affiliate_commissions),1000,'commission uses frozen ten percent rate');
 select is((select status::text from public.affiliate_commissions),'available','received payment makes commission available');
 select is((select order_id from public.affiliate_commissions),(select id from public.payment_orders where checkout_intent_id=current_setting('test.b20_pay_intent')::uuid),'commission is linked to payment order');
 select is((select count(*)::integer from public.affiliate_events where event_type='commission_accrued'),1,'commission accrual is audited');
