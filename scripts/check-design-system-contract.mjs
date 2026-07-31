@@ -43,6 +43,11 @@ const requireText = (file, fragments) => {
   }
 };
 
+const requirePattern = (file, pattern, description) => {
+  const content = contents.get(file) ?? "";
+  if (!pattern.test(content)) fail(`${file} não satisfaz ${description}`);
+};
+
 const forbidText = (file, fragments) => {
   const content = contents.get(file) ?? "";
   for (const fragment of fragments) {
@@ -262,12 +267,15 @@ forbidText("src/pages/affiliate/AffiliatePortal.tsx", [
 requireText("src/pages/student/Certificates.tsx", [
   'context="course"',
   'variant="course"',
-  'variant="success"',
-  'variant="destructive"',
   "<PageState",
   "<Button asChild",
   'aria-label="Certificados do aluno"',
 ]);
+requirePattern(
+  "src/pages/student/Certificates.tsx",
+  /variant\s*=\s*\{\s*certificate\.status\s*===\s*"issued"\s*\?\s*"success"\s*:\s*"destructive"\s*\}/s,
+  "mapeamento semântico de certificado emitido para success e revogado para destructive",
+);
 forbidText("src/pages/student/Certificates.tsx", [
   "btn-brand",
   "bg-black",
