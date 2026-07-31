@@ -34,6 +34,547 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliate_attributions: {
+        Row: {
+          affiliate_user_id: string
+          attributed_at: string
+          click_id: string
+          commission_bps: number
+          converted_at: string | null
+          converted_order_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          invalidated_at: string | null
+          invalidation_reason: string | null
+          link_id: string
+          status: Database["public"]["Enums"]["affiliate_attribution_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          terms_id: string
+          updated_at: string
+          visitor_token_hash: string
+        }
+        Insert: {
+          affiliate_user_id: string
+          attributed_at?: string
+          click_id: string
+          commission_bps: number
+          converted_at?: string | null
+          converted_order_id?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          invalidated_at?: string | null
+          invalidation_reason?: string | null
+          link_id: string
+          status?: Database["public"]["Enums"]["affiliate_attribution_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          terms_id: string
+          updated_at?: string
+          visitor_token_hash: string
+        }
+        Update: {
+          affiliate_user_id?: string
+          attributed_at?: string
+          click_id?: string
+          commission_bps?: number
+          converted_at?: string | null
+          converted_order_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invalidated_at?: string | null
+          invalidation_reason?: string | null
+          link_id?: string
+          status?: Database["public"]["Enums"]["affiliate_attribution_status"]
+          subject_id?: string
+          subject_type?: Database["public"]["Enums"]["checkout_subject_type"]
+          terms_id?: string
+          updated_at?: string
+          visitor_token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_attributions_affiliate_user_id_fkey"
+            columns: ["affiliate_user_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "affiliate_attributions_click_id_fkey"
+            columns: ["click_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_clicks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_attributions_converted_order_id_fkey"
+            columns: ["converted_order_id"]
+            isOneToOne: true
+            referencedRelation: "payment_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_attributions_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_attributions_terms_id_fkey"
+            columns: ["terms_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_subject_terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_clicks: {
+        Row: {
+          affiliate_user_id: string
+          clicked_at: string
+          id: string
+          landing_path: string
+          link_id: string
+          referrer_origin: string | null
+          user_agent_hash: string | null
+          visitor_token_hash: string
+        }
+        Insert: {
+          affiliate_user_id: string
+          clicked_at?: string
+          id?: string
+          landing_path: string
+          link_id: string
+          referrer_origin?: string | null
+          user_agent_hash?: string | null
+          visitor_token_hash: string
+        }
+        Update: {
+          affiliate_user_id?: string
+          clicked_at?: string
+          id?: string
+          landing_path?: string
+          link_id?: string
+          referrer_origin?: string | null
+          user_agent_hash?: string | null
+          visitor_token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_clicks_affiliate_user_id_fkey"
+            columns: ["affiliate_user_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "affiliate_clicks_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_commissions: {
+        Row: {
+          affiliate_user_id: string
+          attribution_id: string
+          available_at: string | null
+          basis_amount_cents: number
+          commission_amount_cents: number
+          commission_bps: number
+          created_at: string
+          currency_code: string
+          held_at: string | null
+          id: string
+          link_id: string
+          order_id: string
+          paid_at: string | null
+          reversed_at: string | null
+          status: Database["public"]["Enums"]["affiliate_commission_status"]
+          updated_at: string
+        }
+        Insert: {
+          affiliate_user_id: string
+          attribution_id: string
+          available_at?: string | null
+          basis_amount_cents: number
+          commission_amount_cents: number
+          commission_bps: number
+          created_at?: string
+          currency_code: string
+          held_at?: string | null
+          id?: string
+          link_id: string
+          order_id: string
+          paid_at?: string | null
+          reversed_at?: string | null
+          status?: Database["public"]["Enums"]["affiliate_commission_status"]
+          updated_at?: string
+        }
+        Update: {
+          affiliate_user_id?: string
+          attribution_id?: string
+          available_at?: string | null
+          basis_amount_cents?: number
+          commission_amount_cents?: number
+          commission_bps?: number
+          created_at?: string
+          currency_code?: string
+          held_at?: string | null
+          id?: string
+          link_id?: string
+          order_id?: string
+          paid_at?: string | null
+          reversed_at?: string | null
+          status?: Database["public"]["Enums"]["affiliate_commission_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_commissions_affiliate_user_id_fkey"
+            columns: ["affiliate_user_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "affiliate_commissions_attribution_id_fkey"
+            columns: ["attribution_id"]
+            isOneToOne: true
+            referencedRelation: "affiliate_attributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_commissions_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_commissions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "payment_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_events: {
+        Row: {
+          actor_user_id: string | null
+          affiliate_user_id: string | null
+          attribution_id: string | null
+          commission_id: string | null
+          created_at: string
+          details: Json
+          event_type: Database["public"]["Enums"]["affiliate_event_type"]
+          id: string
+          link_id: string | null
+          payout_id: string | null
+          profile_user_id: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          affiliate_user_id?: string | null
+          attribution_id?: string | null
+          commission_id?: string | null
+          created_at?: string
+          details?: Json
+          event_type: Database["public"]["Enums"]["affiliate_event_type"]
+          id?: string
+          link_id?: string | null
+          payout_id?: string | null
+          profile_user_id?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          affiliate_user_id?: string | null
+          attribution_id?: string | null
+          commission_id?: string | null
+          created_at?: string
+          details?: Json
+          event_type?: Database["public"]["Enums"]["affiliate_event_type"]
+          id?: string
+          link_id?: string | null
+          payout_id?: string | null
+          profile_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_events_affiliate_user_id_fkey"
+            columns: ["affiliate_user_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "affiliate_events_attribution_id_fkey"
+            columns: ["attribution_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_attributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_events_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_events_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_events_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_events_profile_user_id_fkey"
+            columns: ["profile_user_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      affiliate_links: {
+        Row: {
+          affiliate_user_id: string
+          code: string
+          created_at: string
+          deactivated_at: string | null
+          destination_path: string
+          id: string
+          status: Database["public"]["Enums"]["affiliate_link_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          updated_at: string
+        }
+        Insert: {
+          affiliate_user_id: string
+          code: string
+          created_at?: string
+          deactivated_at?: string | null
+          destination_path: string
+          id?: string
+          status?: Database["public"]["Enums"]["affiliate_link_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          updated_at?: string
+        }
+        Update: {
+          affiliate_user_id?: string
+          code?: string
+          created_at?: string
+          deactivated_at?: string | null
+          destination_path?: string
+          id?: string
+          status?: Database["public"]["Enums"]["affiliate_link_status"]
+          subject_id?: string
+          subject_type?: Database["public"]["Enums"]["checkout_subject_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_links_affiliate_user_id_fkey"
+            columns: ["affiliate_user_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      affiliate_payout_items: {
+        Row: {
+          amount_cents: number
+          commission_id: string
+          created_at: string
+          payout_id: string
+        }
+        Insert: {
+          amount_cents: number
+          commission_id: string
+          created_at?: string
+          payout_id: string
+        }
+        Update: {
+          amount_cents?: number
+          commission_id?: string
+          created_at?: string
+          payout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_payout_items_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: true
+            referencedRelation: "affiliate_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_payout_items_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_payouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_payouts: {
+        Row: {
+          affiliate_user_id: string
+          amount_cents: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          external_reference: string | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          paid_by_user_id: string | null
+          status: Database["public"]["Enums"]["affiliate_payout_status"]
+          updated_at: string
+        }
+        Insert: {
+          affiliate_user_id: string
+          amount_cents: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          currency_code: string
+          external_reference?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          paid_by_user_id?: string | null
+          status?: Database["public"]["Enums"]["affiliate_payout_status"]
+          updated_at?: string
+        }
+        Update: {
+          affiliate_user_id?: string
+          amount_cents?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          currency_code?: string
+          external_reference?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          paid_by_user_id?: string | null
+          status?: Database["public"]["Enums"]["affiliate_payout_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_payouts_affiliate_user_id_fkey"
+            columns: ["affiliate_user_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      affiliate_profiles: {
+        Row: {
+          activated_at: string | null
+          activated_by_user_id: string | null
+          code: string
+          created_at: string
+          created_by_user_id: string | null
+          display_name: string | null
+          status: Database["public"]["Enums"]["affiliate_profile_status"]
+          suspended_at: string | null
+          suspension_reason: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          activated_by_user_id?: string | null
+          code: string
+          created_at?: string
+          created_by_user_id?: string | null
+          display_name?: string | null
+          status?: Database["public"]["Enums"]["affiliate_profile_status"]
+          suspended_at?: string | null
+          suspension_reason?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          activated_by_user_id?: string | null
+          code?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          display_name?: string | null
+          status?: Database["public"]["Enums"]["affiliate_profile_status"]
+          suspended_at?: string | null
+          suspension_reason?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      affiliate_subject_terms: {
+        Row: {
+          active: boolean
+          attribution_window_days: number
+          commission_bps: number
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          updated_at: string
+          updated_by_user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          attribution_window_days: number
+          commission_bps: number
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          attribution_window_days?: number
+          commission_bps?: number
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          subject_id?: string
+          subject_type?: Database["public"]["Enums"]["checkout_subject_type"]
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Relationships: []
+      }
       assessment_answers: {
         Row: {
           answered_at: string
@@ -708,6 +1249,116 @@ export type Database = {
           },
         ]
       }
+      certificate_events: {
+        Row: {
+          actor_user_id: string | null
+          certificate_id: string
+          created_at: string
+          details: Json
+          event_type: Database["public"]["Enums"]["certificate_event_type"]
+          id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          certificate_id: string
+          created_at?: string
+          details?: Json
+          event_type: Database["public"]["Enums"]["certificate_event_type"]
+          id?: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          certificate_id?: string
+          created_at?: string
+          details?: Json
+          event_type?: Database["public"]["Enums"]["certificate_event_type"]
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_events_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "certificates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      certificates: {
+        Row: {
+          code: string
+          completion_percent_snapshot: number
+          course_id: string
+          course_title_snapshot: string
+          created_at: string
+          enrollment_id: string
+          id: string
+          issued_at: string
+          issued_by_user_id: string
+          metadata: Json
+          revocation_reason: string | null
+          revoked_at: string | null
+          revoked_by_user_id: string | null
+          status: Database["public"]["Enums"]["certificate_status"]
+          student_name_snapshot: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          completion_percent_snapshot: number
+          course_id: string
+          course_title_snapshot: string
+          created_at?: string
+          enrollment_id: string
+          id?: string
+          issued_at?: string
+          issued_by_user_id: string
+          metadata?: Json
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by_user_id?: string | null
+          status?: Database["public"]["Enums"]["certificate_status"]
+          student_name_snapshot: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          completion_percent_snapshot?: number
+          course_id?: string
+          course_title_snapshot?: string
+          created_at?: string
+          enrollment_id?: string
+          id?: string
+          issued_at?: string
+          issued_by_user_id?: string
+          metadata?: Json
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by_user_id?: string | null
+          status?: Database["public"]["Enums"]["certificate_status"]
+          student_name_snapshot?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checkout_intent_events: {
         Row: {
           actor_user_id: string | null
@@ -757,6 +1408,7 @@ export type Database = {
       }
       checkout_intents: {
         Row: {
+          affiliate_attribution_id: string | null
           amount_cents: number
           created_at: string
           currency_code: string
@@ -781,6 +1433,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          affiliate_attribution_id?: string | null
           amount_cents: number
           created_at?: string
           currency_code: string
@@ -805,6 +1458,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          affiliate_attribution_id?: string | null
           amount_cents?: number
           created_at?: string
           currency_code?: string
@@ -829,6 +1483,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "checkout_intents_affiliate_attribution_id_fkey"
+            columns: ["affiliate_attribution_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_attributions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "checkout_intents_license_id_fkey"
             columns: ["license_id"]
@@ -885,6 +1546,110 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      contact_message_events: {
+        Row: {
+          actor_user_id: string | null
+          contact_message_id: string
+          created_at: string
+          details: Json
+          event_type: Database["public"]["Enums"]["contact_message_event_type"]
+          from_status:
+            | Database["public"]["Enums"]["contact_message_status"]
+            | null
+          id: string
+          to_status: Database["public"]["Enums"]["contact_message_status"]
+        }
+        Insert: {
+          actor_user_id?: string | null
+          contact_message_id: string
+          created_at?: string
+          details?: Json
+          event_type: Database["public"]["Enums"]["contact_message_event_type"]
+          from_status?:
+            | Database["public"]["Enums"]["contact_message_status"]
+            | null
+          id?: string
+          to_status: Database["public"]["Enums"]["contact_message_status"]
+        }
+        Update: {
+          actor_user_id?: string | null
+          contact_message_id?: string
+          created_at?: string
+          details?: Json
+          event_type?: Database["public"]["Enums"]["contact_message_event_type"]
+          from_status?:
+            | Database["public"]["Enums"]["contact_message_status"]
+            | null
+          id?: string
+          to_status?: Database["public"]["Enums"]["contact_message_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_message_events_contact_message_id_fkey"
+            columns: ["contact_message_id"]
+            isOneToOne: false
+            referencedRelation: "contact_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          handled_at: string | null
+          handled_by_user_id: string | null
+          id: string
+          idempotency_key: string
+          message: string
+          metadata: Json
+          name: string
+          reference_code: string
+          resolution_note: string | null
+          status: Database["public"]["Enums"]["contact_message_status"]
+          subject: string
+          submitted_at: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          handled_at?: string | null
+          handled_by_user_id?: string | null
+          id?: string
+          idempotency_key: string
+          message: string
+          metadata?: Json
+          name: string
+          reference_code: string
+          resolution_note?: string | null
+          status?: Database["public"]["Enums"]["contact_message_status"]
+          subject: string
+          submitted_at?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          handled_at?: string | null
+          handled_by_user_id?: string | null
+          id?: string
+          idempotency_key?: string
+          message?: string
+          metadata?: Json
+          name?: string
+          reference_code?: string
+          resolution_note?: string | null
+          status?: Database["public"]["Enums"]["contact_message_status"]
+          subject?: string
+          submitted_at?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       course_editor_events: {
         Row: {
@@ -2116,6 +2881,7 @@ export type Database = {
       }
       payment_orders: {
         Row: {
+          affiliate_attribution_id: string | null
           amount_cents: number
           checkout_intent_id: string
           created_at: string
@@ -2133,6 +2899,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          affiliate_attribution_id?: string | null
           amount_cents: number
           checkout_intent_id: string
           created_at?: string
@@ -2150,6 +2917,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          affiliate_attribution_id?: string | null
           amount_cents?: number
           checkout_intent_id?: string
           created_at?: string
@@ -2167,6 +2935,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_orders_affiliate_attribution_id_fkey"
+            columns: ["affiliate_attribution_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_attributions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payment_orders_checkout_intent_id_fkey"
             columns: ["checkout_intent_id"]
@@ -2461,6 +3236,138 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_cancel_affiliate_payout: {
+        Args: { p_payout_id: string; p_reason: string }
+        Returns: {
+          affiliate_user_id: string
+          amount_cents: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          external_reference: string | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          paid_by_user_id: string | null
+          status: Database["public"]["Enums"]["affiliate_payout_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "affiliate_payouts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_configure_affiliate_terms: {
+        Args: {
+          p_active?: boolean
+          p_attribution_window_days: number
+          p_commission_bps: number
+          p_subject_id: string
+          p_subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+        }
+        Returns: {
+          active: boolean
+          attribution_window_days: number
+          commission_bps: number
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          updated_at: string
+          updated_by_user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "affiliate_subject_terms"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_create_affiliate_payout: {
+        Args: {
+          p_affiliate_user_id: string
+          p_commission_ids: string[]
+          p_notes?: string
+        }
+        Returns: {
+          affiliate_user_id: string
+          amount_cents: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          external_reference: string | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          paid_by_user_id: string | null
+          status: Database["public"]["Enums"]["affiliate_payout_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "affiliate_payouts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_mark_affiliate_payout_paid: {
+        Args: { p_external_reference: string; p_payout_id: string }
+        Returns: {
+          affiliate_user_id: string
+          amount_cents: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          external_reference: string | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          paid_by_user_id: string | null
+          status: Database["public"]["Enums"]["affiliate_payout_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "affiliate_payouts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_set_affiliate_profile_status: {
+        Args: {
+          p_reason?: string
+          p_status: Database["public"]["Enums"]["affiliate_profile_status"]
+          p_user_id: string
+        }
+        Returns: {
+          activated_at: string | null
+          activated_by_user_id: string | null
+          code: string
+          created_at: string
+          created_by_user_id: string | null
+          display_name: string | null
+          status: Database["public"]["Enums"]["affiliate_profile_status"]
+          suspended_at: string | null
+          suspension_reason: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "affiliate_profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       archive_assessment: {
         Args: { p_assessment_id: string; p_expected_version: number }
         Returns: {
@@ -2756,6 +3663,7 @@ export type Database = {
           p_user_id: string
         }
         Returns: {
+          affiliate_attribution_id: string | null
           amount_cents: number
           created_at: string
           currency_code: string
@@ -2850,6 +3758,31 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "enrollments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_affiliate_link: {
+        Args: {
+          p_destination_path: string
+          p_subject_id: string
+          p_subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+        }
+        Returns: {
+          affiliate_user_id: string
+          code: string
+          created_at: string
+          deactivated_at: string | null
+          destination_path: string
+          id: string
+          status: Database["public"]["Enums"]["affiliate_link_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "affiliate_links"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -3102,6 +4035,27 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      deactivate_affiliate_link: {
+        Args: { p_link_id: string }
+        Returns: {
+          affiliate_user_id: string
+          code: string
+          created_at: string
+          deactivated_at: string | null
+          destination_path: string
+          id: string
+          status: Database["public"]["Enums"]["affiliate_link_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "affiliate_links"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_assessment: {
         Args: { p_assessment_id: string; p_expected_version: number }
         Returns: boolean
@@ -3341,6 +4295,7 @@ export type Database = {
           p_user_id: string
         }
         Returns: {
+          affiliate_attribution_id: string | null
           amount_cents: number
           created_at: string
           currency_code: string
@@ -3371,8 +4326,24 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_affiliate_admin_dashboard: { Args: never; Returns: Json }
+      get_affiliate_portal: { Args: never; Returns: Json }
       get_assessment_attempt_result: {
         Args: { p_attempt_id: string }
+        Returns: Json
+      }
+      get_contact_messages_admin: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_status?: Database["public"]["Enums"]["contact_message_status"]
+        }
+        Returns: Json
+      }
+      get_my_certificates: { Args: never; Returns: Json }
+      get_students_admin_dashboard: {
+        Args: { p_limit?: number; p_offset?: number; p_search?: string }
         Returns: Json
       }
       grant_asset_access: {
@@ -3457,6 +4428,34 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "digital_product_accesses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      issue_enrollment_certificate: {
+        Args: { p_enrollment_id: string }
+        Returns: {
+          code: string
+          completion_percent_snapshot: number
+          course_id: string
+          course_title_snapshot: string
+          created_at: string
+          enrollment_id: string
+          id: string
+          issued_at: string
+          issued_by_user_id: string
+          metadata: Json
+          revocation_reason: string | null
+          revoked_at: string | null
+          revoked_by_user_id: string | null
+          status: Database["public"]["Enums"]["certificate_status"]
+          student_name_snapshot: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "certificates"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -3555,6 +4554,47 @@ export type Database = {
           p_subject_type: Database["public"]["Enums"]["checkout_subject_type"]
         }
         Returns: {
+          affiliate_attribution_id: string | null
+          amount_cents: number
+          created_at: string
+          currency_code: string
+          expires_at: string | null
+          failure_code: string | null
+          failure_reason: string | null
+          id: string
+          idempotency_key: string
+          item_snapshot: Json
+          license_id: string | null
+          provider: string
+          provider_checkout_id: string | null
+          provider_checkout_url: string | null
+          provider_request_started_at: string | null
+          provider_request_token: string | null
+          status: Database["public"]["Enums"]["checkout_intent_status"]
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+          title_snapshot: string
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "checkout_intents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      prepare_checkout_intent_with_attribution: {
+        Args: {
+          p_affiliate_visitor_token?: string
+          p_idempotency_key: string
+          p_license_id: string
+          p_subject_id: string
+          p_subject_type: Database["public"]["Enums"]["checkout_subject_type"]
+        }
+        Returns: {
+          affiliate_attribution_id: string | null
           amount_cents: number
           created_at: string
           currency_code: string
@@ -3736,6 +4776,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      record_affiliate_click: {
+        Args: {
+          p_landing_path: string
+          p_link_code: string
+          p_referrer_origin?: string
+          p_user_agent?: string
+          p_visitor_token: string
+        }
+        Returns: Json
       }
       remove_digital_product_deliverable: {
         Args: { p_deliverable_id: string; p_expected_product_version: number }
@@ -3937,6 +4987,28 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      request_affiliate_profile: {
+        Args: { p_display_name?: string }
+        Returns: {
+          activated_at: string | null
+          activated_by_user_id: string | null
+          code: string
+          created_at: string
+          created_by_user_id: string | null
+          display_name: string | null
+          status: Database["public"]["Enums"]["affiliate_profile_status"]
+          suspended_at: string | null
+          suspension_reason: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "affiliate_profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       request_lesson_playback_token: {
         Args: { p_fingerprint_hash: string; p_lesson_id: string }
         Returns: {
@@ -4016,6 +5088,34 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "digital_product_accesses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      revoke_enrollment_certificate: {
+        Args: { p_certificate_id: string; p_reason: string }
+        Returns: {
+          code: string
+          completion_percent_snapshot: number
+          course_id: string
+          course_title_snapshot: string
+          created_at: string
+          enrollment_id: string
+          id: string
+          issued_at: string
+          issued_by_user_id: string
+          metadata: Json
+          revocation_reason: string | null
+          revoked_at: string | null
+          revoked_by_user_id: string | null
+          status: Database["public"]["Enums"]["certificate_status"]
+          student_name_snapshot: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "certificates"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -4213,6 +5313,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      submit_contact_message: {
+        Args: {
+          p_email: string
+          p_idempotency_key: string
+          p_message: string
+          p_name: string
+          p_subject: string
+        }
+        Returns: Json
       }
       suspend_course_enrollment: {
         Args: { p_enrollment_id: string; p_reason: string }
@@ -4474,6 +5584,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      update_contact_message_status: {
+        Args: {
+          p_contact_message_id: string
+          p_note?: string
+          p_status: Database["public"]["Enums"]["contact_message_status"]
+        }
+        Returns: Json
+      }
       update_course: {
         Args: { p_course_id: string; p_expected_version: number; p_patch: Json }
         Returns: {
@@ -4719,8 +5837,41 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      validate_certificate: { Args: { p_code: string }; Returns: Json }
     }
     Enums: {
+      affiliate_attribution_status:
+        | "active"
+        | "converted"
+        | "expired"
+        | "invalidated"
+      affiliate_commission_status:
+        | "pending"
+        | "held"
+        | "available"
+        | "reversed"
+        | "paid"
+      affiliate_event_type:
+        | "profile_created"
+        | "profile_activated"
+        | "profile_suspended"
+        | "terms_configured"
+        | "link_created"
+        | "link_deactivated"
+        | "click_recorded"
+        | "attribution_created"
+        | "attribution_replaced"
+        | "conversion_created"
+        | "commission_held"
+        | "commission_available"
+        | "commission_reversed"
+        | "commission_restored"
+        | "payout_created"
+        | "payout_paid"
+        | "payout_cancelled"
+      affiliate_link_status: "active" | "inactive"
+      affiliate_payout_status: "draft" | "paid" | "cancelled"
+      affiliate_profile_status: "pending" | "active" | "suspended"
       app_role: "aluno" | "afiliado" | "administrador_proprietario"
       assessment_attempt_status:
         | "in_progress"
@@ -4780,6 +5931,8 @@ export type Database = {
         | "processing"
         | "published"
         | "failed"
+      certificate_event_type: "issued" | "revoked"
+      certificate_status: "issued" | "revoked"
       checkout_intent_event_type:
         | "prepared"
         | "provider_claimed"
@@ -4796,6 +5949,12 @@ export type Database = {
         | "cancelled"
       checkout_subject_type: "course" | "digital_product"
       commission_adjustment_kind: "accrue" | "hold" | "reverse" | "restore"
+      contact_message_event_type:
+        | "submitted"
+        | "status_changed"
+        | "resolved"
+        | "marked_spam"
+      contact_message_status: "new" | "in_progress" | "resolved" | "spam"
       course_completion_mode: "all_required_lessons" | "percentage" | "manual"
       course_editor_event_type:
         | "created"
@@ -5047,6 +6206,41 @@ export const Constants = {
   },
   public: {
     Enums: {
+      affiliate_attribution_status: [
+        "active",
+        "converted",
+        "expired",
+        "invalidated",
+      ],
+      affiliate_commission_status: [
+        "pending",
+        "held",
+        "available",
+        "reversed",
+        "paid",
+      ],
+      affiliate_event_type: [
+        "profile_created",
+        "profile_activated",
+        "profile_suspended",
+        "terms_configured",
+        "link_created",
+        "link_deactivated",
+        "click_recorded",
+        "attribution_created",
+        "attribution_replaced",
+        "conversion_created",
+        "commission_held",
+        "commission_available",
+        "commission_reversed",
+        "commission_restored",
+        "payout_created",
+        "payout_paid",
+        "payout_cancelled",
+      ],
+      affiliate_link_status: ["active", "inactive"],
+      affiliate_payout_status: ["draft", "paid", "cancelled"],
+      affiliate_profile_status: ["pending", "active", "suspended"],
       app_role: ["aluno", "afiliado", "administrador_proprietario"],
       assessment_attempt_status: [
         "in_progress",
@@ -5106,6 +6300,8 @@ export const Constants = {
         "digital_product",
       ],
       asset_state: ["pending", "uploaded", "processing", "published", "failed"],
+      certificate_event_type: ["issued", "revoked"],
+      certificate_status: ["issued", "revoked"],
       checkout_intent_event_type: [
         "prepared",
         "provider_claimed",
@@ -5124,6 +6320,13 @@ export const Constants = {
       ],
       checkout_subject_type: ["course", "digital_product"],
       commission_adjustment_kind: ["accrue", "hold", "reverse", "restore"],
+      contact_message_event_type: [
+        "submitted",
+        "status_changed",
+        "resolved",
+        "marked_spam",
+      ],
+      contact_message_status: ["new", "in_progress", "resolved", "spam"],
       course_completion_mode: ["all_required_lessons", "percentage", "manual"],
       course_editor_event_type: [
         "created",
