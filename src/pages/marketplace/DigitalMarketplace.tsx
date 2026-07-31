@@ -1,8 +1,24 @@
-import { BadgeCheck, CreditCard, Loader2, PackageOpen, ShoppingBag, Tag } from "lucide-react";
+import {
+  BadgeCheck,
+  CreditCard,
+  Loader2,
+  PackageOpen,
+  ShoppingBag,
+  Tag,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { AppPageShell } from "@/components/layout/AppPageShell";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { PageState } from "@/components/ui/page-state";
 import type { DigitalProduct } from "@/contracts/marketplace";
 import {
   useMarketplaceProductLicenses,
@@ -50,7 +66,9 @@ const ProductCard = ({ product }: { product: DigitalProduct }) => {
     (license) => license.status === "published",
   );
   const checkoutLicense =
-    publishedLicenses.find((license) => license.is_default) ?? publishedLicenses[0] ?? null;
+    publishedLicenses.find((license) => license.is_default) ??
+    publishedLicenses[0] ??
+    null;
   const displayedPrice = getDisplayedPrice(product);
 
   const startCheckout = async (): Promise<void> => {
@@ -69,110 +87,136 @@ const ProductCard = ({ product }: { product: DigitalProduct }) => {
       });
       window.location.assign(result.checkoutUrl);
     } catch {
-      // The mutation exposes the validated error below without fabricating a successful checkout.
+      // A mutação mantém o erro validado para apresentação abaixo.
     }
   };
 
   return (
-    <Card className="flex h-full flex-col border-white/10 bg-white/5">
+    <Card
+      variant="marketplace"
+      className="interactive-surface flex h-full flex-col"
+    >
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <CardTitle className="text-xl text-white">{product.title}</CardTitle>
-            <CardDescription className="mt-2 text-gray-400">
-              {product.short_description ?? "Produto digital publicado no marketplace."}
+          <div className="min-w-0">
+            <CardTitle>{product.title}</CardTitle>
+            <CardDescription className="mt-2">
+              {product.short_description ??
+                "Produto digital publicado no marketplace."}
             </CardDescription>
           </div>
           {product.affiliate_eligible ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-500/15 px-3 py-1 text-xs font-medium text-violet-200">
-              <BadgeCheck className="h-3.5 w-3.5" />
-              Elegível para afiliados
-            </span>
+            <Badge variant="affiliate" className="shrink-0 gap-1">
+              <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
+              Afiliável
+            </Badge>
           ) : null}
         </div>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-5">
         {product.description ? (
-          <p className="text-sm leading-6 text-gray-300">{product.description}</p>
+          <p className="text-sm leading-6 text-muted-foreground">
+            {product.description}
+          </p>
         ) : null}
 
-        <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 p-4">
+        <div className="surface-muted flex items-center justify-between gap-4 p-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Valor</p>
-            <p className="mt-1 text-2xl font-bold text-white">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Valor
+            </p>
+            <p className="mt-1 text-2xl font-bold text-foreground">
               {formatCurrency(displayedPrice, product.currency_code)}
             </p>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
               O valor definitivo é validado novamente pelo servidor.
             </p>
           </div>
           {product.category ? (
-            <span className="inline-flex items-center gap-1.5 text-sm text-gray-300">
-              <Tag className="h-4 w-4" />
+            <Badge variant="marketplace" className="gap-1.5">
+              <Tag className="h-3.5 w-3.5" aria-hidden="true" />
               {product.category}
-            </span>
+            </Badge>
           ) : null}
         </div>
 
-        <div>
-          <p className="mb-2 text-sm font-semibold text-white">Licenças publicadas</p>
+        <section aria-labelledby={`licenses-${product.id}`}>
+          <h3 id={`licenses-${product.id}`} className="mb-2 text-sm font-semibold">
+            Licenças publicadas
+          </h3>
           {licensesQuery.isLoading ? (
-            <p className="text-sm text-gray-400">Carregando licenças...</p>
+            <PageState
+              variant="loading"
+              compact
+              title="Carregando licenças"
+            />
           ) : licensesQuery.error ? (
-            <p className="text-sm text-red-300">
-              {getErrorMessage(licensesQuery.error, "Não foi possível carregar as licenças.")}
-            </p>
+            <PageState
+              variant="error"
+              compact
+              title="Licenças indisponíveis"
+              description={getErrorMessage(
+                licensesQuery.error,
+                "Não foi possível carregar as licenças.",
+              )}
+            />
           ) : publishedLicenses.length === 0 ? (
-            <p className="text-sm text-gray-400">Nenhuma licença publicada está disponível.</p>
+            <PageState
+              variant="empty"
+              compact
+              title="Nenhuma licença disponível"
+            />
           ) : (
             <div className="flex flex-wrap gap-2">
               {publishedLicenses.map((license) => (
-                <span
+                <Badge
                   key={license.id}
-                  className={`rounded-full border px-3 py-1 text-xs ${
-                    license.id === checkoutLicense?.id
-                      ? "border-violet-400/40 bg-violet-500/15 text-violet-100"
-                      : "border-white/10 bg-white/5 text-gray-200"
-                  }`}
+                  variant={license.id === checkoutLicense?.id ? "marketplace" : "outline"}
                 >
                   {licenseKindLabel[license.kind] ?? license.title}
                   {license.is_default ? " · padrão" : ""}
-                </span>
+                </Badge>
               ))}
             </div>
           )}
-        </div>
+        </section>
 
         {checkoutMutation.error ? (
-          <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-100">
-            {getErrorMessage(
+          <PageState
+            variant="error"
+            compact
+            title="Checkout indisponível"
+            description={getErrorMessage(
               checkoutMutation.error,
               "Não foi possível abrir o checkout. Tente novamente.",
             )}
-          </div>
+          />
         ) : null}
 
         <div className="mt-auto space-y-3">
           <Button
             type="button"
-            className="btn-brand w-full"
+            variant="context"
+            className="w-full"
             disabled={
-              licensesQuery.isLoading || checkoutLicense === null || checkoutMutation.isPending
+              licensesQuery.isLoading ||
+              checkoutLicense === null ||
+              checkoutMutation.isPending
             }
             onClick={() => void startCheckout()}
           >
             {checkoutMutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="animate-spin" aria-hidden="true" />
             ) : (
-              <CreditCard className="mr-2 h-4 w-4" />
+              <CreditCard aria-hidden="true" />
             )}
             {checkoutMutation.isPending
               ? "Preparando checkout..."
               : "Comprar com Pix ou cartão"}
           </Button>
-          <p className="text-xs leading-5 text-gray-500">
-            O pagamento é concluído no checkout hospedado. O redirecionamento de retorno não
-            confirma a compra nem libera arquivos.
+          <p className="text-xs leading-5 text-muted-foreground">
+            O pagamento é concluído no checkout hospedado. O redirecionamento de
+            retorno não confirma a compra nem libera arquivos.
           </p>
         </div>
       </CardContent>
@@ -184,60 +228,61 @@ const DigitalMarketplace = () => {
   const productsQuery = useMarketplaceProducts();
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <header className="flex flex-col gap-5 border-b border-white/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Marketplace</p>
-            <h1 className="mt-3 flex items-center gap-3 text-4xl font-bold">
-              <ShoppingBag className="h-9 w-9" />
-              Produtos digitais
-            </h1>
-            <p className="mt-3 max-w-2xl text-gray-400">
-              Catálogo oficial de packs, samples, presets, projetos e outros materiais digitais
-              publicados.
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Link to="/portal">
-              <Button variant="outline" className="border-white/20 bg-transparent">
-                Voltar ao portal
-              </Button>
-            </Link>
-            <Link to="/meus-produtos">
-              <Button className="btn-brand">Meus produtos</Button>
-            </Link>
-          </div>
-        </header>
-
-        {productsQuery.isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-12 text-center text-gray-300">
-            Carregando catálogo...
-          </div>
-        ) : productsQuery.error ? (
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-red-100">
-            {getErrorMessage(productsQuery.error, "Não foi possível carregar o marketplace.")}
-          </div>
-        ) : (productsQuery.data ?? []).length === 0 ? (
-          <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/5 p-12 text-center">
-            <PackageOpen className="mb-4 h-10 w-10 text-gray-500" />
-            <h2 className="text-xl font-semibold">Nenhum produto publicado</h2>
-            <p className="mt-2 text-sm text-gray-400">
-              O catálogo será preenchido pelo CMS administrativo.
-            </p>
-          </div>
-        ) : (
-          <section
-            className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"
-            aria-label="Produtos digitais publicados"
-          >
-            {(productsQuery.data ?? []).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </section>
-        )}
-      </div>
-    </main>
+    <AppPageShell
+      context="marketplace"
+      eyebrow="Marketplace"
+      title="Produtos digitais"
+      description="Catálogo oficial de packs, samples, presets, projetos e outros materiais digitais publicados."
+      navigation={
+        <span className="inline-flex items-center gap-2 text-sm font-medium text-marketplace">
+          <ShoppingBag className="h-4 w-4" aria-hidden="true" />
+          Catálogo oficial
+        </span>
+      }
+      actions={
+        <>
+          <Button asChild variant="outline">
+            <Link to="/portal">Voltar ao portal</Link>
+          </Button>
+          <Button asChild variant="context">
+            <Link to="/meus-produtos">Meus produtos</Link>
+          </Button>
+        </>
+      }
+    >
+      {productsQuery.isLoading ? (
+        <PageState
+          variant="loading"
+          title="Carregando catálogo"
+          description="Consultando os produtos publicados e suas regras comerciais."
+        />
+      ) : productsQuery.error ? (
+        <PageState
+          variant="error"
+          title="Marketplace indisponível"
+          description={getErrorMessage(
+            productsQuery.error,
+            "Não foi possível carregar o marketplace.",
+          )}
+        />
+      ) : (productsQuery.data ?? []).length === 0 ? (
+        <PageState
+          variant="empty"
+          icon={PackageOpen}
+          title="Nenhum produto publicado"
+          description="O catálogo será preenchido pelo CMS administrativo."
+        />
+      ) : (
+        <section
+          className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"
+          aria-label="Produtos digitais publicados"
+        >
+          {(productsQuery.data ?? []).map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </section>
+      )}
+    </AppPageShell>
   );
 };
 
