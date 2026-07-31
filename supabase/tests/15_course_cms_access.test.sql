@@ -20,7 +20,8 @@ select set_config('test.course_id',(select id::text from public.create_course(js
 select is((select count(*)::integer from public.courses),1,'administrator reads draft for CMS and preview');
 select is((select count(*)::integer from public.course_editor_events),1,'administrator reads course audit history');
 select throws_ok($$update public.courses set title='bypass' where id=current_setting('test.course_id')::uuid$$,'42501',null,'administrator cannot bypass CMS RPC with direct update');
-select results_eq($$select status::text from public.publish_course(current_setting('test.course_id')::uuid,1)$$,$$values('published'::text)$$,'administrator publishes course');
+select set_config('test.published_status',(select status::text from public.publish_course(current_setting('test.course_id')::uuid,1)),false);
+select is(current_setting('test.published_status'),'published','administrator publishes course');
 select lives_ok($$select public.grant_course_enrollment('1b000000-0000-4000-8000-000000000002',current_setting('test.course_id')::uuid,statement_timestamp()-interval '1 minute',null,'cms access')$$,'administrator grants enrollment');
 reset role;
 
@@ -33,19 +34,21 @@ reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"1b000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"7b000000-0000-4000-8000-000000000001","is_anonymous":false}',true);
-select results_eq($$select version from public.update_course(current_setting('test.course_id')::uuid,2,'{"availability_starts_at":null}'::jsonb)$$,$$values(3)$$,'administrator opens availability without erasing other fields');
+select set_config('test.open_version',(select version::text from public.update_course(current_setting('test.course_id')::uuid,2,'{"availability_starts_at":null}'::jsonb)),false);
+select is(current_setting('test.open_version')::integer,3,'administrator opens availability without erasing other fields');
 reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"1b000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"7b000000-0000-4000-8000-000000000002","is_anonymous":false}',true);
 select is((select count(*)::integer from public.courses),1,'active enrollment reads available published course');
-select results_eq($$select title from public.courses$$,$$values('Curso privado CMS'::text)$$,'student sees persisted title');
-select results_eq($$select description from public.courses$$,$$values('Descrição'::text)$$,'student sees complete persisted description');
+select is((select title from public.courses),'Curso privado CMS','student sees persisted title');
+select is((select description from public.courses),'Descrição','student sees complete persisted description');
 reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"1b000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"7b000000-0000-4000-8000-000000000001","is_anonymous":false}',true);
-select results_eq($$select status::text from public.unpublish_course(current_setting('test.course_id')::uuid,3)$$,$$values('draft'::text)$$,'administrator unpublishes course');
+select set_config('test.unpublished_status',(select status::text from public.unpublish_course(current_setting('test.course_id')::uuid,3)),false);
+select is(current_setting('test.unpublished_status'),'draft','administrator unpublishes course');
 reset role;
 
 set local role authenticated;
