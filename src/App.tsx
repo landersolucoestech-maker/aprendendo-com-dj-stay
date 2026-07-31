@@ -7,6 +7,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { queryClient } from "@/lib/query-client";
 import AccessDenied from "@/pages/AccessDenied";
+import AffiliateRedirect from "@/pages/AffiliateRedirect";
 import AuthCallback from "@/pages/AuthCallback";
 import Contact from "@/pages/Contact";
 import EditProfile from "@/pages/EditProfile";
@@ -20,11 +21,13 @@ import Register from "@/pages/Register";
 import ResetPassword from "@/pages/ResetPassword";
 import Verified from "@/pages/Verified";
 import VerifyEmail from "@/pages/VerifyEmail";
+import AffiliatesAdmin from "@/pages/admin/AffiliatesAdmin";
 import CourseCurriculum from "@/pages/admin/CourseCurriculum";
 import CourseEditor from "@/pages/admin/CourseEditor";
 import CoursePreview from "@/pages/admin/CoursePreview";
 import CoursesAdmin from "@/pages/admin/CoursesAdmin";
 import DigitalProductsAdmin from "@/pages/admin/DigitalProductsAdmin";
+import AffiliatePortal from "@/pages/affiliate/AffiliatePortal";
 import DigitalMarketplace from "@/pages/marketplace/DigitalMarketplace";
 import MyDigitalProducts from "@/pages/student/MyDigitalProducts";
 import StudentPortal from "@/pages/student/StudentPortal";
@@ -36,6 +39,12 @@ import { RoleLandingRedirect } from "@/routing/RoleLandingRedirect";
 const StudentRoute = ({ children }: { children: React.ReactNode }) => (
   <RequireAuth>
     <RequireRole allowedRoles={["aluno"]}>{children}</RequireRole>
+  </RequireAuth>
+);
+
+const AffiliateRoute = ({ children }: { children: React.ReactNode }) => (
+  <RequireAuth>
+    <RequireRole allowedRoles={["afiliado"]}>{children}</RequireRole>
   </RequireAuth>
 );
 
@@ -63,6 +72,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/contato" element={<Contact />} />
+            <Route path="/r/:code" element={<AffiliateRedirect />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/verificar-email" element={<VerifyEmail />} />
             <Route path="/verificado" element={<Verified />} />
@@ -126,6 +136,14 @@ const App = () => (
                 <MarketplaceRoute>
                   <MyDigitalProducts />
                 </MarketplaceRoute>
+              }
+            />
+            <Route
+              path="/afiliado"
+              element={
+                <AffiliateRoute>
+                  <AffiliatePortal />
+                </AffiliateRoute>
               }
             />
 
@@ -273,6 +291,14 @@ const App = () => (
               element={
                 <AdminRoute>
                   <DigitalProductsAdmin />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/afiliados"
+              element={
+                <AdminRoute>
+                  <AffiliatesAdmin />
                 </AdminRoute>
               }
             />
