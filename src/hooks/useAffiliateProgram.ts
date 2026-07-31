@@ -25,8 +25,9 @@ export const useRequestAffiliateProfile = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (displayName: string) => {
+      const normalizedDisplayName = displayName.trim();
       const { data, error } = await supabase.rpc("request_affiliate_profile", {
-        p_display_name: displayName.trim() || null,
+        ...(normalizedDisplayName ? { p_display_name: normalizedDisplayName } : {}),
       });
       if (error) throw error;
       return data;
@@ -107,10 +108,11 @@ export const useSetAffiliateProfileStatus = () => {
       status: "active" | "suspended";
       reason?: string | null;
     }) => {
+      const normalizedReason = input.reason?.trim();
       const { data, error } = await supabase.rpc("admin_set_affiliate_profile_status", {
         p_user_id: input.userId,
         p_status: input.status,
-        p_reason: input.reason ?? null,
+        ...(normalizedReason ? { p_reason: normalizedReason } : {}),
       });
       if (error) throw error;
       return data;
@@ -151,10 +153,11 @@ export const useCreateAffiliatePayout = () => {
       commissionIds: string[];
       notes?: string | null;
     }) => {
+      const normalizedNotes = input.notes?.trim();
       const { data, error } = await supabase.rpc("admin_create_affiliate_payout", {
         p_affiliate_user_id: input.affiliateUserId,
         p_commission_ids: input.commissionIds,
-        p_notes: input.notes ?? null,
+        ...(normalizedNotes ? { p_notes: normalizedNotes } : {}),
       });
       if (error) throw error;
       return data;
