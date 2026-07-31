@@ -1134,6 +1134,115 @@ export type Database = {
           },
         ]
       }
+      lesson_progress_events: {
+        Row: {
+          accepted: boolean
+          aula_id: string
+          auth_session_id: string
+          calculated_progress_percent: number
+          client_instance_id: string
+          duration_seconds: number | null
+          event_sequence: number
+          event_type: Database["public"]["Enums"]["lesson_progress_event_type"]
+          id: string
+          ignored_reason: string | null
+          observed_at: string
+          position_seconds: number
+          received_at: string
+          resulting_completed: boolean
+          resulting_revision: number
+          user_id: string
+        }
+        Insert: {
+          accepted: boolean
+          aula_id: string
+          auth_session_id: string
+          calculated_progress_percent: number
+          client_instance_id: string
+          duration_seconds?: number | null
+          event_sequence: number
+          event_type: Database["public"]["Enums"]["lesson_progress_event_type"]
+          id: string
+          ignored_reason?: string | null
+          observed_at: string
+          position_seconds: number
+          received_at?: string
+          resulting_completed: boolean
+          resulting_revision: number
+          user_id: string
+        }
+        Update: {
+          accepted?: boolean
+          aula_id?: string
+          auth_session_id?: string
+          calculated_progress_percent?: number
+          client_instance_id?: string
+          duration_seconds?: number | null
+          event_sequence?: number
+          event_type?: Database["public"]["Enums"]["lesson_progress_event_type"]
+          id?: string
+          ignored_reason?: string | null
+          observed_at?: string
+          position_seconds?: number
+          received_at?: string
+          resulting_completed?: boolean
+          resulting_revision?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_progress_events_aula_id_fkey"
+            columns: ["aula_id"]
+            isOneToOne: false
+            referencedRelation: "aulas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_progress_streams: {
+        Row: {
+          aula_id: string
+          auth_session_id: string
+          client_instance_id: string
+          created_at: string
+          last_event_id: string
+          last_event_sequence: number
+          last_position_seconds: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aula_id: string
+          auth_session_id: string
+          client_instance_id: string
+          created_at?: string
+          last_event_id: string
+          last_event_sequence: number
+          last_position_seconds: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aula_id?: string
+          auth_session_id?: string
+          client_instance_id?: string
+          created_at?: string
+          last_event_id?: string
+          last_event_sequence?: number
+          last_position_seconds?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_progress_streams_aula_id_fkey"
+            columns: ["aula_id"]
+            isOneToOne: false
+            referencedRelation: "aulas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       module_prerequisites: {
         Row: {
           created_at: string
@@ -1368,7 +1477,11 @@ export type Database = {
           completada: boolean
           created_at: string
           id: string
+          last_client_instance_id: string | null
+          last_event_id: string | null
+          last_event_received_at: string | null
           progresso_percentual: number
+          revision: number
           tempo_assistido: number
           ultima_visualizacao: string
           updated_at: string
@@ -1379,7 +1492,11 @@ export type Database = {
           completada?: boolean
           created_at?: string
           id?: string
+          last_client_instance_id?: string | null
+          last_event_id?: string | null
+          last_event_received_at?: string | null
           progresso_percentual?: number
+          revision?: number
           tempo_assistido?: number
           ultima_visualizacao?: string
           updated_at?: string
@@ -1390,7 +1507,11 @@ export type Database = {
           completada?: boolean
           created_at?: string
           id?: string
+          last_client_instance_id?: string | null
+          last_event_id?: string | null
+          last_event_received_at?: string | null
           progresso_percentual?: number
+          revision?: number
           tempo_assistido?: number
           ultima_visualizacao?: string
           updated_at?: string
@@ -2623,6 +2744,39 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      save_lesson_progress_event: {
+        Args: {
+          p_client_instance_id: string
+          p_duration_seconds: number
+          p_event_id: string
+          p_event_sequence: number
+          p_event_type: Database["public"]["Enums"]["lesson_progress_event_type"]
+          p_lesson_id: string
+          p_observed_at: string
+          p_position_seconds: number
+        }
+        Returns: {
+          aula_id: string
+          completada: boolean
+          created_at: string
+          id: string
+          last_client_instance_id: string | null
+          last_event_id: string | null
+          last_event_received_at: string | null
+          progresso_percentual: number
+          revision: number
+          tempo_assistido: number
+          ultima_visualizacao: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "progresso_aulas"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_lesson_prerequisites: {
         Args: {
           p_expected_version: number
@@ -3270,6 +3424,13 @@ export type Database = {
         | "any_activity"
       lesson_content_kind: "text" | "video" | "audio" | "mixed"
       lesson_media_provider: "private_asset" | "youtube" | "vimeo"
+      lesson_progress_event_type:
+        | "heartbeat"
+        | "pause"
+        | "ended"
+        | "manual_complete"
+        | "reading_acknowledgement"
+        | "visibility_hidden"
       playback_event_type:
         | "issued"
         | "resolved"
@@ -3517,6 +3678,14 @@ export const Constants = {
       ],
       lesson_content_kind: ["text", "video", "audio", "mixed"],
       lesson_media_provider: ["private_asset", "youtube", "vimeo"],
+      lesson_progress_event_type: [
+        "heartbeat",
+        "pause",
+        "ended",
+        "manual_complete",
+        "reading_acknowledgement",
+        "visibility_hidden",
+      ],
       playback_event_type: [
         "issued",
         "resolved",
