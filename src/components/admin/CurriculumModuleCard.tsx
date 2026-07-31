@@ -29,7 +29,7 @@ interface CurriculumModuleCardProps {
   readonly onDeleteModule: (module: CurriculumModuleRow) => Promise<void>;
   readonly onCreateLesson: (module: CurriculumModuleRow) => void;
   readonly onMoveLesson: (module: CurriculumModuleRow, lesson: CurriculumLessonRow, direction: -1 | 1) => Promise<void>;
-  readonly onMoveLessonToModule: (source: CurriculumModuleRow, lesson: CurriculumLessonRow) => Promise<void>;
+  readonly onMoveLessonToModule: (source: CurriculumModuleRow, lesson: CurriculumLessonRow) => Promise<unknown>;
   readonly onEditLesson: (module: CurriculumModuleRow, lesson: CurriculumLessonRow) => void;
   readonly onDuplicateLesson: (lesson: CurriculumLessonRow) => Promise<void>;
   readonly onArchiveLesson: (lesson: CurriculumLessonRow) => Promise<void>;
