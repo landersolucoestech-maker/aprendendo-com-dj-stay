@@ -1,4 +1,4 @@
-import { Archive, Copy, Eye, FilePlus2, Pencil, Send, Trash2, Undo2 } from "lucide-react";
+import { Archive, Copy, Eye, FilePlus2, ListTree, Pencil, Send, Trash2, Undo2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { AdminCourseLayout } from "@/components/admin/AdminCourseLayout";
@@ -81,6 +81,7 @@ const CoursesAdmin = () => {
                 <div className="flex flex-wrap gap-2">
                   <Button size="sm" onClick={() => navigate(`/admin/cursos/${course.id}/editar`)}><Pencil className="mr-2 h-4 w-4" /> Editar</Button>
                   <Button size="sm" variant="outline" onClick={() => navigate(`/admin/cursos/${course.id}/preview`)}><Eye className="mr-2 h-4 w-4" /> Preview</Button>
+                  <Button size="sm" variant="outline" onClick={() => navigate(`/admin/cursos/${course.id}/curriculo`)}><ListTree className="mr-2 h-4 w-4" /> Currículo</Button>
                   <Button size="sm" variant="outline" onClick={() => duplicate(course)}><Copy className="mr-2 h-4 w-4" /> Duplicar</Button>
                   {course.status === "draft" && <Button size="sm" variant="outline" onClick={() => run(() => mutations.publish.mutateAsync(course), "Curso publicado.")}><Send className="mr-2 h-4 w-4" /> Publicar</Button>}
                   {course.status === "published" && <Button size="sm" variant="outline" onClick={() => run(() => mutations.unpublish.mutateAsync(course), "Curso despublicado.")}><Undo2 className="mr-2 h-4 w-4" /> Despublicar</Button>}
