@@ -1,15 +1,18 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(19);
 
 insert into auth.users(id,email) values
  ('b2200000-0000-4000-8000-000000000201','b22-avatar-owner@example.test'),
  ('b2200000-0000-4000-8000-000000000202','b22-avatar-other@example.test');
 
+insert into public.user_profiles(user_id)
+values ('b2200000-0000-4000-8000-000000000201');
+
 insert into storage.objects(id,bucket_id,name,owner,metadata)
 values
- ('b2280000-0000-4000-8000-000000000201','private-assets','users/b2200000-0000-4000-8000-000000000201/avatar/first.webp','b2200000-0000-4000-8000-000000000201','{"size":1200,"mimetype":"image/webp"}'::jsonb),
- ('b2280000-0000-4000-8000-000000000202','private-assets','users/b2200000-0000-4000-8000-000000000201/avatar/second.webp','b2200000-0000-4000-8000-000000000201','{"size":1400,"mimetype":"image/webp"}'::jsonb);
+ ('b2280000-0000-4000-8000-000000000201','private-assets','v1/b2200000-0000-4000-8000-000000000201/b2270000-0000-4000-8000-000000000201.webp','b2200000-0000-4000-8000-000000000201','{"size":1200,"mimetype":"image/webp"}'::jsonb),
+ ('b2280000-0000-4000-8000-000000000202','private-assets','v1/b2200000-0000-4000-8000-000000000201/b2270000-0000-4000-8000-000000000202.webp','b2200000-0000-4000-8000-000000000201','{"size":1400,"mimetype":"image/webp"}'::jsonb);
 
 insert into public.assets(
   id,owner_user_id,created_by_user_id,purpose,state,original_name,normalized_name,
@@ -56,7 +59,7 @@ select ok((select failed_at is not null from public.assets where id='b2270000-00
 select is((select count(*)::integer from public.asset_events where asset_id='b2270000-0000-4000-8000-000000000201' and event_type='cleanup_requested'),1,'replaced avatar cleanup is audited');
 select is((select count(*)::integer from public.asset_events where asset_id='b2270000-0000-4000-8000-000000000202' and event_type='associated'),1,'replacement association is audited');
 select is((select count(*)::integer from public.assets where purpose='avatar' and owner_user_id='b2200000-0000-4000-8000-000000000201' and state='published'),1,'only current avatar remains published');
-select ok(exists(select 1 from storage.objects where bucket_id='private-assets' and name='users/b2200000-0000-4000-8000-000000000201/avatar/first.webp'),'replaced object remains available for explicit cleanup');
+select ok(exists(select 1 from storage.objects where bucket_id='private-assets' and name='v1/b2200000-0000-4000-8000-000000000201/b2270000-0000-4000-8000-000000000201.webp'),'replaced object remains available for explicit cleanup');
 select ok((select avatar_asset_id is not null from public.user_profiles where user_id='b2200000-0000-4000-8000-000000000201'),'profile avatar binding is non-null after replacement');
 select is((select count(*)::integer from public.asset_events where asset_id in ('b2270000-0000-4000-8000-000000000201','b2270000-0000-4000-8000-000000000202') and event_type in ('published','associated','cleanup_requested')),5,'avatar lifecycle preserves all expected audit events');
 select ok(not exists(select 1 from public.user_profiles where user_id='b2200000-0000-4000-8000-000000000201' and avatar_asset_id='b2270000-0000-4000-8000-000000000201'),'profile never points to replaced avatar after commit');
