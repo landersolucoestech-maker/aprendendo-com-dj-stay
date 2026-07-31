@@ -34,6 +34,393 @@ export type Database = {
   }
   public: {
     Tables: {
+      assessment_answers: {
+        Row: {
+          answered_at: string
+          attempt_id: string
+          question_id: string
+          selected_option_ids: string[]
+        }
+        Insert: {
+          answered_at?: string
+          attempt_id: string
+          question_id: string
+          selected_option_ids: string[]
+        }
+        Update: {
+          answered_at?: string
+          attempt_id?: string
+          question_id?: string
+          selected_option_ids?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_answers_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_attempts: {
+        Row: {
+          assessment_id: string
+          assessment_version: number
+          attempt_number: number
+          created_at: string
+          earned_points: number | null
+          enrollment_id: string
+          expires_at: string | null
+          graded_at: string | null
+          id: string
+          passed: boolean | null
+          passing_score: number
+          question_snapshot: Json
+          score_percent: number | null
+          show_correct_answers: boolean
+          started_at: string
+          status: Database["public"]["Enums"]["assessment_attempt_status"]
+          submitted_at: string | null
+          total_points: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assessment_id: string
+          assessment_version: number
+          attempt_number: number
+          created_at?: string
+          earned_points?: number | null
+          enrollment_id: string
+          expires_at?: string | null
+          graded_at?: string | null
+          id?: string
+          passed?: boolean | null
+          passing_score: number
+          question_snapshot: Json
+          score_percent?: number | null
+          show_correct_answers?: boolean
+          started_at?: string
+          status?: Database["public"]["Enums"]["assessment_attempt_status"]
+          submitted_at?: string | null
+          total_points?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assessment_id?: string
+          assessment_version?: number
+          attempt_number?: number
+          created_at?: string
+          earned_points?: number | null
+          enrollment_id?: string
+          expires_at?: string | null
+          graded_at?: string | null
+          id?: string
+          passed?: boolean | null
+          passing_score?: number
+          question_snapshot?: Json
+          score_percent?: number | null
+          show_correct_answers?: boolean
+          started_at?: string
+          status?: Database["public"]["Enums"]["assessment_attempt_status"]
+          submitted_at?: string | null
+          total_points?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_attempts_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_attempts_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_events: {
+        Row: {
+          actor_user_id: string | null
+          assessment_id: string
+          attempt_id: string | null
+          created_at: string
+          details: Json
+          event_type: Database["public"]["Enums"]["assessment_event_type"]
+          id: string
+          question_id: string | null
+          version: number | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          assessment_id: string
+          attempt_id?: string | null
+          created_at?: string
+          details?: Json
+          event_type: Database["public"]["Enums"]["assessment_event_type"]
+          id?: string
+          question_id?: string | null
+          version?: number | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          assessment_id?: string
+          attempt_id?: string | null
+          created_at?: string
+          details?: Json
+          event_type?: Database["public"]["Enums"]["assessment_event_type"]
+          id?: string
+          question_id?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_events_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_events_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_events_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_options: {
+        Row: {
+          created_at: string
+          id: string
+          is_correct: boolean
+          option_text: string
+          ordem: number
+          question_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          option_text: string
+          ordem?: number
+          question_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          option_text?: string
+          ordem?: number
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_questions: {
+        Row: {
+          archived_at: string | null
+          assessment_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          explanation: string | null
+          id: string
+          ordem: number
+          points: number
+          prompt: string
+          published_at: string | null
+          question_type: Database["public"]["Enums"]["assessment_question_type"]
+          required: boolean
+          status: Database["public"]["Enums"]["assessment_status"]
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        Insert: {
+          archived_at?: string | null
+          assessment_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          explanation?: string | null
+          id?: string
+          ordem?: number
+          points?: number
+          prompt: string
+          published_at?: string | null
+          question_type: Database["public"]["Enums"]["assessment_question_type"]
+          required?: boolean
+          status?: Database["public"]["Enums"]["assessment_status"]
+          updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
+        }
+        Update: {
+          archived_at?: string | null
+          assessment_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          explanation?: string | null
+          id?: string
+          ordem?: number
+          points?: number
+          prompt?: string
+          published_at?: string | null
+          question_type?: Database["public"]["Enums"]["assessment_question_type"]
+          required?: boolean
+          status?: Database["public"]["Enums"]["assessment_status"]
+          updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_questions_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessments: {
+        Row: {
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          lesson_id: string | null
+          max_attempts: number
+          module_id: string | null
+          passing_score: number
+          published_at: string | null
+          required: boolean
+          scope: Database["public"]["Enums"]["assessment_scope"]
+          show_correct_answers: boolean
+          shuffle_options: boolean
+          shuffle_questions: boolean
+          status: Database["public"]["Enums"]["assessment_status"]
+          time_limit_minutes: number | null
+          title: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        Insert: {
+          archived_at?: string | null
+          availability_ends_at?: string | null
+          availability_starts_at?: string | null
+          course_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          lesson_id?: string | null
+          max_attempts?: number
+          module_id?: string | null
+          passing_score?: number
+          published_at?: string | null
+          required?: boolean
+          scope?: Database["public"]["Enums"]["assessment_scope"]
+          show_correct_answers?: boolean
+          shuffle_options?: boolean
+          shuffle_questions?: boolean
+          status?: Database["public"]["Enums"]["assessment_status"]
+          time_limit_minutes?: number | null
+          title: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
+        }
+        Update: {
+          archived_at?: string | null
+          availability_ends_at?: string | null
+          availability_starts_at?: string | null
+          course_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          lesson_id?: string | null
+          max_attempts?: number
+          module_id?: string | null
+          passing_score?: number
+          published_at?: string | null
+          required?: boolean
+          scope?: Database["public"]["Enums"]["assessment_scope"]
+          show_correct_answers?: boolean
+          shuffle_options?: boolean
+          shuffle_questions?: boolean
+          status?: Database["public"]["Enums"]["assessment_status"]
+          time_limit_minutes?: number | null
+          title?: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessments_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "aulas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modulos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_access_grants: {
         Row: {
           asset_id: string
@@ -1077,6 +1464,70 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archive_assessment: {
+        Args: { p_assessment_id: string; p_expected_version: number }
+        Returns: {
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          lesson_id: string | null
+          max_attempts: number
+          module_id: string | null
+          passing_score: number
+          published_at: string | null
+          required: boolean
+          scope: Database["public"]["Enums"]["assessment_scope"]
+          show_correct_answers: boolean
+          shuffle_options: boolean
+          shuffle_questions: boolean
+          status: Database["public"]["Enums"]["assessment_status"]
+          time_limit_minutes: number | null
+          title: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      archive_assessment_question: {
+        Args: { p_expected_version: number; p_question_id: string }
+        Returns: {
+          archived_at: string | null
+          assessment_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          explanation: string | null
+          id: string
+          ordem: number
+          points: number
+          prompt: string
+          published_at: string | null
+          question_type: Database["public"]["Enums"]["assessment_question_type"]
+          required: boolean
+          status: Database["public"]["Enums"]["assessment_status"]
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessment_questions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       archive_course: {
         Args: { p_course_id: string; p_expected_version: number }
         Returns: {
@@ -1299,6 +1750,74 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_assessment: {
+        Args: { p_payload: Json }
+        Returns: {
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          lesson_id: string | null
+          max_attempts: number
+          module_id: string | null
+          passing_score: number
+          published_at: string | null
+          required: boolean
+          scope: Database["public"]["Enums"]["assessment_scope"]
+          show_correct_answers: boolean
+          shuffle_options: boolean
+          shuffle_questions: boolean
+          status: Database["public"]["Enums"]["assessment_status"]
+          time_limit_minutes: number | null
+          title: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_assessment_question: {
+        Args: {
+          p_assessment_id: string
+          p_expected_assessment_version: number
+          p_payload: Json
+        }
+        Returns: {
+          archived_at: string | null
+          assessment_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          explanation: string | null
+          id: string
+          ordem: number
+          points: number
+          prompt: string
+          published_at: string | null
+          question_type: Database["public"]["Enums"]["assessment_question_type"]
+          required: boolean
+          status: Database["public"]["Enums"]["assessment_status"]
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessment_questions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_course: {
         Args: { p_payload: Json }
         Returns: {
@@ -1417,6 +1936,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      delete_assessment: {
+        Args: { p_assessment_id: string; p_expected_version: number }
+        Returns: boolean
+      }
+      delete_assessment_question: {
+        Args: { p_expected_version: number; p_question_id: string }
+        Returns: boolean
       }
       delete_course: {
         Args: { p_course_id: string; p_expected_version: number }
@@ -1636,6 +2163,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_assessment_attempt_result: {
+        Args: { p_attempt_id: string }
+        Returns: Json
+      }
       grant_asset_access: {
         Args: { p_asset_id: string; p_expires_at?: string; p_user_id: string }
         Returns: {
@@ -1772,6 +2303,42 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      publish_assessment: {
+        Args: { p_assessment_id: string; p_expected_version: number }
+        Returns: {
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          lesson_id: string | null
+          max_attempts: number
+          module_id: string | null
+          passing_score: number
+          published_at: string | null
+          required: boolean
+          scope: Database["public"]["Enums"]["assessment_scope"]
+          show_correct_answers: boolean
+          shuffle_options: boolean
+          shuffle_questions: boolean
+          status: Database["public"]["Enums"]["assessment_status"]
+          time_limit_minutes: number | null
+          title: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       publish_course: {
         Args: { p_course_id: string; p_expected_version: number }
         Returns: {
@@ -1845,6 +2412,46 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "enrollments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      reorder_assessment_questions: {
+        Args: {
+          p_assessment_id: string
+          p_expected_assessment_version: number
+          p_items: Json
+        }
+        Returns: {
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          lesson_id: string | null
+          max_attempts: number
+          module_id: string | null
+          passing_score: number
+          published_at: string | null
+          required: boolean
+          scope: Database["public"]["Enums"]["assessment_scope"]
+          show_correct_answers: boolean
+          shuffle_options: boolean
+          shuffle_questions: boolean
+          status: Database["public"]["Enums"]["assessment_status"]
+          time_limit_minutes: number | null
+          title: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessments"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1997,6 +2604,25 @@ export type Database = {
         Args: { p_token: string }
         Returns: boolean
       }
+      save_assessment_answer: {
+        Args: {
+          p_attempt_id: string
+          p_question_id: string
+          p_selected_option_ids: string[]
+        }
+        Returns: {
+          answered_at: string
+          attempt_id: string
+          question_id: string
+          selected_option_ids: string[]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessment_answers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_lesson_prerequisites: {
         Args: {
           p_expected_version: number
@@ -2073,6 +2699,68 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      start_assessment_attempt: {
+        Args: { p_assessment_id: string }
+        Returns: {
+          assessment_id: string
+          assessment_version: number
+          attempt_number: number
+          created_at: string
+          earned_points: number | null
+          enrollment_id: string
+          expires_at: string | null
+          graded_at: string | null
+          id: string
+          passed: boolean | null
+          passing_score: number
+          question_snapshot: Json
+          score_percent: number | null
+          show_correct_answers: boolean
+          started_at: string
+          status: Database["public"]["Enums"]["assessment_attempt_status"]
+          submitted_at: string | null
+          total_points: number | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessment_attempts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      submit_assessment_attempt: {
+        Args: { p_attempt_id: string }
+        Returns: {
+          assessment_id: string
+          assessment_version: number
+          attempt_number: number
+          created_at: string
+          earned_points: number | null
+          enrollment_id: string
+          expires_at: string | null
+          graded_at: string | null
+          id: string
+          passed: boolean | null
+          passing_score: number
+          question_snapshot: Json
+          score_percent: number | null
+          show_correct_answers: boolean
+          started_at: string
+          status: Database["public"]["Enums"]["assessment_attempt_status"]
+          submitted_at: string | null
+          total_points: number | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessment_attempts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       suspend_course_enrollment: {
         Args: { p_enrollment_id: string; p_reason: string }
         Returns: {
@@ -2137,6 +2825,42 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      unpublish_assessment: {
+        Args: { p_assessment_id: string; p_expected_version: number }
+        Returns: {
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          lesson_id: string | null
+          max_attempts: number
+          module_id: string | null
+          passing_score: number
+          published_at: string | null
+          required: boolean
+          scope: Database["public"]["Enums"]["assessment_scope"]
+          show_correct_answers: boolean
+          shuffle_options: boolean
+          shuffle_questions: boolean
+          status: Database["public"]["Enums"]["assessment_status"]
+          time_limit_minutes: number | null
+          title: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       unpublish_course: {
         Args: { p_course_id: string; p_expected_version: number }
         Returns: {
@@ -2184,6 +2908,78 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "courses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_assessment: {
+        Args: {
+          p_assessment_id: string
+          p_expected_version: number
+          p_payload: Json
+        }
+        Returns: {
+          archived_at: string | null
+          availability_ends_at: string | null
+          availability_starts_at: string | null
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          lesson_id: string | null
+          max_attempts: number
+          module_id: string | null
+          passing_score: number
+          published_at: string | null
+          required: boolean
+          scope: Database["public"]["Enums"]["assessment_scope"]
+          show_correct_answers: boolean
+          shuffle_options: boolean
+          shuffle_questions: boolean
+          status: Database["public"]["Enums"]["assessment_status"]
+          time_limit_minutes: number | null
+          title: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_assessment_question: {
+        Args: {
+          p_expected_question_version: number
+          p_payload: Json
+          p_question_id: string
+        }
+        Returns: {
+          archived_at: string | null
+          assessment_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deleted_at: string | null
+          explanation: string | null
+          id: string
+          ordem: number
+          points: number
+          prompt: string
+          published_at: string | null
+          question_type: Database["public"]["Enums"]["assessment_question_type"]
+          required: boolean
+          status: Database["public"]["Enums"]["assessment_status"]
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessment_questions"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2369,6 +3165,35 @@ export type Database = {
     }
     Enums: {
       app_role: "aluno" | "afiliado" | "administrador_proprietario"
+      assessment_attempt_status:
+        | "in_progress"
+        | "graded"
+        | "expired"
+        | "cancelled"
+      assessment_event_type:
+        | "created"
+        | "updated"
+        | "published"
+        | "unpublished"
+        | "archived"
+        | "deleted"
+        | "question_created"
+        | "question_updated"
+        | "question_archived"
+        | "question_deleted"
+        | "options_replaced"
+        | "questions_reordered"
+        | "attempt_started"
+        | "answer_saved"
+        | "attempt_graded"
+        | "attempt_expired"
+        | "attempt_cancelled"
+      assessment_question_type:
+        | "single_choice"
+        | "multiple_choice"
+        | "true_false"
+      assessment_scope: "course" | "module" | "lesson"
+      assessment_status: "draft" | "published" | "archived"
       asset_event_type:
         | "intent_created"
         | "upload_confirmed"
@@ -2582,6 +3407,38 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["aluno", "afiliado", "administrador_proprietario"],
+      assessment_attempt_status: [
+        "in_progress",
+        "graded",
+        "expired",
+        "cancelled",
+      ],
+      assessment_event_type: [
+        "created",
+        "updated",
+        "published",
+        "unpublished",
+        "archived",
+        "deleted",
+        "question_created",
+        "question_updated",
+        "question_archived",
+        "question_deleted",
+        "options_replaced",
+        "questions_reordered",
+        "attempt_started",
+        "answer_saved",
+        "attempt_graded",
+        "attempt_expired",
+        "attempt_cancelled",
+      ],
+      assessment_question_type: [
+        "single_choice",
+        "multiple_choice",
+        "true_false",
+      ],
+      assessment_scope: ["course", "module", "lesson"],
+      assessment_status: ["draft", "published", "archived"],
       asset_event_type: [
         "intent_created",
         "upload_confirmed",
