@@ -1,0 +1,16 @@
+import { lazy } from "react";
+
+export const AffiliatesAdmin = lazy(
+  () => import("@/pages/admin/AffiliatesAdmin"),
+);
+export const ContactsAdmin = lazy(() => import("@/pages/admin/ContactsAdmin"));
+export const CourseCurriculum = lazy(
+  () => import("@/pages/admin/CourseCurriculum"),
+);
+export const CourseEditor = lazy(() => import("@/pages/admin/CourseEditor"));
+export const CoursePreview = lazy(() => import("@/pages/admin/CoursePreview"));
+export const CoursesAdmin = lazy(() => import("@/pages/admin/CoursesAdmin"));
+export const DigitalProductsAdmin = lazy(
+  () => import("@/pages/admin/DigitalProductsAdmin"),
+);
+export const StudentsAdmin = lazy(() => import("@/pages/admin/StudentsAdmin"));
