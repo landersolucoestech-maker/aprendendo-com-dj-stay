@@ -43,6 +43,26 @@ const cleanupReplacedAvatars = async (currentAssetId: string): Promise<void> => 
   }
 };
 
+const verifyPersistedAvatarBinding = async (assetId: string): Promise<void> => {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw userError ?? new Error("AVATAR_USER_SESSION_NOT_CONFIRMED");
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("user_profiles")
+    .select("avatar_asset_id")
+    .eq("user_id", userData.user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    throw profileError;
+  }
+  if (!profile || profile.avatar_asset_id !== assetId) {
+    throw new Error("AVATAR_PROFILE_BINDING_NOT_CONFIRMED");
+  }
+};
+
 export const useAvatarUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const queryClient = useQueryClient();
@@ -108,12 +128,17 @@ export const useAvatarUpload = () => {
 
       const publishedAsset = parseDataContract(assetRowSchema, publishedData, "publicação do avatar");
       preparedAsset = publishedAsset;
+      if (publishedAsset.state !== "published") {
+        throw new Error("AVATAR_PUBLICATION_NOT_CONFIRMED");
+      }
+
+      await verifyPersistedAvatarBinding(publishedAsset.id);
       await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
 
       try {
         await cleanupReplacedAvatars(publishedAsset.id);
       } catch {
-        // O avatar publicado permanece válido; o asset substituído continua auditável para cleanup posterior.
+        // O vínculo confirmado permanece válido; o asset substituído continua auditável para cleanup posterior.
       }
 
       return publishedAsset;
@@ -128,7 +153,7 @@ export const useAvatarUpload = () => {
 
       toast({
         title: "Erro no upload",
-        description: getErrorMessage(error, "Não foi possível enviar a imagem."),
+        description: getErrorMessage(error, "Não foi possível persistir o avatar no perfil."),
         variant: "destructive",
       });
       return null;
