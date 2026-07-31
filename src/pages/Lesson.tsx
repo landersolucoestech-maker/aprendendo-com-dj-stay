@@ -34,8 +34,8 @@ const Lesson = () => {
           <p className="text-gray-300 mb-4">
             {getErrorMessage(loadingError, "Não foi possível carregar os dados da aula.")}
           </p>
-          <Button onClick={() => navigate("/dashboard")} className="btn-neon">
-            Voltar ao Dashboard
+          <Button onClick={() => navigate("/aluno/cursos")} className="btn-neon">
+            Voltar aos cursos
           </Button>
         </div>
       </div>
@@ -49,8 +49,8 @@ const Lesson = () => {
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Aula não encontrada</h1>
-          <Button onClick={() => navigate("/dashboard")} className="btn-neon">
-            Voltar ao Dashboard
+          <Button onClick={() => navigate("/aluno/cursos")} className="btn-neon">
+            Voltar aos cursos
           </Button>
         </div>
       </div>
@@ -76,8 +76,9 @@ const Lesson = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate("/aluno/cursos")}
                 className="text-gray-300 hover:text-white"
+                aria-label="Voltar aos cursos"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
@@ -86,12 +87,10 @@ const Lesson = () => {
                 <h1 className="text-2xl font-bold gradient-text">{currentLesson.title}</h1>
               </div>
             </div>
-            {currentLesson.durationLabel !== null && (
-              <div className="flex items-center space-x-2 text-sm text-gray-400">
-                <Clock className="w-4 h-4" />
-                <span>{currentLesson.durationLabel}</span>
-              </div>
-            )}
+            <div className="flex items-center space-x-2 text-sm text-gray-400">
+              <Clock className="w-4 h-4" />
+              <span>{currentLesson.durationLabel}</span>
+            </div>
           </div>
         </div>
       </div>
