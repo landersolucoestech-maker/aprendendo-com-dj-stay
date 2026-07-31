@@ -23,6 +23,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import Verified from "@/pages/Verified";
 import VerifyEmail from "@/pages/VerifyEmail";
 import AffiliatesAdmin from "@/pages/admin/AffiliatesAdmin";
+import ContactsAdmin from "@/pages/admin/ContactsAdmin";
 import CourseCurriculum from "@/pages/admin/CourseCurriculum";
 import CourseEditor from "@/pages/admin/CourseEditor";
 import CoursePreview from "@/pages/admin/CoursePreview";
@@ -320,6 +321,14 @@ const App = () => (
               element={
                 <AdminRoute>
                   <StudentsAdmin />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/contatos"
+              element={
+                <AdminRoute>
+                  <ContactsAdmin />
                 </AdminRoute>
               }
             />
