@@ -57,8 +57,9 @@ export const useStudentsAdminDashboard = (search: string) =>
   useQuery<StudentsAdminDashboard>({
     queryKey: certificateKeys.admin(search),
     queryFn: async () => {
+      const normalizedSearch = search.trim();
       const { data, error } = await supabase.rpc("get_students_admin_dashboard", {
-        p_search: search.trim() || null,
+        ...(normalizedSearch ? { p_search: normalizedSearch } : {}),
         p_limit: 100,
         p_offset: 0,
       });
