@@ -9,6 +9,11 @@ export interface RecentActivity {
   activity: string;
   time: string;
   type: "lesson_completed" | "lesson_started";
+  updatedAt: string;
+  lessonTitle: string;
+  moduleTitle: string;
+  progressPercent: number;
+  completed: boolean;
 }
 
 const formatRelativeTime = (timestamp: string): string => {
@@ -22,9 +27,11 @@ const formatRelativeTime = (timestamp: string): string => {
   return `${elapsedDays} dia${elapsedDays === 1 ? "" : "s"} atrás`;
 };
 
-export const useRecentActivities = () =>
-  useQuery({
-    queryKey: ["recent-activities"],
+export const useRecentActivities = (limit = 10) => {
+  const normalizedLimit = Math.min(100, Math.max(1, Math.trunc(limit)));
+
+  return useQuery({
+    queryKey: ["recent-activities", normalizedLimit],
     queryFn: async (): Promise<RecentActivity[]> => {
       const {
         data: { user },
@@ -39,7 +46,7 @@ export const useRecentActivities = () =>
         .select("*,aulas(titulo,modulo_id,modulos(titulo))")
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false })
-        .limit(10);
+        .limit(normalizedLimit);
 
       if (error) {
         throw error;
@@ -65,7 +72,13 @@ export const useRecentActivities = () =>
           activity,
           time: formatRelativeTime(progress.updated_at),
           type: progress.completada ? "lesson_completed" : "lesson_started",
+          updatedAt: progress.updated_at,
+          lessonTitle,
+          moduleTitle,
+          progressPercent: progress.progresso_percentual,
+          completed: progress.completada,
         };
       });
     },
   });
+};
