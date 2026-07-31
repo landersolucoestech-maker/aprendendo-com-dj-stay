@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(28);
+select plan(29);
 
 insert into auth.users(id,email) values ('b1600000-0000-4000-8000-000000000101','b16-authoring-admin@example.test');
 update public.user_roles set role='administrador_proprietario' where user_id='b1600000-0000-4000-8000-000000000101';
