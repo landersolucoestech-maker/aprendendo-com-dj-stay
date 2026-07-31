@@ -56,8 +56,8 @@ select throws_ok($$select public.update_lesson('6e000000-0000-4000-8000-00000000
 reset role;
 
 set local role anon;
-select is((select count(*)::integer from public.modulos),0,'anonymous cannot read modules');
-select is((select count(*)::integer from public.aulas),0,'anonymous cannot read lessons');
+select throws_ok($$select count(*) from public.modulos$$,'42501',null,'anonymous cannot read modules');
+select throws_ok($$select count(*) from public.aulas$$,'42501',null,'anonymous cannot read lessons');
 select ok(not has_function_privilege('anon','public.create_module(uuid,jsonb)','EXECUTE'),'anonymous cannot create module');
 select ok(not has_function_privilege('anon','public.create_lesson(uuid,jsonb)','EXECUTE'),'anonymous cannot create lesson');
 reset role;

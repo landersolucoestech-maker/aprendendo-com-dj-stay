@@ -20,6 +20,8 @@ select set_config('test.course_id',(select id::text from public.create_course(js
 select is((select count(*)::integer from public.courses),1,'administrator reads draft for CMS and preview');
 select is((select count(*)::integer from public.course_editor_events),1,'administrator reads course audit history');
 select throws_ok($$update public.courses set title='bypass' where id=current_setting('test.course_id')::uuid$$,'42501',null,'administrator cannot bypass CMS RPC with direct update');
+select set_config('test.publish_module_id',(select id::text from public.create_module(current_setting('test.course_id')::uuid,'{"title":"Módulo de acesso","status":"published"}'::jsonb)),false);
+select set_config('test.publish_lesson_id',(select id::text from public.create_lesson(current_setting('test.publish_module_id')::uuid,'{"title":"Aula de acesso","status":"published","content_kind":"text","text_content":"Conteúdo de acesso"}'::jsonb)),false);
 select set_config('test.published_status',(select status::text from public.publish_course(current_setting('test.course_id')::uuid,1)),false);
 select is(current_setting('test.published_status'),'published','administrator publishes course');
 select lives_ok($$select public.grant_course_enrollment('1b000000-0000-4000-8000-000000000002',current_setting('test.course_id')::uuid,statement_timestamp()-interval '1 minute',null,'cms access')$$,'administrator grants enrollment');

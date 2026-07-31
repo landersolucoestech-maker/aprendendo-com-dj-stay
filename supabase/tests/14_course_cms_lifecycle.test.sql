@@ -43,6 +43,8 @@ select is((select status::text from public.courses where id=current_setting('tes
 select is((select description from public.courses where id=current_setting('test.copy_id')::uuid),'Descrição integral persistida','duplicate copies all persisted content');
 select is((select duplicated_from_course_id from public.courses where id=current_setting('test.copy_id')::uuid),current_setting('test.course_id')::uuid,'duplicate records source course');
 select is((select count(*)::integer from public.modulos where course_id=current_setting('test.copy_id')::uuid),0,'B11 duplication does not invent module copies');
+select set_config('test.publish_module_id',(select id::text from public.create_module(current_setting('test.course_id')::uuid,'{"title":"Módulo publicável","status":"published"}'::jsonb)),false);
+select set_config('test.publish_lesson_id',(select id::text from public.create_lesson(current_setting('test.publish_module_id')::uuid,'{"title":"Aula publicável","status":"published","content_kind":"text","text_content":"Conteúdo validado"}'::jsonb)),false);
 select set_config('test.published_status',(select status::text from public.publish_course(current_setting('test.course_id')::uuid,2)),false);
 select is(current_setting('test.published_status'),'published','complete course can be published');
 select ok((select published_at is not null and version=3 from public.courses where id=current_setting('test.course_id')::uuid),'publication records timestamp and version');
@@ -58,7 +60,6 @@ reset role;
 select ok((select slug like 'curso-cms-copia-deleted-%' from public.courses where id=current_setting('test.copy_id')::uuid),'soft deletion releases original slug');
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"1a000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"7a000000-0000-4000-8000-000000000001","is_anonymous":false}',true);
-insert into public.modulos(course_id,titulo,ordem) values(current_setting('test.course_id')::uuid,'Módulo dependente',1);
 select throws_ok($$select public.delete_course(current_setting('test.course_id')::uuid,5)$$,'23503',null,'course with modules requires archive instead of deletion');
 select is((select count(*)::integer from public.course_editor_events where course_id=current_setting('test.course_id')::uuid),5,'main course lifecycle is fully audited');
 select is((select count(*)::integer from public.course_editor_events where course_id=current_setting('test.copy_id')::uuid),2,'duplicate creation and deletion are audited');

@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "check:environment": "node scripts/check-environment-contract.mjs",
-    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && npm run check:course-access && npm run check:course-cms && tsc --noEmit",
+    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && npm run check:course-access && npm run check:course-cms && npm run check:curriculum-cms && tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run build",
     "preview": "vite preview",
     "check:auth": "node scripts/check-auth-contract.mjs",
@@ -17,7 +17,8 @@
     "check:authorization": "node scripts/check-authorization-contract.mjs",
     "check:storage": "node scripts/check-storage-contract.mjs",
     "check:course-access": "node scripts/check-course-access-contract.mjs",
-    "check:course-cms": "node scripts/check-course-cms-contract.mjs"
+    "check:course-cms": "node scripts/check-course-cms-contract.mjs",
+    "check:curriculum-cms": "node scripts/check-curriculum-cms-contract.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
