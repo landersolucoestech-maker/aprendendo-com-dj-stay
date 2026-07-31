@@ -89,7 +89,11 @@ select lives_ok(
 );
 select is((select status::text from public.digital_products where slug='pack-authoring'),'archived','product reaches archived status');
 select ok(public.delete_digital_product((select id from public.digital_products where slug='pack-authoring'),(select version from public.digital_products where slug='pack-authoring')),'archived product is soft deleted');
+
+reset role;
+set local role service_role;
 select ok((select deleted_at is not null from public.digital_products where slug='pack-authoring'),'soft deletion preserves the product row');
+reset role;
 
 select * from finish();
 rollback;
