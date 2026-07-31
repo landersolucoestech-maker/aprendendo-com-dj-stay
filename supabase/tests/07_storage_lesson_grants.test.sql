@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(22);
+select plan(23);
 
 insert into auth.users (id, email)
 values
@@ -50,8 +50,8 @@ reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"15000000-0000-4000-8000-000000000002","role":"authenticated","is_anonymous":false}', true);
-select is((select count(*)::integer from public.assets where lesson_id='35000000-0000-4000-8000-000000000001'), 0, 'student without grant cannot read lesson asset metadata');
-select is((select count(*)::integer from storage.objects where bucket_id='private-assets'), 0, 'student without grant cannot read object even with path knowledge');
+select is((select count(*)::integer from public.assets where lesson_id='35000000-0000-4000-8000-000000000001'), 1, 'active enrollment automatically exposes lesson asset metadata');
+select is((select count(*)::integer from storage.objects where bucket_id='private-assets'), 1, 'active enrollment automatically exposes the corresponding object');
 select throws_ok(
   $$select public.grant_asset_access('00000000-0000-0000-0000-000000000000','15000000-0000-4000-8000-000000000002',null)$$,
   '42501', null, 'student cannot grant asset access'
@@ -63,13 +63,13 @@ select set_config('request.jwt.claims', '{"sub":"15000000-0000-4000-8000-0000000
 select results_eq(
   $$select (public.grant_asset_access((select id from public.assets where idempotency_key='lesson:sample:00000001'),'15000000-0000-4000-8000-000000000002',null)).user_id$$,
   $$values ('15000000-0000-4000-8000-000000000002'::uuid)$$,
-  'administrator grants one student access by asset id'
+  'administrator can add a separate manual asset grant'
 );
 select lives_ok(
   $$select public.grant_asset_access((select id from public.assets where idempotency_key='lesson:sample:00000001'),'15000000-0000-4000-8000-000000000002',statement_timestamp()+interval '1 day')$$,
-  'grant operation is idempotent and can refresh expiry'
+  'manual grant operation is idempotent and refreshes expiry'
 );
-select is((select count(*)::integer from public.asset_access_grants), 1, 'idempotent grant keeps one row');
+select is((select count(*)::integer from public.asset_access_grants), 2, 'enrollment and manual grants coexist without duplicates');
 select throws_ok(
   $$select public.grant_asset_access((select id from public.assets where idempotency_key='lesson:sample:00000001'),'15000000-0000-4000-8000-000000000002',statement_timestamp()-interval '1 second')$$,
   '22023', null, 'expired grants cannot be created'
@@ -82,26 +82,30 @@ reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"15000000-0000-4000-8000-000000000002","role":"authenticated","is_anonymous":false}', true);
-select is((select count(*)::integer from public.assets where lesson_id='35000000-0000-4000-8000-000000000001'), 1, 'granted student can read published asset metadata');
-select is((select count(*)::integer from storage.objects where bucket_id='private-assets'), 1, 'granted student can read the corresponding storage object');
-select is((select count(*)::integer from public.asset_access_grants), 1, 'student can inspect only their own grant');
+select is((select count(*)::integer from public.assets where lesson_id='35000000-0000-4000-8000-000000000001'), 1, 'student keeps metadata visibility through active enrollment');
+select is((select count(*)::integer from storage.objects where bucket_id='private-assets'), 1, 'student keeps object visibility through active enrollment');
+select is((select count(*)::integer from public.asset_access_grants), 2, 'student can inspect both of their own grant sources');
 reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"15000000-0000-4000-8000-000000000003","role":"authenticated","is_anonymous":false}', true);
-select is((select count(*)::integer from public.assets), 0, 'different student remains isolated from granted asset');
+select is((select count(*)::integer from public.assets), 0, 'different student remains isolated from the enrolled asset');
 reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"15000000-0000-4000-8000-000000000001","role":"authenticated","is_anonymous":false}', true);
-select ok(public.revoke_asset_access((select id from public.assets where idempotency_key='lesson:sample:00000001'),'15000000-0000-4000-8000-000000000002'), 'administrator revokes an existing grant');
-select ok(not public.revoke_asset_access((select id from public.assets where idempotency_key='lesson:sample:00000001'),'15000000-0000-4000-8000-000000000002'), 'revocation is idempotent');
+select ok(public.revoke_asset_access((select id from public.assets where idempotency_key='lesson:sample:00000001'),'15000000-0000-4000-8000-000000000002'), 'administrator revokes the manual grant');
+select ok(not public.revoke_asset_access((select id from public.assets where idempotency_key='lesson:sample:00000001'),'15000000-0000-4000-8000-000000000002'), 'manual revocation is idempotent');
+select lives_ok(
+  $$select public.suspend_course_enrollment('45000000-0000-4000-8000-000000000001','teste de revogação de acesso')$$,
+  'suspending enrollment removes enrollment-sourced grants'
+);
 reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"15000000-0000-4000-8000-000000000002","role":"authenticated","is_anonymous":false}', true);
-select is((select count(*)::integer from public.assets), 0, 'revoked student immediately loses asset metadata visibility');
-select is((select count(*)::integer from storage.objects where bucket_id='private-assets'), 0, 'revoked student immediately loses object visibility');
+select is((select count(*)::integer from public.assets), 0, 'suspended student immediately loses asset metadata visibility');
+select is((select count(*)::integer from storage.objects where bucket_id='private-assets'), 0, 'suspended student immediately loses object visibility');
 reset role;
 
 select * from finish();
