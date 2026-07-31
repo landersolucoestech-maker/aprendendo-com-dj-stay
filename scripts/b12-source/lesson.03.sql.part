@@ -1,0 +1,22 @@
+$$;
+
+create function public.create_lesson(uuid,jsonb) returns public.aulas language sql security invoker set search_path='' as $$select private.create_lesson($1,$2)$$;
+create function public.update_lesson(uuid,integer,jsonb) returns public.aulas language sql security invoker set search_path='' as $$select private.update_lesson($1,$2,$3)$$;
+create function public.set_lesson_prerequisites(uuid,integer,uuid[]) returns public.aulas language sql security invoker set search_path='' as $$select private.set_lesson_prerequisites($1,$2,$3)$$;
+create function public.reorder_lessons(uuid,integer,jsonb) returns public.modulos language sql security invoker set search_path='' as $$select private.reorder_lessons($1,$2,$3)$$;
+create function public.move_lesson(uuid,integer,uuid,integer,integer) returns public.aulas language sql security invoker set search_path='' as $$select private.move_lesson($1,$2,$3,$4,$5)$$;
+create function public.duplicate_lesson(uuid,text) returns public.aulas language sql security invoker set search_path='' as $$select private.duplicate_lesson($1,$2)$$;
+create function public.archive_lesson(uuid,integer) returns public.aulas language sql security invoker set search_path='' as $$select private.archive_lesson($1,$2)$$;
+create function public.delete_lesson(uuid,integer) returns boolean language sql security invoker set search_path='' as $$select private.delete_lesson($1,$2)$$;
+create function public.archive_lesson_material(uuid,uuid) returns public.assets language sql security invoker set search_path='' as $$select private.archive_lesson_material($1,$2)$$;
+
+revoke all on function public.create_lesson(uuid,jsonb) from public,anon;
+revoke all on function public.update_lesson(uuid,integer,jsonb) from public,anon;
+revoke all on function public.set_lesson_prerequisites(uuid,integer,uuid[]) from public,anon;
+revoke all on function public.reorder_lessons(uuid,integer,jsonb) from public,anon;
+revoke all on function public.move_lesson(uuid,integer,uuid,integer,integer) from public,anon;
+revoke all on function public.duplicate_lesson(uuid,text) from public,anon;
+revoke all on function public.archive_lesson(uuid,integer) from public,anon;
+revoke all on function public.delete_lesson(uuid,integer) from public,anon;
+revoke all on function public.archive_lesson_material(uuid,uuid) from public,anon;
+grant execute on function public.create_lesson(uuid,jsonb),public.update_lesson(uuid,integer,jsonb),public.set_lesson_prerequisites(uuid,integer,uuid[]),public.reorder_lessons(uuid,integer,jsonb),public.move_lesson(uuid,integer,uuid,integer,integer),public.duplicate_lesson(uuid,text),public.archive_lesson(uuid,integer),public.delete_lesson(uuid,integer),public.archive_lesson_material(uuid,uuid) to authenticated,service_role;
