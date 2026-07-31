@@ -1,0 +1,32 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(25);
+
+select has_type('public','lesson_progress_event_type','lesson progress event enum exists');
+select has_table('public','lesson_progress_streams','lesson progress streams table exists');
+select has_table('public','lesson_progress_events','lesson progress events table exists');
+select has_column('public','progresso_aulas','revision','progress aggregate has revision');
+select has_column('public','progresso_aulas','last_event_id','progress aggregate stores last event');
+select has_column('public','progresso_aulas','last_event_received_at','progress aggregate stores last event time');
+select has_column('public','progresso_aulas','last_client_instance_id','progress aggregate stores last client instance');
+select ok((select bool_and(relrowsecurity and relforcerowsecurity) from pg_class where oid in ('public.lesson_progress_streams'::regclass,'public.lesson_progress_events'::regclass)),'progress event tables force RLS');
+select is((select count(*)::integer from information_schema.role_table_grants where grantee='authenticated' and table_schema='public' and table_name='progresso_aulas' and privilege_type in ('INSERT','UPDATE','DELETE','TRUNCATE')),0,'authenticated cannot mutate progress aggregate directly');
+select is((select count(*)::integer from information_schema.role_table_grants where grantee='authenticated' and table_schema='public' and table_name in ('lesson_progress_streams','lesson_progress_events') and privilege_type in ('INSERT','UPDATE','DELETE','TRUNCATE')),0,'authenticated cannot mutate progress event tables directly');
+select is((select count(*)::integer from information_schema.role_table_grants where grantee='anon' and table_schema='public' and table_name in ('lesson_progress_streams','lesson_progress_events')),0,'anonymous has no progress event table grants');
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='save_lesson_progress_event'),1,'one public progress RPC exists');
+select is((select prosecdef from pg_proc where oid='public.save_lesson_progress_event(uuid,uuid,uuid,bigint,public.lesson_progress_event_type,integer,integer,timestamptz)'::regprocedure),false,'public progress RPC is security invoker');
+select ok(not has_function_privilege('anon','public.save_lesson_progress_event(uuid,uuid,uuid,bigint,public.lesson_progress_event_type,integer,integer,timestamptz)','EXECUTE'),'anonymous cannot execute progress RPC');
+select ok(has_function_privilege('authenticated','public.save_lesson_progress_event(uuid,uuid,uuid,bigint,public.lesson_progress_event_type,integer,integer,timestamptz)','EXECUTE'),'authenticated can execute progress RPC');
+select is((select prosecdef from pg_proc where oid='private.save_lesson_progress_event(uuid,uuid,uuid,bigint,public.lesson_progress_event_type,integer,integer,timestamptz)'::regprocedure),true,'private progress operation is security definer');
+select is((select proconfig from pg_proc where oid='private.save_lesson_progress_event(uuid,uuid,uuid,bigint,public.lesson_progress_event_type,integer,integer,timestamptz)'::regprocedure),array['search_path=""']::text[],'private progress operation fixes empty search path');
+select is((select count(*)::integer from pg_policies where schemaname='public' and tablename in ('lesson_progress_streams','lesson_progress_events')),2,'progress event tables expose two read policies');
+select is((select count(*)::integer from pg_policies where schemaname='public' and tablename='progresso_aulas'),1,'progress aggregate keeps only its read policy');
+select has_pk('public','lesson_progress_streams','progress streams have a primary key');
+select has_pk('public','lesson_progress_events','progress events have a primary key');
+select has_fk('public','lesson_progress_streams','progress streams use foreign keys');
+select has_fk('public','lesson_progress_events','progress events use foreign keys');
+select has_index('public','lesson_progress_events','lesson_progress_events_user_lesson_received_idx','progress history query is indexed');
+select is((select count(*)::integer from public.lesson_progress_streams)+(select count(*)::integer from public.lesson_progress_events),0,'progress event schema starts empty');
+
+select * from finish();
+rollback;
