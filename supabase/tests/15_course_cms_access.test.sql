@@ -58,11 +58,9 @@ select set_config('request.jwt.claims','{"sub":"1b000000-0000-4000-8000-00000000
 select is((select count(*)::integer from public.courses),0,'unpublished course immediately disappears from student');
 reset role;
 
-set local role anon;
-select throws_ok($$select count(*) from public.courses$$,'42501',null,'anonymous cannot read courses');
+select ok(not has_table_privilege('anon','public.courses','SELECT'),'anonymous cannot read courses');
 select ok(not has_function_privilege('anon','public.create_course(jsonb)','EXECUTE'),'anonymous cannot create course');
 select ok(not has_function_privilege('anon','public.publish_course(uuid,integer)','EXECUTE'),'anonymous cannot publish course');
-reset role;
 
 select is((select count(*)::integer from public.course_editor_events where event_type='updated'),1,'availability edit is audited once');
 select is((select count(*)::integer from public.course_editor_events where event_type='published'),1,'publication is audited once');
