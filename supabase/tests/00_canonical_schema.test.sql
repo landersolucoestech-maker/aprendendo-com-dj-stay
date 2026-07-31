@@ -18,14 +18,14 @@ select has_pk('public', 'modulos', 'modules have a primary key');
 select has_fk('public', 'aulas', 'lessons have foreign keys');
 select has_fk('public', 'progresso_aulas', 'progress has foreign keys');
 
-select throws_ok($$insert into public.progresso_aulas(user_id,aula_id,progresso_percentual) values ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002',101)$$, '23514', null, 'progress percentage constraint rejects values above 100');
+select throws_ok($$insert into public.progresso_aulas(user_id,aula_id,progresso_percentual) values ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-8000-000000000002',101)$$, '23514', null, 'progress percentage constraint rejects values above 100');
 select has_check('public', 'progresso_aulas', 'progress has check constraints');
 select has_check('public', 'aulas', 'lessons have check constraints');
 select has_check('public', 'assets', 'assets have lifecycle and file validation constraints');
 
 select is((select prosecdef from pg_proc where oid='public.set_updated_at()'::regprocedure), false, 'updated_at function is invoker security');
 select is((select proconfig from pg_proc where oid='public.set_updated_at()'::regprocedure), array['search_path=pg_catalog']::text[], 'updated_at function fixes search_path');
-select is((select count(*)::integer from pg_trigger where not tgisinternal and tgfoid='public.set_updated_at()'::regprocedure), 17, 'updated_at trigger is attached to seventeen mutable tables');
+select is((select count(*)::integer from pg_trigger where not tgisinternal and tgfoid='public.set_updated_at()'::regprocedure), 18, 'updated_at trigger is attached to eighteen mutable tables');
 
 select * from finish();
 rollback;
