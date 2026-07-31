@@ -34,5 +34,5 @@ export function RoleLandingRedirect() {
     return <Navigate to="/editar-perfil" replace />;
   }
 
-  return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/aluno" replace />;
 }
