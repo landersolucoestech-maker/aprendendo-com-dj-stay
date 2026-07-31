@@ -21,8 +21,8 @@ const migrations = [
   read("supabase/migrations/20260730230200_curriculum_lesson_rpcs.sql"),
   read("supabase/migrations/20260730230300_curriculum_access.sql"),
   read("supabase/migrations/20260730230400_fix_curriculum_playback_enrollment_alias.sql"),
-  read("supabase/migrations/20260730230500_fix_curriculum_rpc_argument_names.sql"),
-  read("supabase/migrations/20260730230600_fix_curriculum_test_contracts.sql"),
+  read("supabase/migrations/20260730230500_fix_curriculum_playback_token_alias.sql"),
+  read("supabase/migrations/20260730230600_name_curriculum_lesson_rpc_arguments.sql"),
   read("supabase/migrations/20260731022000_curriculum_foreign_key_indexes.sql"),
 ].join("\n");
 
