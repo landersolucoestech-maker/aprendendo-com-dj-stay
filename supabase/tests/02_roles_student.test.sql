@@ -31,9 +31,9 @@ select is((select private.current_user_role()), 'aluno'::public.app_role, 'stude
 select is((select count(*)::integer from public.modulos), 1, 'student can read learning modules');
 select is((select count(*)::integer from public.progresso_aulas), 1, 'student sees only their own progress');
 select is((select count(*)::integer from public.user_profiles), 1, 'student sees only their own profile');
-select is_empty(
-  $$update public.progresso_aulas set progresso_percentual = 99 where user_id = '11000000-0000-4000-8000-000000000002' returning id$$,
-  'student cannot update another student progress'
+select throws_ok(
+  $$update public.progresso_aulas set progresso_percentual = 99 where user_id = '11000000-0000-4000-8000-000000000002'$$,
+  '42501', null, 'student cannot update progress aggregates directly'
 );
 select throws_ok(
   $$insert into public.progresso_aulas (user_id, aula_id) values ('11000000-0000-4000-8000-000000000002', '31000000-0000-4000-8000-000000000001')$$,
