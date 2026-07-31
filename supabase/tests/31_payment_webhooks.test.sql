@@ -8,6 +8,38 @@ insert into auth.users(id,email) values
  ('b1800000-0000-4000-8000-000000000203','b18-payment-admin@example.test');
 update public.user_roles set role='administrador_proprietario' where user_id='b1800000-0000-4000-8000-000000000203';
 
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"b1800000-0000-4000-8000-000000000203","role":"authenticated","session_id":"b1840000-0000-4000-8000-000000000203","is_anonymous":false}',true);
+select set_config(
+  'test.b18_webhook_course_id',
+  (
+    select id::text
+    from public.create_course(
+      jsonb_build_object(
+        'title','Curso Webhook B18',
+        'slug','curso-webhook-b18',
+        'short_description','Curso usado para validar eventos financeiros.',
+        'description','Fixture de curso para o teste de webhook e fulfillment.',
+        'category','Produção musical',
+        'language_code','pt-BR',
+        'level','beginner',
+        'objectives',jsonb_build_array('Validar pagamento assíncrono'),
+        'prerequisites',jsonb_build_array('Conta autenticada'),
+        'price_amount',100.00,
+        'currency_code','BRL',
+        'completion_mode','percentage',
+        'completion_required_percent',80,
+        'certificate_enabled',false,
+        'release_mode','immediate',
+        'affiliate_eligible',false,
+        'preview_enabled',false
+      )
+    )
+  ),
+  false
+);
+reset role;
+
 insert into public.checkout_intents(
   id,user_id,subject_type,subject_id,status,provider,provider_checkout_id,provider_checkout_url,
   amount_cents,currency_code,title_snapshot,item_snapshot,idempotency_key,expires_at
@@ -15,7 +47,7 @@ insert into public.checkout_intents(
   'b1810000-0000-4000-8000-000000000201',
   'b1800000-0000-4000-8000-000000000201',
   'course',
-  'b1820000-0000-4000-8000-000000000201',
+  current_setting('test.b18_webhook_course_id')::uuid,
   'checkout_created',
   'asaas',
   'chk_b18_webhook_001',
@@ -23,7 +55,12 @@ insert into public.checkout_intents(
   10000,
   'BRL',
   'Curso Webhook B18',
-  jsonb_build_object('subject_type','course','subject_id','b1820000-0000-4000-8000-000000000201','amount_cents',10000,'currency_code','BRL'),
+  jsonb_build_object(
+    'subject_type','course',
+    'subject_id',current_setting('test.b18_webhook_course_id'),
+    'amount_cents',10000,
+    'currency_code','BRL'
+  ),
   'b1850000-0000-4000-8000-000000000201',
   statement_timestamp()+interval '30 minutes'
 );
@@ -32,7 +69,7 @@ select is((select count(*)::integer from public.payment_orders where checkout_in
 select is((select count(*)::integer from public.payment_attempts where checkout_intent_id='b1810000-0000-4000-8000-000000000201'),1,'checkout trigger creates one attempt');
 
 set local role service_role;
-select set_config('request.jwt.claim.role','service_role',true);
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
 select lives_ok(
  $$select public.process_asaas_payment_webhook('evt_b18_created','PAYMENT_CREATED',jsonb_build_object('id','evt_b18_created','event','PAYMENT_CREATED','payment',jsonb_build_object('id','pay_b18_001','externalReference','b1810000-0000-4000-8000-000000000201','value',100.00,'billingType','PIX','status','PENDING')))$$,
  'payment created webhook is persisted'
@@ -59,8 +96,8 @@ select is((select status::text from public.payment_provider_events where provide
 select is((select status::text from public.payment_orders where checkout_intent_id='b1810000-0000-4000-8000-000000000201'),'paid','invalid event cannot regress paid order');
 select ok((select public.process_asaas_payment_webhook('evt_b18_conflict','PAYMENT_CONFIRMED',jsonb_build_object('id','evt_b18_conflict','event','PAYMENT_CONFIRMED','payment',jsonb_build_object('id','pay_b18_other','externalReference','b1810000-0000-4000-8000-000000000201','value',100.00,'billingType','PIX','status','CONFIRMED')))->>'failed')::boolean,'conflicting provider payment is rejected');
 select is((select status::text from public.payment_provider_events where provider_event_id='evt_b18_conflict'),'failed','provider payment conflict is persisted');
-select is((select count(*)::integer from public.enrollments where user_id='b1800000-0000-4000-8000-000000000201'),0,'payment confirmation does not grant course access in B18');
-select is((select count(*)::integer from public.digital_product_accesses where user_id='b1800000-0000-4000-8000-000000000201'),0,'payment confirmation does not grant product access in B18');
+select is((select count(*)::integer from public.enrollments where user_id='b1800000-0000-4000-8000-000000000201' and course_id=current_setting('test.b18_webhook_course_id')::uuid),1,'payment confirmation grants one course enrollment through B19');
+select is((select count(*)::integer from public.payment_entitlements where user_id='b1800000-0000-4000-8000-000000000201' and status='active'),1,'payment confirmation creates one active entitlement');
 reset role;
 
 set local role authenticated;
