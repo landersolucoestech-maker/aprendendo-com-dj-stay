@@ -1,11 +1,17 @@
-import { useState } from "react";
 import { CheckCircle, Home, Mail, RefreshCw } from "lucide-react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { getAuthErrorMessage } from "@/auth/auth-errors";
 import { resendSignupConfirmation } from "@/auth/auth-service";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
 function readEmailFromState(state: unknown): string {
@@ -21,11 +27,23 @@ const VerifyEmail = () => {
   const location = useLocation();
   const email = readEmailFromState(location.state);
   const [isResending, setIsResending] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    type: "error" | "success";
+    message: string;
+  } | null>(null);
   const { toast } = useToast();
 
   const handleResendEmail = async () => {
+    setFeedback(null);
+
     if (!email) {
-      toast({ title: "Email não informado", description: "Volte ao cadastro e informe seu email novamente.", variant: "destructive" });
+      const message = "Volte ao cadastro e informe seu email novamente.";
+      setFeedback({ type: "error", message });
+      toast({
+        title: "Email não informado",
+        description: message,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -34,32 +52,90 @@ const VerifyEmail = () => {
     setIsResending(false);
 
     if (error) {
-      toast({ title: "Não foi possível reenviar", description: getAuthErrorMessage(error), variant: "destructive" });
+      const message = getAuthErrorMessage(error);
+      setFeedback({ type: "error", message });
+      toast({
+        title: "Não foi possível reenviar",
+        description: message,
+        variant: "destructive",
+      });
       return;
     }
 
-    toast({ title: "Email reenviado", description: "Verifique sua caixa de entrada e a pasta de spam." });
+    const message = "Verifique sua caixa de entrada e a pasta de spam.";
+    setFeedback({ type: "success", message });
+    toast({ title: "Email reenviado", description: message });
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-      <Card className="glass-card border-white/10 max-w-md w-full text-center">
+    <main className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground">
+      <Card
+        className="glass-card w-full max-w-md border-border text-center"
+        aria-busy={isResending}
+      >
         <CardHeader>
-          <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4"><Mail className="w-10 h-10 text-blue-400" /></div>
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <Mail className="h-10 w-10" aria-hidden="true" />
+          </div>
           <CardTitle className="text-2xl">Verifique seu email</CardTitle>
-          <CardDescription className="text-gray-300">Enviamos um link de confirmação{email ? ` para ${email}` : ""}.</CardDescription>
+          <CardDescription className="text-muted-foreground">
+            Enviamos um link de confirmação{email ? ` para ${email}` : ""}.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-left">
-            <p className="text-blue-400 font-semibold flex items-center"><CheckCircle className="w-4 h-4 mr-2" />Próximos passos</p>
-            <p className="text-sm text-gray-300 mt-2">Abra o link recebido. Depois da confirmação, você será direcionado novamente para a plataforma.</p>
+          <div className="rounded-lg border border-primary/25 bg-primary/10 p-4 text-left">
+            <p className="flex items-center font-semibold text-primary">
+              <CheckCircle className="mr-2 h-4 w-4" aria-hidden="true" />
+              Próximos passos
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Abra o link recebido. Depois da confirmação, você será direcionado
+              novamente para a plataforma.
+            </p>
           </div>
-          <Button onClick={handleResendEmail} disabled={isResending || !email} className="w-full btn-brand">{isResending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}{isResending ? "Reenviando..." : "Reenviar email"}</Button>
-          <Link to="/login" className="block"><Button variant="outline" className="w-full border-white/20">Ir para o login</Button></Link>
-          <Link to="/" className="block"><Button variant="secondary" className="w-full"><Home className="w-4 h-4 mr-2" />Voltar ao início</Button></Link>
+
+          {feedback ? (
+            <p
+              role={feedback.type === "error" ? "alert" : "status"}
+              aria-live={feedback.type === "error" ? "assertive" : "polite"}
+              className={
+                feedback.type === "error"
+                  ? "rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive-foreground"
+                  : "rounded-lg border border-emerald-500/30 bg-emerald-950/60 p-3 text-sm text-emerald-100"
+              }
+            >
+              {feedback.message}
+            </p>
+          ) : null}
+
+          <Button
+            type="button"
+            onClick={handleResendEmail}
+            disabled={isResending || !email}
+            variant="brand"
+            className="w-full"
+          >
+            {isResending ? (
+              <RefreshCw className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Mail className="h-4 w-4" aria-hidden="true" />
+            )}
+            {isResending ? "Reenviando..." : "Reenviar email"}
+          </Button>
+
+          <Button asChild variant="outline" className="w-full">
+            <Link to="/login">Ir para o login</Link>
+          </Button>
+
+          <Button asChild variant="secondary" className="w-full">
+            <Link to="/">
+              <Home className="h-4 w-4" aria-hidden="true" />
+              Voltar ao início
+            </Link>
+          </Button>
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 };
 
