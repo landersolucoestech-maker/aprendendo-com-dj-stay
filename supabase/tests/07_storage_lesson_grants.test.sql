@@ -11,10 +11,12 @@ update public.user_roles set role='administrador_proprietario'::public.app_role 
 
 insert into public.courses (id, title, slug, status)
 values ('20000000-0000-4000-8000-000000000005', 'Curso com materiais', 'curso-com-materiais', 'published');
-insert into public.modulos (id, course_id, titulo, ordem)
-values ('25000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', 'Módulo com materiais', 1);
-insert into public.aulas (id, modulo_id, titulo, ordem)
-values ('35000000-0000-4000-8000-000000000001', '25000000-0000-4000-8000-000000000001', 'Aula com material privado', 1);
+insert into public.modulos (id, course_id, titulo, ordem, status)
+values ('25000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', 'Módulo com materiais', 1, 'published');
+insert into public.aulas (id, modulo_id, titulo, ordem, status)
+values ('35000000-0000-4000-8000-000000000001', '25000000-0000-4000-8000-000000000001', 'Aula com material privado', 1, 'published');
+insert into public.enrollments (id,user_id,course_id,status,source,starts_at,granted_by_user_id)
+values ('45000000-0000-4000-8000-000000000001','15000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000005','active','manual_grant',statement_timestamp()-interval '1 minute','15000000-0000-4000-8000-000000000001');
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"15000000-0000-4000-8000-000000000001","role":"authenticated","is_anonymous":false}', true);

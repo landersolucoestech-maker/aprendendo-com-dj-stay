@@ -11,10 +11,10 @@ update public.user_roles set role='administrador_proprietario' where user_id='18
 
 insert into public.courses (id,title,slug,status)
 values ('28000000-0000-4000-8000-000000000001','Curso protegido por matrícula','curso-protegido-rls','published');
-insert into public.modulos (id,course_id,titulo,ordem)
-values ('38000000-0000-4000-8000-000000000001','28000000-0000-4000-8000-000000000001','Módulo protegido por matrícula',1);
-insert into public.aulas (id,modulo_id,titulo,ordem)
-values ('48000000-0000-4000-8000-000000000001','38000000-0000-4000-8000-000000000001','Aula protegida por matrícula',1);
+insert into public.modulos (id,course_id,titulo,ordem,status)
+values ('38000000-0000-4000-8000-000000000001','28000000-0000-4000-8000-000000000001','Módulo protegido por matrícula',1,'published');
+insert into public.aulas (id,modulo_id,titulo,ordem,status)
+values ('48000000-0000-4000-8000-000000000001','38000000-0000-4000-8000-000000000001','Aula protegida por matrícula',1,'published');
 insert into public.enrollments (id,user_id,course_id,status,source,starts_at,expires_at,granted_by_user_id)
 values
   ('58000000-0000-4000-8000-000000000001','18000000-0000-4000-8000-000000000002','28000000-0000-4000-8000-000000000001','active','manual_grant',statement_timestamp()-interval '1 day',statement_timestamp()+interval '30 days','18000000-0000-4000-8000-000000000001'),
@@ -68,7 +68,7 @@ select set_config('request.jwt.claims','{"sub":"18000000-0000-4000-8000-00000000
 select is((select count(*)::integer from public.modulos),1,'administrator reads all modules');
 select is((select count(*)::integer from public.progresso_aulas),2,'administrator reads all progress rows');
 select lives_ok(
-  $$insert into public.modulos(course_id,titulo,ordem) values ('28000000-0000-4000-8000-000000000001','Segundo módulo',2)$$,
+  $$select public.create_module('28000000-0000-4000-8000-000000000001','{"title":"Segundo módulo"}'::jsonb)$$,
   'administrator creates module in course'
 );
 select results_eq(

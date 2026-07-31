@@ -12,10 +12,10 @@ update public.user_roles set role = 'administrador_proprietario'::public.app_rol
 
 insert into public.courses (id, title, slug, status)
 values ('20000000-0000-4000-8000-000000000003', 'Curso administrativo', 'curso-administrativo', 'published');
-insert into public.modulos (id, course_id, titulo, ordem)
-values ('23000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000003', 'Módulo protegido', 1);
-insert into public.aulas (id, modulo_id, titulo, ordem)
-values ('33000000-0000-4000-8000-000000000001', '23000000-0000-4000-8000-000000000001', 'Aula protegida', 1);
+insert into public.modulos (id, course_id, titulo, ordem, status)
+values ('23000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000003', 'Módulo protegido', 1, 'published');
+insert into public.aulas (id, modulo_id, titulo, ordem, status)
+values ('33000000-0000-4000-8000-000000000001', '23000000-0000-4000-8000-000000000001', 'Aula protegida', 1, 'published');
 insert into public.progresso_aulas (id, user_id, aula_id)
 values ('53000000-0000-4000-8000-000000000001', '13000000-0000-4000-8000-000000000001', '33000000-0000-4000-8000-000000000001');
 insert into public.user_profiles (id, user_id)
@@ -31,7 +31,7 @@ select is((select count(*)::integer from public.user_roles), 3, 'owner administr
 select is((select count(*)::integer from public.progresso_aulas), 1, 'owner administrator can read all progress');
 select is((select count(*)::integer from public.user_profiles), 3, 'owner administrator can read all profiles');
 select lives_ok(
-  $$insert into public.modulos (course_id, titulo, ordem) values ('20000000-0000-4000-8000-000000000003', 'Módulo administrativo', 2)$$,
+  $$select public.create_module('20000000-0000-4000-8000-000000000003','{"title":"Módulo administrativo"}'::jsonb)$$,
   'owner administrator can create learning content'
 );
 select lives_ok(

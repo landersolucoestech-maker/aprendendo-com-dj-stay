@@ -25,10 +25,10 @@ values
 update public.user_roles set role='administrador_proprietario' where user_id='19000000-0000-4000-8000-000000000001';
 insert into public.courses (id,title,slug,status)
 values ('29000000-0000-4000-8000-000000000001','Curso de mídia','curso-midia-protegida','published');
-insert into public.modulos (id,course_id,titulo,ordem)
-values ('39000000-0000-4000-8000-000000000001','29000000-0000-4000-8000-000000000001','Módulo de mídia',1);
-insert into public.aulas (id,modulo_id,titulo,ordem)
-values ('49000000-0000-4000-8000-000000000001','39000000-0000-4000-8000-000000000001','Aula de mídia',1);
+insert into public.modulos (id,course_id,titulo,ordem,status)
+values ('39000000-0000-4000-8000-000000000001','29000000-0000-4000-8000-000000000001','Módulo de mídia',1,'published');
+insert into public.aulas (id,modulo_id,titulo,ordem,status)
+values ('49000000-0000-4000-8000-000000000001','39000000-0000-4000-8000-000000000001','Aula de mídia',1,'published');
 insert into public.enrollments (id,user_id,course_id,status,source,starts_at,expires_at,granted_by_user_id)
 values ('59000000-0000-4000-8000-000000000001','19000000-0000-4000-8000-000000000002','29000000-0000-4000-8000-000000000001','active','manual_grant',statement_timestamp()-interval '1 minute',statement_timestamp()+interval '1 day','19000000-0000-4000-8000-000000000001');
 

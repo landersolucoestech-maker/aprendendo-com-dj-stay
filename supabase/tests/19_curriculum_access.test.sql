@@ -8,7 +8,7 @@ insert into auth.users(id,email) values
 update public.user_roles set role='administrador_proprietario' where user_id='1e000000-0000-4000-8000-000000000001';
 insert into public.courses(id,title,slug,status,published_at) values('3e000000-0000-4000-8000-000000000001','Curso publicado','curso-publicado','published',statement_timestamp());
 insert into public.enrollments(id,user_id,course_id,status,source,starts_at,granted_by_user_id)
-values('4e000000-0000-4000-8000-000000000001','1e000000-0000-4000-8000-000000000002','3e000000-0000-4000-8000-000000000001','active','manual',statement_timestamp()-interval '1 day','1e000000-0000-4000-8000-000000000001');
+values('4e000000-0000-4000-8000-000000000001','1e000000-0000-4000-8000-000000000002','3e000000-0000-4000-8000-000000000001','active','manual_grant',statement_timestamp()-interval '1 day','1e000000-0000-4000-8000-000000000001');
 insert into public.modulos(id,course_id,titulo,ordem,status,release_mode,release_at,obrigatorio,preview_enabled) values
  ('5e000000-0000-4000-8000-000000000001','3e000000-0000-4000-8000-000000000001','Fundamentos',0,'published','immediate',null,true,false),
  ('5e000000-0000-4000-8000-000000000002','3e000000-0000-4000-8000-000000000001','Avançado',1,'published','after_prerequisites',null,true,false),

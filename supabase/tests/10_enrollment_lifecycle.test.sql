@@ -11,10 +11,10 @@ update public.user_roles set role='administrador_proprietario' where user_id='17
 
 insert into public.courses (id,title,slug,status,access_duration_days)
 values ('27000000-0000-4000-8000-000000000001','Curso com matrícula','curso-com-matricula','published',365);
-insert into public.modulos (id,course_id,titulo,ordem)
-values ('37000000-0000-4000-8000-000000000001','27000000-0000-4000-8000-000000000001','Módulo matriculado',1);
-insert into public.aulas (id,modulo_id,titulo,ordem)
-values ('47000000-0000-4000-8000-000000000001','37000000-0000-4000-8000-000000000001','Aula matriculada',1);
+insert into public.modulos (id,course_id,titulo,ordem,status)
+values ('37000000-0000-4000-8000-000000000001','27000000-0000-4000-8000-000000000001','Módulo matriculado',1,'published');
+insert into public.aulas (id,modulo_id,titulo,ordem,status)
+values ('47000000-0000-4000-8000-000000000001','37000000-0000-4000-8000-000000000001','Aula matriculada',1,'published');
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"17000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"77000000-0000-4000-8000-000000000002","is_anonymous":false}',true);

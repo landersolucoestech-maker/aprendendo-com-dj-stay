@@ -9,12 +9,12 @@ values
 
 insert into public.courses (id, title, slug, status)
 values ('20000000-0000-4000-8000-000000000001', 'Curso protegido', 'curso-protegido-estudante', 'published');
-insert into public.modulos (id, course_id, titulo, ordem)
-values ('21000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', 'Módulo protegido', 1);
+insert into public.modulos (id, course_id, titulo, ordem, status)
+values ('21000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', 'Módulo protegido', 1, 'published');
 insert into public.enrollments (id, user_id, course_id, status, source, starts_at)
 values ('41000000-0000-4000-8000-000000000001', '11000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', 'active', 'manual_grant', statement_timestamp() - interval '1 minute');
-insert into public.aulas (id, modulo_id, titulo, ordem, duracao)
-values ('31000000-0000-4000-8000-000000000001', '21000000-0000-4000-8000-000000000001', 'Aula protegida', 1, 10);
+insert into public.aulas (id, modulo_id, titulo, ordem, duracao, status)
+values ('31000000-0000-4000-8000-000000000001', '21000000-0000-4000-8000-000000000001', 'Aula protegida', 1, 10, 'published');
 insert into public.progresso_aulas (id, user_id, aula_id, progresso_percentual, tempo_assistido)
 values
   ('51000000-0000-4000-8000-000000000001', '11000000-0000-4000-8000-000000000001', '31000000-0000-4000-8000-000000000001', 25, 60),
