@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   frontendErrorDashboardSchema,
+  frontendErrorRetentionResultSchema,
   frontendErrorStatusUpdateResultSchema,
   type FrontendErrorSource,
   type FrontendErrorStatus,
@@ -68,6 +69,33 @@ export const useUpdateFrontendErrorStatus = () => {
         frontendErrorStatusUpdateResultSchema,
         data,
         "atualização de erro do frontend",
+      );
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: frontendErrorKeys.all });
+    },
+  });
+};
+
+export const usePurgeFrontendErrors = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      retentionDays: number;
+      batchLimit?: number;
+    }) => {
+      const { data, error } = await frontendErrorRpcClient.rpc(
+        "purge_frontend_error_events",
+        {
+          p_retention_days: input.retentionDays,
+          p_limit: input.batchLimit ?? 1000,
+        },
+      );
+      if (error) throw error;
+      return parseDataContract(
+        frontendErrorRetentionResultSchema,
+        data,
+        "retenção de erros do frontend",
       );
     },
     onSuccess: async () => {
