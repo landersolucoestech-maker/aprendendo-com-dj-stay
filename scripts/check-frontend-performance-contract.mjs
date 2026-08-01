@@ -117,30 +117,40 @@ requireText("vite.config.ts", [
   'return "vendor-charts"',
   'return "vendor-forms"',
   'return "vendor-ui"',
-  'return "vendor-misc"',
+  "return undefined;",
+  'normalizedId.includes("/@remix-run/router/")',
+  'log.code === "CIRCULAR_CHUNK"',
   "cssCodeSplit: true",
   "chunkSizeWarningLimit: 500",
   "manualChunks,",
 ]);
-forbidText("vite.config.ts", ["chunkSizeWarningLimit: 1000", "chunkSizeWarningLimit: 2000"]);
+forbidText("vite.config.ts", [
+  'return "vendor-misc"',
+  "chunkSizeWarningLimit: 1000",
+  "chunkSizeWarningLimit: 2000",
+]);
 
 requireText("scripts/check-build-chunks.mjs", [
   "const maximumChunkBytes = 500 * 1024",
   "const minimumChunkCount = 8",
   "oversizedChunks",
+  "staticImportPattern",
+  "circularPath",
   "process.exit(1)",
   "Gate de chunks aprovado",
 ]);
 
 requireText("package.json", [
   '"check:frontend-performance": "node scripts/check-frontend-performance-contract.mjs"',
+  '"check:chunk-graph": "node scripts/check-chunk-graph-contract.mjs"',
   '"check:build-chunks": "node scripts/check-build-chunks.mjs"',
   '"build": "vite build && npm run check:build-chunks"',
   '"build:dev": "vite build --mode development && npm run check:build-chunks"',
   "npm run check:frontend-performance",
+  "npm run check:chunk-graph",
 ]);
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log(
-  `Contrato estático da FASE B25 aprovado com ${lazyImportCount} superfícies lazy.`,
+  `Contrato estático da FASE B25 aprovado com ${lazyImportCount} superfícies lazy e fallback natural de chunks.`,
 );
