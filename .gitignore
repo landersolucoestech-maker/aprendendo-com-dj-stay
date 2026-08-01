@@ -5,6 +5,7 @@ node_modules/
 dist/
 dist-ssr/
 coverage/
+artifacts/
 playwright-report/
 test-results/
 .vite/
@@ -36,4 +37,4 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+*.swp
