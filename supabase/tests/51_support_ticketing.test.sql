@@ -1,0 +1,37 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(30);
+
+select has_table('public', 'support_tickets', 'support tickets table exists');
+select has_table('public', 'support_ticket_messages', 'support messages table exists');
+select has_table('public', 'support_ticket_events', 'support events table exists');
+select ok((select relrowsecurity from pg_class where oid='public.support_tickets'::regclass), 'support tickets RLS enabled');
+select ok((select relforcerowsecurity from pg_class where oid='public.support_tickets'::regclass), 'support tickets RLS forced');
+select ok((select relrowsecurity from pg_class where oid='public.support_ticket_messages'::regclass), 'support messages RLS enabled');
+select ok((select relforcerowsecurity from pg_class where oid='public.support_ticket_messages'::regclass), 'support messages RLS forced');
+select ok((select relrowsecurity from pg_class where oid='public.support_ticket_events'::regclass), 'support events RLS enabled');
+select ok((select relforcerowsecurity from pg_class where oid='public.support_ticket_events'::regclass), 'support events RLS forced');
+select is((select count(*)::integer from information_schema.role_table_grants where table_schema='public' and table_name like 'support_ticket%' and grantee='anon'), 0, 'anonymous has no support table grants');
+select is((select count(*)::integer from information_schema.role_table_grants where table_schema='public' and table_name like 'support_ticket%' and grantee='authenticated'), 0, 'authenticated has no direct support table grants');
+select has_function('private', 'create_support_ticket', array['text','text','public.support_ticket_priority','text','uuid'], 'private create support function exists');
+select ok((select prosecdef from pg_proc where oid='private.create_support_ticket(text,text,public.support_ticket_priority,text,uuid)'::regprocedure), 'create support is security definer');
+select ok(position('AUTH_REQUIRED' in pg_get_functiondef('private.create_support_ticket(text,text,public.support_ticket_priority,text,uuid)'::regprocedure)) > 0, 'create support requires authentication');
+select ok(position('auth.uid()' in pg_get_functiondef('private.create_support_ticket(text,text,public.support_ticket_priority,text,uuid)'::regprocedure)) > 0, 'create support binds authenticated user');
+select ok(position('extensions.digest' in pg_get_functiondef('private.create_support_ticket(text,text,public.support_ticket_priority,text,uuid)'::regprocedure)) > 0, 'support reference uses qualified pgcrypto');
+select has_function('private', 'add_my_support_message', array['uuid','text','uuid'], 'private student reply exists');
+select ok(position('user_id = v_user_id' in pg_get_functiondef('private.add_my_support_message(uuid,text,uuid)'::regprocedure)) > 0, 'student reply enforces ticket ownership');
+select ok(position('SUPPORT_TICKET_CLOSED' in pg_get_functiondef('private.add_my_support_message(uuid,text,uuid)'::regprocedure)) > 0, 'closed tickets reject student replies');
+select has_function('private', 'get_my_support_tickets', array['integer','integer'], 'private student support history exists');
+select ok(position('user_id = v_user_id' in pg_get_functiondef('private.get_my_support_tickets(integer,integer)'::regprocedure)) > 0, 'student history filters auth user');
+select ok(position('least(coalesce(p_limit, 25), 100)' in pg_get_functiondef('private.get_my_support_tickets(integer,integer)'::regprocedure)) > 0, 'student history is bounded');
+select has_function('private', 'get_support_admin_dashboard', array['public.support_ticket_status','public.support_ticket_priority','text','integer','integer'], 'private support admin dashboard exists');
+select ok(position('ADMIN_REQUIRED' in pg_get_functiondef('private.get_support_admin_dashboard(public.support_ticket_status,public.support_ticket_priority,text,integer,integer)'::regprocedure)) > 0, 'support dashboard requires owner admin');
+select has_function('private', 'admin_reply_support_ticket', array['uuid','text','public.support_ticket_status','uuid'], 'private admin support reply exists');
+select ok(position('ADMIN_REQUIRED' in pg_get_functiondef('private.admin_reply_support_ticket(uuid,text,public.support_ticket_status,uuid)'::regprocedure)) > 0, 'admin support reply requires owner admin');
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('create_support_ticket','add_my_support_message','get_my_support_tickets','get_support_admin_dashboard','admin_reply_support_ticket')), 5, 'five public support wrappers exist');
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('create_support_ticket','add_my_support_message','get_my_support_tickets','get_support_admin_dashboard','admin_reply_support_ticket') and p.prosecdef), 0, 'public support wrappers are security invoker');
+select is((select count(*)::integer from information_schema.role_routine_grants where specific_schema='public' and routine_name in ('create_support_ticket','add_my_support_message','get_my_support_tickets','get_support_admin_dashboard','admin_reply_support_ticket') and grantee='anon'), 0, 'anonymous cannot execute support RPCs');
+select is((select count(*)::integer from information_schema.role_routine_grants where specific_schema='public' and routine_name in ('create_support_ticket','add_my_support_message','get_my_support_tickets','get_support_admin_dashboard','admin_reply_support_ticket') and grantee='authenticated'), 5, 'authenticated can execute guarded support RPCs');
+
+select * from finish();
+rollback;
