@@ -9,6 +9,7 @@ import {
 import { Link } from "react-router-dom";
 
 import { AppPageShell } from "@/components/layout/AppPageShell";
+import { FavoriteToggleButton } from "@/components/student/FavoriteToggleButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -105,12 +106,19 @@ const ProductCard = ({ product }: { product: DigitalProduct }) => {
                 "Produto digital publicado no marketplace."}
             </CardDescription>
           </div>
-          {product.affiliate_eligible ? (
-            <Badge variant="affiliate" className="shrink-0 gap-1">
-              <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
-              Afiliável
-            </Badge>
-          ) : null}
+          <div className="flex shrink-0 items-center gap-2">
+            <FavoriteToggleButton
+              subjectType="digital_product"
+              subjectId={product.id}
+              compact
+            />
+            {product.affiliate_eligible ? (
+              <Badge variant="affiliate" className="gap-1">
+                <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                Afiliável
+              </Badge>
+            ) : null}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-5">
@@ -243,6 +251,9 @@ const DigitalMarketplace = () => {
         <>
           <Button asChild variant="outline">
             <Link to="/portal">Voltar ao portal</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/aluno/favoritos">Favoritos</Link>
           </Button>
           <Button asChild variant="context">
             <Link to="/meus-produtos">Meus produtos</Link>
