@@ -35,9 +35,19 @@ if (viteConfig.includes("onLog: undefined") || viteConfig.includes("onwarn: unde
   failures.push("Avisos do bundler não podem ser desativados no B32.");
 }
 
-if (!viteConfig.includes('return "vendor-misc"')) {
+if (viteConfig.includes('return "vendor-misc"')) {
   failures.push(
-    "Fallback vendor-misc deve permanecer explícito; dependências novas não podem cair silenciosamente em chunks de páginas.",
+    "Dependências não classificadas não podem ser forçadas para vendor-misc; o fallback artificial recria ciclos entre famílias.",
+  );
+}
+
+const fallbackSection = viteConfig.slice(
+  viteConfig.lastIndexOf('return "vendor-ui"'),
+  viteConfig.indexOf("};", viteConfig.lastIndexOf('return "vendor-ui"')),
+);
+if (!fallbackSection.includes("return undefined;")) {
+  failures.push(
+    "Dependências não classificadas devem retornar undefined para o Rollup definir a fronteira natural do chunk.",
   );
 }
 
@@ -47,5 +57,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B32 aprovado: família React coesa, avisos circulares bloqueados e grafo gerado auditado.",
+  "Contrato B32 aprovado: famílias centrais explícitas, fallback natural, avisos circulares bloqueados e grafo gerado auditado.",
 );
