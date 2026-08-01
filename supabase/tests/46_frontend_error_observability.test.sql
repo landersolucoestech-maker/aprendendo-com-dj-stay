@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(35);
+select plan(36);
 
 select has_type('public','frontend_error_source','frontend error source enum exists');
 select has_type('public','frontend_error_status','frontend error status enum exists');
@@ -107,6 +107,11 @@ select ok(
 select ok(
   position('AUTH_REQUIRED' in pg_get_functiondef('private.capture_frontend_error(uuid,public.frontend_error_source,text,text,text,text,text,jsonb)'::regprocedure)) > 0,
   'capture function requires an authenticated user'
+);
+select ok(
+  position('user_id = v_user_id' in pg_get_functiondef('private.capture_frontend_error(uuid,public.frontend_error_source,text,text,text,text,text,jsonb)'::regprocedure)) > 0
+  and position('FRONTEND_ERROR_EVENT_ID_CONFLICT' in pg_get_functiondef('private.capture_frontend_error(uuid,public.frontend_error_source,text,text,text,text,text,jsonb)'::regprocedure)) > 0,
+  'capture idempotency is scoped to the authenticated user'
 );
 select ok(
   position('ADMIN_REQUIRED' in pg_get_functiondef('private.get_frontend_error_dashboard(public.frontend_error_status,public.frontend_error_source,text,integer,integer)'::regprocedure)) > 0
