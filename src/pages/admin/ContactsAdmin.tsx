@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import type { ContactMessageStatus } from "@/contracts/contact-messages";
 import { useContactMessagesAdmin, useUpdateContactMessageStatus } from "@/hooks/useContactMessages";
 import { useToast } from "@/hooks/use-toast";
+import { formatAppDateTime } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
 const fieldClass =
@@ -20,13 +21,7 @@ const statusLabel: Record<ContactMessageStatus, string> = {
 };
 
 const formatDateTime = (value: string | null): string =>
-  value === null
-    ? "Não registrado"
-    : new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short",
-        timeZone: "America/Sao_Paulo",
-      }).format(new Date(value));
+  formatAppDateTime(value, { fallback: "Não registrado" });
 
 const ContactsAdmin = () => {
   const { toast } = useToast();

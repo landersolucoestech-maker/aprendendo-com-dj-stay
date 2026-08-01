@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, AlertCircle } from "lucide-react";
+import { formatAppTime } from "@/lib/date-time";
 import { supabase } from "@/integrations/supabase/client";
 
 const ConnectionStatus = () => {
@@ -36,7 +37,7 @@ const ConnectionStatus = () => {
       <Alert className="bg-green-500/10 border-green-500/20">
         <CheckCircle className="h-4 w-4 text-green-400" />
         <AlertDescription className="text-green-300">
-          Conectado ao Supabase • Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
+          Conectado ao Supabase • Última atualização: {formatAppTime(lastUpdate, { timeStyle: "medium" })}
         </AlertDescription>
       </Alert>
     );

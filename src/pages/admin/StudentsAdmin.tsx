@@ -14,25 +14,16 @@ import {
   useSuspendCourseEnrollment,
 } from "@/hooks/useCertificates";
 import { useToast } from "@/hooks/use-toast";
+import { formatAppDateTime, toUtcIsoString } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
 const fieldClass =
   "w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white outline-none transition focus:border-white/40";
 
 const formatDateTime = (value: string | null): string =>
-  value === null
-    ? "Sem expiração"
-    : new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short",
-        timeZone: "America/Sao_Paulo",
-      }).format(new Date(value));
+  formatAppDateTime(value, { fallback: "Sem expiração" });
 
-const toIso = (value: string): string | null => {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
-};
+const toIso = (value: string): string | null => toUtcIsoString(value);
 
 const enrollmentStatusLabel: Record<string, string> = {
   pending: "Pendente",
@@ -81,7 +72,7 @@ const StudentsAdmin = () => {
 
   const submitEnrollment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const startIso = startsAt ? toIso(startsAt) : new Date().toISOString();
+    const startIso = startsAt ? toIso(startsAt) : toUtcIsoString(Date.now());
     if (!studentId || !courseId || !startIso || grantReason.trim().length < 3) return;
 
     await runAction(

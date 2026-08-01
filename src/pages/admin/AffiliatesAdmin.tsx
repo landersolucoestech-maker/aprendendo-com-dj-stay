@@ -26,6 +26,7 @@ import {
   useSetAffiliateProfileStatus,
 } from "@/hooks/useAffiliateProgram";
 import { useToast } from "@/hooks/use-toast";
+import { formatAppDate } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
 const fieldClass =
@@ -37,7 +38,7 @@ const formatCurrency = (amountCents: number): string =>
   );
 
 const formatDate = (value: string | null): string =>
-  value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" }).format(new Date(value)) : "—";
+  formatAppDate(value);
 
 const profileStatusLabel: Readonly<Record<string, string>> = {
   not_requested: "Não solicitado",

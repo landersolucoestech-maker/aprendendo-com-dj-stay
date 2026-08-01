@@ -49,6 +49,7 @@ import { useStudentLibrary } from "@/hooks/useStudentLibrary";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useUserProgress } from "@/hooks/useUserProgress";
 import { useToast } from "@/hooks/use-toast";
+import { formatAppDateTime } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 import { downloadPrivateAsset } from "@/lib/private-assets";
 
@@ -67,13 +68,7 @@ interface StudentPortalProps {
 }
 
 const formatDateTime = (value: string | null): string =>
-  value === null
-    ? "Não definido"
-    : new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short",
-        timeZone: "America/Sao_Paulo",
-      }).format(new Date(value));
+  formatAppDateTime(value, { fallback: "Não definido" });
 
 const formatBytes = (value: number): string => {
   if (value < 1024) return `${value} B`;

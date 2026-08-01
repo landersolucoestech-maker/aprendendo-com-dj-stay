@@ -35,6 +35,7 @@ import {
   useRequestAffiliateProfile,
 } from "@/hooks/useAffiliateProgram";
 import { useToast } from "@/hooks/use-toast";
+import { formatAppDate } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
 const formatCurrency = (amountCents: number): string =>
@@ -43,11 +44,7 @@ const formatCurrency = (amountCents: number): string =>
   );
 
 const formatDate = (value: string | null): string =>
-  value
-    ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" }).format(
-        new Date(value),
-      )
-    : "—";
+  formatAppDate(value);
 
 const commissionStatusLabel: Readonly<Record<string, string>> = {
   pending: "Pendente",

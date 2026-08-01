@@ -17,6 +17,7 @@ import {
   useProgressCalculation,
   type ModuleLessonWithProgress,
 } from "@/hooks/useProgressCalculation";
+import { formatAppDate } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
 const Dashboard = () => {
@@ -117,7 +118,7 @@ const Dashboard = () => {
   const profile = {
     name: metadata.fullName,
     email: user.email ?? "Email não informado",
-    joinDate: new Date(user.created_at).toLocaleDateString("pt-BR"),
+    joinDate: formatAppDate(user.created_at, { dateStyle: "short" }),
     progress: overallProgress,
   };
 

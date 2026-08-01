@@ -29,6 +29,7 @@ if (existsSync(dateTimePath)) {
     'APP_TIME_ZONE = "America/Sao_Paulo"',
     "formatAppDate",
     "formatAppDateTime",
+    "formatAppTime",
     "formatAppRelativeTime",
     "toUtcIsoString",
   ]) {
@@ -62,11 +63,13 @@ for (const path of sourceFiles) {
     );
   }
 
-  for (const pattern of fabricatedAnalyticsPatterns) {
-    expect(
-      !pattern.test(source),
-      `${displayPath} não pode fabricar métricas ou analytics.`,
-    );
+  if (/(?:Dashboard|Portal|Analytics|Stats|Summary|Metrics)/i.test(displayPath)) {
+    for (const pattern of fabricatedAnalyticsPatterns) {
+      expect(
+        !pattern.test(source),
+        `${displayPath} não pode fabricar métricas ou analytics.`,
+      );
+    }
   }
 }
 

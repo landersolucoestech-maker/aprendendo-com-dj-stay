@@ -13,13 +13,11 @@ import {
 } from "@/components/ui/card";
 import { PageState } from "@/components/ui/page-state";
 import { useMyCertificates } from "@/hooks/useCertificates";
+import { formatAppDate } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
 const formatDate = (value: string): string =>
-  new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "long",
-    timeZone: "America/Sao_Paulo",
-  }).format(new Date(value));
+  formatAppDate(value, { dateStyle: "long" });
 
 const Certificates = () => {
   const certificatesQuery = useMyCertificates();

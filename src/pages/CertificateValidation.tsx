@@ -21,18 +21,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { brandConfig } from "@/config/brand";
 import { useCertificateValidation } from "@/hooks/useCertificates";
+import { formatAppDate } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
 const certificateCodePattern = /^DJSTAY-[A-F0-9]{20}$/;
 const normalizeCode = (value: string): string => value.trim().toUpperCase();
 
 const formatDate = (value: string | null): string =>
-  value === null
-    ? "Não informado"
-    : new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "long",
-        timeZone: "America/Sao_Paulo",
-      }).format(new Date(value));
+  formatAppDate(value, { dateStyle: "long", fallback: "Não informado" });
 
 const CertificateValidation = () => {
   const params = useParams<{ code?: string }>();

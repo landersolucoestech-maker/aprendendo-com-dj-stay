@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { parseDataContract } from "@/contracts/contract-error";
 import { recentProgressResponseSchema } from "@/contracts/learning";
+import { formatAppRelativeTime } from "@/lib/date-time";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface RecentActivity {
@@ -16,16 +17,8 @@ export interface RecentActivity {
   completed: boolean;
 }
 
-const formatRelativeTime = (timestamp: string): string => {
-  const elapsedMilliseconds = Date.now() - new Date(timestamp).getTime();
-  const elapsedHours = Math.max(0, Math.floor(elapsedMilliseconds / (1000 * 60 * 60)));
-
-  if (elapsedHours < 1) return "Há alguns minutos";
-  if (elapsedHours < 24) return `${elapsedHours} hora${elapsedHours === 1 ? "" : "s"} atrás`;
-
-  const elapsedDays = Math.floor(elapsedHours / 24);
-  return `${elapsedDays} dia${elapsedDays === 1 ? "" : "s"} atrás`;
-};
+const formatRelativeTime = (timestamp: string): string =>
+  formatAppRelativeTime(timestamp);
 
 export const useRecentActivities = (limit = 10) => {
   const normalizedLimit = Math.min(100, Math.max(1, Math.trunc(limit)));

@@ -4,7 +4,6 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "postinstall": "node scripts/apply-b26-datetime-migration.mjs",
     "dev": "vite",
     "build": "vite build && npm run check:build-chunks",
     "build:dev": "vite build --mode development && npm run check:build-chunks",

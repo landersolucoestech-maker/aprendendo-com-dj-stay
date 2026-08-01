@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { ContactSubmissionResult } from "@/contracts/contact-messages";
 import { useSubmitContactMessage } from "@/hooks/useContactMessages";
+import { formatAppDateTime } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
 const emptyForm = {
@@ -32,11 +33,7 @@ const emptyForm = {
 };
 
 const formatDateTime = (value: string): string =>
-  new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-    timeZone: "America/Sao_Paulo",
-  }).format(new Date(value));
+  formatAppDateTime(value);
 
 const Contact = () => {
   const submitContact = useSubmitContactMessage();

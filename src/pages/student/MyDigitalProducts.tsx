@@ -19,16 +19,12 @@ import {
   type OwnedDigitalProduct,
 } from "@/hooks/useDigitalMarketplace";
 import { useToast } from "@/hooks/use-toast";
+import { formatAppDate } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 import { downloadPrivateAsset } from "@/lib/private-assets";
 
 const formatDate = (value: string | null): string =>
-  value === null
-    ? "Sem prazo definido"
-    : new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "long",
-        timeZone: "America/Sao_Paulo",
-      }).format(new Date(value));
+  formatAppDate(value, { dateStyle: "long", fallback: "Sem prazo definido" });
 
 const accessSourceLabel: Readonly<Record<string, string>> = {
   manual_grant: "Concessão manual",
