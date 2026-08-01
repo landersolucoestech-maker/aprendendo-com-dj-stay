@@ -1,4 +1,5 @@
 import {
+  Bell,
   BookOpen,
   CreditCard,
   GraduationCap,
@@ -24,6 +25,7 @@ const studentNavigation = [
   { to: "/aluno/biblioteca", label: "Biblioteca", icon: Library, end: false },
   { to: "/aluno/pedidos", label: "Pedidos", icon: ReceiptText, end: false },
   { to: "/aluno/pagamentos", label: "Pagamentos", icon: CreditCard, end: false },
+  { to: "/aluno/notificacoes", label: "Notificações", icon: Bell, end: false },
   { to: "/aluno/suporte", label: "Suporte", icon: LifeBuoy, end: false },
   { to: "/aluno/historico", label: "Histórico", icon: History, end: false },
   { to: "/aluno/perfil", label: "Perfil", icon: UserRound, end: false },
