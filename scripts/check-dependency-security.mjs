@@ -12,6 +12,7 @@ const expectedDependencies = Object.freeze({
 const expectedDevDependencies = Object.freeze({
   "@vitejs/plugin-react-swc": "^4.3.2",
   postcss: "^8.5.23",
+  "typescript-eslint": "^8.65.0",
   vite: "^6.4.3",
 });
 const baselineFailures = [];
@@ -61,7 +62,9 @@ for (const temporaryPath of [
   "scripts/apply-b27-dependency-update.mjs",
   "scripts/apply-b27-lockfile-repair.mjs",
   "scripts/apply-b27-transitive-audit-fix.mjs",
+  "scripts/apply-b27-eslint-alignment.mjs",
   ".github/workflows/b27-lockfile-bootstrap.yml",
+  ".github/workflows/b27-eslint-bootstrap.yml",
 ]) {
   if (existsSync(temporaryPath)) {
     baselineFailures.push(
