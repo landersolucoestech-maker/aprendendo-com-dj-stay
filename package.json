@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development && npm run check:build-chunks",
     "lint": "eslint .",
     "check:environment": "node scripts/check-environment-contract.mjs",
-    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && npm run check:course-access && npm run check:course-cms && npm run check:curriculum-cms && npm run check:student-portal && npm run check:player-progress && npm run check:digital-marketplace && npm run check:payment-provider-adr && npm run check:payments-webhook && npm run check:affiliate-portal && npm run check:students-certificates && npm run check:operational-truth && npm run check:design-system && npm run check:accessibility && npm run check:frontend-performance && npm run check:datetime-analytics && npm run check:dependency-security && npm run check:supply-chain && npm run check:repository-hygiene && npm run check:database-advisor-hardening && tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "npm run check:environment && npm run check:auth && npm run check:contracts && npm run check:authorization && npm run check:storage && npm run check:course-access && npm run check:course-cms && npm run check:curriculum-cms && npm run check:student-portal && npm run check:player-progress && npm run check:digital-marketplace && npm run check:payment-provider-adr && npm run check:payments-webhook && npm run check:affiliate-portal && npm run check:students-certificates && npm run check:operational-truth && npm run check:design-system && npm run check:accessibility && npm run check:frontend-performance && npm run check:datetime-analytics && npm run check:dependency-security && npm run check:supply-chain && npm run check:repository-hygiene && npm run check:database-advisor-hardening && npm run check:frontend-error-observability && tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "check": "npm run lint && npm run typecheck && npm run build",
     "preview": "vite preview",
     "check:auth": "node scripts/check-auth-contract.mjs",
@@ -35,6 +35,7 @@
     "check:supply-chain": "node scripts/check-supply-chain-contract.mjs",
     "check:repository-hygiene": "node scripts/check-repository-hygiene.mjs",
     "check:database-advisor-hardening": "node scripts/check-database-advisor-hardening.mjs",
+    "check:frontend-error-observability": "node scripts/check-frontend-error-observability.mjs",
     "check:build-chunks": "node scripts/check-build-chunks.mjs"
   },
   "dependencies": {
