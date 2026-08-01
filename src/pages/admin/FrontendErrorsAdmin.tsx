@@ -6,6 +6,7 @@ import {
   Loader2,
   RotateCcw,
   Search,
+  Trash2,
   XCircle,
 } from "lucide-react";
 import { useState } from "react";
@@ -25,6 +26,7 @@ import type {
 } from "@/contracts/frontend-errors";
 import {
   useFrontendErrorDashboard,
+  usePurgeFrontendErrors,
   useUpdateFrontendErrorStatus,
 } from "@/hooks/useFrontendErrors";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +49,8 @@ const sourceLabel: Record<FrontendErrorSource, string> = {
   unhandled_rejection: "Promise rejeitada",
 };
 
+const retentionOptions = [30, 90, 180, 365] as const;
+
 const formatDateTime = (value: string | null): string =>
   formatAppDateTime(value, { fallback: "Não registrado" });
 
@@ -56,8 +60,10 @@ const FrontendErrorsAdmin = () => {
   const [source, setSource] = useState<FrontendErrorSource | null>(null);
   const [route, setRoute] = useState("");
   const [note, setNote] = useState("");
+  const [retentionDays, setRetentionDays] = useState<number>(90);
   const dashboardQuery = useFrontendErrorDashboard(status, source, route);
   const updateStatus = useUpdateFrontendErrorStatus();
+  const purgeErrors = usePurgeFrontendErrors();
   const data = dashboardQuery.data;
 
   const changeStatus = async (
@@ -92,6 +98,33 @@ const FrontendErrorsAdmin = () => {
         description: getErrorMessage(
           error,
           "Não foi possível atualizar o incidente.",
+        ),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const applyRetention = async () => {
+    const confirmed = window.confirm(
+      `Remover em lote somente incidentes resolvidos ou ignorados há mais de ${retentionDays} dias? Incidentes abertos e reconhecidos serão preservados.`,
+    );
+    if (!confirmed) return;
+
+    try {
+      const result = await purgeErrors.mutateAsync({
+        retentionDays,
+        batchLimit: 1000,
+      });
+      toast({
+        title: "Retenção executada",
+        description: `${result.affected_rows} incidente(s) encerrado(s) removido(s). Corte aplicado: ${formatDateTime(result.cutoff_at)}.`,
+      });
+    } catch (error: unknown) {
+      toast({
+        title: "Retenção não concluída",
+        description: getErrorMessage(
+          error,
+          "Não foi possível executar a retenção de incidentes.",
         ),
         variant: "destructive",
       });
@@ -196,6 +229,52 @@ const FrontendErrorsAdmin = () => {
               placeholder="Nota para reconhecimento ou resolução"
               maxLength={2000}
             />
+          </CardContent>
+        </Card>
+
+        <Card className="border-amber-500/20 bg-amber-500/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg text-white">
+              <Trash2 className="h-5 w-5 text-amber-300" />
+              Retenção de incidentes encerrados
+            </CardTitle>
+            <CardDescription className="text-gray-400">
+              Remove no máximo 1.000 incidentes resolvidos ou ignorados por execução.
+              Incidentes abertos e reconhecidos nunca entram no expurgo. Cada execução
+              gera um evento de manutenção auditável.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end">
+            <label className="w-full sm:max-w-xs">
+              <span className="mb-2 block text-sm text-gray-300">
+                Manter incidentes encerrados por
+              </span>
+              <select
+                className={fieldClass}
+                value={retentionDays}
+                onChange={(event) => setRetentionDays(Number(event.target.value))}
+              >
+                {retentionOptions.map((days) => (
+                  <option key={days} value={days}>
+                    {days} dias
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-amber-500/30 bg-transparent text-amber-100"
+              disabled={purgeErrors.isPending}
+              onClick={() => void applyRetention()}
+            >
+              {purgeErrors.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Aplicar retenção
+            </Button>
           </CardContent>
         </Card>
 
