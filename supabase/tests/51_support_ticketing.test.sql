@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(33);
 
 select has_table('public', 'support_tickets', 'support tickets table exists');
 select has_table('public', 'support_ticket_messages', 'support messages table exists');
@@ -11,6 +11,9 @@ select ok((select relrowsecurity from pg_class where oid='public.support_ticket_
 select ok((select relforcerowsecurity from pg_class where oid='public.support_ticket_messages'::regclass), 'support messages RLS forced');
 select ok((select relrowsecurity from pg_class where oid='public.support_ticket_events'::regclass), 'support events RLS enabled');
 select ok((select relforcerowsecurity from pg_class where oid='public.support_ticket_events'::regclass), 'support events RLS forced');
+select policies_are('public', 'support_tickets', array['support_tickets_direct_access_denied'], 'support tickets use explicit deny policy');
+select policies_are('public', 'support_ticket_messages', array['support_ticket_messages_direct_access_denied'], 'support messages use explicit deny policy');
+select policies_are('public', 'support_ticket_events', array['support_ticket_events_direct_access_denied'], 'support events use explicit deny policy');
 select is((select count(*)::integer from information_schema.role_table_grants where table_schema='public' and table_name like 'support_ticket%' and grantee='anon'), 0, 'anonymous has no support table grants');
 select is((select count(*)::integer from information_schema.role_table_grants where table_schema='public' and table_name like 'support_ticket%' and grantee='authenticated'), 0, 'authenticated has no direct support table grants');
 select has_function('private', 'create_support_ticket', array['text','text','public.support_ticket_priority','text','uuid'], 'private create support function exists');
