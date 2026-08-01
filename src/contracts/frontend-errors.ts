@@ -68,9 +68,30 @@ export const frontendErrorRetentionResultSchema = z.object({
   batch_limit: z.number().int().min(1).max(5000),
 });
 
+export const frontendErrorMaintenanceEventSchema = z.object({
+  id: z.string().uuid(),
+  actor_user_id: z.string().uuid(),
+  action: z.literal("retention_purge"),
+  retention_days: z.number().int().min(30).max(3650),
+  cutoff_at: z.string().datetime({ offset: true }),
+  affected_rows: z.number().int().nonnegative(),
+  metadata: z.record(z.string(), z.unknown()),
+  created_at: z.string().datetime({ offset: true }),
+});
+
+export const frontendErrorMaintenanceHistorySchema = z.object({
+  total: z.number().int().nonnegative(),
+  limit: z.number().int().min(1).max(200),
+  offset: z.number().int().nonnegative(),
+  events: z.array(frontendErrorMaintenanceEventSchema),
+});
+
 export type FrontendErrorSource = z.infer<typeof frontendErrorSourceSchema>;
 export type FrontendErrorStatus = z.infer<typeof frontendErrorStatusSchema>;
 export type FrontendErrorDashboard = z.infer<typeof frontendErrorDashboardSchema>;
 export type FrontendErrorRetentionResult = z.infer<
   typeof frontendErrorRetentionResultSchema
+>;
+export type FrontendErrorMaintenanceHistory = z.infer<
+  typeof frontendErrorMaintenanceHistorySchema
 >;
