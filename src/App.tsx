@@ -23,6 +23,7 @@ import {
   CoursesAdmin,
   DigitalProductsAdmin,
   FrontendErrorsAdmin,
+  PaymentsAdmin,
   StudentsAdmin,
 } from "@/routing/lazy/admin-pages";
 import { AffiliatePortal } from "@/routing/lazy/affiliate-pages";
@@ -323,6 +324,14 @@ const App = () => (
                     element={
                       <AdminRoute>
                         <DigitalProductsAdmin />
+                      </AdminRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/pagamentos"
+                    element={
+                      <AdminRoute>
+                        <PaymentsAdmin />
                       </AdminRoute>
                     }
                   />
