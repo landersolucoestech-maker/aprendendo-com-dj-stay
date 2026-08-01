@@ -9,6 +9,9 @@ export const StudentSupport = lazy(
 export const StudentNotifications = lazy(
   () => import("@/pages/student/StudentNotifications"),
 );
+export const StudentFavorites = lazy(
+  () => import("@/pages/student/StudentFavorites"),
+);
 export const Certificates = lazy(() => import("@/pages/student/Certificates"));
 export const EditProfile = lazy(() => import("@/pages/EditProfile"));
 export const Lesson = lazy(() => import("@/pages/Lesson"));
