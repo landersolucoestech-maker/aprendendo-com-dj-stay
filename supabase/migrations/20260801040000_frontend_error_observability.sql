@@ -129,23 +129,15 @@ begin
   if v_user_id is null then
     raise exception 'AUTH_REQUIRED' using errcode = '42501';
   end if;
-
-  if p_event_id is null then
-    raise exception 'FRONTEND_ERROR_EVENT_ID_REQUIRED' using errcode = '22023';
+  if p_event_id is null or p_source is null then
+    raise exception 'FRONTEND_ERROR_ID_OR_SOURCE_REQUIRED' using errcode = '22023';
   end if;
-
-  if p_source is null then
-    raise exception 'FRONTEND_ERROR_SOURCE_REQUIRED' using errcode = '22023';
-  end if;
-
   if char_length(v_route) not between 1 and 500 or left(v_route, 1) <> '/' then
     raise exception 'FRONTEND_ERROR_ROUTE_INVALID' using errcode = '22023';
   end if;
-
   if v_error_name is null or char_length(v_error_name) not between 1 and 150 then
     raise exception 'FRONTEND_ERROR_NAME_INVALID' using errcode = '22023';
   end if;
-
   if v_error_message is null then
     raise exception 'FRONTEND_ERROR_MESSAGE_INVALID' using errcode = '22023';
   end if;
@@ -189,7 +181,6 @@ begin
   if char_length(v_release) > 150 then
     raise exception 'FRONTEND_ERROR_RELEASE_INVALID' using errcode = '22023';
   end if;
-
   if jsonb_typeof(v_metadata) <> 'object' or octet_length(v_metadata::text) > 4096 then
     raise exception 'FRONTEND_ERROR_METADATA_INVALID' using errcode = '22023';
   end if;
@@ -219,7 +210,7 @@ begin
 
   get diagnostics v_inserted = row_count;
 
-  select * into v_record
+  select * into strict v_record
   from public.frontend_error_events
   where event_id = p_event_id;
 
@@ -263,25 +254,30 @@ begin
       'resolved', (select count(*) from public.frontend_error_events where status = 'resolved'),
       'ignored', (select count(*) from public.frontend_error_events where status = 'ignored')
     ),
-    'events', coalesce((
-      select jsonb_agg(jsonb_build_object(
-        'id', event_record.id,
-        'event_id', event_record.event_id,
-        'user_id', event_record.user_id,
-        'source', event_record.source,
-        'route', event_record.route,
-        'error_name', event_record.error_name,
-        'error_message', event_record.error_message,
-        'component_stack', event_record.component_stack,
-        'release', event_record.release,
-        'status', event_record.status,
-        'occurred_at', event_record.occurred_at,
-        'acknowledged_at', event_record.acknowledged_at,
-        'resolved_at', event_record.resolved_at,
-        'handled_by_user_id', event_record.handled_by_user_id,
-        'resolution_note', event_record.resolution_note,
-        'metadata', event_record.metadata
-      ) order by event_record.occurred_at desc), '[]'::jsonb)
+    'events', (
+      select coalesce(
+        jsonb_agg(
+          jsonb_build_object(
+            'id', event_record.id,
+            'event_id', event_record.event_id,
+            'user_id', event_record.user_id,
+            'source', event_record.source,
+            'route', event_record.route,
+            'error_name', event_record.error_name,
+            'error_message', event_record.error_message,
+            'component_stack', event_record.component_stack,
+            'release', event_record.release,
+            'status', event_record.status,
+            'occurred_at', event_record.occurred_at,
+            'acknowledged_at', event_record.acknowledged_at,
+            'resolved_at', event_record.resolved_at,
+            'handled_by_user_id', event_record.handled_by_user_id,
+            'resolution_note', event_record.resolution_note,
+            'metadata', event_record.metadata
+          ) order by event_record.occurred_at desc
+        ),
+        '[]'::jsonb
+      )
       from (
         select *
         from public.frontend_error_events
@@ -291,7 +287,7 @@ begin
         order by occurred_at desc
         limit v_limit offset v_offset
       ) event_record
-    ), '[]'::jsonb)
+    )
   );
 end;
 $$;
@@ -316,11 +312,9 @@ begin
   then
     raise exception 'ADMIN_REQUIRED' using errcode = '42501';
   end if;
-
   if p_frontend_error_id is null or p_status is null then
     raise exception 'FRONTEND_ERROR_STATUS_INPUT_INVALID' using errcode = '22023';
   end if;
-
   if p_status in ('resolved'::public.frontend_error_status, 'ignored'::public.frontend_error_status)
     and (v_note is null or char_length(v_note) not between 3 and 2000)
   then
@@ -354,8 +348,7 @@ begin
       resolution_note = case
         when p_status in ('resolved'::public.frontend_error_status, 'ignored'::public.frontend_error_status)
           then v_note
-        when p_status = 'acknowledged'::public.frontend_error_status
-          then v_note
+        when p_status = 'acknowledged'::public.frontend_error_status then v_note
         else null
       end
   where id = p_frontend_error_id
