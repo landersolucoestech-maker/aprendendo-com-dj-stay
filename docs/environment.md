@@ -7,7 +7,8 @@
 - não existe fallback silencioso entre ambientes;
 - o projeto Supabase legado é proibido como runtime;
 - arquivos `.env` são locais e não são versionados;
-- o ambiente é declarado explicitamente por `VITE_APP_ENV`.
+- o ambiente é declarado explicitamente por `VITE_APP_ENV`;
+- todo build de entrega deve possuir uma revisão imutável.
 
 ## Mapeamento obrigatório
 
@@ -37,6 +38,18 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<chave publishable ativa de produção>
 ```
 
 Nenhum valor de chave pode ser copiado para o repositório, documentação, issue ou log.
+
+## Proveniência de release
+
+A revisão do build é resolvida nesta ordem:
+
+1. `VITE_APP_RELEASE`, quando o operador fornece um identificador imutável explícito;
+2. `GITHUB_SHA`, disponibilizado automaticamente no GitHub Actions;
+3. `git rev-parse HEAD`, para builds locais executados dentro do repositório.
+
+`VITE_APP_RELEASE` é opcional e não contém segredo. Quando utilizada, deve identificar uma revisão ou release imutável; não use valores genéricos como `latest`, `production` ou `development`.
+
+O build gera `dist/release.json` e injeta a mesma revisão no runtime. Um build de entrega sem revisão resolvida é bloqueado.
 
 ## Validações executadas pela aplicação
 
@@ -87,6 +100,8 @@ npm run build
 ```
 
 `check:environment` verifica arquivos versionados, referências legadas no runtime, hardcode no cliente e vínculo do Supabase CLI ao ambiente `dev`.
+
+O build valida também a correspondência entre revisão esperada, runtime compilado e `dist/release.json`.
 
 ## Produção
 
