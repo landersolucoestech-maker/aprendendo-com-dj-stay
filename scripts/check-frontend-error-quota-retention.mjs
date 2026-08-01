@@ -58,9 +58,9 @@ if (failures.length === 0) {
   }
   for (const fragment of [
     "Expurgar incidentes encerrados",
-    "confirm(",
-    "retentionDays: 90",
-    "limit: 1000",
+    "window.confirm(",
+    "useState<number>(90)",
+    "batchLimit: 1000",
   ]) {
     if (!adminPage.includes(fragment)) {
       failures.push(`Interface administrativa B35 incompleta: ${fragment}`);
