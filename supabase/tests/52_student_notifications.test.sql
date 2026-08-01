@@ -1,0 +1,31 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(24);
+
+select has_table('public', 'student_notifications', 'student notifications table exists');
+select ok((select relrowsecurity from pg_class where oid='public.student_notifications'::regclass), 'notifications RLS enabled');
+select ok((select relforcerowsecurity from pg_class where oid='public.student_notifications'::regclass), 'notifications RLS forced');
+select is((select count(*)::integer from information_schema.role_table_grants where table_schema='public' and table_name='student_notifications' and grantee='anon'), 0, 'anonymous has no notification table grants');
+select is((select count(*)::integer from information_schema.role_table_grants where table_schema='public' and table_name='student_notifications' and grantee='authenticated'), 0, 'authenticated has no direct notification table grants');
+select is((select count(*)::integer from pg_policies where schemaname='public' and tablename='student_notifications' and policyname='student_notifications_direct_access_denied'), 1, 'explicit deny policy exists');
+select has_function('private', 'create_student_notification', array['uuid','public.student_notification_type','text','text','text','text','uuid','text'], 'private notification creator exists');
+select ok((select prosecdef from pg_proc where oid='private.create_student_notification(uuid,public.student_notification_type,text,text,text,text,uuid,text)'::regprocedure), 'notification creator is security definer');
+select ok(position('on conflict (user_id, idempotency_key)' in lower(pg_get_functiondef('private.create_student_notification(uuid,public.student_notification_type,text,text,text,text,uuid,text)'::regprocedure))) > 0, 'notification creator is idempotent');
+select is((select count(*)::integer from information_schema.role_routine_grants where specific_schema='private' and routine_name='create_student_notification' and grantee='authenticated'), 0, 'authenticated cannot call internal notification creator');
+select has_function('private', 'get_my_student_notifications', array['integer','integer'], 'private notification list exists');
+select ok(position('AUTH_REQUIRED' in pg_get_functiondef('private.get_my_student_notifications(integer,integer)'::regprocedure)) > 0, 'notification list requires auth');
+select ok(position('user_id = v_user_id' in pg_get_functiondef('private.get_my_student_notifications(integer,integer)'::regprocedure)) > 0, 'notification list filters auth user');
+select ok(position('least(coalesce(p_limit, 30), 100)' in pg_get_functiondef('private.get_my_student_notifications(integer,integer)'::regprocedure)) > 0, 'notification list is bounded');
+select has_function('private', 'mark_my_student_notification_read', array['uuid'], 'private mark read exists');
+select ok(position('user_id = v_user_id' in pg_get_functiondef('private.mark_my_student_notification_read(uuid)'::regprocedure)) > 0, 'mark read enforces ownership');
+select ok(position('NOTIFICATION_NOT_FOUND' in pg_get_functiondef('private.mark_my_student_notification_read(uuid)'::regprocedure)) > 0, 'mark read hides foreign notifications');
+select has_function('private', 'mark_all_my_student_notifications_read', array[]::text[], 'private mark all read exists');
+select ok(position('user_id = v_user_id' in pg_get_functiondef('private.mark_all_my_student_notifications_read()'::regprocedure)) > 0, 'mark all filters auth user');
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('get_my_student_notifications','mark_my_student_notification_read','mark_all_my_student_notifications_read')), 3, 'three public notification wrappers exist');
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('get_my_student_notifications','mark_my_student_notification_read','mark_all_my_student_notifications_read') and p.prosecdef), 0, 'public notification wrappers are invoker');
+select is((select count(*)::integer from information_schema.role_routine_grants where specific_schema='public' and routine_name in ('get_my_student_notifications','mark_my_student_notification_read','mark_all_my_student_notifications_read') and grantee='anon'), 0, 'anonymous cannot execute notification RPCs');
+select is((select count(*)::integer from information_schema.role_routine_grants where specific_schema='public' and routine_name in ('get_my_student_notifications','mark_my_student_notification_read','mark_all_my_student_notifications_read') and grantee='authenticated'), 3, 'authenticated can execute guarded notification RPCs');
+select is((select count(*)::integer from pg_trigger where not tgisinternal and tgname='support_message_create_student_notification'), 1, 'support reply notification trigger exists');
+
+select * from finish();
+rollback;
