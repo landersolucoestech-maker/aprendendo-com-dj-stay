@@ -197,7 +197,7 @@ const printVulnerabilities = (label, vulnerabilities) => {
 const productionReport = runAudit("produção", ["--omit=dev"]);
 const completeReport = runAudit("completa");
 const productionCounts = printSummary("Auditoria de produção", productionReport);
-printSummary("Auditoria completa", completeReport);
+const completeCounts = printSummary("Auditoria completa", completeReport);
 
 const severeLevels = new Set(["high", "critical"]);
 const productionSevere = listRelevantVulnerabilities(
@@ -209,13 +209,18 @@ const completeSevere = listRelevantVulnerabilities(completeReport, severeLevels)
 printVulnerabilities("Riscos altos/críticos em produção", productionSevere);
 printVulnerabilities("Riscos altos/críticos no grafo completo", completeSevere);
 
-if (productionCounts.high > 0 || productionCounts.critical > 0) {
+if (
+  productionCounts.high > 0 ||
+  productionCounts.critical > 0 ||
+  completeCounts.high > 0 ||
+  completeCounts.critical > 0
+) {
   console.error(
-    "Gate B27 bloqueado: dependências de runtime possuem vulnerabilidades altas ou críticas.",
+    "Gate B27 bloqueado: o grafo de dependências possui vulnerabilidades altas ou críticas.",
   );
   process.exit(1);
 }
 
 console.log(
-  "Contrato B27 aprovado: baseline atualizada e nenhuma vulnerabilidade alta ou crítica no grafo de produção.",
+  "Contrato B27 aprovado: baseline atualizada e nenhuma vulnerabilidade alta ou crítica em runtime ou desenvolvimento.",
 );
