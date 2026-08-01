@@ -1,6 +1,58 @@
 import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 
 const npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm";
+const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+
+const expectedDependencies = Object.freeze({
+  "@supabase/supabase-js": "^2.110.8",
+  "react-router-dom": "^6.30.4",
+});
+const expectedDevDependencies = Object.freeze({
+  "@vitejs/plugin-react-swc": "^4.3.2",
+  postcss: "^8.5.23",
+  vite: "^6.4.3",
+});
+const baselineFailures = [];
+
+for (const [name, version] of Object.entries(expectedDependencies)) {
+  if (packageJson.dependencies?.[name] !== version) {
+    baselineFailures.push(
+      `Dependência ${name} deve permanecer em ${version}, encontrada ${
+        packageJson.dependencies?.[name] ?? "ausente"
+      }.`,
+    );
+  }
+}
+
+for (const [name, version] of Object.entries(expectedDevDependencies)) {
+  if (packageJson.devDependencies?.[name] !== version) {
+    baselineFailures.push(
+      `Dependência de desenvolvimento ${name} deve permanecer em ${version}, encontrada ${
+        packageJson.devDependencies?.[name] ?? "ausente"
+      }.`,
+    );
+  }
+}
+
+if (packageJson.scripts?.postinstall) {
+  baselineFailures.push(
+    "package.json não pode manter postinstall temporário de migração de dependências.",
+  );
+}
+
+if (existsSync("scripts/apply-b27-dependency-update.mjs")) {
+  baselineFailures.push(
+    "O atualizador temporário B27 deve ser removido após gerar o lockfile.",
+  );
+}
+
+if (baselineFailures.length > 0) {
+  console.error(
+    "Baseline B27 inválida:\n- " + baselineFailures.join("\n- "),
+  );
+  process.exit(1);
+}
 
 const emptyCounts = Object.freeze({
   info: 0,
@@ -28,7 +80,9 @@ const runAudit = (label, extraArguments = []) => {
   );
 
   if (result.error) {
-    throw new Error(`Não foi possível executar npm audit (${label}): ${result.error.message}`);
+    throw new Error(
+      `Não foi possível executar npm audit (${label}): ${result.error.message}`,
+    );
   }
 
   const output = result.stdout.trim();
@@ -141,5 +195,5 @@ if (productionCounts.high > 0 || productionCounts.critical > 0) {
 }
 
 console.log(
-  "Contrato B27 aprovado: nenhuma vulnerabilidade alta ou crítica no grafo de produção.",
+  "Contrato B27 aprovado: baseline atualizada e nenhuma vulnerabilidade alta ou crítica no grafo de produção.",
 );
