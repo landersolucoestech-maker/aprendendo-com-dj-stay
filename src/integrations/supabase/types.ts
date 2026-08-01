@@ -4465,6 +4465,16 @@ export type Database = {
         Returns: Json
       }
       get_my_certificates: { Args: never; Returns: Json }
+      get_payment_admin_dashboard: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_status?: Database["public"]["Enums"]["payment_order_status"]
+          p_subject_type?: Database["public"]["Enums"]["checkout_subject_type"]
+        }
+        Returns: Json
+      }
       get_students_admin_dashboard: {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
         Returns: Json
