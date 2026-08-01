@@ -7,6 +7,7 @@ import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
+import { reportFrontendError } from "@/observability/frontend-error-reporting";
 
 type RouteErrorBoundaryProps = {
   children: ReactNode;
@@ -28,7 +29,12 @@ class RouteErrorBoundaryBase extends Component<
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("Falha não tratada na rota", error, info.componentStack);
+    void reportFrontendError({
+      source: "route_boundary",
+      route: this.props.resetKey,
+      error,
+      componentStack: info.componentStack,
+    });
   }
 
   override componentDidUpdate(previousProps: RouteErrorBoundaryProps) {
