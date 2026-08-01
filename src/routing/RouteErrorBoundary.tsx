@@ -33,7 +33,9 @@ class RouteErrorBoundaryBase extends Component<
       source: "route_boundary",
       route: this.props.resetKey,
       error,
-      componentStack: info.componentStack,
+      ...(info.componentStack
+        ? { componentStack: info.componentStack }
+        : {}),
     });
   }
 
