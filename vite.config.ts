@@ -53,7 +53,7 @@ const manualChunks = (id: string): string | undefined => {
     return "vendor-ui";
   }
 
-  return "vendor-misc";
+  return undefined;
 };
 
 export default defineConfig({
