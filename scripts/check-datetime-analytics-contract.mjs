@@ -37,6 +37,32 @@ if (existsSync(dateTimePath)) {
   }
 }
 
+const temporalConsumers = [
+  "src/components/ConnectionStatus.tsx",
+  "src/hooks/useRecentActivities.ts",
+  "src/pages/CertificateValidation.tsx",
+  "src/pages/Contact.tsx",
+  "src/pages/Dashboard.tsx",
+  "src/pages/admin/AffiliatesAdmin.tsx",
+  "src/pages/admin/ContactsAdmin.tsx",
+  "src/pages/admin/StudentsAdmin.tsx",
+  "src/pages/affiliate/AffiliatePortal.tsx",
+  "src/pages/student/Certificates.tsx",
+  "src/pages/student/MyDigitalProducts.tsx",
+  "src/pages/student/StudentPortal.tsx",
+];
+
+for (const path of temporalConsumers) {
+  expect(existsSync(path), `${path} deve existir.`);
+  if (!existsSync(path)) continue;
+
+  const source = read(path);
+  expect(
+    source.includes('from "@/lib/date-time"'),
+    `${path} deve consumir a camada temporal canônica.`,
+  );
+}
+
 const sourceFiles = walk("src").filter(
   (path) => /\.(?:ts|tsx)$/.test(path) && path !== dateTimePath,
 );
@@ -115,5 +141,5 @@ if (failures.length) {
 }
 
 console.log(
-  `Contrato estático da FASE B26 aprovado em ${sourceFiles.length} arquivos TypeScript.`,
+  `Contrato estático da FASE B26 aprovado em ${sourceFiles.length} arquivos TypeScript e ${temporalConsumers.length} consumidores temporais.`,
 );
