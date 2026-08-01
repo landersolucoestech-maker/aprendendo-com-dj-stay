@@ -4465,6 +4465,10 @@ export type Database = {
         Returns: Json
       }
       get_my_certificates: { Args: never; Returns: Json }
+      get_my_payment_history: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
       get_payment_admin_dashboard: {
         Args: {
           p_limit?: number
