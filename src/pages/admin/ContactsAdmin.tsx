@@ -78,6 +78,9 @@ const ContactsAdmin = () => {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <Link to="/admin/erros">
+              <Button variant="outline" className="border-white/20 bg-transparent">Erros</Button>
+            </Link>
             <Link to="/admin/alunos">
               <Button variant="outline" className="border-white/20 bg-transparent">Alunos</Button>
             </Link>
