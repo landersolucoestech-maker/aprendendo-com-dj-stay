@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   frontendErrorDashboardSchema,
+  frontendErrorMaintenanceHistorySchema,
   frontendErrorRetentionResultSchema,
   frontendErrorStatusUpdateResultSchema,
   type FrontendErrorSource,
@@ -17,6 +18,8 @@ const frontendErrorKeys = {
     source: FrontendErrorSource | null,
     route: string,
   ) => ["frontend-errors", "admin", status, source, route] as const,
+  maintenance: (limit: number, offset: number) =>
+    ["frontend-errors", "maintenance", limit, offset] as const,
 };
 
 export const useFrontendErrorDashboard = (
@@ -43,6 +46,26 @@ export const useFrontendErrorDashboard = (
         frontendErrorDashboardSchema,
         data,
         "painel administrativo de erros do frontend",
+      );
+    },
+  });
+
+export const useFrontendErrorMaintenanceHistory = (
+  limit = 20,
+  offset = 0,
+) =>
+  useQuery({
+    queryKey: frontendErrorKeys.maintenance(limit, offset),
+    queryFn: async () => {
+      const { data, error } = await frontendErrorRpcClient.rpc(
+        "get_frontend_error_maintenance_history",
+        { p_limit: limit, p_offset: offset },
+      );
+      if (error) throw error;
+      return parseDataContract(
+        frontendErrorMaintenanceHistorySchema,
+        data,
+        "histórico de manutenção dos erros do frontend",
       );
     },
   });
