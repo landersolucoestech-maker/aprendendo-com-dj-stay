@@ -2408,6 +2408,39 @@ export type Database = {
         }
         Relationships: []
       }
+      frontend_error_maintenance_events: {
+        Row: {
+          action: Database["public"]["Enums"]["frontend_error_maintenance_action"]
+          actor_user_id: string
+          affected_rows: number
+          created_at: string
+          cutoff_at: string
+          id: string
+          metadata: Json
+          retention_days: number
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["frontend_error_maintenance_action"]
+          actor_user_id: string
+          affected_rows: number
+          created_at?: string
+          cutoff_at: string
+          id?: string
+          metadata?: Json
+          retention_days: number
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["frontend_error_maintenance_action"]
+          actor_user_id?: string
+          affected_rows?: number
+          created_at?: string
+          cutoff_at?: string
+          id?: string
+          metadata?: Json
+          retention_days?: number
+        }
+        Relationships: []
+      }
       lesson_media: {
         Row: {
           asset_id: string | null
@@ -4863,6 +4896,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      purge_frontend_error_events: {
+        Args: { p_limit?: number; p_retention_days?: number }
+        Returns: Json
+      }
       record_affiliate_click: {
         Args: {
           p_landing_path: string
@@ -6112,6 +6149,7 @@ export type Database = {
         | "access_denied"
       enrollment_source: "manual_grant" | "purchase"
       enrollment_status: "pending" | "active" | "suspended" | "revoked"
+      frontend_error_maintenance_action: "retention_purge"
       frontend_error_source:
         | "route_boundary"
         | "window_error"
@@ -6495,6 +6533,7 @@ export const Constants = {
       ],
       enrollment_source: ["manual_grant", "purchase"],
       enrollment_status: ["pending", "active", "suspended", "revoked"],
+      frontend_error_maintenance_action: ["retention_purge"],
       frontend_error_source: [
         "route_boundary",
         "window_error",
