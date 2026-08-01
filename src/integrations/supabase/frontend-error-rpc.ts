@@ -43,6 +43,13 @@ type FrontendErrorRpcClient = {
         p_note?: string;
       },
     ): RpcResponse;
+    (
+      functionName: "purge_frontend_error_events",
+      args: {
+        p_retention_days?: number;
+        p_limit?: number;
+      },
+    ): RpcResponse;
   };
 };
 
