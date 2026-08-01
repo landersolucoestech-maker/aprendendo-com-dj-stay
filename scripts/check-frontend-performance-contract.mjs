@@ -144,13 +144,14 @@ requireText("package.json", [
   '"check:frontend-performance": "node scripts/check-frontend-performance-contract.mjs"',
   '"check:chunk-graph": "node scripts/check-chunk-graph-contract.mjs"',
   '"check:build-chunks": "node scripts/check-build-chunks.mjs"',
-  '"build": "vite build && npm run check:build-chunks"',
-  '"build:dev": "vite build --mode development && npm run check:build-chunks"',
+  '"check:release-artifact": "node scripts/check-release-artifact.mjs"',
+  '"build": "vite build && npm run check:build-chunks && npm run check:release-artifact"',
+  '"build:dev": "vite build --mode development && npm run check:build-chunks && npm run check:release-artifact"',
   "npm run check:frontend-performance",
   "npm run check:chunk-graph",
 ]);
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log(
-  `Contrato estático da FASE B25 aprovado com ${lazyImportCount} superfícies lazy e fallback natural de chunks.`,
+  `Contrato estático da FASE B25 aprovado com ${lazyImportCount} superfícies lazy, fallback natural de chunks e validação de release encadeada.`,
 );
