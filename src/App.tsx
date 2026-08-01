@@ -54,6 +54,7 @@ import {
   Certificates,
   EditProfile,
   Lesson,
+  StudentNotifications,
   StudentPortal,
   StudentSupport,
 } from "@/routing/lazy/student-pages";
@@ -133,6 +134,7 @@ const App = () => (
                   <Route path="/aluno/produtos" element={<StudentRoute><MyDigitalProducts /></StudentRoute>} />
                   <Route path="/aluno/pedidos" element={<StudentRoute><StudentPortal section="orders" /></StudentRoute>} />
                   <Route path="/aluno/pagamentos" element={<StudentRoute><StudentPortal section="payments" /></StudentRoute>} />
+                  <Route path="/aluno/notificacoes" element={<StudentRoute><StudentNotifications /></StudentRoute>} />
                   <Route path="/aluno/suporte" element={<StudentRoute><StudentSupport /></StudentRoute>} />
                   <Route path="/aluno/perfil" element={<StudentRoute><StudentPortal section="profile" /></StudentRoute>} />
                   <Route path="/aluno/perfil/editar" element={<StudentRoute><EditProfile /></StudentRoute>} />
