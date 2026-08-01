@@ -69,7 +69,7 @@ const StudentNotifications = () => {
         <StudentSectionHeader
           title="Notificações"
           description="Atualizações reais de suporte, pagamentos, acessos e certificados."
-          actions={
+          action={
             <Button
               type="button"
               variant="outline"
