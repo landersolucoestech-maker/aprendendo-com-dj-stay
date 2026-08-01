@@ -35,8 +35,19 @@ interface StudentPortalShellProps {
   readonly children: ReactNode;
 }
 
-const StudentNavigationLinks = ({ mobile }: { readonly mobile: boolean }) => (
-  <>
+const StudentNavigation = ({ mobile = false }: { readonly mobile?: boolean }) => (
+  <nav
+    className={cn(
+      mobile
+        ? "flex gap-2 overflow-x-auto pb-1"
+        : "mt-10 flex flex-col gap-2",
+    )}
+    aria-label={
+      mobile
+        ? "Navegação móvel do Portal do Aluno"
+        : "Navegação do Portal do Aluno"
+    }
+  >
     {studentNavigation.map(({ to, label, icon: Icon, end }) => (
       <NavLink
         key={to}
@@ -60,25 +71,8 @@ const StudentNavigationLinks = ({ mobile }: { readonly mobile: boolean }) => (
         {label}
       </NavLink>
     ))}
-  </>
+  </nav>
 );
-
-const StudentNavigation = ({ mobile = false }: { readonly mobile?: boolean }) =>
-  mobile ? (
-    <nav
-      className="flex gap-2 overflow-x-auto pb-1"
-      aria-label="Navegação móvel do Portal do Aluno"
-    >
-      <StudentNavigationLinks mobile />
-    </nav>
-  ) : (
-    <nav
-      className="mt-10 flex flex-col gap-2"
-      aria-label="Navegação do Portal do Aluno"
-    >
-      <StudentNavigationLinks mobile={false} />
-    </nav>
-  );
 
 export const StudentPortalShell = ({
   displayName,
