@@ -54,6 +54,7 @@ import {
   Certificates,
   EditProfile,
   Lesson,
+  StudentFavorites,
   StudentNotifications,
   StudentPortal,
   StudentSupport,
@@ -130,6 +131,7 @@ const App = () => (
                   <Route path="/aluno/cursos" element={<StudentRoute><StudentPortal section="courses" /></StudentRoute>} />
                   <Route path="/aluno/cursos/:courseId" element={<StudentRoute><StudentPortal section="course" /></StudentRoute>} />
                   <Route path="/aluno/biblioteca" element={<StudentRoute><StudentPortal section="library" /></StudentRoute>} />
+                  <Route path="/aluno/favoritos" element={<StudentRoute><StudentFavorites /></StudentRoute>} />
                   <Route path="/aluno/certificados" element={<StudentRoute><Certificates /></StudentRoute>} />
                   <Route path="/aluno/produtos" element={<StudentRoute><MyDigitalProducts /></StudentRoute>} />
                   <Route path="/aluno/pedidos" element={<StudentRoute><StudentPortal section="orders" /></StudentRoute>} />
