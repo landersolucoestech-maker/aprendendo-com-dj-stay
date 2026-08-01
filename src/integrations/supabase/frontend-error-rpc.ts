@@ -50,6 +50,13 @@ type FrontendErrorRpcClient = {
         p_limit?: number;
       },
     ): RpcResponse;
+    (
+      functionName: "get_frontend_error_maintenance_history",
+      args: {
+        p_limit?: number;
+        p_offset?: number;
+      },
+    ): RpcResponse;
   };
 };
 
