@@ -60,6 +60,7 @@ if (packageJson.scripts?.postinstall) {
 for (const temporaryPath of [
   "scripts/apply-b27-dependency-update.mjs",
   "scripts/apply-b27-lockfile-repair.mjs",
+  "scripts/apply-b27-transitive-audit-fix.mjs",
   ".github/workflows/b27-lockfile-bootstrap.yml",
 ]) {
   if (existsSync(temporaryPath)) {
