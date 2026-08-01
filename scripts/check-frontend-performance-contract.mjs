@@ -83,9 +83,11 @@ requireText("src/routing/RouteLoadingFallback.tsx", [
 
 requireText("src/routing/RouteErrorBoundary.tsx", [
   "class RouteErrorBoundaryBase extends Component",
+  "override state:",
   "static getDerivedStateFromError",
-  "componentDidCatch",
-  "componentDidUpdate",
+  "override componentDidCatch",
+  "override componentDidUpdate",
+  "override render",
   "previousProps.resetKey !== this.props.resetKey",
   'role="alert"',
   "window.location.reload()",
