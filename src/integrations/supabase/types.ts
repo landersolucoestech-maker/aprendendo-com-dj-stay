@@ -2345,6 +2345,69 @@ export type Database = {
           },
         ]
       }
+      frontend_error_events: {
+        Row: {
+          acknowledged_at: string | null
+          component_stack: string | null
+          created_at: string
+          error_message: string
+          error_name: string
+          event_id: string
+          handled_by_user_id: string | null
+          id: string
+          metadata: Json
+          occurred_at: string
+          release: string
+          resolution_note: string | null
+          resolved_at: string | null
+          route: string
+          source: Database["public"]["Enums"]["frontend_error_source"]
+          status: Database["public"]["Enums"]["frontend_error_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          component_stack?: string | null
+          created_at?: string
+          error_message: string
+          error_name: string
+          event_id: string
+          handled_by_user_id?: string | null
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          release: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          route: string
+          source: Database["public"]["Enums"]["frontend_error_source"]
+          status?: Database["public"]["Enums"]["frontend_error_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          component_stack?: string | null
+          created_at?: string
+          error_message?: string
+          error_name?: string
+          event_id?: string
+          handled_by_user_id?: string | null
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          release?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          route?: string
+          source?: Database["public"]["Enums"]["frontend_error_source"]
+          status?: Database["public"]["Enums"]["frontend_error_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       lesson_media: {
         Row: {
           asset_id: string | null
@@ -3645,6 +3708,19 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      capture_frontend_error: {
+        Args: {
+          p_component_stack?: string
+          p_error_message: string
+          p_error_name: string
+          p_event_id: string
+          p_metadata?: Json
+          p_release?: string
+          p_route: string
+          p_source: Database["public"]["Enums"]["frontend_error_source"]
+        }
+        Returns: Json
+      }
       claim_checkout_provider_request: {
         Args: {
           p_intent_id: string
@@ -4338,6 +4414,16 @@ export type Database = {
           p_offset?: number
           p_search?: string
           p_status?: Database["public"]["Enums"]["contact_message_status"]
+        }
+        Returns: Json
+      }
+      get_frontend_error_dashboard: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_route?: string
+          p_source?: Database["public"]["Enums"]["frontend_error_source"]
+          p_status?: Database["public"]["Enums"]["frontend_error_status"]
         }
         Returns: Json
       }
@@ -5710,6 +5796,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      update_frontend_error_status: {
+        Args: {
+          p_frontend_error_id: string
+          p_note?: string
+          p_status: Database["public"]["Enums"]["frontend_error_status"]
+        }
+        Returns: Json
+      }
       update_lesson: {
         Args: {
           p_expected_version: number
@@ -6018,6 +6112,11 @@ export type Database = {
         | "access_denied"
       enrollment_source: "manual_grant" | "purchase"
       enrollment_status: "pending" | "active" | "suspended" | "revoked"
+      frontend_error_source:
+        | "route_boundary"
+        | "window_error"
+        | "unhandled_rejection"
+      frontend_error_status: "open" | "acknowledged" | "resolved" | "ignored"
       lesson_completion_mode:
         | "manual"
         | "media_progress"
@@ -6396,6 +6495,12 @@ export const Constants = {
       ],
       enrollment_source: ["manual_grant", "purchase"],
       enrollment_status: ["pending", "active", "suspended", "revoked"],
+      frontend_error_source: [
+        "route_boundary",
+        "window_error",
+        "unhandled_rejection",
+      ],
+      frontend_error_status: ["open", "acknowledged", "resolved", "ignored"],
       lesson_completion_mode: [
         "manual",
         "media_progress",
