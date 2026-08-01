@@ -18,3 +18,4 @@ export const FrontendErrorsAdmin = lazy(
 );
 export const PaymentsAdmin = lazy(() => import("@/pages/admin/PaymentsAdmin"));
 export const StudentsAdmin = lazy(() => import("@/pages/admin/StudentsAdmin"));
+export const SupportAdmin = lazy(() => import("@/pages/admin/SupportAdmin"));
