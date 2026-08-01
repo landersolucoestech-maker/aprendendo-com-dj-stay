@@ -3,14 +3,20 @@ export const APP_TIME_ZONE = "America/Sao_Paulo";
 
 export type TemporalInput = string | number | Date;
 
+type DateStyle = "full" | "long" | "medium" | "short";
+type TimeStyle = "full" | "long" | "medium" | "short";
+
 interface DateFormatOptions {
   readonly fallback?: string;
-  readonly dateStyle?: "full" | "long" | "medium" | "short";
+  readonly dateStyle?: DateStyle;
 }
 
-interface DateTimeFormatOptions extends DateFormatOptions {
-  readonly timeStyle?: "full" | "long" | "medium" | "short";
+interface TimeFormatOptions {
+  readonly fallback?: string;
+  readonly timeStyle?: TimeStyle;
 }
+
+interface DateTimeFormatOptions extends DateFormatOptions, TimeFormatOptions {}
 
 const formatterCache = new Map<string, Intl.DateTimeFormat>();
 const relativeFormatter = new Intl.RelativeTimeFormat(APP_LOCALE, {
@@ -25,15 +31,15 @@ const toValidDate = (value: TemporalInput | null | undefined): Date | null => {
 };
 
 const getDateTimeFormatter = (
-  dateStyle: NonNullable<DateFormatOptions["dateStyle"]>,
-  timeStyle?: NonNullable<DateTimeFormatOptions["timeStyle"]>,
+  dateStyle: DateStyle | undefined,
+  timeStyle: TimeStyle | undefined,
 ): Intl.DateTimeFormat => {
-  const key = `${dateStyle}:${timeStyle ?? "date-only"}`;
+  const key = `${dateStyle ?? "no-date"}:${timeStyle ?? "no-time"}`;
   const existing = formatterCache.get(key);
   if (existing) return existing;
 
   const formatter = new Intl.DateTimeFormat(APP_LOCALE, {
-    dateStyle,
+    ...(dateStyle ? { dateStyle } : {}),
     ...(timeStyle ? { timeStyle } : {}),
     timeZone: APP_TIME_ZONE,
   });
@@ -48,7 +54,21 @@ export const formatAppDate = (
   const date = toValidDate(value);
   if (!date) return options.fallback ?? "—";
 
-  return getDateTimeFormatter(options.dateStyle ?? "medium").format(date);
+  return getDateTimeFormatter(options.dateStyle ?? "medium", undefined).format(
+    date,
+  );
+};
+
+export const formatAppTime = (
+  value: TemporalInput | null | undefined,
+  options: TimeFormatOptions = {},
+): string => {
+  const date = toValidDate(value);
+  if (!date) return options.fallback ?? "—";
+
+  return getDateTimeFormatter(undefined, options.timeStyle ?? "short").format(
+    date,
+  );
 };
 
 export const formatAppDateTime = (
