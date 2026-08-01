@@ -13,7 +13,7 @@ select has_check('public','contact_messages','contact payload and lifecycle have
 
 select ok((select relrowsecurity and relforcerowsecurity from pg_class where oid='public.contact_messages'::regclass),'contact messages force RLS');
 select ok((select relrowsecurity and relforcerowsecurity from pg_class where oid='public.contact_message_events'::regclass),'contact events force RLS');
-select is((select count(*)::integer from pg_policies where schemaname='public' and tablename in ('contact_messages','contact_message_events')),0,'contact tables expose no direct policies');
+select is((select count(*)::integer from pg_policies where schemaname='public' and tablename in ('contact_messages','contact_message_events') and permissive='RESTRICTIVE' and cmd='ALL'),2,'contact tables expose two explicit restrictive deny policies');
 select is((select count(*)::integer from information_schema.role_table_grants where table_schema='public' and table_name in ('contact_messages','contact_message_events') and grantee in ('anon','authenticated')),0,'client roles have no direct contact table grants');
 
 select has_pk('public','contact_messages','contact messages have primary key');
