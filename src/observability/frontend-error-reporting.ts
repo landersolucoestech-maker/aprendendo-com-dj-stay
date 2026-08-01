@@ -55,12 +55,6 @@ const normalizeScriptPath = (value: string): string | null => {
   }
 };
 
-const getRelease = (): string =>
-  redactSensitiveText(
-    import.meta.env.VITE_APP_RELEASE ?? import.meta.env.MODE ?? "unknown",
-    150,
-  ) || "unknown";
-
 export type FrontendErrorReportInput = {
   source: FrontendErrorSource;
   route: string;
@@ -105,8 +99,11 @@ export const reportFrontendError = async (
         p_error_name: errorName,
         p_error_message: errorMessage,
         ...(componentStack ? { p_component_stack: componentStack } : {}),
-        p_release: getRelease(),
-        p_metadata: input.metadata ?? {},
+        p_release: __APP_RELEASE__,
+        p_metadata: {
+          ...(input.metadata ?? {}),
+          environment: __APP_ENVIRONMENT__,
+        },
       },
     );
 
