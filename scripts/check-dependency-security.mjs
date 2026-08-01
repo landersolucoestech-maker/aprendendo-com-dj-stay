@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 
 const npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm";
 const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+const viteConfig = readFileSync("vite.config.ts", "utf8");
 
 const expectedDependencies = Object.freeze({
   "@supabase/supabase-js": "^2.110.8",
@@ -35,16 +36,37 @@ for (const [name, version] of Object.entries(expectedDevDependencies)) {
   }
 }
 
+if (packageJson.devDependencies?.["lovable-tagger"] !== undefined) {
+  baselineFailures.push(
+    "lovable-tagger não pode retornar: sua restrição de peer dependency bloqueia a baseline segura do Vite.",
+  );
+}
+
+if (
+  viteConfig.includes("lovable-tagger") ||
+  viteConfig.includes("componentTagger")
+) {
+  baselineFailures.push(
+    "vite.config.ts não pode depender da instrumentação removida lovable-tagger.",
+  );
+}
+
 if (packageJson.scripts?.postinstall) {
   baselineFailures.push(
     "package.json não pode manter postinstall temporário de migração de dependências.",
   );
 }
 
-if (existsSync("scripts/apply-b27-dependency-update.mjs")) {
-  baselineFailures.push(
-    "O atualizador temporário B27 deve ser removido após gerar o lockfile.",
-  );
+for (const temporaryPath of [
+  "scripts/apply-b27-dependency-update.mjs",
+  "scripts/apply-b27-lockfile-repair.mjs",
+  ".github/workflows/b27-lockfile-bootstrap.yml",
+]) {
+  if (existsSync(temporaryPath)) {
+    baselineFailures.push(
+      `Mecanismo temporário B27 deve ser removido: ${temporaryPath}.`,
+    );
+  }
 }
 
 if (baselineFailures.length > 0) {
