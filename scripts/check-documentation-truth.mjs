@@ -9,6 +9,9 @@ const requiredFiles = [
   "supabase/config.toml",
 ];
 const failures = [];
+const normalize = (value) => value.normalize("NFC").toLocaleLowerCase("pt-BR");
+const includesNormalized = (content, fragment) =>
+  normalize(content).includes(normalize(fragment));
 
 for (const file of requiredFiles) {
   if (!existsSync(file)) failures.push(`Fonte documental ausente: ${file}`);
@@ -27,7 +30,7 @@ if (failures.length === 0) {
     "O código herdado é um protótipo React/Vite com integrações incompletas",
   ];
   for (const claim of staleClaims) {
-    if (readme.includes(claim)) {
+    if (includesNormalized(readme, claim)) {
       failures.push(`README preserva diagnóstico obsoleto: ${claim}`);
     }
   }
@@ -42,7 +45,7 @@ if (failures.length === 0) {
     "docs/audit/README.md",
     "docs/refactor/README.md",
   ]) {
-    if (!readme.includes(fragment)) {
+    if (!includesNormalized(readme, fragment)) {
       failures.push(`README não preserva a verdade operacional B33: ${fragment}`);
     }
   }
@@ -58,7 +61,7 @@ if (failures.length === 0) {
     "A presença da função e a aprovação do gate não equivalem a uma transação financeira homologada",
     "A branch `main` e o projeto Supabase de produção não foram promovidos",
   ]) {
-    if (!status.includes(fragment)) {
+    if (!includesNormalized(status, fragment)) {
       failures.push(`STATUS.md incompleto: ${fragment}`);
     }
   }
@@ -79,10 +82,13 @@ if (failures.length === 0) {
     }
   }
 
-  if (!audit.includes("npm run check") || !audit.includes("não substitui")) {
+  if (!includesNormalized(audit, "npm run check") || !includesNormalized(audit, "não substitui")) {
     failures.push("Índice de auditoria deve explicar execução e limites.");
   }
-  if (!refactor.includes("uma causa observada por vez") || !refactor.includes("não equivale a homologação externa")) {
+  if (
+    !includesNormalized(refactor, "uma causa observada por vez") ||
+    !includesNormalized(refactor, "não equivale a homologação externa")
+  ) {
     failures.push("Índice de refatoração deve preservar execução sequencial e limites.");
   }
 
@@ -93,9 +99,9 @@ if (failures.length === 0) {
     "checkout está homologado",
     "pentest concluído",
   ];
-  const combinedDocumentation = [readme, status, audit, refactor].join("\n").toLowerCase();
+  const combinedDocumentation = [readme, status, audit, refactor].join("\n");
   for (const claim of prohibitedProductionClaims) {
-    if (combinedDocumentation.includes(claim)) {
+    if (includesNormalized(combinedDocumentation, claim)) {
       failures.push(`Documentação contém alegação de produção sem evidência: ${claim}`);
     }
   }
