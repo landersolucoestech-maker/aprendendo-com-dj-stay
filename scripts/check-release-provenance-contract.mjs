@@ -44,7 +44,13 @@ if (failures.length === 0) {
     }
   }
 
-  if (/\b(Date|timestamp|generated_at|built_at)\b/i.test(viteConfig)) {
+  const variableTimestampPatterns = [
+    /\bDate\.now\s*\(/,
+    /\bnew\s+Date\s*\(/,
+    /["']?(?:timestamp|generated_at|generatedAt|built_at|builtAt)["']?\s*:/,
+    /\bperformance\.now\s*\(/,
+  ];
+  if (variableTimestampPatterns.some((pattern) => pattern.test(viteConfig))) {
     failures.push(
       "Manifesto B34 não pode incluir timestamp variável e perder determinismo.",
     );
