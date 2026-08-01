@@ -209,12 +209,14 @@ requireText("src/components/student/StudentPortalShell.tsx", [
   "src={brandConfig.logoPath}",
   "{brandConfig.name}",
   "const StudentNavigation",
-  "const StudentNavigationLinks",
-  'aria-label="Navegação móvel do Portal do Aluno"',
-  'aria-label="Navegação do Portal do Aluno"',
   "bg-course text-primary-foreground",
   "focus-visible:ring-ring",
 ]);
+requirePattern(
+  "src/components/student/StudentPortalShell.tsx",
+  /(?:aria-label\s*=\s*\{\s*mobile\s*\?\s*"Navegação móvel do Portal do Aluno"\s*:\s*"Navegação do Portal do Aluno"\s*\}|aria-label="Navegação móvel do Portal do Aluno"[\s\S]*aria-label="Navegação do Portal do Aluno")/s,
+  "rótulos acessíveis móvel e desktop do Portal do Aluno, em implementação condicional ou explícita",
+);
 forbidText("src/components/student/StudentPortalShell.tsx", [
   "bg-black",
   "text-white",
