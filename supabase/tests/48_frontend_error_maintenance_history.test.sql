@@ -48,7 +48,7 @@ select ok(
   'history offset cannot be negative'
 );
 select ok(
-  position("'total'" in pg_get_functiondef('private.get_frontend_error_maintenance_history(integer,integer)'::regprocedure)) > 0,
+  position('''total''' in pg_get_functiondef('private.get_frontend_error_maintenance_history(integer,integer)'::regprocedure)) > 0,
   'history returns total count'
 );
 select ok(
