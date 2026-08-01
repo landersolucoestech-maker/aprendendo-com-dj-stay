@@ -1,0 +1,34 @@
+name: B27 lockfile bootstrap
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - .github/workflows/b27-lockfile-bootstrap.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: b27-lockfile-bootstrap-dev
+  cancel-in-progress: false
+
+jobs:
+  repair-lockfile:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 1
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: npm
+
+      - name: Recalcular lockfile sem peer legado
+        run: node scripts/apply-b27-lockfile-repair.mjs
