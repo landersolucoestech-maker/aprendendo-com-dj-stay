@@ -53,8 +53,9 @@ if (failures.length === 0) {
   }
 
   if (
-    migration.includes("grant execute on function public.capture_frontend_error") &&
-    migration.includes("to anon")
+    /grant execute on function public\.capture_frontend_error\([^;]+\)\s+to anon;/is.test(
+      migration,
+    )
   ) {
     failures.push("Captura B31 não pode ser executável por anon.");
   }
