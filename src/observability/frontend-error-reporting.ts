@@ -14,15 +14,15 @@ let globalHandlersInstalled = false;
 const redactSensitiveText = (value: string, maxLength: number): string =>
   value
     .replace(
-      /[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/gi,
+      /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
       "[EMAIL_REDACTED]",
     )
     .replace(
-      /eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}/g,
+      /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g,
       "[JWT_REDACTED]",
     )
     .replace(
-      /(bearer\s+)[A-Za-z0-9._~+\-/=]{16,}/gi,
+      /(bearer\s+)[A-Za-z0-9._~+\/=-]{16,}/gi,
       "$1[TOKEN_REDACTED]",
     )
     .trim()
