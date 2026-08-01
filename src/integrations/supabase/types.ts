@@ -3274,6 +3274,181 @@ export type Database = {
           },
         ]
       }
+      student_notifications: {
+        Row: {
+          action_path: string | null
+          created_at: string
+          id: string
+          idempotency_key: string
+          message: string
+          read_at: string | null
+          source_entity_id: string | null
+          source_entity_type: string | null
+          title: string
+          type: Database["public"]["Enums"]["student_notification_type"]
+          user_id: string
+        }
+        Insert: {
+          action_path?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          message: string
+          read_at?: string | null
+          source_entity_id?: string | null
+          source_entity_type?: string | null
+          title: string
+          type: Database["public"]["Enums"]["student_notification_type"]
+          user_id: string
+        }
+        Update: {
+          action_path?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          message?: string
+          read_at?: string | null
+          source_entity_id?: string | null
+          source_entity_type?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["student_notification_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      support_ticket_events: {
+        Row: {
+          actor_user_id: string
+          created_at: string
+          details: Json
+          event_type: Database["public"]["Enums"]["support_ticket_event_type"]
+          from_status:
+            | Database["public"]["Enums"]["support_ticket_status"]
+            | null
+          id: string
+          ticket_id: string
+          to_status: Database["public"]["Enums"]["support_ticket_status"]
+        }
+        Insert: {
+          actor_user_id: string
+          created_at?: string
+          details?: Json
+          event_type: Database["public"]["Enums"]["support_ticket_event_type"]
+          from_status?:
+            | Database["public"]["Enums"]["support_ticket_status"]
+            | null
+          id?: string
+          ticket_id: string
+          to_status: Database["public"]["Enums"]["support_ticket_status"]
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          details?: Json
+          event_type?: Database["public"]["Enums"]["support_ticket_event_type"]
+          from_status?:
+            | Database["public"]["Enums"]["support_ticket_status"]
+            | null
+          id?: string
+          ticket_id?: string
+          to_status?: Database["public"]["Enums"]["support_ticket_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_events_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_messages: {
+        Row: {
+          author_role: Database["public"]["Enums"]["support_message_author_role"]
+          author_user_id: string
+          body: string
+          created_at: string
+          id: string
+          idempotency_key: string
+          ticket_id: string
+        }
+        Insert: {
+          author_role: Database["public"]["Enums"]["support_message_author_role"]
+          author_user_id: string
+          body: string
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          ticket_id: string
+        }
+        Update: {
+          author_role?: Database["public"]["Enums"]["support_message_author_role"]
+          author_user_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          category: string
+          closed_at: string | null
+          created_at: string
+          id: string
+          idempotency_key: string
+          last_message_at: string
+          priority: Database["public"]["Enums"]["support_ticket_priority"]
+          reference_code: string
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["support_ticket_status"]
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          last_message_at?: string
+          priority?: Database["public"]["Enums"]["support_ticket_priority"]
+          reference_code: string
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["support_ticket_status"]
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          last_message_at?: string
+          priority?: Database["public"]["Enums"]["support_ticket_priority"]
+          reference_code?: string
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["support_ticket_status"]
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           avatar_asset_id: string | null
@@ -3332,6 +3507,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_my_support_message: {
+        Args: {
+          p_idempotency_key: string
+          p_message: string
+          p_ticket_id: string
+        }
+        Returns: Json
+      }
       admin_cancel_affiliate_payout: {
         Args: { p_payout_id: string; p_reason: string }
         Returns: {
@@ -3437,6 +3620,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      admin_reply_support_ticket: {
+        Args: {
+          p_idempotency_key?: string
+          p_message: string
+          p_status?: Database["public"]["Enums"]["support_ticket_status"]
+          p_ticket_id: string
+        }
+        Returns: Json
       }
       admin_set_affiliate_profile_status: {
         Args: {
@@ -4144,6 +4336,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_support_ticket: {
+        Args: {
+          p_category: string
+          p_idempotency_key: string
+          p_message: string
+          p_priority: Database["public"]["Enums"]["support_ticket_priority"]
+          p_subject: string
+        }
+        Returns: Json
+      }
       deactivate_affiliate_link: {
         Args: { p_link_id: string }
         Returns: {
@@ -4469,6 +4671,14 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
       }
+      get_my_student_notifications: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
+      get_my_support_tickets: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
       get_payment_admin_dashboard: {
         Args: {
           p_limit?: number
@@ -4481,6 +4691,16 @@ export type Database = {
       }
       get_students_admin_dashboard: {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
+        Returns: Json
+      }
+      get_support_admin_dashboard: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_priority?: Database["public"]["Enums"]["support_ticket_priority"]
+          p_search?: string
+          p_status?: Database["public"]["Enums"]["support_ticket_status"]
+        }
         Returns: Json
       }
       grant_asset_access: {
@@ -4596,6 +4816,11 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      mark_all_my_student_notifications_read: { Args: never; Returns: Json }
+      mark_my_student_notification_read: {
+        Args: { p_notification_id: string }
+        Returns: Json
       }
       move_lesson: {
         Args: {
@@ -6231,6 +6456,21 @@ export type Database = {
         | "denied"
         | "expired"
         | "revoked"
+      student_notification_type:
+        | "support_reply"
+        | "payment_confirmed"
+        | "access_granted"
+        | "certificate_issued"
+        | "system"
+      support_message_author_role: "student" | "support"
+      support_ticket_event_type: "created" | "message_added" | "status_changed"
+      support_ticket_priority: "low" | "normal" | "high" | "urgent"
+      support_ticket_status:
+        | "open"
+        | "awaiting_support"
+        | "awaiting_student"
+        | "resolved"
+        | "closed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -6622,6 +6862,23 @@ export const Constants = {
         "denied",
         "expired",
         "revoked",
+      ],
+      student_notification_type: [
+        "support_reply",
+        "payment_confirmed",
+        "access_granted",
+        "certificate_issued",
+        "system",
+      ],
+      support_message_author_role: ["student", "support"],
+      support_ticket_event_type: ["created", "message_added", "status_changed"],
+      support_ticket_priority: ["low", "normal", "high", "urgent"],
+      support_ticket_status: [
+        "open",
+        "awaiting_support",
+        "awaiting_student",
+        "resolved",
+        "closed",
       ],
     },
   },
