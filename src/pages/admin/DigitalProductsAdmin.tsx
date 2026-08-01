@@ -1,106 +1,209 @@
-import { FileArchive, PackagePlus, Plus, Send, ShieldCheck, Store } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { useState } from "react";
+import {
+  Archive,
+  FileArchive,
+  Loader2,
+  PackagePlus,
+  Plus,
+  Store,
+  UploadCloud,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { AppPageShell } from "@/components/layout/AppPageShell";
+import { Badge } from "@/components/ui/badge";
+import type { BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { PageState } from "@/components/ui/page-state";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import type {
+  DigitalLicenseKind,
+  DigitalProductStatus,
+} from "@/contracts/marketplace";
+import {
+  useArchiveDigitalProduct,
   useAttachDigitalProductDeliverable,
-  useAvailableDigitalProductAssets,
   useCreateDigitalProduct,
   useCreateDigitalProductLicense,
-  useDigitalProductDeliverables,
+  useMarketplaceAdminProduct,
   useMarketplaceAdminProducts,
+  useMarketplaceProductDeliverables,
   useMarketplaceProductLicenses,
   usePublishDigitalProduct,
-  usePublishDigitalProductLicense,
+  useUnpublishDigitalProduct,
+  useUpdateDigitalProduct,
 } from "@/hooks/useDigitalMarketplace";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/error-message";
 
-const fieldClass =
-  "w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white outline-none transition focus:border-white/40";
-
-const statusLabel: Readonly<Record<string, string>> = {
+const statusLabel: Readonly<Record<DigitalProductStatus, string>> = {
   draft: "Rascunho",
   published: "Publicado",
   archived: "Arquivado",
 };
 
-const licenseKindLabel: Readonly<Record<string, string>> = {
+const statusVariant: Readonly<Record<DigitalProductStatus, BadgeProps["variant"]>> = {
+  draft: "warning",
+  published: "success",
+  archived: "outline",
+};
+
+const licenseKindLabel: Readonly<Record<DigitalLicenseKind, string>> = {
   personal: "Pessoal",
   commercial: "Comercial",
   extended: "Estendida",
   custom: "Personalizada",
 };
 
-const ProductConfiguration = ({ productId }: { productId: string }) => {
-  const productsQuery = useMarketplaceAdminProducts();
-  const product = productsQuery.data?.find((item) => item.id === productId);
-  const licensesQuery = useMarketplaceProductLicenses(productId);
-  const deliverablesQuery = useDigitalProductDeliverables(productId);
-  const assetsQuery = useAvailableDigitalProductAssets();
+const ProductConfiguration = ({ productId }: { readonly productId: string }) => {
+  const productQuery = useMarketplaceAdminProduct(productId);
+  const licensesQuery = useMarketplaceProductLicenses(productId, "admin");
+  const deliverablesQuery = useMarketplaceProductDeliverables(productId, "admin");
+  const updateProduct = useUpdateDigitalProduct();
   const createLicense = useCreateDigitalProductLicense();
-  const publishLicense = usePublishDigitalProductLicense();
   const attachDeliverable = useAttachDigitalProductDeliverable();
   const publishProduct = usePublishDigitalProduct();
+  const unpublishProduct = useUnpublishDigitalProduct();
+  const archiveProduct = useArchiveDigitalProduct();
   const { toast } = useToast();
-
-  const [licenseKind, setLicenseKind] = useState("personal");
-  const [licenseTitle, setLicenseTitle] = useState("");
-  const [licenseSummary, setLicenseSummary] = useState("");
+  const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [priceAmount, setPriceAmount] = useState("0");
+  const [affiliateEligible, setAffiliateEligible] = useState(false);
+  const [loadedVersion, setLoadedVersion] = useState<number | null>(null);
+  const [licenseTitle, setLicenseTitle] = useState("Licença pessoal");
+  const [licenseKind, setLicenseKind] = useState<DigitalLicenseKind>("personal");
   const [licenseTerms, setLicenseTerms] = useState("");
-  const [licenseDefault, setLicenseDefault] = useState(true);
-  const [assetId, setAssetId] = useState("");
+  const [licenseVersion, setLicenseVersion] = useState("1.0");
+  const [licensePrice, setLicensePrice] = useState("");
+  const [licenseIsDefault, setLicenseIsDefault] = useState(true);
   const [deliverableTitle, setDeliverableTitle] = useState("");
   const [deliverableDescription, setDeliverableDescription] = useState("");
+  const [assetId, setAssetId] = useState("");
 
-  const usedAssetIds = useMemo(
-    () => new Set((deliverablesQuery.data ?? []).map((deliverable) => deliverable.asset_id)),
-    [deliverablesQuery.data],
-  );
-  const availableAssets = (assetsQuery.data ?? []).filter((asset) => !usedAssetIds.has(asset.id));
-
-  if (!product) {
+  if (productQuery.isLoading) {
     return (
-      <Card className="border-white/10 bg-white/5">
-        <CardContent className="p-8 text-center text-gray-400">Selecione um produto válido.</CardContent>
-      </Card>
+      <PageState
+        variant="loading"
+        title="Carregando produto"
+        description="Consultando configuração, licenças e entregáveis persistidos."
+      />
     );
   }
 
-  const handleLicenseSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  if (productQuery.error || !productQuery.data) {
+    return (
+      <PageState
+        variant="error"
+        title="Produto indisponível"
+        description={getErrorMessage(
+          productQuery.error,
+          "Não foi possível carregar o produto.",
+        )}
+      />
+    );
+  }
+
+  const product = productQuery.data;
+  if (loadedVersion !== product.version) {
+    setLoadedVersion(product.version);
+    setTitle(product.title);
+    setSlug(product.slug);
+    setShortDescription(product.short_description ?? "");
+    setDescription(product.description ?? "");
+    setCategory(product.category ?? "");
+    setPriceAmount(String(product.price_amount));
+    setAffiliateEligible(product.affiliate_eligible);
+  }
+
+  const handleUpdate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
-      await createLicense.mutateAsync({
-        productId,
-        kind: licenseKind as "personal" | "commercial" | "extended" | "custom",
-        title: licenseTitle,
-        summary: licenseSummary,
-        termsText: licenseTerms,
-        isDefault: licenseDefault,
+      await updateProduct.mutateAsync({
+        productId: product.id,
+        expectedVersion: product.version,
+        values: {
+          title,
+          slug,
+          shortDescription,
+          description,
+          category,
+          priceAmount: Number(priceAmount),
+          currencyCode: "BRL",
+          affiliateEligible,
+        },
       });
-      setLicenseTitle("");
-      setLicenseSummary("");
-      setLicenseTerms("");
-      toast({ title: "Licença criada", description: "A versão foi salva como rascunho." });
+      toast({ title: "Produto atualizado", description: "As alterações foram persistidas." });
     } catch (error: unknown) {
       toast({
-        title: "Não foi possível criar a licença",
-        description: getErrorMessage(error, "Revise os campos e tente novamente."),
+        title: "Não foi possível atualizar",
+        description: getErrorMessage(error, "Atualize a página e tente novamente."),
         variant: "destructive",
       });
     }
   };
 
-  const handleDeliverableSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleCreateLicense = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    try {
+      await createLicense.mutateAsync({
+        productId: product.id,
+        expectedProductVersion: product.version,
+        values: {
+          title: licenseTitle,
+          kind: licenseKind,
+          terms: licenseTerms,
+          version: licenseVersion,
+          priceAmount: licensePrice,
+          currencyCode: "BRL",
+          isDefault: licenseIsDefault,
+        },
+      });
+      setLicenseTitle("Licença pessoal");
+      setLicenseTerms("");
+      setLicenseVersion("1.0");
+      setLicensePrice("");
+      toast({ title: "Licença criada", description: "A licença foi associada ao produto." });
+    } catch (error: unknown) {
+      toast({
+        title: "Não foi possível criar a licença",
+        description: getErrorMessage(error, "Revise os campos da licença."),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAttachDeliverable = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
       await attachDeliverable.mutateAsync({
-        productId,
-        assetId,
-        title: deliverableTitle,
-        description: deliverableDescription,
+        productId: product.id,
+        expectedProductVersion: product.version,
+        values: {
+          assetId,
+          title: deliverableTitle,
+          description: deliverableDescription,
+        },
       });
       setAssetId("");
       setDeliverableTitle("");
@@ -109,240 +212,202 @@ const ProductConfiguration = ({ productId }: { productId: string }) => {
     } catch (error: unknown) {
       toast({
         title: "Não foi possível associar o arquivo",
-        description: getErrorMessage(error, "O asset precisa estar publicado e ser de produto digital."),
+        description: getErrorMessage(error, "Confirme o identificador do asset."),
         variant: "destructive",
       });
     }
   };
 
-  const handlePublishProduct = async () => {
+  const runLifecycle = async (
+    action: "publish" | "unpublish" | "archive",
+  ): Promise<void> => {
     try {
-      await publishProduct.mutateAsync({ id: product.id, version: product.version });
-      toast({ title: "Produto publicado", description: "O item agora está visível no marketplace." });
+      if (action === "publish") {
+        await publishProduct.mutateAsync({ productId: product.id, expectedVersion: product.version });
+      } else if (action === "unpublish") {
+        await unpublishProduct.mutateAsync({ productId: product.id, expectedVersion: product.version });
+      } else {
+        await archiveProduct.mutateAsync({ productId: product.id, expectedVersion: product.version });
+      }
+      toast({ title: "Status atualizado", description: "O ciclo editorial foi persistido." });
     } catch (error: unknown) {
       toast({
-        title: "Publicação bloqueada",
-        description: getErrorMessage(
-          error,
-          "É obrigatório possuir uma licença padrão publicada e ao menos um entregável.",
-        ),
+        title: "Não foi possível alterar o status",
+        description: getErrorMessage(error, "A operação foi bloqueada pelo backend."),
         variant: "destructive",
       });
     }
   };
+
+  const lifecyclePending =
+    publishProduct.isPending || unpublishProduct.isPending || archiveProduct.isPending;
 
   return (
     <div className="space-y-6">
-      <Card className="border-white/10 bg-white/5">
+      <Card variant="admin">
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <CardTitle className="text-2xl text-white">{product.title}</CardTitle>
-              <CardDescription className="mt-2 text-gray-400">
-                Versão {product.version} · {statusLabel[product.status] ?? product.status}
+              <CardTitle>{product.title}</CardTitle>
+              <CardDescription className="mt-2">
+                Versão {product.version} · configuração editorial e comercial.
               </CardDescription>
             </div>
-            <Button
-              type="button"
-              className="btn-brand"
-              disabled={product.status !== "draft" || publishProduct.isPending}
-              onClick={() => void handlePublishProduct()}
-            >
-              <Send className="mr-2 h-4 w-4" />
-              {publishProduct.isPending ? "Publicando..." : "Publicar produto"}
-            </Button>
+            <Badge variant={statusVariant[product.status]}>{statusLabel[product.status]}</Badge>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 text-sm text-gray-300 sm:grid-cols-3">
-            <p>Slug: {product.slug}</p>
-            <p>Moeda: {product.currency_code}</p>
-            <p>Afiliados: {product.affiliate_eligible ? "Elegível" : "Não elegível"}</p>
-          </div>
+          <form className="grid gap-4 md:grid-cols-2" onSubmit={(event) => void handleUpdate(event)}>
+            <div className="space-y-2">
+              <label htmlFor={`product-title-${product.id}`} className="text-sm font-medium">Título</label>
+              <Input id={`product-title-${product.id}`} value={title} onChange={(event) => setTitle(event.target.value)} required minLength={3} maxLength={200} />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor={`product-slug-${product.id}`} className="text-sm font-medium">Slug</label>
+              <Input id={`product-slug-${product.id}`} value={slug} onChange={(event) => setSlug(event.target.value.toLowerCase())} required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <label htmlFor={`product-short-${product.id}`} className="text-sm font-medium">Descrição curta</label>
+              <Input id={`product-short-${product.id}`} value={shortDescription} onChange={(event) => setShortDescription(event.target.value)} maxLength={500} />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <label htmlFor={`product-description-${product.id}`} className="text-sm font-medium">Descrição completa</label>
+              <Textarea id={`product-description-${product.id}`} value={description} onChange={(event) => setDescription(event.target.value)} maxLength={20_000} />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor={`product-category-${product.id}`} className="text-sm font-medium">Categoria</label>
+              <Input id={`product-category-${product.id}`} value={category} onChange={(event) => setCategory(event.target.value)} maxLength={120} />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor={`product-price-${product.id}`} className="text-sm font-medium">Preço em reais</label>
+              <Input id={`product-price-${product.id}`} type="number" min="0" step="0.01" value={priceAmount} onChange={(event) => setPriceAmount(event.target.value)} required />
+            </div>
+            <label className="flex items-center gap-3 text-sm md:col-span-2" htmlFor={`product-affiliate-${product.id}`}>
+              <Checkbox id={`product-affiliate-${product.id}`} checked={affiliateEligible} onCheckedChange={(checked) => setAffiliateEligible(checked === true)} />
+              Elegível para afiliados
+            </label>
+            <div className="flex flex-wrap gap-3 md:col-span-2">
+              <Button type="submit" variant="context" disabled={updateProduct.isPending}>
+                {updateProduct.isPending ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
+                Salvar alterações
+              </Button>
+              {product.status === "draft" ? (
+                <Button type="button" variant="success" disabled={lifecyclePending} onClick={() => void runLifecycle("publish")}>
+                  <UploadCloud aria-hidden="true" />
+                  Publicar
+                </Button>
+              ) : null}
+              {product.status === "published" ? (
+                <Button type="button" variant="outline" disabled={lifecyclePending} onClick={() => void runLifecycle("unpublish")}>
+                  Despublicar
+                </Button>
+              ) : null}
+              {product.status !== "archived" ? (
+                <Button type="button" variant="destructive" disabled={lifecyclePending} onClick={() => void runLifecycle("archive")}>
+                  <Archive aria-hidden="true" />
+                  Arquivar
+                </Button>
+              ) : null}
+            </div>
+          </form>
         </CardContent>
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card className="border-white/10 bg-white/5">
+        <Card variant="admin">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <ShieldCheck className="h-5 w-5" />
-              Licenças
-            </CardTitle>
-            <CardDescription className="text-gray-400">
-              Termos publicados são versionados e não podem ser editados.
-            </CardDescription>
+            <CardTitle>Licenças</CardTitle>
+            <CardDescription>Defina termos e preços opcionais antes da publicação.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            <form className="space-y-3" onSubmit={(event) => void handleLicenseSubmit(event)}>
+            <form className="space-y-3" onSubmit={(event) => void handleCreateLicense(event)}>
+              <Input value={licenseTitle} onChange={(event) => setLicenseTitle(event.target.value)} placeholder="Título da licença" required minLength={2} />
+              <Select value={licenseKind} onValueChange={(value) => setLicenseKind(value as DigitalLicenseKind)}>
+                <SelectTrigger aria-label="Tipo da licença"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(licenseKindLabel).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Textarea value={licenseTerms} onChange={(event) => setLicenseTerms(event.target.value)} placeholder="Termos integrais da licença" required minLength={10} />
               <div className="grid gap-3 sm:grid-cols-2">
-                <select
-                  className={fieldClass}
-                  value={licenseKind}
-                  onChange={(event) => setLicenseKind(event.target.value)}
-                  disabled={product.status !== "draft"}
-                  aria-label="Tipo de licença"
-                >
-                  <option value="personal">Pessoal</option>
-                  <option value="commercial">Comercial</option>
-                  <option value="extended">Estendida</option>
-                  <option value="custom">Personalizada</option>
-                </select>
-                <input
-                  className={fieldClass}
-                  value={licenseTitle}
-                  onChange={(event) => setLicenseTitle(event.target.value)}
-                  placeholder="Nome da licença"
-                  required
-                  minLength={3}
-                  maxLength={200}
-                  disabled={product.status !== "draft"}
-                />
+                <Input value={licenseVersion} onChange={(event) => setLicenseVersion(event.target.value)} placeholder="Versão" required />
+                <Input type="number" min="0" step="0.01" value={licensePrice} onChange={(event) => setLicensePrice(event.target.value)} placeholder="Preço opcional" />
               </div>
-              <input
-                className={fieldClass}
-                value={licenseSummary}
-                onChange={(event) => setLicenseSummary(event.target.value)}
-                placeholder="Resumo opcional"
-                maxLength={1000}
-                disabled={product.status !== "draft"}
-              />
-              <textarea
-                className={`${fieldClass} min-h-32`}
-                value={licenseTerms}
-                onChange={(event) => setLicenseTerms(event.target.value)}
-                placeholder="Termos completos da licença"
-                required
-                minLength={20}
-                maxLength={50_000}
-                disabled={product.status !== "draft"}
-              />
-              <label className="flex items-center gap-2 text-sm text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={licenseDefault}
-                  onChange={(event) => setLicenseDefault(event.target.checked)}
-                  disabled={product.status !== "draft"}
-                />
-                Tornar licença padrão ao publicar
+              <label className="flex items-center gap-3 text-sm" htmlFor={`license-default-${product.id}`}>
+                <Checkbox id={`license-default-${product.id}`} checked={licenseIsDefault} onCheckedChange={(checked) => setLicenseIsDefault(checked === true)} />
+                Licença padrão
               </label>
-              <Button
-                type="submit"
-                variant="outline"
-                className="w-full border-white/20 bg-transparent"
-                disabled={product.status !== "draft" || createLicense.isPending}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Criar versão de licença
+              <Button type="submit" variant="outline" className="w-full" disabled={product.status !== "draft" || createLicense.isPending}>
+                <Plus aria-hidden="true" />
+                Criar licença
               </Button>
             </form>
 
-            <div className="space-y-3">
-              {licensesQuery.isLoading ? (
-                <p className="text-sm text-gray-400">Carregando licenças...</p>
-              ) : (licensesQuery.data ?? []).length === 0 ? (
-                <p className="text-sm text-gray-400">Nenhuma licença cadastrada.</p>
-              ) : (
-                (licensesQuery.data ?? []).map((license) => (
-                  <div key={license.id} className="rounded-xl border border-white/10 bg-black/20 p-4">
-                    <div className="flex items-start justify-between gap-3">
+            {licensesQuery.isLoading ? (
+              <PageState variant="loading" compact title="Carregando licenças" />
+            ) : licensesQuery.error ? (
+              <PageState variant="error" compact title="Licenças indisponíveis" description={getErrorMessage(licensesQuery.error)} />
+            ) : (licensesQuery.data ?? []).length === 0 ? (
+              <PageState variant="empty" compact title="Nenhuma licença cadastrada" />
+            ) : (
+              <div className="space-y-3">
+                {(licensesQuery.data ?? []).map((license) => (
+                  <article key={license.id} className="surface-muted p-4">
+                    <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="font-medium text-white">{license.title}</p>
-                        <p className="mt-1 text-xs text-gray-500">
-                          {licenseKindLabel[license.kind]} · versão {license.version} ·{" "}
-                          {statusLabel[license.status]}
-                          {license.is_default ? " · padrão" : ""}
+                        <h3 className="font-medium text-foreground">{license.title}</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {licenseKindLabel[license.kind]} · versão {license.version}
                         </p>
                       </div>
-                      {license.status === "draft" ? (
-                        <Button
-                          size="sm"
-                          type="button"
-                          disabled={publishLicense.isPending || product.status !== "draft"}
-                          onClick={() => void publishLicense.mutateAsync(license.id)}
-                        >
-                          Publicar
-                        </Button>
-                      ) : null}
+                      <Badge variant={license.status === "published" ? "success" : "outline"}>{statusLabel[license.status]}</Badge>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="border-white/10 bg-white/5">
+        <Card variant="admin">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <FileArchive className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2">
+              <FileArchive className="h-5 w-5 text-admin" aria-hidden="true" />
               Entregáveis
             </CardTitle>
-            <CardDescription className="text-gray-400">
-              Somente assets publicados com finalidade “produto digital”.
-            </CardDescription>
+            <CardDescription>Associe assets privados já publicados no Storage.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            <form className="space-y-3" onSubmit={(event) => void handleDeliverableSubmit(event)}>
-              <select
-                className={fieldClass}
-                value={assetId}
-                onChange={(event) => setAssetId(event.target.value)}
-                required
-                disabled={product.status !== "draft"}
-                aria-label="Asset do entregável"
-              >
-                <option value="">Selecione um asset publicado</option>
-                {availableAssets.map((asset) => (
-                  <option key={asset.id} value={asset.id}>
-                    {asset.original_name}
-                  </option>
-                ))}
-              </select>
-              <input
-                className={fieldClass}
-                value={deliverableTitle}
-                onChange={(event) => setDeliverableTitle(event.target.value)}
-                placeholder="Nome exibido do arquivo"
-                required
-                maxLength={200}
-                disabled={product.status !== "draft"}
-              />
-              <textarea
-                className={`${fieldClass} min-h-24`}
-                value={deliverableDescription}
-                onChange={(event) => setDeliverableDescription(event.target.value)}
-                placeholder="Descrição opcional"
-                maxLength={2000}
-                disabled={product.status !== "draft"}
-              />
-              <Button
-                type="submit"
-                variant="outline"
-                className="w-full border-white/20 bg-transparent"
-                disabled={product.status !== "draft" || attachDeliverable.isPending || !assetId}
-              >
-                <Plus className="mr-2 h-4 w-4" />
+            <form className="space-y-3" onSubmit={(event) => void handleAttachDeliverable(event)}>
+              <Input value={deliverableTitle} onChange={(event) => setDeliverableTitle(event.target.value)} placeholder="Título do entregável" required minLength={2} />
+              <Textarea value={deliverableDescription} onChange={(event) => setDeliverableDescription(event.target.value)} placeholder="Descrição opcional" />
+              <Input value={assetId} onChange={(event) => setAssetId(event.target.value)} placeholder="UUID do asset publicado" required />
+              <Button type="submit" variant="outline" className="w-full" disabled={product.status !== "draft" || attachDeliverable.isPending || !assetId}>
+                <Plus aria-hidden="true" />
                 Associar entregável
               </Button>
             </form>
 
-            <div className="space-y-3">
-              {deliverablesQuery.isLoading ? (
-                <p className="text-sm text-gray-400">Carregando entregáveis...</p>
-              ) : (deliverablesQuery.data ?? []).length === 0 ? (
-                <p className="text-sm text-gray-400">Nenhum arquivo associado.</p>
-              ) : (
-                (deliverablesQuery.data ?? []).map((deliverable) => (
-                  <div key={deliverable.id} className="rounded-xl border border-white/10 bg-black/20 p-4">
-                    <p className="font-medium text-white">{deliverable.title}</p>
-                    <p className="mt-1 text-xs text-gray-500">
+            {deliverablesQuery.isLoading ? (
+              <PageState variant="loading" compact title="Carregando entregáveis" />
+            ) : deliverablesQuery.error ? (
+              <PageState variant="error" compact title="Entregáveis indisponíveis" description={getErrorMessage(deliverablesQuery.error)} />
+            ) : (deliverablesQuery.data ?? []).length === 0 ? (
+              <PageState variant="empty" compact title="Nenhum arquivo associado" />
+            ) : (
+              <div className="space-y-3">
+                {(deliverablesQuery.data ?? []).map((deliverable) => (
+                  <article key={deliverable.id} className="surface-muted p-4">
+                    <h3 className="font-medium text-foreground">{deliverable.title}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {deliverable.assets.original_name} · posição {deliverable.position}
                     </p>
-                  </div>
-                ))
-              )}
-            </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -395,112 +460,99 @@ const DigitalProductsAdmin = () => {
   };
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <header className="flex flex-col gap-5 border-b border-white/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Administração</p>
-            <h1 className="mt-3 flex items-center gap-3 text-4xl font-bold">
-              <Store className="h-9 w-9" />
-              Produtos digitais
-            </h1>
-            <p className="mt-3 text-gray-400">
-              CMS transacional de produtos, licenças, entregáveis e publicação.
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Link to="/marketplace">
-              <Button variant="outline" className="border-white/20 bg-transparent">
-                Ver catálogo
-              </Button>
-            </Link>
-            <Link to="/portal">
-              <Button className="btn-brand">Voltar ao portal</Button>
-            </Link>
-          </div>
-        </header>
+    <AppPageShell
+      context="admin"
+      eyebrow="Administração"
+      title="Produtos digitais"
+      description="CMS transacional de produtos, licenças, entregáveis e publicação."
+      navigation={
+        <span className="inline-flex items-center gap-2 text-sm font-medium text-admin">
+          <Store className="h-4 w-4" aria-hidden="true" />
+          Operação do marketplace
+        </span>
+      }
+      actions={
+        <>
+          <Button asChild variant="outline"><Link to="/marketplace">Ver catálogo</Link></Button>
+          <Button asChild variant="context"><Link to="/portal">Voltar ao portal</Link></Button>
+        </>
+      }
+    >
+      <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
+        <div className="space-y-6">
+          <Card variant="admin">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PackagePlus className="h-5 w-5 text-admin" aria-hidden="true" />
+                Novo produto
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-3" onSubmit={(event) => void handleCreateProduct(event)}>
+                <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Título" required minLength={3} maxLength={200} aria-label="Título do produto" />
+                <Input value={slug} onChange={(event) => setSlug(event.target.value.toLowerCase())} placeholder="slug-do-produto" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" aria-label="Slug do produto" />
+                <Input value={shortDescription} onChange={(event) => setShortDescription(event.target.value)} placeholder="Descrição curta" maxLength={500} aria-label="Descrição curta" />
+                <Textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Descrição completa" maxLength={20_000} aria-label="Descrição completa" />
+                <Input value={category} onChange={(event) => setCategory(event.target.value)} placeholder="Categoria" maxLength={120} aria-label="Categoria" />
+                <Input type="number" min="0" step="0.01" value={priceAmount} onChange={(event) => setPriceAmount(event.target.value)} required aria-label="Preço em reais" />
+                <label className="flex items-center gap-3 text-sm" htmlFor="new-product-affiliate">
+                  <Checkbox id="new-product-affiliate" checked={affiliateEligible} onCheckedChange={(checked) => setAffiliateEligible(checked === true)} />
+                  Elegível para afiliados
+                </label>
+                <Button type="submit" variant="context" className="w-full" disabled={createProduct.isPending}>
+                  {createProduct.isPending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Plus aria-hidden="true" />}
+                  {createProduct.isPending ? "Criando..." : "Criar rascunho"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
 
-        <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
-          <div className="space-y-6">
-            <Card className="border-white/10 bg-white/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <PackagePlus className="h-5 w-5" />
-                  Novo produto
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form className="space-y-3" onSubmit={(event) => void handleCreateProduct(event)}>
-                  <input className={fieldClass} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Título" required minLength={3} maxLength={200} />
-                  <input className={fieldClass} value={slug} onChange={(event) => setSlug(event.target.value.toLowerCase())} placeholder="slug-do-produto" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" />
-                  <input className={fieldClass} value={shortDescription} onChange={(event) => setShortDescription(event.target.value)} placeholder="Descrição curta" maxLength={500} />
-                  <textarea className={`${fieldClass} min-h-24`} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Descrição completa" maxLength={20_000} />
-                  <input className={fieldClass} value={category} onChange={(event) => setCategory(event.target.value)} placeholder="Categoria" maxLength={120} />
-                  <input className={fieldClass} type="number" min="0" step="0.01" value={priceAmount} onChange={(event) => setPriceAmount(event.target.value)} required aria-label="Preço em reais" />
-                  <label className="flex items-center gap-2 text-sm text-gray-300">
-                    <input type="checkbox" checked={affiliateEligible} onChange={(event) => setAffiliateEligible(event.target.checked)} />
-                    Elegível para afiliados
-                  </label>
-                  <Button type="submit" className="btn-brand w-full" disabled={createProduct.isPending}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    {createProduct.isPending ? "Criando..." : "Criar rascunho"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card className="border-white/10 bg-white/5">
-              <CardHeader>
-                <CardTitle className="text-white">Produtos cadastrados</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {productsQuery.isLoading ? (
-                  <p className="text-sm text-gray-400">Carregando produtos...</p>
-                ) : productsQuery.error ? (
-                  <p className="text-sm text-red-300">
-                    {getErrorMessage(productsQuery.error, "Não foi possível carregar os produtos.")}
-                  </p>
-                ) : (productsQuery.data ?? []).length === 0 ? (
-                  <p className="text-sm text-gray-400">Nenhum produto cadastrado.</p>
-                ) : (
-                  (productsQuery.data ?? []).map((product) => (
-                    <button
-                      key={product.id}
-                      type="button"
-                      className={`w-full rounded-xl border p-4 text-left transition ${
-                        selectedProductId === product.id
-                          ? "border-white/30 bg-white/10"
-                          : "border-white/10 bg-black/20 hover:bg-white/5"
-                      }`}
-                      onClick={() => setSelectedProductId(product.id)}
-                    >
-                      <p className="font-medium text-white">{product.title}</p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        {statusLabel[product.status]} · versão {product.version}
-                      </p>
-                    </button>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {selectedProductId ? (
-            <ProductConfiguration productId={selectedProductId} />
-          ) : (
-            <Card className="border-white/10 bg-white/5">
-              <CardContent className="flex min-h-96 flex-col items-center justify-center p-8 text-center">
-                <Store className="mb-4 h-10 w-10 text-gray-500" />
-                <h2 className="text-xl font-semibold">Selecione um produto</h2>
-                <p className="mt-2 max-w-lg text-sm text-gray-400">
-                  Abra um rascunho para configurar licença, entregáveis e publicação.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          <Card variant="admin">
+            <CardHeader><CardTitle>Produtos cadastrados</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {productsQuery.isLoading ? (
+                <PageState variant="loading" compact title="Carregando produtos" />
+              ) : productsQuery.error ? (
+                <PageState variant="error" compact title="Produtos indisponíveis" description={getErrorMessage(productsQuery.error)} />
+              ) : (productsQuery.data ?? []).length === 0 ? (
+                <PageState variant="empty" compact title="Nenhum produto cadastrado" />
+              ) : (
+                (productsQuery.data ?? []).map((product) => (
+                  <button
+                    key={product.id}
+                    type="button"
+                    aria-pressed={selectedProductId === product.id}
+                    className={`w-full rounded-xl border p-4 text-left transition-[border-color,background-color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      selectedProductId === product.id
+                        ? "border-admin/50 bg-admin/10 shadow-sm"
+                        : "border-border bg-card hover:border-admin/30 hover:bg-muted/40"
+                    }`}
+                    onClick={() => setSelectedProductId(product.id)}
+                  >
+                    <span className="font-medium text-foreground">{product.title}</span>
+                    <span className="mt-2 flex items-center justify-between gap-3">
+                      <Badge variant={statusVariant[product.status]}>{statusLabel[product.status]}</Badge>
+                      <span className="text-xs text-muted-foreground">versão {product.version}</span>
+                    </span>
+                  </button>
+                ))
+              )}
+            </CardContent>
+          </Card>
         </div>
+
+        {selectedProductId ? (
+          <ProductConfiguration productId={selectedProductId} />
+        ) : (
+          <PageState
+            variant="empty"
+            icon={Store}
+            title="Selecione um produto"
+            description="Abra um rascunho para configurar licença, entregáveis e publicação."
+          />
+        )}
       </div>
-    </main>
+    </AppPageShell>
   );
 };
 
