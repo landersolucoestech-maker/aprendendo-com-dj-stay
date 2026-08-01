@@ -9,6 +9,10 @@ import { parseDataContract } from "@/contracts/contract-error";
 
 const MAX_SESSION_FINGERPRINTS = 100;
 const reportedFingerprints = new Set<string>();
+const bearerTokenPattern = new RegExp(
+  "(bearer\\s+)[A-Za-z0-9._~+/=-]{16,}",
+  "gi",
+);
 let globalHandlersInstalled = false;
 
 const redactSensitiveText = (value: string, maxLength: number): string =>
@@ -21,10 +25,7 @@ const redactSensitiveText = (value: string, maxLength: number): string =>
       /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g,
       "[JWT_REDACTED]",
     )
-    .replace(
-      /(bearer\s+)[A-Za-z0-9._~+\/=-]{16,}/gi,
-      "$1[TOKEN_REDACTED]",
-    )
+    .replace(bearerTokenPattern, "$1[TOKEN_REDACTED]")
     .trim()
     .slice(0, maxLength);
 
