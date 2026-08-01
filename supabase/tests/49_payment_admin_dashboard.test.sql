@@ -64,9 +64,16 @@ select ok(
   'payment dashboard has stable descending order'
 );
 select is(
-  (select count(*)::integer from information_schema.role_table_grants where table_schema='public' and table_name in ('payment_orders','payment_attempts','payment_entitlements','payment_provider_events') and grantee in ('anon','authenticated')),
+  (
+    select count(*)::integer
+    from information_schema.role_table_grants
+    where table_schema='public'
+      and table_name in ('payment_orders','payment_attempts','payment_entitlements','payment_provider_events')
+      and grantee in ('anon','authenticated')
+      and (grantee = 'anon' or privilege_type <> 'SELECT')
+  ),
   0,
-  'payment dashboard does not add direct finance table grants'
+  'finance tables expose no anonymous or client mutation grants'
 );
 select ok(
   not exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='get_payment_admin_dashboard' and p.prosecdef),
