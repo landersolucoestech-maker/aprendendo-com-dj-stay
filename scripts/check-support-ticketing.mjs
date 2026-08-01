@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 const requiredFiles = [
   "supabase/migrations/20260801200000_support_ticketing.sql",
   "supabase/migrations/20260801200100_support_ticketing_pgcrypto_hardening.sql",
+  "supabase/migrations/20260801200200_support_ticketing_rls_deny.sql",
   "supabase/tests/51_support_ticketing.test.sql",
   "src/contracts/support.ts",
   "src/integrations/supabase/support-rpc.ts",
@@ -25,18 +26,19 @@ for (const file of requiredFiles) {
 if (failures.length === 0) {
   const migration = readFileSync(requiredFiles[0], "utf8");
   const hardening = readFileSync(requiredFiles[1], "utf8");
-  const test = readFileSync(requiredFiles[2], "utf8");
-  const contracts = readFileSync(requiredFiles[3], "utf8");
-  const rpc = readFileSync(requiredFiles[4], "utf8");
-  const hook = readFileSync(requiredFiles[5], "utf8");
-  const studentPage = readFileSync(requiredFiles[6], "utf8");
-  const adminPage = readFileSync(requiredFiles[7], "utf8");
-  const navigation = readFileSync(requiredFiles[8], "utf8");
-  const studentLazy = readFileSync(requiredFiles[9], "utf8");
-  const adminLazy = readFileSync(requiredFiles[10], "utf8");
-  const app = readFileSync(requiredFiles[11], "utf8");
-  const docs = readFileSync(requiredFiles[12], "utf8");
-  const packageJson = readFileSync(requiredFiles[13], "utf8");
+  const rlsDeny = readFileSync(requiredFiles[2], "utf8");
+  const test = readFileSync(requiredFiles[3], "utf8");
+  const contracts = readFileSync(requiredFiles[4], "utf8");
+  const rpc = readFileSync(requiredFiles[5], "utf8");
+  const hook = readFileSync(requiredFiles[6], "utf8");
+  const studentPage = readFileSync(requiredFiles[7], "utf8");
+  const adminPage = readFileSync(requiredFiles[8], "utf8");
+  const navigation = readFileSync(requiredFiles[9], "utf8");
+  const studentLazy = readFileSync(requiredFiles[10], "utf8");
+  const adminLazy = readFileSync(requiredFiles[11], "utf8");
+  const app = readFileSync(requiredFiles[12], "utf8");
+  const docs = readFileSync(requiredFiles[13], "utf8");
+  const packageJson = readFileSync(requiredFiles[14], "utf8");
 
   for (const fragment of [
     "support_tickets",
@@ -54,7 +56,14 @@ if (failures.length === 0) {
     }
   }
   if (!hardening.includes("extensions.digest")) failures.push("Hardening pgcrypto B39 ausente.");
-  if (!test.includes("select plan(30)")) failures.push("Plano pgTAP B39 deve conter 30 asserções.");
+  for (const policy of [
+    "support_tickets_direct_access_denied",
+    "support_ticket_messages_direct_access_denied",
+    "support_ticket_events_direct_access_denied",
+  ]) {
+    if (!rlsDeny.includes(policy)) failures.push(`Política restritiva B39 ausente: ${policy}`);
+  }
+  if (!test.includes("select plan(33)")) failures.push("Plano pgTAP B39 deve conter 33 asserções.");
   for (const fragment of ["supportTicketSchema", "supportAdminDashboardSchema", "supportMutationResultSchema"]) {
     if (!contracts.includes(fragment)) failures.push(`Contrato B39 ausente: ${fragment}`);
   }
