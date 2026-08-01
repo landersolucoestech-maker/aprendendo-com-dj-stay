@@ -14,6 +14,6 @@ export const DigitalProductsAdmin = lazy(
   () => import("@/pages/admin/DigitalProductsAdmin"),
 );
 export const FrontendErrorsAdmin = lazy(
-  () => import("@/pages/admin/FrontendErrorsAdmin"),
+  () => import("@/pages/admin/FrontendErrorsAdminWithHistory"),
 );
 export const StudentsAdmin = lazy(() => import("@/pages/admin/StudentsAdmin"));
