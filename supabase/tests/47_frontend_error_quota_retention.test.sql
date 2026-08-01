@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(35);
+select plan(36);
 
 select has_type('public','frontend_error_maintenance_action','frontend error maintenance action enum exists');
 select has_table('public','frontend_error_maintenance_events','frontend error maintenance audit table exists');
