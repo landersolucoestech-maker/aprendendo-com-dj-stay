@@ -21,17 +21,17 @@ class RouteErrorBoundaryBase extends Component<
   RouteErrorBoundaryProps,
   RouteErrorBoundaryState
 > {
-  state: RouteErrorBoundaryState = { error: null };
+  override state: RouteErrorBoundaryState = { error: null };
 
   static getDerivedStateFromError(error: Error): RouteErrorBoundaryState {
     return { error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  override componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("Falha não tratada na rota", error, info.componentStack);
   }
 
-  componentDidUpdate(previousProps: RouteErrorBoundaryProps) {
+  override componentDidUpdate(previousProps: RouteErrorBoundaryProps) {
     if (
       previousProps.resetKey !== this.props.resetKey &&
       this.state.error !== null
@@ -40,7 +40,7 @@ class RouteErrorBoundaryBase extends Component<
     }
   }
 
-  render() {
+  override render() {
     if (this.state.error === null) return this.props.children;
 
     return (
