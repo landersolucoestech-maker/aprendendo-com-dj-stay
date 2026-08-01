@@ -47,8 +47,8 @@ if (failures.length === 0) {
   if (!test.includes("select plan(36)")) {
     failures.push("Plano pgTAP B35 deve conter exatamente 36 asserções.");
   }
-  if (!contracts.includes("frontendErrorPurgeResultSchema")) {
-    failures.push("Contrato Zod do expurgo B35 ausente.");
+  if (!contracts.includes("frontendErrorRetentionResultSchema")) {
+    failures.push("Contrato Zod da retenção B35 ausente.");
   }
   if (!rpc.includes('functionName: "purge_frontend_error_events"')) {
     failures.push("Cliente RPC não declara purge_frontend_error_events.");
@@ -57,7 +57,7 @@ if (failures.length === 0) {
     failures.push("Hook administrativo de retenção B35 ausente.");
   }
   for (const fragment of [
-    "Expurgar incidentes encerrados",
+    "Retenção de incidentes encerrados",
     "window.confirm(",
     "useState<number>(90)",
     "batchLimit: 1000",
