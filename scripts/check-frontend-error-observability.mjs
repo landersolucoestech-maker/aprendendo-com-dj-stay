@@ -1,38 +1,48 @@
 import { existsSync, readFileSync } from "node:fs";
 
-const requiredFiles = [
-  "supabase/migrations/20260801040000_frontend_error_observability.sql",
-  "supabase/migrations/20260801040100_frontend_error_observability_indexes.sql",
-  "supabase/tests/46_frontend_error_observability.test.sql",
-  "src/contracts/frontend-errors.ts",
-  "src/integrations/supabase/frontend-error-rpc.ts",
-  "src/observability/frontend-error-reporting.ts",
-  "src/hooks/useFrontendErrors.ts",
-  "src/pages/admin/FrontendErrorsAdmin.tsx",
-  "src/routing/RouteErrorBoundary.tsx",
-  "src/routing/lazy/admin-pages.ts",
-  "src/App.tsx",
-  "src/main.tsx",
-];
+const paths = Object.freeze({
+  schemaMigration:
+    "supabase/migrations/20260801040000_frontend_error_observability.sql",
+  indexMigration:
+    "supabase/migrations/20260801040100_frontend_error_observability_indexes.sql",
+  idempotencyMigration:
+    "supabase/migrations/20260801040200_frontend_error_idempotency_hardening.sql",
+  databaseTest: "supabase/tests/46_frontend_error_observability.test.sql",
+  contracts: "src/contracts/frontend-errors.ts",
+  rpcClient: "src/integrations/supabase/frontend-error-rpc.ts",
+  reporting: "src/observability/frontend-error-reporting.ts",
+  hooks: "src/hooks/useFrontendErrors.ts",
+  adminPage: "src/pages/admin/FrontendErrorsAdmin.tsx",
+  contactsPage: "src/pages/admin/ContactsAdmin.tsx",
+  routeBoundary: "src/routing/RouteErrorBoundary.tsx",
+  lazyAdminPages: "src/routing/lazy/admin-pages.ts",
+  app: "src/App.tsx",
+  main: "src/main.tsx",
+});
 
 const failures = [];
-for (const path of requiredFiles) {
+for (const path of Object.values(paths)) {
   if (!existsSync(path)) failures.push(`Arquivo B31 ausente: ${path}`);
 }
 
 if (failures.length === 0) {
-  const migration = readFileSync(requiredFiles[0], "utf8");
-  const indexMigration = readFileSync(requiredFiles[1], "utf8");
-  const databaseTest = readFileSync(requiredFiles[2], "utf8");
-  const contracts = readFileSync(requiredFiles[3], "utf8");
-  const rpcClient = readFileSync(requiredFiles[4], "utf8");
-  const reporting = readFileSync(requiredFiles[5], "utf8");
-  const hooks = readFileSync(requiredFiles[6], "utf8");
-  const adminPage = readFileSync(requiredFiles[7], "utf8");
-  const routeBoundary = readFileSync(requiredFiles[8], "utf8");
-  const lazyAdminPages = readFileSync(requiredFiles[9], "utf8");
-  const app = readFileSync(requiredFiles[10], "utf8");
-  const main = readFileSync(requiredFiles[11], "utf8");
+  const schemaMigration = readFileSync(paths.schemaMigration, "utf8");
+  const indexMigration = readFileSync(paths.indexMigration, "utf8");
+  const idempotencyMigration = readFileSync(
+    paths.idempotencyMigration,
+    "utf8",
+  );
+  const databaseTest = readFileSync(paths.databaseTest, "utf8");
+  const contracts = readFileSync(paths.contracts, "utf8");
+  const rpcClient = readFileSync(paths.rpcClient, "utf8");
+  const reporting = readFileSync(paths.reporting, "utf8");
+  const hooks = readFileSync(paths.hooks, "utf8");
+  const adminPage = readFileSync(paths.adminPage, "utf8");
+  const contactsPage = readFileSync(paths.contactsPage, "utf8");
+  const routeBoundary = readFileSync(paths.routeBoundary, "utf8");
+  const lazyAdminPages = readFileSync(paths.lazyAdminPages, "utf8");
+  const app = readFileSync(paths.app, "utf8");
+  const main = readFileSync(paths.main, "utf8");
 
   for (const fragment of [
     "create table public.frontend_error_events",
@@ -47,26 +57,35 @@ if (failures.length === 0) {
     "get_frontend_error_dashboard",
     "update_frontend_error_status",
   ]) {
-    if (!migration.includes(fragment)) {
+    if (!schemaMigration.includes(fragment)) {
       failures.push(`Migração B31 não preserva o contrato: ${fragment}`);
     }
   }
 
   if (
     /grant execute on function public\.capture_frontend_error\([^;]+\)\s+to anon;/is.test(
-      migration,
+      schemaMigration,
     )
   ) {
     failures.push("Captura B31 não pode ser executável por anon.");
   }
-  if (/\b(ip_address|user_agent)\b/i.test(migration)) {
+  if (/\b(ip_address|user_agent)\b/i.test(schemaMigration)) {
     failures.push("Migração B31 não pode persistir IP ou user-agent bruto.");
   }
   if (!indexMigration.includes("frontend_error_events_handled_by_idx")) {
     failures.push("Migração B31 deve cobrir a FK handled_by_user_id.");
   }
-  if (!databaseTest.includes("select plan(35)")) {
-    failures.push("Teste pgTAP B31 deve manter 35 asserções.");
+  for (const fragment of [
+    "create or replace function private.capture_frontend_error",
+    "user_id = v_user_id",
+    "FRONTEND_ERROR_EVENT_ID_CONFLICT",
+  ]) {
+    if (!idempotencyMigration.includes(fragment)) {
+      failures.push(`Hardening de idempotência B31 incompleto: ${fragment}`);
+    }
+  }
+  if (!databaseTest.includes("select plan(36)")) {
+    failures.push("Teste pgTAP B31 deve manter 36 asserções.");
   }
 
   for (const fragment of [
@@ -105,14 +124,28 @@ if (failures.length === 0) {
   if (reporting.includes("service_role")) {
     failures.push("Frontend B31 não pode mencionar service role.");
   }
-  if (!hooks.includes("get_frontend_error_dashboard") || !hooks.includes("update_frontend_error_status")) {
+  if (
+    !hooks.includes("get_frontend_error_dashboard") ||
+    !hooks.includes("update_frontend_error_status")
+  ) {
     failures.push("Hooks B31 não consomem as RPCs administrativas.");
   }
-  if (!adminPage.includes("useFrontendErrorDashboard") || !adminPage.includes("useUpdateFrontendErrorStatus")) {
+  if (
+    !adminPage.includes("useFrontendErrorDashboard") ||
+    !adminPage.includes("useUpdateFrontendErrorStatus")
+  ) {
     failures.push("Página administrativa B31 não consome os hooks reais.");
   }
-  if (!routeBoundary.includes("reportFrontendError") || routeBoundary.includes("console.error")) {
-    failures.push("RouteErrorBoundary deve persistir o erro sem depender de console.error.");
+  if (!contactsPage.includes('to="/admin/erros"')) {
+    failures.push("Navegação administrativa deve expor a fila de erros B31.");
+  }
+  if (
+    !routeBoundary.includes("reportFrontendError") ||
+    routeBoundary.includes("console.error")
+  ) {
+    failures.push(
+      "RouteErrorBoundary deve persistir o erro sem depender de console.error.",
+    );
   }
   if (!main.includes("installGlobalFrontendErrorHandlers();")) {
     failures.push("main.tsx deve instalar os handlers globais B31.");
@@ -120,7 +153,10 @@ if (failures.length === 0) {
   if (!lazyAdminPages.includes("FrontendErrorsAdmin")) {
     failures.push("Página B31 deve permanecer lazy-loaded.");
   }
-  if (!app.includes('path="/admin/erros"') || !app.includes("<FrontendErrorsAdmin />")) {
+  if (
+    !app.includes('path="/admin/erros"') ||
+    !app.includes("<FrontendErrorsAdmin />")
+  ) {
     failures.push("Rota administrativa B31 deve existir e usar AdminRoute.");
   }
 }
