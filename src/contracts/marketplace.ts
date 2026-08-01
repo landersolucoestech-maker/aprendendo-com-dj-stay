@@ -112,7 +112,7 @@ export const digitalProductAccessSchema = z
 
 export const digitalProductAccessesSchema = z.array(digitalProductAccessSchema);
 
-export const marketplaceCreateProductInputSchema = z
+const marketplaceProductValuesSchema = z
   .object({
     title: z.string().trim().min(3).max(200),
     slug: z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
@@ -122,6 +122,23 @@ export const marketplaceCreateProductInputSchema = z
     priceAmount: z.number().nonnegative(),
     currencyCode: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/),
     affiliateEligible: z.boolean(),
+  })
+  .strict();
+
+export const marketplaceCreateProductInputSchema = marketplaceProductValuesSchema;
+
+export const marketplaceUpdateProductInputSchema = z
+  .object({
+    productId: uuidSchema,
+    expectedVersion: z.number().int().positive(),
+    values: marketplaceProductValuesSchema,
+  })
+  .strict();
+
+export const marketplaceProductLifecycleInputSchema = z
+  .object({
+    productId: uuidSchema,
+    expectedVersion: z.number().int().positive(),
   })
   .strict();
 
@@ -145,11 +162,15 @@ export const marketplaceAttachDeliverableInputSchema = z
   })
   .strict();
 
+export type DigitalProductStatus = z.infer<typeof digitalProductStatusSchema>;
+export type DigitalLicenseKind = z.infer<typeof digitalLicenseKindSchema>;
 export type DigitalProduct = z.infer<typeof digitalProductSchema>;
 export type DigitalProductLicense = z.infer<typeof digitalProductLicenseSchema>;
 export type DigitalProductDeliverableRow = z.infer<typeof digitalProductDeliverableRowSchema>;
 export type DigitalProductDeliverable = z.infer<typeof digitalProductDeliverableSchema>;
 export type DigitalProductAccess = z.infer<typeof digitalProductAccessSchema>;
 export type MarketplaceCreateProductInput = z.infer<typeof marketplaceCreateProductInputSchema>;
+export type MarketplaceUpdateProductInput = z.infer<typeof marketplaceUpdateProductInputSchema>;
+export type MarketplaceProductLifecycleInput = z.infer<typeof marketplaceProductLifecycleInputSchema>;
 export type MarketplaceCreateLicenseInput = z.infer<typeof marketplaceCreateLicenseInputSchema>;
 export type MarketplaceAttachDeliverableInput = z.infer<typeof marketplaceAttachDeliverableInputSchema>;
