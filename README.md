@@ -1,14 +1,31 @@
 # Plataforma de cursos e produtos digitais
 
-Repositório técnico da plataforma atualmente identificada pelo nome de projeto **Aprendendo com DJ Stay**. A marca pública definitiva ainda depende de decisão formal e não deve ser inferida a partir do nome do repositório, do projeto Supabase ou de nomenclaturas legadas.
+Repositório técnico da plataforma atualmente identificada pelo nome de projeto **Aprendendo com DJ Stay**. A marca pública definitiva não deve ser inferida a partir do nome do repositório, do projeto Supabase ou de nomenclaturas legadas.
 
 ## Estado atual
 
-O projeto está em refatoração integral na branch `dev`. A branch `main` permanece como referência de produção e não recebe alterações automáticas.
+O desenvolvimento ocorre exclusivamente na branch `dev`. A branch `main` e o projeto Supabase de produção não foram promovidos por esta sequência de trabalho e permanecem sem escrita automática.
 
-O código herdado é um protótipo React/Vite com integrações incompletas. Autenticação, autorização, banco canônico, storage privado, pagamentos, Pix, marketplace e afiliados ainda não devem ser considerados operacionais. O diagnóstico completo está em [`docs/audit`](docs/audit).
+A plataforma deixou de ser apenas o protótipo React/Vite herdado. Autenticação, papéis, banco canônico, storage privado, cursos, portal do aluno, marketplace, pagamentos, afiliados, certificados, contatos e observabilidade possuem implementação e contratos automatizados validados no ambiente `dev`.
 
-## Stack atual
+Isso não significa produção liberada. Homologação financeira no sandbox do provider, configuração externa de webhooks, pentest, teste de carga e revisão final de promoção continuam separados do gate de código.
+
+Consulte a matriz completa em [`docs/STATUS.md`](docs/STATUS.md).
+
+## Escopo
+
+A plataforma é exclusiva de um único instrutor proprietário e possui:
+
+- portal público e autenticação;
+- portal do aluno;
+- módulo administrativo do instrutor/proprietário;
+- cursos, avaliações, progresso e certificados;
+- marketplace de produtos digitais próprios;
+- pagamentos e programa de afiliados.
+
+Não existe modelo multi-instrutor ou administração externa.
+
+## Stack
 
 - React 18;
 - TypeScript;
@@ -16,7 +33,7 @@ O código herdado é um protótipo React/Vite com integrações incompletas. Aut
 - React Router;
 - TanStack React Query;
 - Tailwind CSS e componentes shadcn/Radix;
-- Supabase.
+- Supabase Database, Auth, Storage e Edge Functions.
 
 ## Requisitos locais
 
@@ -25,25 +42,28 @@ O código herdado é um protótipo React/Vite com integrações incompletas. Aut
 
 O package manager oficial é **npm**. Não utilize Bun, pnpm ou Yarn neste repositório.
 
-## Instalação
+## Instalação e desenvolvimento
 
 ```bash
 npm ci
-```
-
-## Desenvolvimento
-
-1. Crie localmente o arquivo `.env`;
-2. configure somente as variáveis públicas documentadas em [`docs/environment.md`](docs/environment.md);
-3. execute:
-
-```bash
 npm run dev
 ```
 
-Arquivos `.env` são locais e não podem ser versionados. Nunca use `service_role`, segredo de webhook ou credencial de provider em variáveis `VITE_*`.
+Crie localmente o arquivo `.env` e configure somente as variáveis públicas documentadas em [`docs/environment.md`](docs/environment.md).
+
+Arquivos `.env` são locais e não podem ser versionados. Nunca use `service_role`, segredo de webhook ou credencial privada de provider em variáveis `VITE_*`.
 
 ## Qualidade
+
+O gate consolidado é:
+
+```bash
+npm run check
+```
+
+Ele executa lint, contratos, TypeScript, audit de dependências, build e validação dos chunks. No CI, a validação inclui reconstrução local do Supabase, pgTAP, sincronização de tipos e artefatos de supply chain.
+
+Comandos individuais:
 
 ```bash
 npm run lint
@@ -51,13 +71,7 @@ npm run typecheck
 npm run build
 ```
 
-O comando consolidado é:
-
-```bash
-npm run check
-```
-
-A ausência de erro no build não substitui testes, validação de RLS, homologação ou revisão de produção.
+Build verde não substitui RLS, homologação externa, pentest ou revisão de produção.
 
 ## Ambientes
 
@@ -66,7 +80,7 @@ A ausência de erro no build não substitui testes, validação de RLS, homologa
 | `dev` | desenvolvimento | `jmtyurketfclaneqxohu` | permitida durante as fases autorizadas |
 | `main` | produção | `tduvfrxagujryfnqpdmc` | proibida sem autorização explícita |
 
-O projeto legado `uonsgcndzzuclcixoaei` permanece bloqueado para reconciliação e não pode ser utilizado como fallback.
+O projeto legado `uonsgcndzzuclcixoaei` permanece bloqueado e não pode ser utilizado como fallback.
 
 ## Fluxo de contribuição
 
@@ -74,10 +88,11 @@ O projeto legado `uonsgcndzzuclcixoaei` permanece bloqueado para reconciliação
 - commits devem corresponder a uma fase e responsabilidade;
 - o pipeline deve bloquear falhas;
 - a promoção ocorre por Pull Request `dev → main`;
-- merge e escrita em produção não são automáticos.
+- merge, deploy e escrita em produção não são automáticos.
 
 ## Documentação
 
-- [`docs/audit`](docs/audit): auditoria e matriz de achados;
-- [`docs/refactor`](docs/refactor): execução sequencial da refatoração;
+- [`docs/STATUS.md`](docs/STATUS.md): estado operacional verificado e limites de homologação;
+- [`docs/audit`](docs/audit/README.md): evidências e limites da auditoria;
+- [`docs/refactor`](docs/refactor/README.md): execução sequencial das fases;
 - [`docs/environment.md`](docs/environment.md): contrato de configuração pública.
