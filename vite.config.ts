@@ -11,6 +11,7 @@ const manualChunks = (id: string): string | undefined => {
     normalizedId.includes("/react/") ||
     normalizedId.includes("/react-dom/") ||
     normalizedId.includes("/react-router") ||
+    normalizedId.includes("/@remix-run/router/") ||
     normalizedId.includes("/scheduler/")
   ) {
     return "vendor-react";
@@ -70,6 +71,15 @@ export default defineConfig({
     cssCodeSplit: true,
     chunkSizeWarningLimit: 500,
     rollupOptions: {
+      onLog(level, log, handler) {
+        if (
+          log.code === "CIRCULAR_CHUNK" ||
+          log.message.includes("Circular chunk:")
+        ) {
+          throw new Error(`Grafo de chunks circular bloqueado: ${log.message}`);
+        }
+        handler(level, log);
+      },
       output: {
         manualChunks,
       },
