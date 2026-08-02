@@ -20,6 +20,7 @@ const requiredFiles = [
   "src/components/layout/AppPageShell.tsx",
   "src/components/admin/AdminCourseLayout.tsx",
   "src/components/student/StudentPortalShell.tsx",
+  "src/components/student/StudentPortalPageFrame.tsx",
   "src/components/student/StudentPortalPrimitives.tsx",
   "src/components/Navigation.tsx",
   "src/pages/AffiliateRedirect.tsx",
@@ -217,6 +218,11 @@ requirePattern(
   /(?:aria-label\s*=\s*\{\s*mobile\s*\?\s*"Navegação móvel do Portal do Aluno"\s*:\s*"Navegação do Portal do Aluno"\s*\}|aria-label="Navegação móvel do Portal do Aluno"[\s\S]*aria-label="Navegação do Portal do Aluno")/s,
   "rótulos acessíveis móvel e desktop do Portal do Aluno, em implementação condicional ou explícita",
 );
+requireText("src/components/student/StudentPortalPageFrame.tsx", [
+  'import { StudentPortalShell } from "@/components/student/StudentPortalShell"',
+  "<StudentPortalShell",
+]);
+
 forbidText("src/components/student/StudentPortalShell.tsx", [
   "bg-black",
   "text-white",
@@ -301,7 +307,7 @@ forbidText("src/pages/affiliate/AffiliatePortal.tsx", [
 ]);
 
 requireText("src/pages/student/Certificates.tsx", [
-  'context="course"',
+  "<StudentPortalPageFrame>",
   'variant="course"',
   "<PageState",
   "<Button asChild",
@@ -375,4 +381,4 @@ forbidText("src/pages/student/StudentPortal.tsx", [
 ]);
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log("Contrato estático do Portal do Aluno na FASE B23 aprovado.");
+console.log("Contrato estático do Portal do Aluno na FASE B23/B84 aprovado com contexto visual delegado pelo shell.");
