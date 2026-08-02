@@ -108,7 +108,7 @@ jobs:
           BUILD: ${{ steps.build.outcome }}
         with:
           script: |
-            await github.rest.issues.create({
+            await github.request("POST /repos/{owner}/{repo}/issues", {
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `Gate técnico — ${context.sha.slice(0,12)}`,
@@ -121,7 +121,11 @@ jobs:
                 `tipos: **${process.env.TYPES}**`,
                 `TypeScript: **${process.env.TYPECHECK}**`,
                 `build: **${process.env.BUILD}**`
-              ].join('\n')
+              ].join('\n'),
+              headers: {
+                accept: "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2026-03-10"
+              }
             });
 
       - name: Gate final
