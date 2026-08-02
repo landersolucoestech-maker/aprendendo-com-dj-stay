@@ -6,6 +6,7 @@ const expect = (condition, message) => { if (!condition) failures.push(message);
 
 const app = read("src/App.tsx");
 const redirect = read("src/routing/RoleLandingRedirect.tsx");
+const navigation = read("src/components/admin/AdminNavigation.tsx");
 const editor = read("src/pages/admin/CourseEditor.tsx");
 const preview = read("src/pages/admin/CoursePreview.tsx");
 const list = read("src/pages/admin/CoursesAdmin.tsx");
@@ -22,7 +23,8 @@ const migrations = [
 
 expect(app.includes('path="/admin/cursos"'), "A lista administrativa deve possuir rota protegida.");
 expect(app.includes('path="/admin/cursos/:courseId/preview"'), "O preview deve possuir rota administrativa.");
-expect(redirect.includes('<Navigate to="/admin/cursos"'), "O administrador deve entrar no CMS.");
+expect(redirect.includes('<Navigate to="/admin" replace />'), "O administrador deve entrar no módulo administrativo.");
+expect(navigation.includes('{ to: "/admin/cursos", label: "Cursos"'), "O CMS deve permanecer acessível pela navegação administrativa.");
 expect(editor.includes("courseToFormValues(courseQuery.data)"), "A edição deve carregar integralmente o registro persistido.");
 expect(editor.includes("form.reset(courseToFormValues(updated))"), "Após salvar, o formulário deve usar a resposta persistida.");
 expect(!editor.includes('defaultValue=""'), "Campos de edição não podem ser reconstruídos com strings vazias fixas.");
