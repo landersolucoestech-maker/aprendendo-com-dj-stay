@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { RouteAccessibility } from "@/accessibility/RouteAccessibility";
 import { AuthProvider } from "@/auth/AuthProvider";
+import { AdminNavigation } from "@/components/admin/AdminNavigation";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -85,7 +86,12 @@ const MarketplaceRoute = ({ children }: { children: React.ReactNode }) => (
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => (
   <RequireAuth>
-    <RequireRole allowedRoles={["administrador_proprietario"]}>{children}</RequireRole>
+    <RequireRole allowedRoles={["administrador_proprietario"]}>
+      <div className="min-h-screen bg-black">
+        <AdminNavigation />
+        {children}
+      </div>
+    </RequireRole>
   </RequireAuth>
 );
 
