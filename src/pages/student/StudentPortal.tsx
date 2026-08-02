@@ -49,6 +49,7 @@ import { useStudentLibrary } from "@/hooks/useStudentLibrary";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useUserProgress } from "@/hooks/useUserProgress";
 import { useToast } from "@/hooks/use-toast";
+import { calculateOverallCourseProgress } from "@/lib/course-progress";
 import { formatAppDateTime } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 import { downloadPrivateAsset } from "@/lib/private-assets";
@@ -485,13 +486,7 @@ const CourseSection = () => {
   }
 
   const modules = progressCalculation.data;
-  const overallProgress =
-    modules.length === 0
-      ? 0
-      : Math.round(
-          modules.reduce((total, module) => total + module.progress, 0) /
-            modules.length,
-        );
+  const overallProgress = calculateOverallCourseProgress(modules);
   const handleLessonClick = (lesson: ModuleLessonWithProgress) =>
     navigate(`/aula/${lesson.id}`);
 
