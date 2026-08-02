@@ -9,6 +9,9 @@ const paths = {
   profileHook: "src/hooks/useUserProfile.ts",
   avatarHook: "src/hooks/useAvatarUpload.ts",
   editPage: "src/pages/EditProfile.tsx",
+  app: "src/App.tsx",
+  studentPortal: "src/pages/student/StudentPortal.tsx",
+  pageFrame: "src/components/student/StudentPortalPageFrame.tsx",
   generatedTypes: "src/integrations/supabase/types.ts",
   documentation: "docs/refactor/FASE-B79-PROFILE-CONTRACT-TESTS.md",
   package: "package.json",
@@ -32,6 +35,9 @@ const metadataTests = read(paths.metadataTests);
 const profileHook = read(paths.profileHook);
 const avatarHook = read(paths.avatarHook);
 const editPage = read(paths.editPage);
+const app = read(paths.app);
+const studentPortal = read(paths.studentPortal);
+const pageFrame = read(paths.pageFrame);
 const generatedTypes = read(paths.generatedTypes);
 const documentation = read(paths.documentation);
 const packageJson = existsSync(paths.package)
@@ -148,6 +154,9 @@ for (const fragment of [
 }
 
 for (const fragment of [
+  "EditProfileProps",
+  "studentPortal = false",
+  "<StudentPortalPageFrame>",
   "profileMetadataInputSchema",
   'supabase.auth.updateUser({',
   "full_name: metadata.name",
@@ -156,6 +165,26 @@ for (const fragment of [
   "website: metadata.website",
 ]) {
   expect(editPage.includes(fragment), `Gravação B79 ausente: ${fragment}`);
+}
+
+expect(
+  app.includes('path="/aluno/perfil/editar" element={<StudentRoute><EditProfile studentPortal /></StudentRoute>}'),
+  "Rota do aluno deve ativar o modo studentPortal do editor.",
+);
+expect(
+  app.includes('path="/editar-perfil"') && app.includes("<EditProfile />"),
+  "Rota genérica deve preservar EditProfile sem modo aluno.",
+);
+expect(
+  studentPortal.includes('<Link to="/aluno/perfil/editar">Editar perfil</Link>'),
+  "Perfil do aluno deve apontar para o editor dentro do shell.",
+);
+for (const fragment of [
+  "getUserMetadataProfile",
+  "<StudentPortalShell",
+  'navigate("/login", { replace: true })',
+]) {
+  expect(pageFrame.includes(fragment), `Frame B85 ausente no contrato B79: ${fragment}`);
 }
 
 for (const fragment of [
@@ -188,10 +217,10 @@ expect(
 );
 
 if (failures.length > 0) {
-  console.error("Falhas no contrato B79:\n- " + failures.join("\n- "));
+  console.error("Falhas no contrato B79/B85:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Contrato B79 aprovado: perfil persistido, metadados de leitura e gravação, limites exatos e vínculo de avatar compartilham validação canônica e cobertura determinística.",
+  "Contrato B79/B85 aprovado: perfil persistido, gravação canônica, vínculo de avatar e modo aluno no shell permanecem cobertos sem duplicação.",
 );

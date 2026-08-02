@@ -28,6 +28,7 @@ const requiredFiles = [
   "src/pages/affiliate/AffiliatePortal.tsx",
   "src/pages/student/Certificates.tsx",
   "src/pages/student/MyDigitalProducts.tsx",
+  "src/pages/EditProfile.tsx",
   "src/pages/student/StudentPortal.tsx",
 ];
 
@@ -345,6 +346,13 @@ forbidText("src/pages/student/MyDigitalProducts.tsx", [
   "border-white/",
 ]);
 
+requireText("src/pages/EditProfile.tsx", [
+  "<StudentPortalPageFrame>",
+  "<StudentSectionHeader",
+  'variant={studentPortal ? "course" : undefined}',
+  'variant={studentPortal ? "context" : "default"}',
+]);
+
 requireText("src/pages/student/StudentPortal.tsx", [
   'import { StudentPortalShell } from "@/components/student/StudentPortalShell"',
   "StudentSectionHeader",
@@ -381,4 +389,4 @@ forbidText("src/pages/student/StudentPortal.tsx", [
 ]);
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log("Contrato estático do Portal do Aluno na FASE B23/B84 aprovado com contexto visual delegado pelo shell.");
+console.log("Contrato estático do Portal do Aluno na FASE B23/B84/B85 aprovado com contexto visual delegado pelo shell e modo aluno do editor.");

@@ -6,6 +6,8 @@ const paths = {
   pageFrame: "src/components/student/StudentPortalPageFrame.tsx",
   certificates: "src/pages/student/Certificates.tsx",
   products: "src/pages/student/MyDigitalProducts.tsx",
+  editProfile: "src/pages/EditProfile.tsx",
+  studentPortal: "src/pages/student/StudentPortal.tsx",
   certificateContract: "scripts/check-students-certificates-contract.mjs",
   documentation: "docs/refactor/FASE-B83-STUDENT-NAVIGATION.md",
   package: "package.json",
@@ -26,6 +28,8 @@ const shell = read(paths.shell);
 const pageFrame = read(paths.pageFrame);
 const certificates = read(paths.certificates);
 const products = read(paths.products);
+const editProfile = read(paths.editProfile);
+const studentPortal = read(paths.studentPortal);
 const certificateContract = read(paths.certificateContract);
 const documentation = read(paths.documentation);
 const packageJson = existsSync(paths.package)
@@ -99,6 +103,19 @@ for (const forbiddenRoute of [
     `Rota de detalhe ${forbiddenRoute} não deve aparecer no menu principal.`,
   );
 }
+
+expect(
+  app.includes('path="/aluno/perfil/editar" element={<StudentRoute><EditProfile studentPortal /></StudentRoute>}'),
+  "Rota específica de edição deve ativar o shell do aluno.",
+);
+expect(
+  studentPortal.includes('<Link to="/aluno/perfil/editar">Editar perfil</Link>'),
+  "A ação Editar perfil deve usar a rota específica do aluno.",
+);
+expect(
+  editProfile.includes("<StudentPortalPageFrame>"),
+  "O editor do aluno deve preservar o frame compartilhado.",
+);
 
 for (const fragment of [
   "<StudentPortalShell",
@@ -189,5 +206,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `Contrato B83/B84 aprovado: ${navigationRoutes.length} rotas principais permanecem disponíveis no menu desktop/mobile e as novas entradas preservam o shell.`,
+  `Contrato B83/B84/B85 aprovado: ${navigationRoutes.length} rotas principais permanecem no menu, a rota de detalhe permanece fora do menu e Editar perfil preserva o shell.`,
 );

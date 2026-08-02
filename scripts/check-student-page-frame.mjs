@@ -6,6 +6,8 @@ const paths = {
   frame: "src/components/student/StudentPortalPageFrame.tsx",
   certificates: "src/pages/student/Certificates.tsx",
   products: "src/pages/student/MyDigitalProducts.tsx",
+  editProfile: "src/pages/EditProfile.tsx",
+  studentPortal: "src/pages/student/StudentPortal.tsx",
   financialPortal: "src/pages/student/StudentFinancialPortal.tsx",
   marketplaceContract: "scripts/check-digital-marketplace-contract.mjs",
   certificateContract: "scripts/check-students-certificates-contract.mjs",
@@ -30,6 +32,8 @@ const shell = read(paths.shell);
 const frame = read(paths.frame);
 const certificates = read(paths.certificates);
 const products = read(paths.products);
+const editProfile = read(paths.editProfile);
+const studentPortal = read(paths.studentPortal);
 const financialPortal = read(paths.financialPortal);
 const marketplaceContract = read(paths.marketplaceContract);
 const certificateContract = read(paths.certificateContract);
@@ -98,6 +102,24 @@ for (const fragment of [
 expect(
   (products.match(/<DigitalProductsContent \/>/g) ?? []).length === 2,
   "O mesmo conteúdo de produtos deve atender o shell do aluno e o layout genérico.",
+);
+
+for (const fragment of [
+  "EditProfileProps",
+  "studentPortal = false",
+  "<StudentPortalPageFrame>",
+  "profileMetadataInputSchema",
+  "useAvatarUpload()",
+]) {
+  expect(editProfile.includes(fragment), `Editor de perfil B85 ausente no frame: ${fragment}`);
+}
+expect(
+  app.includes('path="/aluno/perfil/editar" element={<StudentRoute><EditProfile studentPortal /></StudentRoute>}'),
+  "Rota de edição do aluno deve ativar o frame.",
+);
+expect(
+  studentPortal.includes('<Link to="/aluno/perfil/editar">Editar perfil</Link>'),
+  "Perfil do aluno deve abrir o editor no shell.",
 );
 
 expect(
@@ -219,5 +241,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B84 aprovado: certificados e produtos do aluno preservam o shell e o contexto visual compartilhados, enquanto a rota multi-papel mantém o layout genérico.",
+  "Contrato B84/B85 aprovado: certificados, produtos e editor de perfil preservam o shell; a rota genérica multi-papel continua compatível.",
 );
