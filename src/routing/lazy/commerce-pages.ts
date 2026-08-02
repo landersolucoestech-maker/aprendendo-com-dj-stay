@@ -1,5 +1,8 @@
 import { lazy } from "react";
 
+export const CourseStorefront = lazy(
+  () => import("@/pages/marketplace/CourseStorefront"),
+);
 export const DigitalMarketplace = lazy(
   () => import("@/pages/marketplace/DigitalMarketplace"),
 );
