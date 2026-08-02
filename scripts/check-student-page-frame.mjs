@@ -191,7 +191,8 @@ for (const [name, source, fragments] of [
     [
       "pageFrame",
       "MyDigitalProducts studentPortal",
-      "novas entradas preservam o shell",
+      "rota de detalhe permanece fora do menu",
+      "Editar perfil preserva o shell",
     ],
   ],
 ]) {
