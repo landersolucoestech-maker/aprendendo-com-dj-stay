@@ -41,6 +41,7 @@ import {
   VerifyEmail,
 } from "@/routing/lazy/auth-pages";
 import {
+  CourseStorefront,
   DigitalMarketplace,
   MyDigitalProducts,
   PaymentSuccess,
@@ -74,6 +75,14 @@ const StudentRoute = ({ children }: { children: React.ReactNode }) => (
 const AffiliateRoute = ({ children }: { children: React.ReactNode }) => (
   <RequireAuth>
     <RequireRole allowedRoles={["afiliado"]}>{children}</RequireRole>
+  </RequireAuth>
+);
+
+const CourseBuyerRoute = ({ children }: { children: React.ReactNode }) => (
+  <RequireAuth>
+    <RequireRole allowedRoles={["aluno", "administrador_proprietario"]}>
+      {children}
+    </RequireRole>
   </RequireAuth>
 );
 
@@ -120,11 +129,9 @@ const App = () => (
                   <Route
                     path="/pagamento-sucesso"
                     element={
-                      <RequireAuth>
-                        <RequireRole allowedRoles={["aluno", "administrador_proprietario"]}>
-                          <PaymentSuccess />
-                        </RequireRole>
-                      </RequireAuth>
+                      <CourseBuyerRoute>
+                        <PaymentSuccess />
+                      </CourseBuyerRoute>
                     }
                   />
 
@@ -133,6 +140,7 @@ const App = () => (
                   <Route path="/esqueceu-senha" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
 
                   <Route path="/portal" element={<RequireAuth><RoleLandingRedirect /></RequireAuth>} />
+                  <Route path="/cursos" element={<CourseBuyerRoute><CourseStorefront /></CourseBuyerRoute>} />
                   <Route path="/marketplace" element={<MarketplaceRoute><DigitalMarketplace /></MarketplaceRoute>} />
                   <Route path="/meus-produtos" element={<MarketplaceRoute><MyDigitalProducts /></MarketplaceRoute>} />
                   <Route path="/afiliado" element={<AffiliateRoute><AffiliatePortal /></AffiliateRoute>} />
