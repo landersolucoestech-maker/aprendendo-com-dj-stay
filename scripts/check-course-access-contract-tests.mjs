@@ -3,6 +3,8 @@ import { existsSync, readFileSync } from "node:fs";
 const paths = {
   contracts: "src/contracts/course-access.ts",
   tests: "src/contracts/course-access.test.ts",
+  boundaryTests: "src/contracts/course-access-boundaries.test.ts",
+  pureFilterTests: "src/contracts/course-access-pure-filter.test.ts",
   hook: "src/hooks/useCourseAccess.ts",
   schema: "supabase/migrations/20260730200000_course_access_schema.sql",
   rpcs: "supabase/migrations/20260730200100_course_access_rpcs.sql",
@@ -22,6 +24,8 @@ for (const path of Object.values(paths)) {
 const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
 const contracts = read(paths.contracts);
 const tests = read(paths.tests);
+const boundaryTests = read(paths.boundaryTests);
+const pureFilterTests = read(paths.pureFilterTests);
 const hook = read(paths.hook);
 const database = `${read(paths.schema)}\n${read(paths.rpcs)}`;
 const documentation = read(paths.documentation);
@@ -109,6 +113,30 @@ expect(
 );
 
 for (const fragment of [
+  "aceita referências com 8 e 200 caracteres",
+  "rejeita referências com 7 e 201 caracteres",
+  '"x".repeat(200)',
+  '"x".repeat(201)',
+]) {
+  expect(boundaryTests.includes(fragment), `Limite B76 ausente: ${fragment}`);
+}
+
+for (const fragment of [
+  "getActiveEnrollments pure clock",
+  "filtra usando o instante explícito sem ambiente Supabase",
+  "getActiveEnrollments([ACTIVE, expired, future], NOW)",
+  'from "@/contracts/course-access"',
+]) {
+  expect(pureFilterTests.includes(fragment), `Regressão pura B76 ausente: ${fragment}`);
+}
+expect(
+  !pureFilterTests.includes("@/hooks/useCourseAccess") &&
+    !pureFilterTests.includes("@/integrations/supabase") &&
+    !pureFilterTests.includes("@/config/public-config"),
+  "A regressão pura B76 não pode depender do hook, Supabase ou configuração pública.",
+);
+
+for (const fragment of [
   "enrollmentsWithCourseSchema",
   "parseDataContract",
   'from("enrollments")',
@@ -146,5 +174,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B76 aprovado: matrícula, origem, pagamento, janela e acesso ativo possuem validação estrita e suíte independente do cliente Supabase.",
+  "Contrato B76 aprovado: matrícula, origem, pagamento, janela e acesso ativo possuem validação estrita, limites exatos e suíte independente do cliente Supabase.",
 );
