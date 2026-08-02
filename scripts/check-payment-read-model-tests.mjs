@@ -60,6 +60,11 @@ expect(
   "Modelos financeiros administrativo e do aluno devem rejeitar campos extras.",
 );
 expect(
+  admin.includes("datetime({ offset: true })") &&
+    student.includes("datetime({ offset: true })"),
+  "Modelos financeiros devem manter timestamps com timezone ou offset explícito.",
+);
+expect(
   student.includes("currencyCodeSchema") &&
     student.includes("validatePaymentSubjectLicense"),
   "Histórico do aluno deve reutilizar moeda e coerência financeira compartilhadas.",
