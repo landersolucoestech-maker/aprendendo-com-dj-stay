@@ -180,6 +180,33 @@ describe("paymentAdminOrderSchema", () => {
     );
   });
 
+  it("rejeita UUID inválido no pedido e nas estruturas aninhadas", () => {
+    expect(
+      paymentAdminOrderSchema.safeParse({
+        ...ADMIN_COURSE_ORDER,
+        id: "pedido-invalido",
+      }).success,
+    ).toBe(false);
+    expect(
+      paymentAdminOrderSchema.safeParse({
+        ...ADMIN_COURSE_ORDER,
+        latest_attempt: {
+          ...ADMIN_COURSE_ORDER.latest_attempt,
+          id: "tentativa-invalida",
+        },
+      }).success,
+    ).toBe(false);
+    expect(
+      paymentAdminOrderSchema.safeParse({
+        ...ADMIN_COURSE_ORDER,
+        entitlement: {
+          ...ADMIN_COURSE_ORDER.entitlement,
+          enrollment_id: "matricula-invalida",
+        },
+      }).success,
+    ).toBe(false);
+  });
+
   it("rejeita licença em pedido de curso", () => {
     expect(
       paymentAdminOrderSchema.safeParse({
@@ -293,6 +320,15 @@ describe("studentPaymentOrderSchema", () => {
     expect(studentPaymentOrderSchema.parse(STUDENT_COURSE_ORDER)).toEqual(
       STUDENT_COURSE_ORDER,
     );
+  });
+
+  it("rejeita UUID inválido no pedido do aluno", () => {
+    expect(
+      studentPaymentOrderSchema.safeParse({
+        ...STUDENT_COURSE_ORDER,
+        subject_id: "item-invalido",
+      }).success,
+    ).toBe(false);
   });
 
   it("rejeita produto digital sem licença", () => {
