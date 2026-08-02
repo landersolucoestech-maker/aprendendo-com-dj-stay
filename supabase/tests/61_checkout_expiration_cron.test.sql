@@ -51,29 +51,24 @@ select is(
   1,
   'exactly one named checkout expiration job exists'
 );
-select is(
-  (select schedule from cron.job where jobname='expire-due-checkout-intents'),
-  '*/5 * * * *',
+select ok(
+  (select schedule::text = '*/5 * * * *' from cron.job where jobname='expire-due-checkout-intents'),
   'checkout expiration runs every five minutes'
 );
-select is(
-  (select username::text from cron.job where jobname='expire-due-checkout-intents'),
-  'postgres'::text,
+select ok(
+  (select username::text = 'postgres' from cron.job where jobname='expire-due-checkout-intents'),
   'checkout expiration job runs as postgres'
 );
-select is(
-  (select database::text from cron.job where jobname='expire-due-checkout-intents'),
-  current_database()::text,
+select ok(
+  (select database::text = current_database()::text from cron.job where jobname='expire-due-checkout-intents'),
   'checkout expiration job targets the current database'
 );
-select is(
+select ok(
   (select active from cron.job where jobname='expire-due-checkout-intents'),
-  true,
   'checkout expiration job is active'
 );
-select is(
-  (select command from cron.job where jobname='expire-due-checkout-intents'),
-  'select private.expire_due_checkout_intents(100);',
+select ok(
+  (select command::text = 'select private.expire_due_checkout_intents(100);' from cron.job where jobname='expire-due-checkout-intents'),
   'checkout expiration job calls only the private bounded batch'
 );
 
