@@ -25,11 +25,7 @@ const installEnvironment = (options: EnvironmentOptions = {}) => {
   const digestSources: string[] = [];
   const digest = vi.fn(
     async (_algorithm: AlgorithmIdentifier, data: BufferSource) => {
-      const bytes =
-        data instanceof ArrayBuffer
-          ? new Uint8Array(data)
-          : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-      digestSources.push(new TextDecoder().decode(bytes));
+      digestSources.push(new TextDecoder().decode(data));
       return Uint8Array.from([0, 15, 16, 255]).buffer;
     },
   );
