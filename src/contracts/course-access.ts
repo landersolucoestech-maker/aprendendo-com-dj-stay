@@ -190,3 +190,22 @@ export const enrollmentEventsSchema = z.array(enrollmentEventSchema);
 export type EnrollmentWithCourse = z.infer<typeof enrollmentWithCourseSchema>;
 export type EnrollmentRow = z.infer<typeof enrollmentRowSchema>;
 export type EnrollmentEvent = z.infer<typeof enrollmentEventSchema>;
+
+export const getActiveEnrollments = (
+  enrollments: EnrollmentWithCourse[],
+  now = Date.now(),
+): EnrollmentWithCourse[] =>
+  enrollments.filter((enrollment) => {
+    const startsAt = Date.parse(enrollment.starts_at);
+    const expiresAt =
+      enrollment.expires_at === null
+        ? null
+        : Date.parse(enrollment.expires_at);
+
+    return (
+      enrollment.status === "active" &&
+      enrollment.courses.status === "published" &&
+      startsAt <= now &&
+      (expiresAt === null || expiresAt > now)
+    );
+  });
