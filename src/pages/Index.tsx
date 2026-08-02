@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import HeroSection from "@/components/HeroSection";
 import InstructorSection from "@/components/InstructorSection";
 import Navigation from "@/components/Navigation";
-import TestimonialsSection from "@/components/TestimonialsSection";
+import OperationalTrustSection from "@/components/OperationalTrustSection";
 
 const Index = () => (
   <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -14,7 +14,7 @@ const Index = () => (
       <BenefitsSection />
       <CourseModulesSection />
       <InstructorSection />
-      <TestimonialsSection />
+      <OperationalTrustSection />
     </main>
     <Footer />
   </div>
