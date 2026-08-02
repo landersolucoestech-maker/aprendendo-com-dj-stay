@@ -8,7 +8,7 @@ Endurecer os contratos Zod das notificações transacionais do aluno e adicionar
 
 Os contratos aceitavam campos extras, timestamps arbitrários, textos fora dos limites persistidos e caminhos de ação externos ou relativos.
 
-Isso permitia que respostas divergentes das RPCs fossem aceitas silenciosamente pelo frontend, apesar de o banco já impor limites e formatos mais restritivos.
+Isso permitia que respostas divergentes das RPCs fossem aceitas silenciosamente pelo frontend, apesar de o banco já impor limites e formatos mais restritivos. Como `action_path` é usado diretamente na navegação do portal, barras invertidas também precisam ser bloqueadas para impedir interpretação divergente pelo roteador.
 
 ## Implementação
 
@@ -19,6 +19,8 @@ Isso permitia que respostas divergentes das RPCs fossem aceitas silenciosamente 
 - título entre 3 e 160 caracteres após trim;
 - mensagem entre 3 e 1000 caracteres após trim;
 - caminho de ação interno iniciado por uma única barra, ou `null`;
+- rejeição de caminho protocol-relative;
+- rejeição de qualquer barra invertida;
 - tipo de entidade de origem não vazio quando presente;
 - `read_at` e `created_at` como datetime com timezone ou offset;
 - contagens inteiras não negativas;
@@ -32,7 +34,7 @@ Isso permitia que respostas divergentes das RPCs fossem aceitas silenciosamente 
 - notificações lidas e não lidas;
 - normalização de título e mensagem;
 - limites textuais do banco;
-- caminhos internos, externos, relativos e protocolados;
+- caminhos internos, externos, relativos, protocolados, protocol-relative e com barras invertidas;
 - UUIDs e timestamps inválidos;
 - campos internos adicionais;
 - contagens negativas ou fracionárias;
@@ -45,6 +47,7 @@ Isso permitia que respostas divergentes das RPCs fossem aceitas silenciosamente 
 - alinhamento dos schemas com os constraints da migration B40;
 - timestamps com offset;
 - caminhos de ação exclusivamente internos;
+- bloqueio permanente de barras invertidas;
 - limites de título e mensagem;
 - objetos estritos;
 - cenários negativos obrigatórios da suíte;
