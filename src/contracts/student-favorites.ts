@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { checkoutSubjectTypeSchema } from "@/contracts/checkout";
+
 const favoriteTimestampSchema = z.string().datetime({ offset: true });
 const internalActionPathSchema = z.string().refine(
   (value) =>
@@ -12,10 +14,7 @@ const internalActionPathSchema = z.string().refine(
   },
 );
 
-export const studentFavoriteSubjectTypeSchema = z.enum([
-  "course",
-  "digital_product",
-]);
+export const studentFavoriteSubjectTypeSchema = checkoutSubjectTypeSchema;
 
 export const studentFavoriteSchema = z
   .object({
