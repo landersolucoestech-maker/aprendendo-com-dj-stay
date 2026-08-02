@@ -36,6 +36,7 @@ import {
 } from "@/lib/checkout-return";
 import { formatAppDateTime } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
+import { clearHostedCheckoutIdempotencyKey } from "@/lib/hosted-checkout-idempotency";
 
 interface StateCopy {
   readonly title: string;
@@ -275,6 +276,16 @@ const PaymentSuccess = () => {
   const PrimaryIcon = primaryAction.icon;
   const retryPath =
     checkout.subject_type === "course" ? "/cursos" : "/marketplace";
+  const requiresFreshIntent =
+    viewState === "expired" || viewState === "cancelled";
+  const resetExpiredCheckout = (): void => {
+    if (!requiresFreshIntent) return;
+    clearHostedCheckoutIdempotencyKey(
+      checkout.subject_type,
+      checkout.subject_id,
+      checkout.license_id,
+    );
+  };
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground">
@@ -373,9 +384,9 @@ const PaymentSuccess = () => {
               </Button>
             ) : (
               <Button asChild variant="context" className="w-full">
-                <Link to={retryPath}>
+                <Link to={retryPath} onClick={resetExpiredCheckout}>
                   <ReceiptText aria-hidden="true" />
-                  Voltar às ofertas
+                  {requiresFreshIntent ? "Tentar nova compra" : "Voltar às ofertas"}
                 </Link>
               </Button>
             )}
