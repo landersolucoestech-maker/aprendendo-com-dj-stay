@@ -18,8 +18,8 @@ let qualityWorkflowFound = false;
 for (const path of workflowPaths) {
   const content = await readFile(path, "utf8");
   const isQualityWorkflow =
-    content.includes("supabase/setup-cli") &&
-    content.includes("supabase test db") &&
+    content.includes("SUPABASE_CLI_VERSION") &&
+    content.includes('"supabase@${SUPABASE_CLI_VERSION}" test db') &&
     content.includes("npm run typecheck");
 
   if (!isQualityWorkflow) continue;
@@ -27,14 +27,43 @@ for (const path of workflowPaths) {
   console.log(`Workflow técnico identificado: ${path}`);
 
   if (/version:\s*["']?latest["']?/i.test(content)) {
-    failures.push(`${path}: Supabase CLI usa version: latest`);
+    failures.push(`${path}: versão flutuante latest detectada`);
   }
 
-  for (const obsoleteAction of [
+  if (!/SUPABASE_CLI_VERSION:\s*2\.101\.0/.test(content)) {
+    failures.push(`${path}: Supabase CLI 2.101.0 não está fixada`);
+  }
+
+  if (content.includes("supabase/setup-cli@")) {
+    failures.push(`${path}: setup-cli baseado em runtime externo ainda está presente`);
+  }
+
+  const requiredActions = [
+    "actions/checkout@v6",
+    "actions/setup-node@v6",
+    "actions/upload-artifact@v7",
+    "actions/github-script@v9",
+  ];
+
+  for (const requiredAction of requiredActions) {
+    if (!content.includes(requiredAction)) {
+      failures.push(`${path}: referência obrigatória ausente ${requiredAction}`);
+    }
+  }
+
+  const obsoleteActions = [
     "actions/checkout@v4",
+    "actions/checkout@v5",
     "actions/setup-node@v4",
+    "actions/setup-node@v5",
     "actions/upload-artifact@v4",
-  ]) {
+    "actions/upload-artifact@v5",
+    "actions/upload-artifact@v6",
+    "actions/github-script@v7",
+    "actions/github-script@v8",
+  ];
+
+  for (const obsoleteAction of obsoleteActions) {
     if (content.includes(obsoleteAction)) {
       failures.push(`${path}: referência obsoleta ${obsoleteAction}`);
     }
@@ -42,7 +71,7 @@ for (const path of workflowPaths) {
 }
 
 if (!qualityWorkflowFound) {
-  failures.push("workflow técnico com Supabase, pgTAP e typecheck não identificado");
+  failures.push("workflow técnico com Supabase pinado, pgTAP e typecheck não identificado");
 }
 
 if (failures.length > 0) {
@@ -52,5 +81,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B46 aprovado: workflow técnico sem versão flutuante e sem actions oficiais obsoletas.",
+  "Contrato B46 aprovado: workflow técnico determinístico e executado somente por actions Node 24.",
 );
