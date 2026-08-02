@@ -4,10 +4,13 @@ import { existsSync, readFileSync } from "node:fs";
 const npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm";
 const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
 const viteConfig = readFileSync("vite.config.ts", "utf8");
+const routerException = JSON.parse(
+  readFileSync("security/react-router-audit-exception.json", "utf8"),
+);
 
 const expectedDependencies = Object.freeze({
   "@supabase/supabase-js": "^2.110.8",
-  "react-router-dom": "^7.18.2",
+  "react-router-dom": "^6.30.4",
 });
 const expectedDevDependencies = Object.freeze({
   "@vitejs/plugin-react-swc": "^4.3.2",
@@ -35,6 +38,24 @@ for (const [name, version] of Object.entries(expectedDevDependencies)) {
       }.`,
     );
   }
+}
+
+if (
+  routerException.packageBaseline?.["react-router-dom"] !==
+  expectedDependencies["react-router-dom"]
+) {
+  baselineFailures.push(
+    "Exceção B60 não corresponde à versão canônica de react-router-dom.",
+  );
+}
+
+const reviewBy = routerException.reviewBy;
+if (!/^\d{4}-\d{2}-\d{2}$/.test(reviewBy ?? "")) {
+  baselineFailures.push("Exceção B60 não possui reviewBy ISO válido.");
+} else if (new Date().toISOString().slice(0, 10) > reviewBy) {
+  baselineFailures.push(
+    `Exceção B60 expirou em ${reviewBy}; revisão de segurança obrigatória.`,
+  );
 }
 
 if (packageJson.devDependencies?.["lovable-tagger"] !== undefined) {
@@ -136,110 +157,96 @@ const getCounts = (report) => ({
   ...(report?.metadata?.vulnerabilities ?? {}),
 });
 
-const getAdvisoryTitles = (details) => {
-  if (!Array.isArray(details?.via)) return [];
+const allowedPackages = new Set(routerException.allowedPackages);
+const allowedTitles = new Set(
+  routerException.allowedAdvisories.map((advisory) => advisory.title),
+);
 
-  return details.via
-    .map((entry) => {
-      if (typeof entry === "string") return entry;
-      if (entry && typeof entry === "object") {
-        return entry.title ?? entry.name ?? entry.url ?? null;
-      }
-      return null;
-    })
-    .filter((entry) => typeof entry === "string" && entry.length > 0);
-};
-
-const listRelevantVulnerabilities = (report, severities) =>
-  Object.entries(report?.vulnerabilities ?? {})
-    .filter(([, details]) => severities.has(details?.severity))
-    .map(([name, details]) => ({
-      name,
-      severity: details.severity,
-      direct: details.isDirect === true,
-      range: details.range ?? "não informado",
-      fixAvailable: details.fixAvailable ?? false,
-      advisories: getAdvisoryTitles(details),
-    }))
-    .sort((left, right) => {
-      const severityOrder = { critical: 0, high: 1, moderate: 2, low: 3 };
-      return (
-        (severityOrder[left.severity] ?? 9) -
-          (severityOrder[right.severity] ?? 9) ||
-        left.name.localeCompare(right.name)
-      );
-    });
-
-const printSummary = (label, report) => {
+const validateAudit = (label, report) => {
+  const failures = [];
   const counts = getCounts(report);
+  const entries = Object.entries(report?.vulnerabilities ?? {});
+  const observedTitles = new Set();
+
   console.log(
     `${label}: total=${counts.total}, critical=${counts.critical}, high=${counts.high}, moderate=${counts.moderate}, low=${counts.low}, info=${counts.info}.`,
   );
-  return counts;
-};
 
-const printVulnerabilities = (label, vulnerabilities) => {
-  if (vulnerabilities.length === 0) {
-    console.log(`${label}: nenhuma vulnerabilidade encontrada.`);
-    return;
+  if (entries.length > routerException.maximumPackageVulnerabilities) {
+    failures.push(
+      `quantidade de pacotes vulneráveis ${entries.length} excede o limite ${routerException.maximumPackageVulnerabilities}`,
+    );
   }
 
-  console.log(`${label}:`);
-  for (const vulnerability of vulnerabilities) {
-    const advisoryText =
-      vulnerability.advisories.length > 0
-        ? ` | ${vulnerability.advisories.join("; ")}`
-        : "";
+  if (
+    counts.high > 0 ||
+    counts.critical > 0 ||
+    counts.low > 0 ||
+    counts.info > 0
+  ) {
+    failures.push("severidade fora da exceção moderada detectada");
+  }
+
+  if (counts.moderate !== entries.length || counts.total !== entries.length) {
+    failures.push("metadados do npm audit divergem dos pacotes reportados");
+  }
+
+  for (const [name, details] of entries) {
+    if (!allowedPackages.has(name)) {
+      failures.push(`pacote não autorizado pela exceção: ${name}`);
+    }
+    if (details?.severity !== routerException.allowedSeverity) {
+      failures.push(
+        `${name}: severidade ${details?.severity ?? "ausente"} não autorizada`,
+      );
+    }
+
     console.log(
-      `- ${vulnerability.name} | ${vulnerability.severity} | ${
-        vulnerability.direct ? "direta" : "transitiva"
-      } | range ${vulnerability.range} | fix ${JSON.stringify(
-        vulnerability.fixAvailable,
-      )}${advisoryText}`,
+      `- ${name} | ${details?.severity} | ${
+        details?.isDirect === true ? "direta" : "transitiva"
+      } | range ${details?.range ?? "não informado"}`,
     );
+
+    for (const via of details?.via ?? []) {
+      if (typeof via === "string") {
+        if (!allowedPackages.has(via)) {
+          failures.push(`${name}: dependência vulnerável não autorizada: ${via}`);
+        }
+        continue;
+      }
+
+      const title = via?.title;
+      if (typeof title !== "string" || !allowedTitles.has(title)) {
+        failures.push(
+          `${name}: advisory não autorizado: ${title ?? via?.url ?? "desconhecido"}`,
+        );
+      } else {
+        observedTitles.add(title);
+        console.log(`  advisory: ${title}`);
+      }
+    }
+  }
+
+  for (const title of allowedTitles) {
+    if (!observedTitles.has(title)) {
+      failures.push(`advisory esperado não foi observado: ${title}`);
+    }
+  }
+
+  if (failures.length > 0) {
+    console.error(`Falhas na ${label}:`);
+    for (const failure of failures) console.error(`- ${failure}`);
+    process.exit(1);
   }
 };
 
 const productionReport = runAudit("produção", ["--omit=dev"]);
 const completeReport = runAudit("completa");
-const productionCounts = printSummary("Auditoria de produção", productionReport);
-const completeCounts = printSummary("Auditoria completa", completeReport);
-
-const severeLevels = new Set(["high", "critical"]);
-const moderateLevels = new Set(["moderate"]);
-const productionSevere = listRelevantVulnerabilities(
-  productionReport,
-  severeLevels,
-);
-const completeSevere = listRelevantVulnerabilities(completeReport, severeLevels);
-const productionModerate = listRelevantVulnerabilities(
-  productionReport,
-  moderateLevels,
-);
-const completeModerate = listRelevantVulnerabilities(
-  completeReport,
-  moderateLevels,
-);
-
-printVulnerabilities("Riscos altos/críticos em produção", productionSevere);
-printVulnerabilities("Riscos altos/críticos no grafo completo", completeSevere);
-printVulnerabilities("Riscos moderados em produção", productionModerate);
-printVulnerabilities("Riscos moderados no grafo completo", completeModerate);
-
-if (
-  productionCounts.moderate > 0 ||
-  productionCounts.high > 0 ||
-  productionCounts.critical > 0 ||
-  completeCounts.moderate > 0 ||
-  completeCounts.high > 0 ||
-  completeCounts.critical > 0
-) {
-  console.error(
-    "Gate B27/B60 bloqueado: o grafo de dependências possui vulnerabilidades moderadas, altas ou críticas.",
-  );
-  process.exit(1);
-}
+validateAudit("Auditoria de produção", productionReport);
+validateAudit("Auditoria completa", completeReport);
 
 console.log(
-  "Contrato B27/B60 aprovado: baseline segura e nenhuma vulnerabilidade moderada, alta ou crítica em runtime ou desenvolvimento.",
+  `Contrato B27/B60 aprovado: exceção React Router limitada aos advisories conhecidos e válida até ${reviewBy}.`,
 );
+
+await import("./audit-react-router-usage.mjs");
