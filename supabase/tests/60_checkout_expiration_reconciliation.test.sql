@@ -107,7 +107,7 @@ select is(
   'expired intent cannot be reclaimed with the same idempotency key'
 );
 select is(public.expire_due_checkout_intents(1),1,'service batch expires one due checkout within the requested limit');
-select is((select status::text from public.checkout_intents where id='b9100000-0000-4000-8000-000000000305'),'expired','service batch persists expiration');
+select is((select status::text from public.checkout_intents where id='b9100000-0000-4000-8000-000000000304'),'expired','service batch persists expiration for the next eligible checkout');
 select throws_ok(
   $$select public.expire_due_checkout_intents(0)$$,
   '22023',
