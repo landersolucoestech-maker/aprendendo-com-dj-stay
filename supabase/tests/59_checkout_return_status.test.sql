@@ -94,6 +94,9 @@ insert into public.enrollments (
   'b9000000-0000-4000-8000-000000000202','active','manual_grant',statement_timestamp()
 );
 
+set local role service_role;
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+
 update public.payment_orders
 set status='paid',payment_confirmed_at=statement_timestamp()
 where checkout_intent_id='b9000000-0000-4000-8000-000000000302';
@@ -108,6 +111,7 @@ update public.payment_attempts
 set status='received',billing_type='credit_card',provider_status='RECEIVED',received_at=statement_timestamp()
 where checkout_intent_id='b9000000-0000-4000-8000-000000000304';
 
+reset role;
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"b9000000-0000-4000-8000-000000000101","role":"authenticated","session_id":"b9000000-0000-4000-8000-000000000801","is_anonymous":false}',true);
 
