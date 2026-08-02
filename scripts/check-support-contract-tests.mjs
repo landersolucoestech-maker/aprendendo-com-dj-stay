@@ -52,7 +52,6 @@ for (const fragment of [
 
 for (const fragment of [
   "REFERENCE_CODE",
-  "PAYMENT_STATUSES",
   '"SUP-0123456789abcdef"',
   'subject: "abcd"',
   'category: "a"',
@@ -65,7 +64,6 @@ for (const fragment of [
   "supportMutationResultSchema",
   "safeParse",
 ]) {
-  if (fragment === "PAYMENT_STATUSES") continue;
   expect(tests.includes(fragment), `Cobertura B63 ausente: ${fragment}`);
 }
 
