@@ -1,0 +1,1 @@
+-- FASE B89: resolução autenticada do curso antes do checkout hospedado.
