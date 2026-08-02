@@ -118,7 +118,7 @@ export const modulesResponseSchema = z.array(
     .strict(),
 );
 
-export const progressRowSchema = z
+const progressRowObjectSchema = z
   .object({
     id: uuidSchema,
     user_id: uuidSchema,
@@ -134,33 +134,41 @@ export const progressRowSchema = z
     created_at: timestampSchema,
     updated_at: timestampSchema,
   })
-  .strict()
-  .superRefine((value, context) => {
-    if (value.completada && value.progresso_percentual !== 100) {
-      addIssue(
-        context,
-        "progresso_percentual",
-        "Uma aula concluída deve possuir progresso de 100%.",
-      );
-    }
+  .strict();
 
-    const eventFields = [
-      value.last_event_id,
-      value.last_event_received_at,
-      value.last_client_instance_id,
-    ];
-    const populatedEventFields = eventFields.filter((field) => field !== null).length;
-    const initialStateIsValid = value.revision === 0 && populatedEventFields === 0;
-    const eventStateIsValid = value.revision > 0 && populatedEventFields === eventFields.length;
+const validateProgressRow = (
+  value: z.infer<typeof progressRowObjectSchema>,
+  context: z.RefinementCtx,
+): void => {
+  if (value.completada && value.progresso_percentual !== 100) {
+    addIssue(
+      context,
+      "progresso_percentual",
+      "Uma aula concluída deve possuir progresso de 100%.",
+    );
+  }
 
-    if (!initialStateIsValid && !eventStateIsValid) {
-      addIssue(
-        context,
-        "revision",
-        "A revisão deve ser coerente com os dados do último evento.",
-      );
-    }
-  });
+  const eventFields = [
+    value.last_event_id,
+    value.last_event_received_at,
+    value.last_client_instance_id,
+  ];
+  const populatedEventFields = eventFields.filter((field) => field !== null).length;
+  const initialStateIsValid = value.revision === 0 && populatedEventFields === 0;
+  const eventStateIsValid = value.revision > 0 && populatedEventFields === eventFields.length;
+
+  if (!initialStateIsValid && !eventStateIsValid) {
+    addIssue(
+      context,
+      "revision",
+      "A revisão deve ser coerente com os dados do último evento.",
+    );
+  }
+};
+
+export const progressRowSchema = progressRowObjectSchema.superRefine(
+  validateProgressRow,
+);
 
 export const progressResponseSchema = z.array(progressRowSchema);
 
@@ -260,19 +268,22 @@ export const userProfileSchema = z
   .strict();
 
 export const recentProgressResponseSchema = z.array(
-  progressRowSchema.extend({
-    aulas: z
-      .object({
-        titulo: nonBlankTextSchema.max(200),
-        modulo_id: uuidSchema,
-        modulos: z
-          .object({
-            titulo: nonBlankTextSchema.max(200),
-          })
-          .strict(),
-      })
-      .strict(),
-  }),
+  progressRowObjectSchema
+    .extend({
+      aulas: z
+        .object({
+          titulo: nonBlankTextSchema.max(200),
+          modulo_id: uuidSchema,
+          modulos: z
+            .object({
+              titulo: nonBlankTextSchema.max(200),
+            })
+            .strict(),
+        })
+        .strict(),
+    })
+    .strict()
+    .superRefine(validateProgressRow),
 );
 
 const optionalHttpsUrlSchema = z.union([
