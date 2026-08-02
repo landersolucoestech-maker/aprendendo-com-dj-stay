@@ -39,7 +39,7 @@ if (existsSync(dateTimePath)) {
 
 const temporalConsumers = [
   "src/components/ConnectionStatus.tsx",
-  "src/hooks/useRecentActivities.ts",
+  "src/lib/recent-activities.ts",
   "src/pages/CertificateValidation.tsx",
   "src/pages/Contact.tsx",
   "src/pages/Dashboard.tsx",
@@ -60,6 +60,21 @@ for (const path of temporalConsumers) {
   expect(
     source.includes('from "@/lib/date-time"'),
     `${path} deve consumir a camada temporal canônica.`,
+  );
+}
+
+const recentActivitiesHookPath = "src/hooks/useRecentActivities.ts";
+expect(existsSync(recentActivitiesHookPath), `${recentActivitiesHookPath} deve existir.`);
+if (existsSync(recentActivitiesHookPath)) {
+  const recentActivitiesHook = read(recentActivitiesHookPath);
+  expect(
+    recentActivitiesHook.includes('from "@/lib/recent-activities"'),
+    `${recentActivitiesHookPath} deve delegar apresentação temporal ao módulo puro B80.`,
+  );
+  expect(
+    !recentActivitiesHook.includes('from "@/lib/date-time"') &&
+      !recentActivitiesHook.includes("formatAppRelativeTime("),
+    `${recentActivitiesHookPath} não pode duplicar a formatação temporal do módulo puro B80.`,
   );
 }
 
@@ -141,5 +156,5 @@ if (failures.length) {
 }
 
 console.log(
-  `Contrato estático da FASE B26 aprovado em ${sourceFiles.length} arquivos TypeScript e ${temporalConsumers.length} consumidores temporais.`,
+  `Contrato estático da FASE B26 aprovado em ${sourceFiles.length} arquivos TypeScript e ${temporalConsumers.length} consumidores temporais, com delegação B80 verificada.`,
 );
