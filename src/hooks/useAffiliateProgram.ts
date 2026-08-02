@@ -2,10 +2,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   affiliateAdminDashboardSchema,
+  affiliateCancelPayoutInputSchema,
+  affiliateCreateLinkInputSchema,
+  affiliateCreatePayoutInputSchema,
+  affiliateDisplayNameInputSchema,
+  affiliateLinkRowSchema,
+  affiliateMarkPayoutPaidInputSchema,
+  affiliatePayoutRowSchema,
   affiliatePortalSchema,
+  affiliateProfileSchema,
+  affiliateProfileStatusInputSchema,
+  affiliateSubjectTermsRowSchema,
+  affiliateTermsInputSchema,
   type AffiliateSubjectType,
 } from "@/contracts/affiliate";
 import { parseDataContract } from "@/contracts/contract-error";
+import { uuidSchema } from "@/contracts/learning";
 import { supabase } from "@/integrations/supabase/client";
 
 const affiliatePortalKey = ["affiliate", "portal"] as const;
@@ -25,12 +37,16 @@ export const useRequestAffiliateProfile = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (displayName: string) => {
-      const normalizedDisplayName = displayName.trim();
+      const normalizedDisplayName = affiliateDisplayNameInputSchema.parse(displayName);
       const { data, error } = await supabase.rpc("request_affiliate_profile", {
         ...(normalizedDisplayName ? { p_display_name: normalizedDisplayName } : {}),
       });
       if (error) throw error;
-      return data;
+      return parseDataContract(
+        affiliateProfileSchema,
+        data,
+        "solicitação do perfil de afiliado",
+      );
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: affiliatePortalKey });
@@ -46,13 +62,18 @@ export const useCreateAffiliateLink = () => {
       subjectId: string;
       destinationPath: string;
     }) => {
+      const validated = affiliateCreateLinkInputSchema.parse(input);
       const { data, error } = await supabase.rpc("create_affiliate_link", {
-        p_subject_type: input.subjectType,
-        p_subject_id: input.subjectId,
-        p_destination_path: input.destinationPath,
+        p_subject_type: validated.subjectType,
+        p_subject_id: validated.subjectId,
+        p_destination_path: validated.destinationPath,
       });
       if (error) throw error;
-      return data;
+      return parseDataContract(
+        affiliateLinkRowSchema,
+        data,
+        "criação do link de afiliado",
+      );
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: affiliatePortalKey });
@@ -64,11 +85,16 @@ export const useDeactivateAffiliateLink = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (linkId: string) => {
+      const validatedLinkId = uuidSchema.parse(linkId);
       const { data, error } = await supabase.rpc("deactivate_affiliate_link", {
-        p_link_id: linkId,
+        p_link_id: validatedLinkId,
       });
       if (error) throw error;
-      return data;
+      return parseDataContract(
+        affiliateLinkRowSchema,
+        data,
+        "desativação do link de afiliado",
+      );
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: affiliatePortalKey });
@@ -108,14 +134,22 @@ export const useSetAffiliateProfileStatus = () => {
       status: "active" | "suspended";
       reason?: string | null;
     }) => {
-      const normalizedReason = input.reason?.trim();
+      const normalizedReason = input.reason?.trim() || null;
+      const validated = affiliateProfileStatusInputSchema.parse({
+        ...input,
+        reason: normalizedReason,
+      });
       const { data, error } = await supabase.rpc("admin_set_affiliate_profile_status", {
-        p_user_id: input.userId,
-        p_status: input.status,
-        ...(normalizedReason ? { p_reason: normalizedReason } : {}),
+        p_user_id: validated.userId,
+        p_status: validated.status,
+        ...(validated.status === "suspended" ? { p_reason: validated.reason } : {}),
       });
       if (error) throw error;
-      return data;
+      return parseDataContract(
+        affiliateProfileSchema,
+        data,
+        "alteração do perfil de afiliado",
+      );
     },
     onSuccess: invalidate,
   });
@@ -131,15 +165,20 @@ export const useConfigureAffiliateTerms = () => {
       attributionWindowDays: number;
       active: boolean;
     }) => {
+      const validated = affiliateTermsInputSchema.parse(input);
       const { data, error } = await supabase.rpc("admin_configure_affiliate_terms", {
-        p_subject_type: input.subjectType,
-        p_subject_id: input.subjectId,
-        p_commission_bps: input.commissionBps,
-        p_attribution_window_days: input.attributionWindowDays,
-        p_active: input.active,
+        p_subject_type: validated.subjectType,
+        p_subject_id: validated.subjectId,
+        p_commission_bps: validated.commissionBps,
+        p_attribution_window_days: validated.attributionWindowDays,
+        p_active: validated.active,
       });
       if (error) throw error;
-      return data;
+      return parseDataContract(
+        affiliateSubjectTermsRowSchema,
+        data,
+        "configuração de termos de afiliado",
+      );
     },
     onSuccess: invalidate,
   });
@@ -153,14 +192,22 @@ export const useCreateAffiliatePayout = () => {
       commissionIds: string[];
       notes?: string | null;
     }) => {
-      const normalizedNotes = input.notes?.trim();
+      const normalizedNotes = input.notes?.trim() || null;
+      const validated = affiliateCreatePayoutInputSchema.parse({
+        ...input,
+        notes: normalizedNotes,
+      });
       const { data, error } = await supabase.rpc("admin_create_affiliate_payout", {
-        p_affiliate_user_id: input.affiliateUserId,
-        p_commission_ids: input.commissionIds,
-        ...(normalizedNotes ? { p_notes: normalizedNotes } : {}),
+        p_affiliate_user_id: validated.affiliateUserId,
+        p_commission_ids: validated.commissionIds,
+        ...(validated.notes ? { p_notes: validated.notes } : {}),
       });
       if (error) throw error;
-      return data;
+      return parseDataContract(
+        affiliatePayoutRowSchema,
+        data,
+        "criação do pagamento de afiliado",
+      );
     },
     onSuccess: invalidate,
   });
@@ -170,12 +217,17 @@ export const useMarkAffiliatePayoutPaid = () => {
   const invalidate = useInvalidateAffiliateAdmin();
   return useMutation({
     mutationFn: async (input: { payoutId: string; externalReference: string }) => {
+      const validated = affiliateMarkPayoutPaidInputSchema.parse(input);
       const { data, error } = await supabase.rpc("admin_mark_affiliate_payout_paid", {
-        p_payout_id: input.payoutId,
-        p_external_reference: input.externalReference,
+        p_payout_id: validated.payoutId,
+        p_external_reference: validated.externalReference,
       });
       if (error) throw error;
-      return data;
+      return parseDataContract(
+        affiliatePayoutRowSchema,
+        data,
+        "confirmação do pagamento de afiliado",
+      );
     },
     onSuccess: invalidate,
   });
@@ -185,12 +237,17 @@ export const useCancelAffiliatePayout = () => {
   const invalidate = useInvalidateAffiliateAdmin();
   return useMutation({
     mutationFn: async (input: { payoutId: string; reason: string }) => {
+      const validated = affiliateCancelPayoutInputSchema.parse(input);
       const { data, error } = await supabase.rpc("admin_cancel_affiliate_payout", {
-        p_payout_id: input.payoutId,
-        p_reason: input.reason,
+        p_payout_id: validated.payoutId,
+        p_reason: validated.reason,
       });
       if (error) throw error;
-      return data;
+      return parseDataContract(
+        affiliatePayoutRowSchema,
+        data,
+        "cancelamento do pagamento de afiliado",
+      );
     },
     onSuccess: invalidate,
   });
