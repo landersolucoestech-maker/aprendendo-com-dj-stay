@@ -28,7 +28,7 @@ const installEnvironment = (options: EnvironmentOptions = {}) => {
       if (!(data instanceof Uint8Array)) {
         throw new Error("A fonte do fingerprint deve ser codificada como Uint8Array.");
       }
-      const bytes = data;
+      const bytes = Uint8Array.from(data);
       digestSources.push(new TextDecoder().decode(bytes));
       return Uint8Array.from([0, 15, 16, 255]).buffer;
     },
