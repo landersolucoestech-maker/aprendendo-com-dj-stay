@@ -1,0 +1,57 @@
+name: Integrar gate B74
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/integrate-b74-gate.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: integrate-b74-gate
+  cancel-in-progress: false
+
+jobs:
+  integrate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Integrar contrato B74
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = "package.json";
+          const packageJson = JSON.parse(fs.readFileSync(path, "utf8"));
+          const marker = "npm run check:contact-contract-tests";
+          const addition = "npm run check:learning-progress-contract-tests";
+
+          packageJson.scripts["check:learning-progress-contract-tests"] =
+            "node scripts/check-learning-progress-contract-tests.mjs";
+
+          if (!packageJson.scripts.typecheck.includes(addition)) {
+            if (!packageJson.scripts.typecheck.includes(marker)) {
+              throw new Error("Marcador B73 não encontrado no typecheck.");
+            }
+            packageJson.scripts.typecheck = packageJson.scripts.typecheck.replace(
+              `${marker} &&`,
+              `${marker} && ${addition} &&`,
+            );
+          }
+
+          fs.writeFileSync(path, `${JSON.stringify(packageJson, null, 2)}\n`);
+          NODE
+
+      - name: Publicar integração
+        run: |
+          rm .github/workflows/integrate-b74-gate.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add package.json .github/workflows/integrate-b74-gate.yml
+          git commit -m "test(b74): integrar aprendizagem e progresso ao gate"
+          git push origin HEAD:dev
