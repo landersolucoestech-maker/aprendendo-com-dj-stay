@@ -1,0 +1,315 @@
+name: Patch B86 Student Frames
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - .github/workflows/patch-b86-student-frames.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Migrar páginas para StudentPortalPageFrame
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(source: str, old: str, new: str, label: str) -> str:
+              if new in source and old not in source:
+                  return source
+              if source.count(old) != 1:
+                  raise SystemExit(f"{label}: esperado 1 marcador, encontrado {source.count(old)}")
+              return source.replace(old, new, 1)
+
+          def migrate(path_str: str, replacements: list[tuple[str, str, str]]) -> None:
+              path = Path(path_str)
+              source = path.read_text(encoding="utf-8")
+              for old, new, label in replacements:
+                  source = replace_once(source, old, new, f"{path_str} / {label}")
+              if "StudentPortalShell" in source:
+                  raise SystemExit(f"{path_str}: referência local ao shell permaneceu")
+              for forbidden in ["getUserMetadataProfile", "useAuth()", "isSigningOut", "handleSignOut", "await signOut()"]:
+                  if forbidden in source:
+                      raise SystemExit(f"{path_str}: wrapper duplicado permaneceu: {forbidden}")
+              if source.count("<StudentPortalPageFrame>") != 1 or source.count("</StudentPortalPageFrame>") != 1:
+                  raise SystemExit(f"{path_str}: frame deve envolver a página exatamente uma vez")
+              path.write_text(source, encoding="utf-8")
+
+          frame_import = 'import { StudentPortalPageFrame } from "@/components/student/StudentPortalPageFrame";'
+
+          migrate("src/pages/student/StudentFavorites.tsx", [
+              ('import { useMemo, useState } from "react";\nimport { Link, useNavigate } from "react-router-dom";\n\nimport { getUserMetadataProfile } from "@/auth/user-metadata";\nimport { useAuth } from "@/auth/use-auth";', 'import { Link } from "react-router-dom";', "imports"),
+              ('import { StudentPortalShell } from "@/components/student/StudentPortalShell";', frame_import, "frame import"),
+              ('''  const { user, signOut } = useAuth();
+          const navigate = useNavigate();
+          const [isSigningOut, setIsSigningOut] = useState(false);
+          const favoritesQuery = useStudentFavorites();
+          const metadata = useMemo(() => {
+            if (!user) return null;
+            try {
+              return getUserMetadataProfile(user);
+            } catch {
+              return null;
+            }
+          }, [user]);
+
+          const handleSignOut = async () => {
+            setIsSigningOut(true);
+            try {
+              await signOut();
+              navigate("/login", { replace: true });
+            } finally {
+              setIsSigningOut(false);
+            }
+          };
+
+          if (!user) {
+            return <PageState variant="loading" title="Validando conta" description="Confirmando a sessão do aluno." />;
+          }
+
+          const favorites''', '''  const favoritesQuery = useStudentFavorites();
+          const favorites''', "session block"),
+              ('''    <StudentPortalShell
+              displayName={metadata?.fullName ?? user.email ?? "Aluno"}
+              email={user.email ?? ""}
+              isSigningOut={isSigningOut}
+              onSignOut={() => void handleSignOut()}
+            >''', "    <StudentPortalPageFrame>", "opening frame"),
+              ("    </StudentPortalShell>", "    </StudentPortalPageFrame>", "closing frame"),
+          ])
+
+          migrate("src/pages/student/StudentNotifications.tsx", [
+              ('import { useMemo, useState } from "react";\nimport { Link, useNavigate } from "react-router-dom";\n\nimport { getUserMetadataProfile } from "@/auth/user-metadata";\nimport { useAuth } from "@/auth/use-auth";', 'import { Link } from "react-router-dom";', "imports"),
+              ('import { StudentPortalShell } from "@/components/student/StudentPortalShell";', frame_import, "frame import"),
+              ('''  const { user, signOut } = useAuth();
+          const navigate = useNavigate();
+          const [isSigningOut, setIsSigningOut] = useState(false);
+          const notificationsQuery = useStudentNotifications();
+          const markRead = useMarkStudentNotificationRead();
+          const markAllRead = useMarkAllStudentNotificationsRead();
+          const metadata = useMemo(() => {
+            if (!user) return null;
+            try {
+              return getUserMetadataProfile(user);
+            } catch {
+              return null;
+            }
+          }, [user]);
+
+          const handleSignOut = async () => {
+            setIsSigningOut(true);
+            try {
+              await signOut();
+              navigate("/login", { replace: true });
+            } finally {
+              setIsSigningOut(false);
+            }
+          };
+
+          if (!user) {
+            return <PageState variant="loading" title="Validando conta" description="Confirmando a sessão do aluno." />;
+          }
+
+          const data''', '''  const notificationsQuery = useStudentNotifications();
+          const markRead = useMarkStudentNotificationRead();
+          const markAllRead = useMarkAllStudentNotificationsRead();
+          const data''', "session block"),
+              ('''    <StudentPortalShell
+              displayName={metadata?.fullName ?? user.email ?? "Aluno"}
+              email={user.email ?? ""}
+              isSigningOut={isSigningOut}
+              onSignOut={() => void handleSignOut()}
+            >''', "    <StudentPortalPageFrame>", "opening frame"),
+              ("    </StudentPortalShell>", "    </StudentPortalPageFrame>", "closing frame"),
+          ])
+
+          migrate("src/pages/student/StudentSupport.tsx", [
+              ('import { useMemo, useState } from "react";\nimport { useNavigate } from "react-router-dom";\n\nimport { getUserMetadataProfile } from "@/auth/user-metadata";\nimport { useAuth } from "@/auth/use-auth";', 'import { useState } from "react";', "imports"),
+              ('import { StudentPortalShell } from "@/components/student/StudentPortalShell";', frame_import, "frame import"),
+              ('  const { user, signOut } = useAuth();\n  const navigate = useNavigate();\n', "", "auth declarations"),
+              ('  const [isSigningOut, setIsSigningOut] = useState(false);\n', "", "signout state"),
+              ('''  const metadata = useMemo(() => {
+            if (!user) return null;
+            try {
+              return getUserMetadataProfile(user);
+            } catch {
+              return null;
+            }
+          }, [user]);
+
+          const handleSignOut = async () => {
+            setIsSigningOut(true);
+            try {
+              await signOut();
+              navigate("/login", { replace: true });
+            } finally {
+              setIsSigningOut(false);
+            }
+          };
+
+          ''', "", "metadata and signout"),
+              ('''  if (!user) {
+            return <PageState variant="loading" title="Validando conta" />;
+          }
+
+          ''', "", "auth loading"),
+              ('''    <StudentPortalShell
+              displayName={metadata?.fullName ?? user.email ?? "Aluno"}
+              email={user.email ?? ""}
+              isSigningOut={isSigningOut}
+              onSignOut={() => void handleSignOut()}
+            >''', "    <StudentPortalPageFrame>", "opening frame"),
+              ("    </StudentPortalShell>", "    </StudentPortalPageFrame>", "closing frame"),
+          ])
+
+          migrate("src/pages/student/StudentFinancialPortal.tsx", [
+              ('import { useMemo, useState } from "react";\nimport { useNavigate } from "react-router-dom";\n\nimport { getUserMetadataProfile } from "@/auth/user-metadata";\nimport { useAuth } from "@/auth/use-auth";', "", "imports"),
+              ('import { StudentPortalShell } from "@/components/student/StudentPortalShell";', frame_import, "frame import"),
+              ('''  const { user, signOut } = useAuth();
+          const navigate = useNavigate();
+          const [isSigningOut, setIsSigningOut] = useState(false);
+          const historyQuery = useStudentPaymentHistory();
+          const metadata = useMemo(() => {
+            if (!user) return null;
+            try {
+              return getUserMetadataProfile(user);
+            } catch {
+              return null;
+            }
+          }, [user]);
+
+          const handleSignOut = async () => {
+            setIsSigningOut(true);
+            try {
+              await signOut();
+              navigate("/login", { replace: true });
+            } finally {
+              setIsSigningOut(false);
+            }
+          };
+
+          if (!user) {
+            return (
+              <PageState
+                variant="loading"
+                title="Validando conta"
+                description="Confirmando a sessão do aluno."
+              />
+            );
+          }
+
+          const orders''', '''  const historyQuery = useStudentPaymentHistory();
+          const orders''', "session block"),
+              ('''    <StudentPortalShell
+              displayName={metadata?.fullName ?? user.email ?? "Aluno"}
+              email={user.email ?? ""}
+              isSigningOut={isSigningOut}
+              onSignOut={() => void handleSignOut()}
+            >''', "    <StudentPortalPageFrame>", "opening frame"),
+              ("    </StudentPortalShell>", "    </StudentPortalPageFrame>", "closing frame"),
+          ])
+
+          migrate("src/pages/student/StudentCommunicationPreferences.tsx", [
+              ('import { useEffect, useMemo, useState } from "react";\nimport { useNavigate } from "react-router-dom";\n\nimport { getUserMetadataProfile } from "@/auth/user-metadata";\nimport { useAuth } from "@/auth/use-auth";', 'import { useEffect, useState } from "react";', "imports"),
+              ('import { StudentPortalShell } from "@/components/student/StudentPortalShell";', frame_import, "frame import"),
+              ('  const { user, signOut } = useAuth();\n  const navigate = useNavigate();\n', "", "auth declarations"),
+              ('  const [isSigningOut, setIsSigningOut] = useState(false);\n', "", "signout state"),
+              ('''  const metadata = useMemo(() => {
+            if (!user) return null;
+            try {
+              return getUserMetadataProfile(user);
+            } catch {
+              return null;
+            }
+          }, [user]);
+
+          const handleSignOut = async () => {
+            setIsSigningOut(true);
+            try {
+              await signOut();
+              navigate("/login", { replace: true });
+            } finally {
+              setIsSigningOut(false);
+            }
+          };
+
+          ''', "", "metadata and signout"),
+              ('''  if (!user) {
+            return (
+              <PageState
+                variant="loading"
+                title="Validando conta"
+                description="Confirmando a sessão do aluno."
+              />
+            );
+          }
+
+          ''', "", "auth loading"),
+              ('''    <StudentPortalShell
+              displayName={metadata?.fullName ?? user.email ?? "Aluno"}
+              email={user.email ?? ""}
+              isSigningOut={isSigningOut}
+              onSignOut={() => void handleSignOut()}
+            >''', "    <StudentPortalPageFrame>", "opening frame"),
+              ("    </StudentPortalShell>", "    </StudentPortalPageFrame>", "closing frame"),
+          ])
+
+          migrate("src/pages/student/StudentPrivacyRights.tsx", [
+              ('import { useMemo, useState } from "react";\nimport { useNavigate } from "react-router-dom";\n\nimport { getUserMetadataProfile } from "@/auth/user-metadata";\nimport { useAuth } from "@/auth/use-auth";', 'import { useState } from "react";', "imports"),
+              ('import { StudentPortalShell } from "@/components/student/StudentPortalShell";', frame_import, "frame import"),
+              ('  const { user, signOut } = useAuth();\n  const navigate = useNavigate();\n', "", "auth declarations"),
+              ('  const [isSigningOut, setIsSigningOut] = useState(false);\n', "", "signout state"),
+              ('''  const metadata = useMemo(() => {
+            if (!user) return null;
+            try {
+              return getUserMetadataProfile(user);
+            } catch {
+              return null;
+            }
+          }, [user]);
+
+          const handleSignOut = async () => {
+            setIsSigningOut(true);
+            try {
+              await signOut();
+              navigate("/login", { replace: true });
+            } finally {
+              setIsSigningOut(false);
+            }
+          };
+
+          ''', "", "metadata and signout"),
+              ('''  if (!user) {
+            return <PageState variant="loading" title="Validando conta" description="Confirmando sua sessão." />;
+          }
+
+          ''', "", "auth loading"),
+              ('''    <StudentPortalShell
+              displayName={metadata?.fullName ?? user.email ?? "Aluno"}
+              email={user.email ?? ""}
+              isSigningOut={isSigningOut}
+              onSignOut={() => void handleSignOut()}
+            >''', "    <StudentPortalPageFrame>", "opening frame"),
+              ("    </StudentPortalShell>", "    </StudentPortalPageFrame>", "closing frame"),
+          ])
+
+      - name: Remover workflow temporário
+        run: rm .github/workflows/patch-b86-student-frames.yml
+
+      - name: Publicar migração
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/student/StudentFavorites.tsx src/pages/student/StudentNotifications.tsx src/pages/student/StudentSupport.tsx src/pages/student/StudentFinancialPortal.tsx src/pages/student/StudentCommunicationPreferences.tsx src/pages/student/StudentPrivacyRights.tsx .github/workflows/patch-b86-student-frames.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "refactor(b86): centralizar wrappers do portal do aluno"
+          git push origin HEAD:dev
