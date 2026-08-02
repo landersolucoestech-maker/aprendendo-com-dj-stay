@@ -1,0 +1,54 @@
+name: Integrar gate B78
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/patch-b78-package.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: patch-b78-package
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Integrar verificador B78
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("package.json")
+          content = path.read_text(encoding="utf-8")
+
+          old_chain = "npm run check:curriculum-cms-tests && npm run check:affiliate-contract-tests"
+          new_chain = "npm run check:curriculum-cms-tests && npm run check:lesson-media-contract-tests && npm run check:affiliate-contract-tests"
+          if old_chain not in content:
+              raise SystemExit("Encadeamento do typecheck não encontrado.")
+          content = content.replace(old_chain, new_chain, 1)
+
+          old_script = '    "check:curriculum-cms-tests": "node scripts/check-curriculum-cms-tests.mjs",\n    "check:affiliate-contract-tests":'
+          new_script = '    "check:curriculum-cms-tests": "node scripts/check-curriculum-cms-tests.mjs",\n    "check:lesson-media-contract-tests": "node scripts/check-lesson-media-contract-tests.mjs",\n    "check:affiliate-contract-tests":'
+          if old_script not in content:
+              raise SystemExit("Bloco de scripts não encontrado.")
+          content = content.replace(old_script, new_script, 1)
+          path.write_text(content, encoding="utf-8")
+          PY
+
+      - name: Publicar integração e remover workflow temporário
+        run: |
+          rm .github/workflows/patch-b78-package.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add package.json .github/workflows/patch-b78-package.yml
+          git commit -m "test(b78): integrar contratos de mídia ao typecheck"
+          git push origin HEAD:dev
