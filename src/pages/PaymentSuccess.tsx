@@ -34,6 +34,7 @@ import {
   shouldPollCheckoutReturn,
   type CheckoutReturnViewState,
 } from "@/lib/checkout-return";
+import { formatAppDateTime } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
 interface StateCopy {
@@ -153,12 +154,7 @@ const formatMoney = (amountCents: number): string =>
   }).format(amountCents / 100);
 
 const formatDateTime = (value: string | null | undefined): string =>
-  value
-    ? new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short",
-      }).format(new Date(value))
-    : "Ainda não registrado";
+  formatAppDateTime(value, { fallback: "Ainda não registrado" });
 
 const accessAction = (
   checkout: CheckoutReturnFound,
