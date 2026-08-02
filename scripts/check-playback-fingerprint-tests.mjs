@@ -46,13 +46,13 @@ if (failures.length === 0) {
     'vi.stubGlobal("crypto"',
     'vi.spyOn(Intl, "DateTimeFormat")',
     "vi.unstubAllGlobals()",
-    'resolves.toBe("000f10ff")',
-    "EXPECTED_SOURCE",
-    "const digestSources: string[] = []",
-    "if (!(data instanceof Uint8Array))",
-    "A fonte do fingerprint deve ser codificada como Uint8Array.",
-    "digestSources.push(new TextDecoder().decode(bytes))",
-    "expect(environment.digestSources).toEqual([EXPECTED_SOURCE])",
+    "const nativeSubtle = globalThis.crypto.subtle",
+    "subtle: nativeSubtle",
+    "EXISTING_FINGERPRINT",
+    "GENERATED_FINGERPRINT",
+    "6b1d6240cb0479adba3b421db99f77f7bf42290705f5dd7a3a3cbdba04c5477a",
+    "818c4fd0a174a7f830f1f90f90da2ab748ef4f403b12f25175c03cb5f7509da7",
+    "toMatch(/^[0-9a-f]{64}$/)",
     'toHaveBeenCalledWith(SESSION_NONCE_KEY, GENERATED_NONCE)',
     'readError: new Error("sessionStorage bloqueado")',
     'writeError: new Error("quota indisponível")',
@@ -62,16 +62,15 @@ if (failures.length === 0) {
     }
   }
 
-  if (test.includes("ReturnType<typeof vi.fn>")) {
-    failures.push(
-      `${testPath}: widening genérico de vi.fn não pode ser usado para ler argumentos do digest`,
-    );
-  }
-
-  if (test.includes("new Uint8Array(data.buffer")) {
-    failures.push(
-      `${testPath}: BufferSource não pode ser reconstruído a partir de ArrayBufferLike`,
-    );
+  for (const prohibited of [
+    "ReturnType<typeof vi.fn>",
+    "subtle: { digest }",
+    "const digest = vi.fn",
+    "new Uint8Array(data.buffer",
+  ]) {
+    if (test.includes(prohibited)) {
+      failures.push(`${testPath}: mock de Web Crypto incompatível reapareceu: ${prohibited}`);
+    }
   }
 
   if (
@@ -99,5 +98,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B57 aprovado: fingerprint preserva SHA-256, tolera falhas de sessionStorage e estreita BufferSource para Uint8Array sem widening.",
+  "Contrato B57 aprovado: fingerprint usa SHA-256 real, tolera falhas de sessionStorage e não depende de mock tipado de BufferSource.",
 );
