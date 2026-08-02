@@ -27,7 +27,7 @@ export function RoleLandingRedirect() {
   }
 
   if (roleQuery.data.role === "administrador_proprietario") {
-    return <Navigate to="/admin/cursos" replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   if (roleQuery.data.role === "afiliado") {
