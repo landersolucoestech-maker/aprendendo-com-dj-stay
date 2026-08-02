@@ -41,6 +41,11 @@ for (const fragment of [
   "Matrícula de compra não possui concedente manual.",
   "O lifecycle da matrícula está incoerente.",
   "enrollmentEventSchema",
+  "getActiveEnrollments",
+  'enrollment.status === "active"',
+  'enrollment.courses.status === "published"',
+  "startsAt <= now",
+  "expiresAt === null || expiresAt > now",
   ".strict()",
 ]) {
   expect(contracts.includes(fragment), `Contrato B76 ausente: ${fragment}`);
@@ -98,11 +103,7 @@ for (const fragment of [
   "parseDataContract",
   'from("enrollments")',
   'eq("user_id", user.id)',
-  'enrollment.status === "active"',
-  'enrollment.courses.status === "published"',
-  "startsAt <= now",
-  "expiresAt === null || expiresAt > now",
-  "getActiveEnrollments",
+  'export { getActiveEnrollments } from "@/contracts/course-access";',
 ]) {
   expect(hook.includes(fragment), `Consumidor B76 ausente: ${fragment}`);
 }
