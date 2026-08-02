@@ -1,158 +1,258 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, Play, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import {
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Eye,
+  GraduationCap,
+} from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 
-const modules = [{
-  title: "Módulo 1: Fundamentos da Produção Musical",
-  duration: "4h 30min",
-  lessons: 12,
-  description: "Aprenda os conceitos básicos de produção musical, teoria musical aplicada ao funk e configuração do seu home studio.",
-  topics: ["Introdução à produção musical", "Configuração de DAW (Ableton)", "Teoria musical básica para funk", "Estrutura de uma música de funk", "Equipamentos necessários"]
-}, {
-  title: "Módulo 2: Criação de Beats e Ritmos",
-  duration: "6h 15min",
-  lessons: 18,
-  description: "Domine a criação de beats de funk, padrões rítmicos e programação de bateria que fazem o sucesso do gênero.",
-  topics: ["Padrões rítmicos do funk carioca", "Programação de kick e snare", "Criação de grooves únicos", "Uso de samples de bateria", "Técnicas de swing e humanização"]
-}, {
-  title: "Módulo 3: Baixo e Linhas de Base",
-  duration: "5h 45min",
-  lessons: 15,
-  description: "Aprenda a criar linhas de baixo marcantes e como usar sintetizadores para conseguir aquele som grave característico.",
-  topics: ["Síntese de baixo para funk", "Padrões de baixo tradicionais", "Efeitos e processamento de baixo", "Layers de graves e sub-bass", "Sidechaining e compressão"]
-}, {
-  title: "Módulo 4: Melodias e Harmonias",
-  duration: "4h 20min",
-  lessons: 14,
-  description: "Desenvolva melodias cativantes, use samples criativamente e crie arranjos que prendem a atenção do ouvinte.",
-  topics: ["Criação de melodias marcantes", "Uso criativo de samples", "Chopping e manipulação de samples", "Camadas melódicas", "Harmonia aplicada ao funk"]
-}, {
-  title: "Módulo 5: Mixagem e Masterização",
-  duration: "7h 10min",
-  lessons: 20,
-  description: "Deixe suas produções com qualidade profissional através de técnicas avançadas de mixagem e masterização.",
-  topics: ["EQ e frequências no funk", "Compressão dinâmica", "Efeitos espaciais (reverb/delay)", "Automação e movimento", "Masterização final"]
-}, {
-  title: "Módulo 6: Produção Avançada e Mercado",
-  duration: "3h 40min",
-  lessons: 10,
-  description: "Técnicas avançadas de produção, como vender suas beats e se posicionar no mercado musical.",
-  topics: ["Técnicas de produção avançada", "Como vender suas beats", "Direitos autorais e licenciamento", "Marketing para produtores", "Networking no meio musical"]
-}];
+import { Button } from "@/components/ui/button";
+import type { PublicCourse } from "@/contracts/public-course-catalog";
+import { usePublicCourseCatalog } from "@/hooks/usePublicCourseCatalog";
+
+const levelLabel: Record<PublicCourse["level"], string> = {
+  beginner: "Iniciante",
+  intermediate: "Intermediário",
+  advanced: "Avançado",
+  all_levels: "Todos os níveis",
+};
+
+const formatDuration = (minutes: number): string => {
+  if (minutes <= 0) return "Duração não informada";
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (hours === 0) return `${remainingMinutes} min`;
+  if (remainingMinutes === 0) return `${hours} h`;
+  return `${hours} h ${remainingMinutes} min`;
+};
+
+const formatMoney = (value: number, currencyCode: string): string =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: currencyCode,
+  }).format(value);
 
 const CourseModulesSection = () => {
-  const [expandedModule, setExpandedModule] = useState<number | null>(null);
-  const navigate = useNavigate();
-
-  const toggleModule = (index: number) => {
-    setExpandedModule(expandedModule === index ? null : index);
-  };
-
-  const handleEnrollClick = () => {
-    navigate('/matricule-se');
-  };
-
-  const totalDuration = modules.reduce((total, module) => {
-    const match = /^(\d+)h\s+(\d+)min$/.exec(module.duration);
-    const hours = Number(match?.[1] ?? 0);
-    const minutes = Number(match?.[2] ?? 0);
-    return total + hours + minutes / 60;
-  }, 0);
-  const totalLessons = modules.reduce((total, module) => total + module.lessons, 0);
+  const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
+  const catalogQuery = usePublicCourseCatalog();
+  const courses = catalogQuery.data?.courses ?? [];
 
   return (
-    <section id="curso" className="py-20 bg-black/30 relative">
+    <section id="curso" className="relative bg-black/30 py-20">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            <span className="gradient-text">Conteúdo do Curso</span>
+        <div className="mb-16 text-center">
+          <h2 className="mb-6 text-4xl font-bold md:text-5xl">
+            <span className="gradient-text">Catálogo publicado</span>
           </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-            6 módulos completos que vão do básico ao avançado, com foco total na prática
+          <p className="mx-auto max-w-3xl text-xl text-gray-300">
+            Cursos, preços e estrutura curricular exibidos diretamente do CMS da plataforma.
           </p>
-          
-          <div className="flex flex-wrap gap-8 justify-center mb-8">
-            <div className="glass-card px-6 py-3">
-              <div className="text-2xl font-bold text-brand-light">{Math.floor(totalDuration)}h+</div>
-              <div className="text-sm text-gray-400">de conteúdo</div>
-            </div>
-            <div className="glass-card px-6 py-3">
-              <div className="text-2xl font-bold text-brand-medium">{totalLessons}</div>
-              <div className="text-sm text-gray-400">aulas práticas</div>
-            </div>
-            <div className="glass-card px-6 py-3">
-              <div className="text-2xl font-bold text-brand-dark">500+</div>
-              <div className="text-sm text-gray-400">samples exclusivos</div>
-            </div>
-          </div>
         </div>
 
-        <div className="max-w-4xl mx-auto space-y-4">
-          {modules.map((module, index) => <div key={index} className="glass-card overflow-hidden">
-              <button onClick={() => toggleModule(index)} className="w-full p-6 text-left flex items-center justify-between hover:bg-white/5 transition-colors">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-4 mb-2">
-                    <span className="text-sm text-brand-light font-semibold">
-                      MÓDULO {index + 1}
-                    </span>
-                    <div className="flex items-center text-gray-400 text-sm space-x-4">
-                      <span className="flex items-center">
-                        <Clock className="w-4 h-4 mr-1" />
-                        {module.duration}
-                      </span>
-                      <span className="flex items-center">
-                        <Play className="w-4 h-4 mr-1" />
-                        {module.lessons} aulas
-                      </span>
+        {catalogQuery.isLoading ? (
+          <div className="glass-card mx-auto max-w-3xl p-8 text-center" aria-live="polite">
+            <h3 className="text-xl font-semibold text-white">Carregando catálogo</h3>
+            <p className="mt-2 text-gray-400">
+              Consultando cursos e módulos publicados.
+            </p>
+          </div>
+        ) : catalogQuery.isError ? (
+          <div className="glass-card mx-auto max-w-3xl p-8 text-center" role="status">
+            <h3 className="text-xl font-semibold text-white">
+              Catálogo temporariamente indisponível
+            </h3>
+            <p className="mt-2 text-gray-400">
+              A conta, o portal e o canal de contato permanecem acessíveis.
+            </p>
+            <Button asChild className="btn-brand mt-6">
+              <Link to="/contato">Falar com o suporte</Link>
+            </Button>
+          </div>
+        ) : courses.length === 0 ? (
+          <div className="glass-card mx-auto max-w-3xl p-8 text-center">
+            <h3 className="text-xl font-semibold text-white">
+              Nenhum curso disponível neste momento
+            </h3>
+            <p className="mt-2 text-gray-400">
+              A vitrine mostra apenas cursos publicados e dentro da janela de disponibilidade.
+            </p>
+          </div>
+        ) : (
+          <div className="mx-auto max-w-5xl space-y-6">
+            {courses.map((course) => {
+              const isExpanded = expandedCourse === course.slug;
+
+              return (
+                <article key={course.slug} className="glass-card overflow-hidden">
+                  <div className="p-6 sm:p-8">
+                    <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="max-w-3xl">
+                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-light">
+                          {course.category} · {levelLabel[course.level]}
+                        </p>
+                        <h3 className="mt-3 text-3xl font-bold text-white">
+                          {course.title}
+                        </h3>
+                        <p className="mt-3 leading-7 text-gray-300">
+                          {course.short_description}
+                        </p>
+                      </div>
+
+                      <div className="min-w-52 rounded-2xl border border-white/10 bg-black/25 p-5 text-left lg:text-right">
+                        <p className="text-sm text-gray-400">Investimento atual</p>
+                        <p className="mt-1 text-3xl font-bold text-white">
+                          {formatMoney(
+                            course.effective_price_amount,
+                            course.currency_code,
+                          )}
+                        </p>
+                        {course.promotion_active ? (
+                          <p className="mt-1 text-sm text-gray-500 line-through">
+                            {formatMoney(course.price_amount, course.currency_code)}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                        <BookOpen className="h-5 w-5 text-brand-light" aria-hidden="true" />
+                        <p className="mt-2 text-2xl font-bold text-white">
+                          {course.module_count}
+                        </p>
+                        <p className="text-sm text-gray-400">módulo(s)</p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                        <GraduationCap className="h-5 w-5 text-brand-medium" aria-hidden="true" />
+                        <p className="mt-2 text-2xl font-bold text-white">
+                          {course.lesson_count}
+                        </p>
+                        <p className="text-sm text-gray-400">aula(s) publicada(s)</p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                        <Clock className="h-5 w-5 text-brand-light" aria-hidden="true" />
+                        <p className="mt-2 text-lg font-bold text-white">
+                          {formatDuration(course.duration_minutes)}
+                        </p>
+                        <p className="text-sm text-gray-400">duração registrada</p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                        <Eye className="h-5 w-5 text-brand-medium" aria-hidden="true" />
+                        <p className="mt-2 text-2xl font-bold text-white">
+                          {course.preview_lesson_count}
+                        </p>
+                        <p className="text-sm text-gray-400">prévia(s) marcada(s)</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-white/20 bg-transparent text-white"
+                        onClick={() =>
+                          setExpandedCourse(isExpanded ? null : course.slug)
+                        }
+                        aria-expanded={isExpanded}
+                        aria-controls={`course-${course.slug}-curriculum`}
+                      >
+                        {isExpanded ? (
+                          <ChevronUp className="mr-2 h-4 w-4" aria-hidden="true" />
+                        ) : (
+                          <ChevronDown className="mr-2 h-4 w-4" aria-hidden="true" />
+                        )}
+                        {isExpanded ? "Ocultar currículo" : "Ver currículo publicado"}
+                      </Button>
+                      <Button asChild className="btn-brand">
+                        <Link to="/matricule-se">Criar conta para continuar</Link>
+                      </Button>
                     </div>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">
-                    {module.title}
-                  </h3>
-                  <p className="text-gray-300">
-                    {module.description}
-                  </p>
-                </div>
-                <div className="ml-4">
-                  {expandedModule === index ? <ChevronUp className="w-6 h-6 text-gray-400" /> : <ChevronDown className="w-6 h-6 text-gray-400" />}
-                </div>
-              </button>
 
-              {expandedModule === index && <div className="px-6 pb-6 border-t border-white/10">
-                  <div className="pt-6">
-                    <h4 className="text-lg font-semibold text-white mb-4">
-                      O que você vai aprender:
-                    </h4>
-                    <ul className="space-y-3">
-                      {module.topics.map((topic, topicIndex) => <li key={topicIndex} className="flex items-center text-gray-300">
-                          <div className="w-2 h-2 bg-brand-light rounded-full mr-3 flex-shrink-0"></div>
-                          {topic}
-                        </li>)}
-                    </ul>
-                    
-                    
-                  </div>
-                </div>}
-            </div>)}
-        </div>
+                  {isExpanded ? (
+                    <div
+                      id={`course-${course.slug}-curriculum`}
+                      className="border-t border-white/10 bg-black/20 px-6 py-6 sm:px-8"
+                    >
+                      <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr]">
+                        <div>
+                          <h4 className="text-xl font-semibold text-white">
+                            Módulos publicados
+                          </h4>
+                          {course.modules.length === 0 ? (
+                            <p className="mt-3 text-gray-400">
+                              O curso está publicado, mas ainda não possui módulos públicos.
+                            </p>
+                          ) : (
+                            <div className="mt-4 space-y-3">
+                              {course.modules.map((moduleRecord) => (
+                                <div
+                                  key={`${moduleRecord.position}-${moduleRecord.title}`}
+                                  className="rounded-xl border border-white/10 bg-white/5 p-4"
+                                >
+                                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                    <div>
+                                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-light">
+                                        Módulo {moduleRecord.position + 1}
+                                      </p>
+                                      <h5 className="mt-1 font-semibold text-white">
+                                        {moduleRecord.title}
+                                      </h5>
+                                      {moduleRecord.description ? (
+                                        <p className="mt-2 text-sm leading-6 text-gray-400">
+                                          {moduleRecord.description}
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                    <div className="shrink-0 text-sm text-gray-400 sm:text-right">
+                                      <p>{moduleRecord.lesson_count} aula(s)</p>
+                                      <p>{formatDuration(moduleRecord.duration_minutes)}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
 
-        <div className="text-center mt-16">
-          <div className="glass-card p-8 max-w-2xl mx-auto brand-border">
-            <h3 className="text-2xl font-bold text-white mb-4">
-              Pronto para dominar a produção de funk?
-            </h3>
-            <p className="text-gray-300 mb-6">
-              Acesso vitalício a todo o conteúdo + materiais extras + suporte direto
-            </p>
-            <Button onClick={handleEnrollClick} size="lg" className="btn-brand text-lg px-8 py-4">
-              Matricular agora por R$ 297
-            </Button>
-            <p className="text-sm text-gray-400 mt-3">
-              ou 12x de R$ 29,70 no cartão
-            </p>
+                        <div>
+                          <h4 className="text-xl font-semibold text-white">
+                            Objetivos publicados
+                          </h4>
+                          <ul className="mt-4 space-y-3 text-sm text-gray-300">
+                            {course.objectives.map((objective) => (
+                              <li key={objective} className="flex gap-3">
+                                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand-light" />
+                                <span>{objective}</span>
+                              </li>
+                            ))}
+                          </ul>
+
+                          <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-400">
+                            <p>
+                              {course.access_duration_days === null
+                                ? "O prazo de acesso não está limitado no cadastro atual."
+                                : `Prazo de acesso cadastrado: ${course.access_duration_days} dia(s).`}
+                            </p>
+                            <p className="mt-2">
+                              {course.certificate_enabled
+                                ? "O curso está configurado para emissão de certificado conforme as regras de conclusão."
+                                : "Este curso não está configurado para emissão de certificado."}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
           </div>
-        </div>
+        )}
       </div>
     </section>
   );
