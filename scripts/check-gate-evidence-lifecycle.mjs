@@ -1,6 +1,11 @@
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 
 const workflowPath = ".github/workflows/baseline.yml";
+const temporaryReconciliationWorkflowPath =
+  ".github/workflows/b50-reconcile-gate-evidence.yml";
+const reconciliationDocumentationPath =
+  "docs/refactor/FASE-B50-HISTORICAL-GATE-EVIDENCE-RECONCILIATION.md";
 const workflow = await readFile(workflowPath, "utf8");
 const failures = [];
 
@@ -44,12 +49,24 @@ if (!conditionalClosePattern.test(workflow)) {
   );
 }
 
+if (existsSync(temporaryReconciliationWorkflowPath)) {
+  failures.push(
+    `${temporaryReconciliationWorkflowPath}: workflow temporário B50 não foi removido`,
+  );
+}
+
+if (!existsSync(reconciliationDocumentationPath)) {
+  failures.push(
+    `${reconciliationDocumentationPath}: documentação permanente da B50 ausente`,
+  );
+}
+
 if (failures.length > 0) {
-  console.error("Falhas no contrato B49:");
+  console.error("Falhas nos contratos B49/B50:");
   for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
 
 console.log(
-  "Contrato B49 aprovado: evidências verdes são encerradas automaticamente e evidências não verdes permanecem abertas.",
+  "Contratos B49/B50 aprovados: evidências verdes são encerradas automaticamente, evidências não verdes permanecem abertas e o workflow temporário de reconciliação está ausente.",
 );
