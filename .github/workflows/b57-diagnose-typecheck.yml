@@ -1,0 +1,88 @@
+name: B57 — Diagnosticar TypeScript
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/b57-diagnose-typecheck.yml"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: b57-diagnose-typecheck
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.16.0
+          cache: npm
+
+      - name: Instalação limpa
+        run: npm ci
+
+      - name: Diagnóstico isolado
+        id: diagnose
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          {
+            echo '## Contrato B57'
+            npm run check:playback-fingerprint-tests
+            echo
+            echo '## TypeScript app'
+            npx tsc --noEmit -p tsconfig.app.json
+            echo
+            echo '## TypeScript node'
+            npx tsc --noEmit -p tsconfig.node.json
+          } > b57-diagnostic.log 2>&1
+          status=$?
+          cat b57-diagnostic.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar diagnóstico
+        if: always()
+        uses: actions/github-script@v9
+        env:
+          DIAGNOSTIC_STATUS: ${{ steps.diagnose.outputs.status }}
+        with:
+          script: |
+            const fs = require("node:fs");
+            const output = fs.existsSync("b57-diagnostic.log")
+              ? fs.readFileSync("b57-diagnostic.log", "utf8")
+              : "Arquivo de diagnóstico não foi produzido.";
+            const body = [
+              "Diagnóstico isolado B57.",
+              "",
+              `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              `Status agregado: ${process.env.DIAGNOSTIC_STATUS ?? "indisponível"}`,
+              "",
+              "```text",
+              output.slice(-60000),
+              "```"
+            ].join("\n");
+
+            await github.request("POST /repos/{owner}/{repo}/issues/{issue_number}/comments", {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 432,
+              body,
+              headers: {
+                accept: "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2026-03-10"
+              }
+            });
+
+      - name: Falhar se diagnóstico falhou
+        if: always()
+        run: test "${{ steps.diagnose.outputs.status }}" = "0"
