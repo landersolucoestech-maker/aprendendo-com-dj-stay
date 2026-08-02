@@ -29,6 +29,7 @@ jobs:
               accept: "application/vnd.github+json",
               "X-GitHub-Api-Version": "2026-03-10"
             };
+            const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
             const listOpenIssues = async () => {
               const issues = [];
@@ -61,37 +62,52 @@ jobs:
               return isGateEvidence(issue) && hasSuccess && !hasNonSuccess;
             };
 
-            const before = await listOpenIssues();
-            const openGateBefore = before.filter(isGateEvidence);
-            const greenCandidates = openGateBefore.filter(isGreenEvidence);
+            const initial = await listOpenIssues();
+            const initialOpenGate = initial.filter(isGateEvidence);
+            const closedNumbers = new Set();
+            let passes = 0;
 
-            for (const issue of greenCandidates) {
-              await github.request("PATCH /repos/{owner}/{repo}/issues/{issue_number}", {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                state: "closed",
-                state_reason: "completed",
-                headers: githubApiHeaders
-              });
+            while (passes < 5) {
+              passes += 1;
+              const openIssues = await listOpenIssues();
+              const greenCandidates = openIssues.filter(isGreenEvidence);
+
+              if (greenCandidates.length === 0) break;
+
+              for (const issue of greenCandidates) {
+                await github.request("PATCH /repos/{owner}/{repo}/issues/{issue_number}", {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: "closed",
+                  state_reason: "completed",
+                  headers: githubApiHeaders
+                });
+                closedNumbers.add(issue.number);
+              }
+
+              await sleep(3000);
             }
+
+            await sleep(3000);
 
             const after = await listOpenIssues();
             const openGateAfter = after.filter(isGateEvidence);
             const remainingGreen = openGateAfter.filter(isGreenEvidence);
             const preservedNonGreen = openGateAfter.filter((issue) => !isGreenEvidence(issue));
-            const closedNumbers = greenCandidates.map((issue) => issue.number).sort((a, b) => a - b);
-            const closedRange = closedNumbers.length > 0
-              ? `#${closedNumbers[0]} a #${closedNumbers[closedNumbers.length - 1]}`
+            const reconciledNumbers = [...closedNumbers].sort((a, b) => a - b);
+            const closedRange = reconciledNumbers.length > 0
+              ? `#${reconciledNumbers[0]} a #${reconciledNumbers[reconciledNumbers.length - 1]}`
               : "nenhuma";
 
             const report = [
               "B50 executada pelo workflow temporário de reconciliação histórica.",
               "",
-              `- Evidências de gate abertas antes: ${openGateBefore.length}`,
-              `- Evidências verdes encerradas: ${greenCandidates.length}`,
+              `- Evidências de gate abertas no início desta execução: ${initialOpenGate.length}`,
+              `- Evidências verdes encerradas nesta execução: ${reconciledNumbers.length}`,
               `- Evidências não verdes preservadas: ${preservedNonGreen.length}`,
               `- Evidências verdes restantes: ${remainingGreen.length}`,
+              `- Passadas executadas: ${passes}`,
               `- Intervalo numérico das evidências encerradas: ${closedRange}`,
               `- Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             ].join("\n");
