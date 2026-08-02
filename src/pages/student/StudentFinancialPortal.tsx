@@ -6,16 +6,12 @@ import {
   PackageCheck,
   ShieldCheck,
 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
-import { getUserMetadataProfile } from "@/auth/user-metadata";
-import { useAuth } from "@/auth/use-auth";
+import { StudentPortalPageFrame } from "@/components/student/StudentPortalPageFrame";
 import {
   StudentSectionHeader,
   StudentStatCard,
 } from "@/components/student/StudentPortalPrimitives";
-import { StudentPortalShell } from "@/components/student/StudentPortalShell";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -54,50 +50,13 @@ interface StudentFinancialPortalProps {
 }
 
 const StudentFinancialPortal = ({ section }: StudentFinancialPortalProps) => {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const historyQuery = useStudentPaymentHistory();
-  const metadata = useMemo(() => {
-    if (!user) return null;
-    try {
-      return getUserMetadataProfile(user);
-    } catch {
-      return null;
-    }
-  }, [user]);
-
-  const handleSignOut = async () => {
-    setIsSigningOut(true);
-    try {
-      await signOut();
-      navigate("/login", { replace: true });
-    } finally {
-      setIsSigningOut(false);
-    }
-  };
-
-  if (!user) {
-    return (
-      <PageState
-        variant="loading"
-        title="Validando conta"
-        description="Confirmando a sessão do aluno."
-      />
-    );
-  }
-
   const orders = historyQuery.data?.orders ?? [];
   const summary = historyQuery.data?.summary;
   const title = section === "orders" ? "Pedidos" : "Pagamentos";
 
   return (
-    <StudentPortalShell
-      displayName={metadata?.fullName ?? user.email ?? "Aluno"}
-      email={user.email ?? ""}
-      isSigningOut={isSigningOut}
-      onSignOut={() => void handleSignOut()}
-    >
+    <StudentPortalPageFrame>
       <div className="space-y-8">
         <StudentSectionHeader
           title={title}
@@ -239,7 +198,7 @@ const StudentFinancialPortal = ({ section }: StudentFinancialPortalProps) => {
           </>
         )}
       </div>
-    </StudentPortalShell>
+    </StudentPortalPageFrame>
   );
 };
 
