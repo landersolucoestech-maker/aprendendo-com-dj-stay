@@ -108,7 +108,21 @@ jobs:
           BUILD: ${{ steps.build.outcome }}
         with:
           script: |
-            await github.request("POST /repos/{owner}/{repo}/issues", {
+            const githubApiHeaders = {
+              accept: "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2026-03-10"
+            };
+            const gateOutcomes = [
+              process.env.INSTALL,
+              process.env.LINT,
+              process.env.DB,
+              process.env.TYPES,
+              process.env.TYPECHECK,
+              process.env.BUILD
+            ];
+            const gateSucceeded = gateOutcomes.every((outcome) => outcome === "success");
+
+            const evidence = await github.request("POST /repos/{owner}/{repo}/issues", {
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `Gate técnico — ${context.sha.slice(0,12)}`,
@@ -122,11 +136,19 @@ jobs:
                 `TypeScript: **${process.env.TYPECHECK}**`,
                 `build: **${process.env.BUILD}**`
               ].join('\n'),
-              headers: {
-                accept: "application/vnd.github+json",
-                "X-GitHub-Api-Version": "2026-03-10"
-              }
+              headers: githubApiHeaders
             });
+
+            if (gateSucceeded) {
+              await github.request("PATCH /repos/{owner}/{repo}/issues/{issue_number}", {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: evidence.data.number,
+                state: "closed",
+                state_reason: "completed",
+                headers: githubApiHeaders
+              });
+            }
 
       - name: Gate final
         if: always()
