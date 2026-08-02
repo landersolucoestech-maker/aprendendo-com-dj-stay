@@ -8,18 +8,7 @@ import {
 } from "@/contracts/course-access";
 import { supabase } from "@/integrations/supabase/client";
 
-const isCurrentlyActive = (enrollment: EnrollmentWithCourse): boolean => {
-  const now = Date.now();
-  const startsAt = Date.parse(enrollment.starts_at);
-  const expiresAt = enrollment.expires_at === null ? null : Date.parse(enrollment.expires_at);
-
-  return (
-    enrollment.status === "active" &&
-    enrollment.courses.status === "published" &&
-    startsAt <= now &&
-    (expiresAt === null || expiresAt > now)
-  );
-};
+export { getActiveEnrollments } from "@/contracts/course-access";
 
 export const useCourseAccess = () => {
   const { user } = useAuth();
@@ -53,6 +42,3 @@ export const useCourseAccess = () => {
     staleTime: 30_000,
   });
 };
-
-export const getActiveEnrollments = (enrollments: EnrollmentWithCourse[]): EnrollmentWithCourse[] =>
-  enrollments.filter(isCurrentlyActive);
