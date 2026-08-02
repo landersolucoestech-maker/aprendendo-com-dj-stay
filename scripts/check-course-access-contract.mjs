@@ -41,6 +41,12 @@ const migrations = [
   "20260730200800_harden_playback_resolution_pgcrypto.sql",
 ].map((name) => read(`supabase/migrations/${name}`)).join("\n");
 
+const courseBuyerGuardSection = extractSection(
+  app,
+  "const CourseBuyerRoute",
+  "const MarketplaceRoute",
+);
+const courseBuyerGuard = courseBuyerGuardSection.content;
 const paymentRouteSection = extractSection(
   app,
   'path="/pagamento-sucesso"',
@@ -57,12 +63,19 @@ expect(migrations.includes("ACTIVE_ENROLLMENT_REQUIRED"), "A mídia deve exigir 
 expect(migrations.includes("extensions.gen_random_bytes"), "Tokens devem usar pgcrypto com schema explícito.");
 expect(migrations.includes("extensions.digest"), "Hashes devem usar pgcrypto com schema explícito.");
 expect(!app.includes("VITE_DISABLE_AUTH"), "Bypass de autenticação não pode existir.");
+expect(courseBuyerGuardSection.hasStart, "O guard compartilhado de compradores de curso deve existir.");
+expect(courseBuyerGuardSection.hasEnd, "O guard compartilhado deve possuir limite estrutural verificável.");
+expect(courseBuyerGuard.includes("<RequireAuth>"), "O guard de compradores de curso deve exigir autenticação.");
+expect(paymentAllowedRoles.test(courseBuyerGuard), "O guard deve permitir somente aluno e administrador proprietário.");
+expect(
+  courseBuyerGuard.includes("</RequireRole>") && courseBuyerGuard.includes("</RequireAuth>"),
+  "Os guards compartilhados de compradores de curso devem permanecer fechados.",
+);
 expect(paymentRouteSection.hasStart, "A rota de confirmação de pagamento deve existir.");
 expect(paymentRouteSection.hasEnd, "A rota de confirmação de pagamento deve possuir limite estrutural verificável.");
-expect(paymentRoute.includes("<RequireAuth>"), "A confirmação de pagamento deve exigir autenticação.");
-expect(paymentAllowedRoles.test(paymentRoute), "A confirmação de pagamento deve permitir somente aluno e administrador proprietário.");
+expect(paymentRoute.includes("<CourseBuyerRoute>"), "A confirmação de pagamento deve usar o guard autenticado de compradores de curso.");
 expect(paymentRoute.includes("<PaymentSuccess />"), "A rota protegida deve renderizar a confirmação de pagamento.");
-expect(paymentRoute.includes("</RequireRole>") && paymentRoute.includes("</RequireAuth>"), "Os guards da confirmação de pagamento devem permanecer fechados no bloco da rota.");
+expect(paymentRoute.includes("</CourseBuyerRoute>"), "O guard da confirmação de pagamento deve permanecer fechado no bloco da rota.");
 expect(!paymentSuccess.includes("Pagamento Realizado!"), "A página de retorno não pode declarar pagamento sem confirmação confiável.");
 expect(!paymentSuccess.includes("Acesso vitalício"), "A interface não pode inventar prazo vitalício.");
 expect(!lesson.includes("getPublicUrl("), "A página de aula não pode gerar URL pública.");
