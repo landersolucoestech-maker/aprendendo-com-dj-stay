@@ -110,22 +110,15 @@ jobs:
                   raise RuntimeError("Bloco de providers não encontrado")
               contract = contract.replace(provider_block, provider_replacement, 1)
 
-          media_anchor = '''    if (!isPrivate && (hasAsset || !hasExternalId)) {
-              context.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ["provider"],
-                message: "Mídia externa exige identificador e não aceita asset privado.",
-              });
-            }
-          });
-          '''
-          media_replacement = '''    if (!isPrivate && (hasAsset || !hasExternalId)) {
-              context.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ["provider"],
-                message: "Mídia externa exige identificador e não aceita asset privado.",
-              });
-            }
+          if "Identificador persistido do YouTube inválido." not in contract:
+              media_marker = 'message: "Mídia externa exige identificador e não aceita asset privado.",'
+              marker_index = contract.find(media_marker)
+              if marker_index < 0:
+                  raise RuntimeError("Mensagem de coerência da mídia externa não encontrada")
+              refinement_end = contract.find("\n  });", marker_index)
+              if refinement_end < 0:
+                  raise RuntimeError("Fechamento de lessonMediaRowSchema não encontrado")
+              media_validation = '''
 
             if (
               value.provider === "youtube" &&
@@ -150,29 +143,27 @@ jobs:
                 message: "Identificador persistido do Vimeo inválido.",
               });
             }
-          });
           '''
-          if "Identificador persistido do YouTube inválido." not in contract:
-              if media_anchor not in contract:
-                  raise RuntimeError("Refinamento de mídia não encontrado")
-              contract = contract.replace(media_anchor, media_replacement, 1)
+              contract = contract[:refinement_end] + media_validation + contract[refinement_end:]
           contract_path.write_text(contract, encoding="utf-8")
 
           hook_path = Path("src/hooks/useCurriculumCms.ts")
           hook = hook_path.read_text(encoding="utf-8")
 
           if "disableLessonMediaInputSchema" not in hook:
+              anchor = "  curriculumModuleRowsSchema,\n"
+              if anchor not in hook:
+                  raise RuntimeError("Import curriculumModuleRowsSchema não encontrado")
               hook = hook.replace(
-                  "  curriculumModuleRowsSchema,\n",
-                  "  curriculumModuleRowsSchema,\n  disableLessonMediaInputSchema,\n  externalLessonMediaInputSchema,\n",
+                  anchor,
+                  anchor + "  disableLessonMediaInputSchema,\n  externalLessonMediaInputSchema,\n",
                   1,
               )
           if "privateLessonMediaInputSchema" not in hook:
-              hook = hook.replace(
-                  "  modulePrerequisiteRowsSchema,\n",
-                  "  modulePrerequisiteRowsSchema,\n  privateLessonMediaInputSchema,\n",
-                  1,
-              )
+              anchor = "  modulePrerequisiteRowsSchema,\n"
+              if anchor not in hook:
+                  raise RuntimeError("Import modulePrerequisiteRowsSchema não encontrado")
+              hook = hook.replace(anchor, anchor + "  privateLessonMediaInputSchema,\n", 1)
 
           external_old = '''    }): Promise<LessonMediaRow> => {
                 const { data, error } = await supabase.rpc("upsert_external_lesson_media", {
