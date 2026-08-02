@@ -35,6 +35,10 @@ for (const path of [...Object.values(pages), ...Object.values(paths)]) {
 const sources = Object.fromEntries(
   Object.entries(pages).map(([name, path]) => [name, read(path)]),
 );
+expect(
+  Object.keys(sources).length === 6,
+  `B86 deve proteger exatamente seis consumidores; encontrou ${Object.keys(sources).length}.`,
+);
 const frame = read(paths.frame);
 const contracts = {
   B38: read(paths.b38),
