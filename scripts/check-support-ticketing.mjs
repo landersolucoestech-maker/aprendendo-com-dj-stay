@@ -76,7 +76,12 @@ if (failures.length === 0) {
   ]) {
     if (!rpc.includes(`\"${functionName}\"`)) failures.push(`Cliente RPC B39 ausente: ${functionName}`);
   }
-  for (const fragment of ["useMySupportTickets", "useCreateSupportTicket", "useAdminReplySupportTicket"]) {
+  for (const fragment of [
+    "useMySupportTickets",
+    "useCreateSupportTicket",
+    "useAddMySupportMessage",
+    "useAdminReplySupportTicket",
+  ]) {
     if (!hook.includes(fragment)) failures.push(`Hook B39 ausente: ${fragment}`);
   }
   for (const fragment of ["Novo ticket", "Enviar resposta", "Tickets de suporte"]) {
