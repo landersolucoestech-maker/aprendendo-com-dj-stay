@@ -144,6 +144,12 @@ begin
     where checkout_intent.status = 'checkout_created'::public.checkout_intent_status
       and checkout_intent.expires_at is not null
       and checkout_intent.expires_at <= statement_timestamp()
+      and not exists (
+        select 1
+        from public.payment_orders payment_order
+        where payment_order.checkout_intent_id = checkout_intent.id
+          and private.checkout_order_is_financially_terminal(payment_order.status)
+      )
     order by checkout_intent.expires_at, checkout_intent.id
     limit p_limit
     for update skip locked
