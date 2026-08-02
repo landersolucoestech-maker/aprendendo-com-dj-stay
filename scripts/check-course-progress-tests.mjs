@@ -7,6 +7,7 @@ const paths = {
   progressHook: "src/hooks/useProgressCalculation.ts",
   userProgressHook: "src/hooks/useUserProgress.ts",
   dashboard: "src/pages/Dashboard.tsx",
+  studentPortal: "src/pages/student/StudentPortal.tsx",
   lessonGrid: "src/components/LessonGrid.tsx",
   lessonCard: "src/components/LessonCard.tsx",
   moduleProgress: "src/components/ModuleProgress.tsx",
@@ -30,6 +31,7 @@ const modulesHook = read(paths.modulesHook);
 const progressHook = read(paths.progressHook);
 const userProgressHook = read(paths.userProgressHook);
 const dashboard = read(paths.dashboard);
+const studentPortal = read(paths.studentPortal);
 const lessonGrid = read(paths.lessonGrid);
 const lessonCard = read(paths.lessonCard);
 const moduleProgress = read(paths.moduleProgress);
@@ -45,19 +47,23 @@ for (const fragment of [
   "ModuleWithProgress",
   "LessonCompletionProgress",
   "calculateModulesProgress",
+  "calculateOverallCourseProgress",
   "readonly LearningModule[]",
   "readonly LessonCompletionProgress[]",
+  "readonly ModuleWithProgress[]",
   "new Set(",
   ".filter((progress) => progress.completada)",
   ".map((progress) => progress.aula_id)",
   "completedLessonIds.has(lesson.id)",
   "Math.round((completedLessons / lessons.length) * 100)",
+  "Math.round((completedLessons / totalLessons) * 100)",
   "lessons.length === 0",
+  "totalLessons === 0",
   "clampProgress",
   "Math.min(100, Math.max(0, progress))",
   "progress: clampProgress(progress)",
 ]) {
-  expect(pureModule.includes(fragment), `Módulo puro B81 ausente: ${fragment}`);
+  expect(pureModule.includes(fragment), `Módulo puro B81/B82 ausente: ${fragment}`);
 }
 expect(
   !pureModule.includes("react") &&
@@ -144,12 +150,32 @@ for (const fragment of [
   "type ModuleLessonWithProgress",
   "modulesQuery.data",
   "modulesWithProgress",
-  "module.progress",
+  "calculateOverallCourseProgress",
+  "calculateOverallCourseProgress(modulesWithProgress)",
   "LessonGrid",
   "ModuleProgress",
 ]) {
-  expect(dashboard.includes(fragment), `Dashboard B81 ausente: ${fragment}`);
+  expect(dashboard.includes(fragment), `Dashboard B81/B82 ausente: ${fragment}`);
 }
+expect(
+  !dashboard.includes("modulesWithProgress.reduce((total, module) => total + module.progress") &&
+    !dashboard.includes("modulesWithProgress.length"),
+  "Dashboard não pode restaurar média simples de percentuais dos módulos.",
+);
+
+for (const fragment of [
+  "calculateOverallCourseProgress",
+  "calculateOverallCourseProgress(modules)",
+  "const averageProgress =",
+  "row.progresso_percentual",
+]) {
+  expect(studentPortal.includes(fragment), `Portal do Aluno B81/B82 ausente: ${fragment}`);
+}
+expect(
+  !studentPortal.includes("modules.reduce((total, module) => total + module.progress") &&
+    !studentPortal.includes("module.progress, 0) /"),
+  "Página do curso não pode restaurar média simples de percentuais dos módulos.",
+);
 
 for (const fragment of [
   "ModuleLessonWithProgress",
@@ -210,10 +236,10 @@ expect(
 );
 
 if (failures.length > 0) {
-  console.error("Falhas no contrato B81:\n- " + failures.join("\n- "));
+  console.error("Falhas no contrato B81/B82:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Contrato B81 aprovado: tipos, cálculo percentual, limite defensivo, deduplicação e consumidores do progresso dos módulos permanecem centralizados e determinísticos.",
+  "Contrato B81/B82 aprovado: cálculo por módulo, progresso geral ponderado, limites defensivos e consumidores permanecem centralizados e determinísticos.",
 );
