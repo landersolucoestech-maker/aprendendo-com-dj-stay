@@ -30,8 +30,8 @@ for (const path of workflowPaths) {
     failures.push(`${path}: versão flutuante latest detectada`);
   }
 
-  if (!/SUPABASE_CLI_VERSION:\s*2\.101\.0/.test(content)) {
-    failures.push(`${path}: Supabase CLI 2.101.0 não está fixada`);
+  if (!/SUPABASE_CLI_VERSION:\s*2\.111\.0/.test(content)) {
+    failures.push(`${path}: Supabase CLI 2.111.0 não está fixada`);
   }
 
   if (content.includes("supabase/setup-cli@")) {
