@@ -1,0 +1,74 @@
+name: Diagnosticar typecheck B79
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/diagnose-b79-typecheck.yml"
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: diagnose-b79-typecheck
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - run: npm ci
+
+      - name: Executar typecheck integral
+        id: typecheck
+        continue-on-error: true
+        run: |
+          set +e
+          npm run typecheck > /tmp/b79-typecheck.log 2>&1
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit $status
+
+      - name: Publicar diagnóstico
+        if: always()
+        uses: actions/github-script@v9
+        env:
+          EXIT_CODE: ${{ steps.typecheck.outputs.exit_code }}
+        with:
+          script: |
+            const fs = require("node:fs");
+            const raw = fs.existsSync("/tmp/b79-typecheck.log")
+              ? fs.readFileSync("/tmp/b79-typecheck.log", "utf8")
+              : "Log não produzido.";
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Diagnóstico typecheck B79 — ${context.sha.slice(0, 12)}`,
+              body: [
+                `Commit: \`${context.sha}\``,
+                `Exit code: \`${process.env.EXIT_CODE ?? "unknown"}\``,
+                "",
+                "```text",
+                raw.slice(-30000),
+                "```",
+              ].join("\n"),
+            });
+
+      - name: Remover workflow temporário
+        if: always()
+        run: |
+          rm .github/workflows/diagnose-b79-typecheck.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/workflows/diagnose-b79-typecheck.yml
+          git commit -m "chore(b79): remover diagnóstico do typecheck"
+          git push origin HEAD:dev
