@@ -65,6 +65,8 @@ const assertions = [
   ],
   [
     hook.includes("useMyPrivacyRightsRequests") &&
+      hook.includes("useCreatePrivacyRightsRequest") &&
+      hook.includes("useCancelPrivacyRightsRequest") &&
       hook.includes("useAdminUpdatePrivacyRightsRequest"),
     "hooks de aluno ou administração ausentes",
   ],
