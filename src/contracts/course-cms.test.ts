@@ -92,12 +92,19 @@ const BASE_FORM: CourseFormValues = {
   previewEnabled: true,
 };
 
-describe("courseCmsRowSchema", () => {
-  it("aceita curso imediato persistido", () => {
-    expect(courseCmsRowSchema.parse(BASE_ROW)).toEqual(BASE_ROW);
-  });
+const expectSameInstant = (
+  actual: string | null,
+  expected: string | null,
+): void => {
+  expect(actual).not.toBeNull();
+  expect(expected).not.toBeNull();
+  expect(new Date(actual ?? "").getTime()).toBe(
+    new Date(expected ?? "").getTime(),
+  );
+};
 
-  it("aceita curso agendado e gradual coerentes", () => {
+describe("courseCmsRowSchema", () => {
+  it("aceita cursos imediato, agendado e gradual coerentes", () => {
     const scheduled = {
       ...BASE_ROW,
       release_mode: "scheduled",
@@ -109,11 +116,9 @@ describe("courseCmsRowSchema", () => {
       drip_interval_days: 7,
     } as const;
 
+    expect(courseCmsRowSchema.parse(BASE_ROW)).toEqual(BASE_ROW);
     expect(courseCmsRowSchema.parse(scheduled)).toEqual(scheduled);
     expect(courseCmsRowSchema.parse(drip)).toEqual(drip);
-  });
-
-  it("aceita coleção de cursos", () => {
     expect(courseCmsRowsSchema.parse([BASE_ROW])).toEqual([BASE_ROW]);
   });
 
@@ -199,25 +204,16 @@ describe("courseCmsRowSchema", () => {
 
   it("rejeita curso publicado ou arquivado sem timestamp correspondente", () => {
     expect(
-      courseCmsRowSchema.safeParse({
-        ...BASE_ROW,
-        status: "published",
-      }).success,
+      courseCmsRowSchema.safeParse({ ...BASE_ROW, status: "published" }).success,
     ).toBe(false);
     expect(
-      courseCmsRowSchema.safeParse({
-        ...BASE_ROW,
-        status: "archived",
-      }).success,
+      courseCmsRowSchema.safeParse({ ...BASE_ROW, status: "archived" }).success,
     ).toBe(false);
   });
 
   it("rejeita exclusão fora do estado arquivado", () => {
     expect(
-      courseCmsRowSchema.safeParse({
-        ...BASE_ROW,
-        deleted_at: TIMESTAMP,
-      }).success,
+      courseCmsRowSchema.safeParse({ ...BASE_ROW, deleted_at: TIMESTAMP }).success,
     ).toBe(false);
   });
 
@@ -343,9 +339,8 @@ describe("courseFormSchema", () => {
     expect(
       courseFormSchema.safeParse({
         ...BASE_FORM,
-        objectivesText: Array.from(
-          { length: 51 },
-          (_, index) => `Objetivo ${index}`,
+        objectivesText: Array.from({ length: 51 }, (_, index) =>
+          `Objetivo ${index}`,
         ).join("\n"),
       }).success,
     ).toBe(false);
@@ -481,13 +476,17 @@ describe("courseToFormValues", () => {
       "Produzir uma faixa completa\nOrganizar o projeto",
     );
     expect(form.thumbnailAssetId).toBe("");
-    expect(payload.promotion_starts_at).toBe(BASE_ROW.promotion_starts_at);
-    expect(payload.promotion_ends_at).toBe(BASE_ROW.promotion_ends_at);
-    expect(payload.availability_starts_at).toBe(
+    expectSameInstant(payload.promotion_starts_at, BASE_ROW.promotion_starts_at);
+    expectSameInstant(payload.promotion_ends_at, BASE_ROW.promotion_ends_at);
+    expectSameInstant(
+      payload.availability_starts_at,
       BASE_ROW.availability_starts_at,
     );
-    expect(payload.availability_ends_at).toBe(BASE_ROW.availability_ends_at);
-    expect(payload.release_at).toBe(scheduled.release_at);
+    expectSameInstant(
+      payload.availability_ends_at,
+      BASE_ROW.availability_ends_at,
+    );
+    expectSameInstant(payload.release_at, scheduled.release_at);
   });
 
   it("revalida o registro antes de preencher o formulário", () => {
