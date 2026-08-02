@@ -11,6 +11,7 @@ import {
   Loader2,
   LogOut,
   ReceiptText,
+  Settings2,
   UserRound,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -31,6 +32,7 @@ const studentNavigation = [
   { to: "/aluno/suporte", label: "Suporte", icon: LifeBuoy, end: false },
   { to: "/aluno/historico", label: "Histórico", icon: History, end: false },
   { to: "/aluno/perfil", label: "Perfil", icon: UserRound, end: false },
+  { to: "/aluno/preferencias", label: "Preferências", icon: Settings2, end: false },
 ] as const;
 
 interface StudentPortalShellProps {
