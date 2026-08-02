@@ -17,6 +17,7 @@ import {
   useProgressCalculation,
   type ModuleLessonWithProgress,
 } from "@/hooks/useProgressCalculation";
+import { calculateOverallCourseProgress } from "@/lib/course-progress";
 import { formatAppDate } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
@@ -108,13 +109,7 @@ const Dashboard = () => {
     );
   }
 
-  const overallProgress =
-    modulesWithProgress.length === 0
-      ? 0
-      : Math.round(
-          modulesWithProgress.reduce((total, module) => total + module.progress, 0) /
-            modulesWithProgress.length,
-        );
+  const overallProgress = calculateOverallCourseProgress(modulesWithProgress);
   const profile = {
     name: metadata.fullName,
     email: user.email ?? "Email não informado",
