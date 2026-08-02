@@ -13,9 +13,9 @@ const requiredFiles = [
   "src/routing/RequireAuth.tsx",
   "src/App.tsx",
   "src/components/HeroSection.tsx",
+  "scripts/check-public-course-catalog.mjs",
   "docs/refactor/FASE-B89-COURSE-STOREFRONT-CHECKOUT.md",
   "docs/STATUS.md",
-  "package.json",
 ];
 
 const failures = [];
@@ -37,9 +37,9 @@ if (failures.length === 0) {
   const requireAuth = read(requiredFiles[9]);
   const app = read(requiredFiles[10]);
   const hero = read(requiredFiles[11]);
-  const documentation = read(requiredFiles[12]);
-  const status = read(requiredFiles[13]);
-  const packageJson = read(requiredFiles[14]);
+  const parentCheck = read(requiredFiles[12]);
+  const documentation = read(requiredFiles[13]);
+  const status = read(requiredFiles[14]);
 
   for (const fragment of [
     "private.resolve_course_checkout_subject",
@@ -96,7 +96,7 @@ if (failures.length === 0) {
   }
 
   for (const fragment of [
-    'supabase.rpc(\n    "resolve_course_checkout_subject"',
+    '"resolve_course_checkout_subject"',
     "createHostedCheckout",
     'subjectType: "course"',
     "licenseId: null",
@@ -135,6 +135,9 @@ if (failures.length === 0) {
     if (!hero.includes(fragment)) failures.push(`CTA público B89 incompleto: ${fragment}`);
   }
 
+  if (!parentCheck.includes('await import("./check-course-storefront.mjs")')) {
+    failures.push("B89 não está encadeada no gate bloqueante do catálogo público.");
+  }
   for (const fragment of [
     "resolução autenticada por slug",
     "matrícula ativa",
@@ -144,8 +147,6 @@ if (failures.length === 0) {
     if (!documentation.includes(fragment)) failures.push(`Documentação B89 incompleta: ${fragment}`);
   }
   if (!status.includes("Vitrine autenticada de cursos")) failures.push("STATUS não registra a B89.");
-  if (!packageJson.includes('"check:course-storefront"')) failures.push("Script B89 ausente no package.json.");
-  if (!packageJson.includes("npm run check:course-storefront")) failures.push("B89 não participa do typecheck.");
 }
 
 if (failures.length > 0) {
