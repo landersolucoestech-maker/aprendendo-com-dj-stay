@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(32);
+select plan(28);
 
 select has_function('private','checkout_order_is_financially_terminal',array['payment_order_status'],'terminal order helper exists');
 select has_function('private','reconcile_checkout_intent_expiration',array['uuid','uuid'],'private expiration reconciler exists');
