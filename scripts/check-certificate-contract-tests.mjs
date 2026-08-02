@@ -77,6 +77,8 @@ for (const fragment of [
 }
 
 for (const fragment of [
+  "PUBLIC_ISSUED_CERTIFICATE",
+  "PUBLIC_REVOKED_CERTIFICATE",
   "ISSUED_CERTIFICATE",
   "REVOKED_CERTIFICATE",
   "COMPLETION",
@@ -86,6 +88,7 @@ for (const fragment of [
   'revocation_reason: "a".repeat(1001)',
   'code: "DJSTAY-invalido"',
   "issued_by_user_id",
+  "rejeita campo interno na validação pública",
   "rejeita validade divergente do status",
   "rejeita aulas concluídas acima do total",
   "rejeita percentual divergente das contagens",
