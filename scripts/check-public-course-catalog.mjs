@@ -14,6 +14,7 @@ const requiredFiles = [
   "src/components/Navigation.tsx",
   "src/pages/Index.tsx",
   "scripts/check-course-storefront.mjs",
+  "scripts/check-exact-checkout-return.mjs",
   "docs/refactor/FASE-B88-PUBLIC-COURSE-CATALOG.md",
   "docs/STATUS.md",
   "package.json",
@@ -52,9 +53,9 @@ if (failures.length === 0) {
   const trust = read(requiredFiles[9]);
   const navigation = read(requiredFiles[10]);
   const index = read(requiredFiles[11]);
-  const documentation = read(requiredFiles[13]);
-  const status = read(requiredFiles[14]);
-  const packageJson = read(requiredFiles[15]);
+  const documentation = read(requiredFiles[14]);
+  const status = read(requiredFiles[15]);
+  const packageJson = read(requiredFiles[16]);
 
   requireFragments(migration, "Migration B88", [
     "create or replace function private.get_public_course_catalog()",
@@ -153,3 +154,4 @@ console.log(
 );
 
 await import("./check-course-storefront.mjs");
+await import("./check-exact-checkout-return.mjs");
