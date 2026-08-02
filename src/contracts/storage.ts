@@ -188,6 +188,9 @@ const assetTypePolicy = {
   }
 >;
 
+const includesText = (values: readonly string[], value: string): boolean =>
+  values.includes(value);
+
 const addIssue = (
   context: z.RefinementCtx,
   path: string,
@@ -243,20 +246,20 @@ export const assetRowSchema = z
   .superRefine((value, context) => {
     const policy = assetTypePolicy[value.purpose];
 
-    if (!policy.extensions.includes(value.extension)) {
+    if (!includesText(policy.extensions, value.extension)) {
       addIssue(context, "extension", "A extensão não é permitida para o propósito do asset.");
     }
-    if (!policy.mimeTypes.includes(value.mime_type)) {
+    if (!includesText(policy.mimeTypes, value.mime_type)) {
       addIssue(context, "mime_type", "O MIME não é permitido para o propósito do asset.");
     }
     if (value.size_bytes > policy.maxSizeBytes) {
       addIssue(context, "size_bytes", "O tamanho excede o limite do propósito do asset.");
     }
-    if (!value.object_path.endsWith(`.${value.extension}`)) {
-      addIssue(context, "object_path", "O caminho deve usar a extensão persistida.");
-    }
-    if (!value.object_path.includes(`/${value.owner_user_id}/`)) {
-      addIssue(context, "object_path", "O caminho deve pertencer ao proprietário do asset.");
+    if (
+      value.object_path !==
+      `v1/${value.owner_user_id}/${value.id}.${value.extension}`
+    ) {
+      addIssue(context, "object_path", "O caminho deve reproduzir owner, asset e extensão.");
     }
     if (
       value.purpose === "avatar" &&
