@@ -9,6 +9,7 @@ export const hostedCheckoutInputSchema = z
     licenseId: z.string().uuid().nullable(),
     idempotencyKey: z.string().uuid(),
   })
+  .strict()
   .superRefine((value, context) => {
     if (value.subjectType === "course" && value.licenseId !== null) {
       context.addIssue({
@@ -27,14 +28,16 @@ export const hostedCheckoutInputSchema = z
     }
   });
 
-export const hostedCheckoutResultSchema = z.object({
-  checkoutIntentId: z.string().uuid(),
-  checkoutUrl: z.string().url().refine((value) => value.startsWith("https://"), {
-    message: "A URL do checkout deve usar HTTPS.",
-  }),
-  expiresAt: z.string().datetime({ offset: true }),
-  status: z.literal("checkout_created"),
-});
+export const hostedCheckoutResultSchema = z
+  .object({
+    checkoutIntentId: z.string().uuid(),
+    checkoutUrl: z.string().url().refine((value) => value.startsWith("https://"), {
+      message: "A URL do checkout deve usar HTTPS.",
+    }),
+    expiresAt: z.string().datetime({ offset: true }),
+    status: z.literal("checkout_created"),
+  })
+  .strict();
 
 export type HostedCheckoutInput = z.infer<typeof hostedCheckoutInputSchema>;
 export type HostedCheckoutResult = z.infer<typeof hostedCheckoutResultSchema>;
