@@ -11,33 +11,10 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { getStoredAffiliateVisitorToken } from "@/lib/affiliate-attribution";
 
-const checkoutStorageKey = (
-  subjectType: HostedCheckoutInput["subjectType"],
-  subjectId: string,
-  licenseId: string | null,
-): string => `hosted-checkout:${subjectType}:${subjectId}:${licenseId ?? "none"}`;
-
-export const getHostedCheckoutIdempotencyKey = (
-  subjectType: HostedCheckoutInput["subjectType"],
-  subjectId: string,
-  licenseId: string | null,
-): string => {
-  const storageKey = checkoutStorageKey(subjectType, subjectId, licenseId);
-  const existing = window.sessionStorage.getItem(storageKey);
-  if (existing) return existing;
-
-  const idempotencyKey = crypto.randomUUID();
-  window.sessionStorage.setItem(storageKey, idempotencyKey);
-  return idempotencyKey;
-};
-
-export const clearHostedCheckoutIdempotencyKey = (
-  subjectType: HostedCheckoutInput["subjectType"],
-  subjectId: string,
-  licenseId: string | null,
-): void => {
-  window.sessionStorage.removeItem(checkoutStorageKey(subjectType, subjectId, licenseId));
-};
+export {
+  clearHostedCheckoutIdempotencyKey,
+  getHostedCheckoutIdempotencyKey,
+} from "@/lib/hosted-checkout-idempotency";
 
 type GeneratedAttributionArgs =
   Database["public"]["Functions"]["prepare_checkout_intent_with_attribution"]["Args"];
