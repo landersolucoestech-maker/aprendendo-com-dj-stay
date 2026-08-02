@@ -12,6 +12,7 @@ import {
   LogOut,
   ReceiptText,
   Settings2,
+  ShieldCheck,
   UserRound,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -33,6 +34,7 @@ const studentNavigation = [
   { to: "/aluno/historico", label: "Histórico", icon: History, end: false },
   { to: "/aluno/perfil", label: "Perfil", icon: UserRound, end: false },
   { to: "/aluno/preferencias", label: "Preferências", icon: Settings2, end: false },
+  { to: "/aluno/privacidade", label: "Privacidade", icon: ShieldCheck, end: false },
 ] as const;
 
 interface StudentPortalShellProps {
