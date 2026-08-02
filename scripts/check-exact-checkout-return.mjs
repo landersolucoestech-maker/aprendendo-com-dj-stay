@@ -11,13 +11,18 @@ const paths = {
   page: "src/pages/PaymentSuccess.tsx",
   app: "src/App.tsx",
   b10: "scripts/check-course-access-contract.mjs",
-  parent: "scripts/check-course-storefront.mjs",
+  parent: "scripts/check-public-course-catalog.mjs",
   documentation: "docs/refactor/FASE-B90-EXACT-CHECKOUT-RETURN.md",
   status: "docs/STATUS.md",
 };
 
 const failures = [];
 const read = (path) => readFileSync(path, "utf8");
+const requireFragments = (source, label, fragments) => {
+  for (const fragment of fragments) {
+    if (!source.includes(fragment)) failures.push(`${label}: conteúdo obrigatório ausente: ${fragment}`);
+  }
+};
 for (const path of Object.values(paths)) {
   if (!existsSync(path)) failures.push(`Arquivo B90 ausente: ${path}`);
 }
@@ -37,7 +42,7 @@ if (failures.length === 0) {
   const documentation = read(paths.documentation).toLowerCase();
   const status = read(paths.status);
 
-  for (const fragment of [
+  requireFragments(migration, "Migration B90", [
     "private.get_my_checkout_return",
     "public.get_my_checkout_return",
     "security definer",
@@ -48,68 +53,50 @@ if (failures.length === 0) {
     "payment_entitlement.order_id = v_order.id",
     "return jsonb_build_object('found', false)",
     "grant execute on function public.get_my_checkout_return(uuid)",
-  ]) {
-    if (!migration.includes(fragment)) failures.push(`Migration B90 incompleta: ${fragment}`);
-  }
-  for (const forbidden of ["provider_checkout_url", "provider_checkout_id", "provider_event_payload", "payload_snapshot"] ) {
+  ]);
+  for (const forbidden of ["provider_checkout_url", "provider_checkout_id", "provider_event_payload", "payload_snapshot"]) {
     if (migration.includes(`'${forbidden}'`)) failures.push(`Read model B90 expõe campo privado: ${forbidden}`);
   }
 
-  for (const fragment of [
+  requireFragments(databaseTest, "pgTAP B90", [
     "select plan(34)",
     "another user checkout is indistinguishable from not found",
     "unrelated active enrollment is never used as fallback",
     "shared return identifies a digital product",
     "return does not expose provider event payload",
-  ]) {
-    if (!databaseTest.includes(fragment)) failures.push(`pgTAP B90 incompleto: ${fragment}`);
-  }
-
-  for (const fragment of [
+  ]);
+  requireFragments(contract, "Contrato B90", [
     "checkoutIntentIdSchema",
     "checkoutReturnSchema",
     "checkoutReturnEntitlementSchema",
     "Destino do entitlement diverge do tipo de compra",
     "Pedido pago exige horário de confirmação",
     ".strict()",
-  ]) {
-    if (!contract.includes(fragment)) failures.push(`Contrato B90 incompleto: ${fragment}`);
-  }
-  for (const fragment of [
+  ]);
+  requireFragments(contractTest, "Teste de contrato B90", [
     'describe("checkoutReturnSchema"',
     "accepts an exact paid course return",
     "rejects raw provider fields",
-  ]) {
-    if (!contractTest.includes(fragment)) failures.push(`Teste de contrato B90 ausente: ${fragment}`);
-  }
-
-  for (const fragment of [
+  ]);
+  requireFragments(state, "Classificação B90", [
     "classifyCheckoutReturn",
     "shouldPollCheckoutReturn",
     'state === "pending" || state === "finalizing_access"',
     'return "access_revoked"',
     'return "refunded"',
-  ]) {
-    if (!state.includes(fragment)) failures.push(`Classificação B90 incompleta: ${fragment}`);
-  }
-  for (const fragment of [
+  ]);
+  requireFragments(stateTest, "Teste de estado B90", [
     'describe("checkout return state"',
     "polls while payment is pending",
     "reports success only for active controlling entitlement",
     "reports revoked access instead of success",
-  ]) {
-    if (!stateTest.includes(fragment)) failures.push(`Teste de estado B90 ausente: ${fragment}`);
-  }
-
-  for (const fragment of [
+  ]);
+  requireFragments(hook, "Hook B90", [
     'supabase.rpc("get_my_checkout_return"',
     '"retorno financeiro do checkout"',
     "shouldPollCheckoutReturn(current) ? 3_000 : false",
-  ]) {
-    if (!hook.includes(fragment)) failures.push(`Hook B90 incompleto: ${fragment}`);
-  }
-
-  for (const fragment of [
+  ]);
+  requireFragments(page, "Página B90", [
     'searchParams.get("checkout_intent")',
     "useCheckoutReturn",
     "classifyCheckoutReturn",
@@ -120,36 +107,31 @@ if (failures.length === 0) {
     "Acesso revogado",
     "checkout.entitlement.controls_access",
     "checkout.subject_id",
-  ]) {
-    if (!page.includes(fragment)) failures.push(`Página B90 incompleta: ${fragment}`);
-  }
+  ]);
   for (const forbidden of ["useCourseAccess", "getActiveEnrollments", "activeEnrollments[0]", "Pagamento Realizado!", "Acesso vitalício"]) {
     if (page.includes(forbidden)) failures.push(`Inferência antiga ainda presente no retorno: ${forbidden}`);
   }
 
-  if (!app.includes("<MarketplaceRoute>\n                        <PaymentSuccess />")) {
-    failures.push("Rota de retorno não usa o guard compartilhado de compradores.");
-  }
-  for (const fragment of [
-    "paymentRoute.includes(\"<MarketplaceRoute>\")",
+  requireFragments(app, "Rota B90", [
+    'path="/pagamento-sucesso"',
+    "<MarketplaceRoute>",
+    "<PaymentSuccess />",
+  ]);
+  requireFragments(b10, "Contrato B10 após B90", [
+    'paymentRoute.includes("<MarketplaceRoute>")',
     'paymentSuccess.includes("useCheckoutReturn")',
     '!paymentSuccess.includes("activeEnrollments[0]")',
-  ]) {
-    if (!b10.includes(fragment)) failures.push(`Contrato B10 não preserva a B90: ${fragment}`);
-  }
+  ]);
   if (!parent.includes('await import("./check-exact-checkout-return.mjs")')) {
-    failures.push("B90 não está encadeada no gate bloqueante B89.");
+    failures.push("B90 não está encadeada no gate bloqueante do catálogo público.");
   }
-
-  for (const fragment of [
+  requireFragments(documentation, "Documentação B90", [
     "checkout_intent",
     "matrícula não relacionada",
     "produto digital",
     "polling",
     "branch `dev`",
-  ]) {
-    if (!documentation.includes(fragment)) failures.push(`Documentação B90 incompleta: ${fragment}`);
-  }
+  ]);
   if (!status.includes("Retorno financeiro exato")) failures.push("STATUS não registra a B90.");
 }
 
@@ -158,6 +140,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(
-  "Contrato B90 aprovado: o retorno financeiro usa somente o checkout_intent pertencente à conta autenticada.",
-);
+console.log("Contrato B90 aprovado: o retorno financeiro usa somente o checkout_intent pertencente à conta autenticada.");
