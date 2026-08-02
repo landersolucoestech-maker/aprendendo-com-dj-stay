@@ -1,97 +1,189 @@
-import { Button } from "@/components/ui/button";
-import { Play, Star, Users, Clock } from "lucide-react";
+import {
+  BookOpen,
+  Clock,
+  GraduationCap,
+  Layers3,
+  Sparkles,
+} from "lucide-react";
 import { Link } from "react-router-dom";
+
+import { Button } from "@/components/ui/button";
+import type { PublicCourse } from "@/contracts/public-course-catalog";
+import { usePublicCourseCatalog } from "@/hooks/usePublicCourseCatalog";
+
+const levelLabel: Record<PublicCourse["level"], string> = {
+  beginner: "Iniciante",
+  intermediate: "Intermediário",
+  advanced: "Avançado",
+  all_levels: "Todos os níveis",
+};
+
+const formatDuration = (minutes: number): string => {
+  if (minutes <= 0) return "Duração em atualização";
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (hours === 0) return `${remainingMinutes} min`;
+  if (remainingMinutes === 0) return `${hours} h`;
+  return `${hours} h ${remainingMinutes} min`;
+};
+
+const formatMoney = (value: number, currencyCode: string): string =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: currencyCode,
+  }).format(value);
+
 const HeroSection = () => {
-  return <section id="home" className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-black via-brand-dark to-black">
-      {/* Background Effects */}
+  const catalogQuery = usePublicCourseCatalog();
+  const featuredCourse = catalogQuery.data?.courses[0];
+
+  return (
+    <section
+      id="home"
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-black via-brand-dark to-black"
+    >
       <div className="absolute inset-0 opacity-10">
-        <div className="w-full h-full bg-repeat" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2338b6ff' fill-opacity='0.4'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-      }}></div>
+        <div
+          className="h-full w-full bg-repeat"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2338b6ff' fill-opacity='0.4'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+          }}
+        />
       </div>
-      
-      <div className="container mx-auto px-4 py-20 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          
-          {/* Content */}
-          <div className="text-center lg:text-left space-y-8">
+
+      <div className="container relative z-10 mx-auto px-4 py-28">
+        <div className="grid items-center gap-12 lg:grid-cols-2">
+          <div className="space-y-8 text-center lg:text-left">
             <div className="space-y-4">
-              <div className="inline-flex items-center space-x-2 bg-brand-light/20 px-4 py-2 rounded-full">
-                <Star className="w-4 h-4 text-brand-light" />
-                <span className="text-sm text-gray-300">Curso #1 em Produção de Funk</span>
+              <div className="inline-flex items-center gap-2 rounded-full bg-brand-light/20 px-4 py-2">
+                <Sparkles className="h-4 w-4 text-brand-light" aria-hidden="true" />
+                <span className="text-sm text-gray-300">
+                  Conteúdo publicado pelo instrutor
+                </span>
               </div>
-              
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-tight">
-                <span className="gradient-text animate-glow">Produção de Funk</span>
-                <br />
-                <span className="text-white">na Prática</span>
+
+              <h1 className="text-4xl font-black leading-tight md:text-6xl lg:text-7xl">
+                <span className="gradient-text animate-glow">
+                  {featuredCourse?.title ?? "Formação musical prática"}
+                </span>
               </h1>
-              
-              <p className="text-xl text-gray-300 max-w-2xl">Aprenda a produzir os hits do funk bh com técnicas profissionais, samples exclusivos e aulas práticas do zero ao avançado.</p>
+
+              <p className="mx-auto max-w-2xl text-xl text-gray-300 lg:mx-0">
+                {featuredCourse?.short_description ??
+                  (catalogQuery.isError
+                    ? "O catálogo público está temporariamente indisponível. O acesso à conta e ao suporte continua disponível."
+                    : "Os cursos publicados aparecerão aqui automaticamente assim que estiverem disponíveis no catálogo.")}
+              </p>
             </div>
 
-            {/* Stats */}
-            <div className="flex flex-wrap gap-6 justify-center lg:justify-start">
-              <div className="flex items-center space-x-2">
-                <Users className="w-5 h-5 text-brand-light" />
-                <span className="text-gray-300">+2.500 alunos</span>
+            {featuredCourse ? (
+              <div className="flex flex-wrap justify-center gap-6 lg:justify-start">
+                <div className="flex items-center gap-2 text-gray-300">
+                  <Layers3 className="h-5 w-5 text-brand-light" aria-hidden="true" />
+                  <span>{featuredCourse.module_count} módulo(s)</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-300">
+                  <BookOpen className="h-5 w-5 text-brand-medium" aria-hidden="true" />
+                  <span>{featuredCourse.lesson_count} aula(s) publicada(s)</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-300">
+                  <Clock className="h-5 w-5 text-brand-light" aria-hidden="true" />
+                  <span>{formatDuration(featuredCourse.duration_minutes)}</span>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Clock className="w-5 h-5 text-brand-medium" />
-                <span className="text-gray-300">50+ horas de conteúdo</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Star className="w-5 h-5 text-brand-dark" />
-                <span className="text-gray-300">4.9/5 estrelas</span>
-              </div>
-            </div>
+            ) : null}
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link to="/matricule-se">
-                <Button size="lg" className="btn-brand text-lg px-8 py-6">
-                  Começar Agora
-                  <Play className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-brand-light/20 bg-transparent hover:bg-brand-light/10 text-brand-light">
-                Assistir Prévia
+            <div className="flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
+              <Button asChild size="lg" className="btn-brand px-8 py-6 text-lg">
+                <Link to="/matricule-se">
+                  Criar conta
+                  <GraduationCap className="ml-2 h-5 w-5" aria-hidden="true" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="border-brand-light/20 bg-transparent px-8 py-6 text-lg text-brand-light hover:bg-brand-light/10"
+              >
+                <a href="#curso">Ver catálogo publicado</a>
               </Button>
             </div>
           </div>
 
-          {/* Video/Image */}
-          <div className="relative">
-            <div className="glass-card p-4 animate-float">
-              <div className="aspect-video bg-gradient-brand rounded-lg flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-black/50"></div>
-                <Button size="lg" className="relative z-10 bg-white/20 hover:bg-white/30 text-white border-white/30">
-                  <Play className="w-8 h-8" />
-                </Button>
-                
-                {/* Fake video overlay */}
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="bg-black/60 rounded px-3 py-2">
-                    <p className="text-white text-sm font-medium">
-                      Preview: Criando seu primeiro beat de funk
+          <div className="glass-card p-6 sm:p-8">
+            {catalogQuery.isLoading ? (
+              <div className="space-y-4" aria-live="polite">
+                <p className="text-sm uppercase tracking-[0.25em] text-gray-500">
+                  Catálogo
+                </p>
+                <h2 className="text-2xl font-bold text-white">
+                  Carregando conteúdo publicado
+                </h2>
+                <p className="text-gray-400">
+                  Consultando a oferta persistida no ambiente da plataforma.
+                </p>
+              </div>
+            ) : featuredCourse ? (
+              <div className="space-y-6">
+                <div>
+                  <p className="text-sm uppercase tracking-[0.25em] text-brand-light">
+                    {featuredCourse.category} · {levelLabel[featuredCourse.level]}
+                  </p>
+                  <h2 className="mt-3 text-3xl font-bold text-white">
+                    {formatMoney(
+                      featuredCourse.effective_price_amount,
+                      featuredCourse.currency_code,
+                    )}
+                  </h2>
+                  {featuredCourse.promotion_active ? (
+                    <p className="mt-1 text-sm text-gray-400">
+                      Preço normal: {formatMoney(
+                        featuredCourse.price_amount,
+                        featuredCourse.currency_code,
+                      )}
                     </p>
-                  </div>
+                  ) : null}
                 </div>
+
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-white">Objetivos publicados</h3>
+                  <ul className="space-y-2 text-sm text-gray-300">
+                    {featuredCourse.objectives.slice(0, 4).map((objective) => (
+                      <li key={objective} className="flex gap-3">
+                        <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand-light" />
+                        <span>{objective}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <p className="text-sm text-gray-400">
+                  {featuredCourse.preview_lesson_count > 0
+                    ? `${featuredCourse.preview_lesson_count} aula(s) estão marcadas como prévia no currículo.`
+                    : "Nenhuma aula está marcada como prévia neste momento."}
+                </p>
               </div>
-            </div>
-            
-            {/* Floating elements */}
-            <div className="absolute -top-4 -right-4 glass-card p-3 animate-float" style={{
-            animationDelay: '1s'
-          }}>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-brand-light rounded-full animate-pulse"></div>
-                <span className="text-xs text-gray-300">Ao vivo</span>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm uppercase tracking-[0.25em] text-gray-500">
+                  Catálogo
+                </p>
+                <h2 className="text-2xl font-bold text-white">
+                  Nenhum curso disponível agora
+                </h2>
+                <p className="text-gray-400">
+                  Somente ofertas publicadas e dentro da janela de disponibilidade são exibidas.
+                </p>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
-    </section>;
+    </section>
+  );
 };
+
 export default HeroSection;
