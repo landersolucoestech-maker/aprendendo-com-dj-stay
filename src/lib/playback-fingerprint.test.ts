@@ -25,7 +25,10 @@ const installEnvironment = (options: EnvironmentOptions = {}) => {
   const digestSources: string[] = [];
   const digest = vi.fn(
     async (_algorithm: AlgorithmIdentifier, data: BufferSource) => {
-      const bytes: BufferSource = data;
+      if (!(data instanceof Uint8Array)) {
+        throw new Error("A fonte do fingerprint deve ser codificada como Uint8Array.");
+      }
+      const bytes = data;
       digestSources.push(new TextDecoder().decode(bytes));
       return Uint8Array.from([0, 15, 16, 255]).buffer;
     },
