@@ -4878,6 +4878,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_public_course_catalog: { Args: never; Returns: Json }
       get_students_admin_dashboard: {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
         Returns: Json
