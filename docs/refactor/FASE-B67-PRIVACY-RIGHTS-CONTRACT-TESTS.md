@@ -13,6 +13,7 @@ Também era possível aceitar payloads semanticamente impossíveis, como:
 - evento de criação com status de origem;
 - cancelamento fora de `submitted → cancelled`;
 - mudança sem origem, destino ou alteração real;
+- transição administrativa originada em estado final ou cancelado;
 - solicitação final sem horário de tratamento;
 - responsável sem horário correspondente;
 - rejeição sem justificativa.
@@ -56,6 +57,8 @@ Os campos opcionais preservam os diferentes formatos reais:
 - criação normalizada;
 - atualizações administrativas válidas e inválidas.
 
+`src/contracts/privacy-rights-transitions.test.ts` fixa as transições administrativas permitidas e rejeita regressões originadas em estados finais, cancelados ou com destinos não aceitos pelas RPCs.
+
 ## Contrato permanente
 
 `scripts/check-privacy-rights-contract-tests.mjs` verifica:
@@ -64,7 +67,8 @@ Os campos opcionais preservam os diferentes formatos reais:
 - limites de descrição e observações;
 - timestamps com offset;
 - coerência de eventos e tratamento;
-- alinhamento com constraints e transições da migration B45;
+- alinhamento com constraints e transições da migration B44;
+- cobertura dedicada das transições administrativas impossíveis;
 - cenários negativos obrigatórios da suíte;
 - documentação e integração ao `typecheck`.
 
