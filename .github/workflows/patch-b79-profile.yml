@@ -1,0 +1,130 @@
+name: Consolidar contratos B79
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/patch-b79-profile.yml"
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: patch-b79-profile
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Reexportar e remover validadores duplicados
+        id: patch
+        continue-on-error: true
+        run: |
+          set +e
+          python - <<'PY' > /tmp/b79-patch.log 2>&1
+          from pathlib import Path
+          import re
+
+          learning_path = Path("src/contracts/learning.ts")
+          learning = learning_path.read_text(encoding="utf-8")
+
+          reexport = '''
+          export {
+            profileMetadataInputSchema,
+            userProfileSchema,
+            type ProfileMetadataInput,
+            type UserProfileRow,
+          } from "@/contracts/profile";
+          '''
+          if 'from "@/contracts/profile"' not in learning:
+              learning = learning.replace('import { z } from "zod";\n', 'import { z } from "zod";\n' + reexport, 1)
+
+          patterns = [
+              r'\nexport const userProfileSchema = z\n  \.object\(\{.*?\n  \}\)\n  \.strict\(\);\n',
+              r'\nconst optionalHttpsUrlSchema = z\.union\(\[.*?\n\]\);\n\nexport const profileMetadataInputSchema = z\n  \.object\(\{.*?\n  \}\)\n  \.strict\(\);\n',
+              r'\nexport type UserProfileRow = z\.infer<typeof userProfileSchema>;\n',
+              r'\nexport type ProfileMetadataInput = z\.infer<typeof profileMetadataInputSchema>;\n',
+          ]
+          for pattern in patterns:
+              learning, count = re.subn(pattern, "\n", learning, count=1, flags=re.S)
+              if count != 1:
+                  raise RuntimeError(f"Bloco não removido de learning.ts: {pattern}")
+
+          required_learning = [
+              'profileMetadataInputSchema,',
+              'userProfileSchema,',
+              'type ProfileMetadataInput,',
+              'type UserProfileRow,',
+              'from "@/contracts/profile";',
+          ]
+          missing = [item for item in required_learning if item not in learning]
+          if missing:
+              raise RuntimeError(f"Reexports ausentes: {missing}")
+          learning_path.write_text(learning, encoding="utf-8")
+
+          metadata_path = Path("src/auth/user-metadata.ts")
+          metadata = metadata_path.read_text(encoding="utf-8")
+          metadata = metadata.replace('import { z } from "zod";\n\n', '', 1)
+          if 'authUserMetadataSchema' not in metadata:
+              metadata = metadata.replace(
+                  'import { parseDataContract } from "@/contracts/contract-error";\n',
+                  'import { parseDataContract } from "@/contracts/contract-error";\nimport { authUserMetadataSchema } from "@/contracts/profile";\n',
+                  1,
+              )
+
+          start = metadata.find('const optionalText =')
+          end = metadata.find('\n\nexport interface UserMetadataProfile')
+          if start < 0 or end < 0 or end <= start:
+              raise RuntimeError("Bloco duplicado de user-metadata.ts não encontrado")
+          metadata = metadata[:start] + metadata[end + 2:]
+          metadata = metadata.replace('userMetadataSchema,', 'authUserMetadataSchema,', 1)
+
+          if 'from "zod"' in metadata or 'const optionalHttpsUrl' in metadata or 'userMetadataSchema' in metadata:
+              raise RuntimeError("Validador duplicado ainda presente em user-metadata.ts")
+          if 'authUserMetadataSchema' not in metadata:
+              raise RuntimeError("Schema canônico ausente de user-metadata.ts")
+          metadata_path.write_text(metadata, encoding="utf-8")
+          PY
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit $status
+
+      - name: Publicar diagnóstico
+        if: steps.patch.outcome == 'failure'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require("node:fs");
+            const log = fs.existsSync("/tmp/b79-patch.log")
+              ? fs.readFileSync("/tmp/b79-patch.log", "utf8")
+              : "Log não produzido.";
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Diagnóstico patch B79 — ${context.sha.slice(0, 12)}`,
+              body: `Commit: \`${context.sha}\`\n\n\`\`\`text\n${log.slice(-10000)}\n\`\`\``,
+            });
+
+      - name: Publicar alteração e remover workflow temporário
+        if: steps.patch.outcome == 'success'
+        run: |
+          rm .github/workflows/patch-b79-profile.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            src/contracts/learning.ts \
+            src/auth/user-metadata.ts \
+            .github/workflows/patch-b79-profile.yml
+          git commit -m "refactor(b79): centralizar contratos de perfil"
+          git push origin HEAD:dev
+
+      - name: Falhar após diagnóstico
+        if: steps.patch.outcome == 'failure'
+        run: exit 1
