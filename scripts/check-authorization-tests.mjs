@@ -3,17 +3,22 @@ import { existsSync, readFileSync } from "node:fs";
 const sourcePath = "src/contracts/authorization.ts";
 const testPath = "src/contracts/authorization.test.ts";
 const documentationPath = "docs/refactor/FASE-B58-AUTHORIZATION-TESTS.md";
-const packagePath = "package.json";
+const authorizationContractPath = "scripts/check-authorization-contract.mjs";
 const failures = [];
 
-for (const path of [sourcePath, testPath, documentationPath, packagePath]) {
+for (const path of [
+  sourcePath,
+  testPath,
+  documentationPath,
+  authorizationContractPath,
+]) {
   if (!existsSync(path)) failures.push(`Arquivo obrigatório ausente: ${path}`);
 }
 
 if (failures.length === 0) {
   const source = readFileSync(sourcePath, "utf8");
   const test = readFileSync(testPath, "utf8");
-  const packageJson = JSON.parse(readFileSync(packagePath, "utf8"));
+  const authorizationContract = readFileSync(authorizationContractPath, "utf8");
 
   for (const fragment of [
     "appRoleSchema",
@@ -50,18 +55,13 @@ if (failures.length === 0) {
   }
 
   if (
-    packageJson.scripts?.["check:authorization-tests"] !==
-    "node scripts/check-authorization-tests.mjs"
+    !authorizationContract.includes(
+      'await import("./check-authorization-tests.mjs");',
+    )
   ) {
     failures.push(
-      "package.json: script check:authorization-tests ausente ou divergente",
+      `${authorizationContractPath}: contrato B58 não está encadeado ao check:authorization`,
     );
-  }
-
-  if (
-    !packageJson.scripts?.typecheck?.includes("npm run check:authorization-tests")
-  ) {
-    failures.push("package.json: typecheck não executa o contrato B58");
   }
 }
 
