@@ -18,9 +18,11 @@ jobs:
   quality:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      SUPABASE_CLI_VERSION: 2.101.0
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v6
         with:
@@ -42,18 +44,16 @@ jobs:
         id: cli
         if: steps.install.outcome == 'success'
         continue-on-error: true
-        uses: supabase/setup-cli@v1
-        with:
-          version: 2.101.0
+        run: npx --yes "supabase@${SUPABASE_CLI_VERSION}" --version
 
       - name: Reconstruir banco e executar pgTAP
         id: db
         if: steps.cli.outcome == 'success'
         continue-on-error: true
         run: |
-          supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
-          supabase db reset --local --no-seed
-          supabase test db
+          npx --yes "supabase@${SUPABASE_CLI_VERSION}" start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+          npx --yes "supabase@${SUPABASE_CLI_VERSION}" db reset --local --no-seed
+          npx --yes "supabase@${SUPABASE_CLI_VERSION}" test db
 
       - name: Gerar e sincronizar tipos
         id: types
@@ -61,7 +61,7 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p artifacts
-          supabase gen types typescript --local > artifacts/database.types.ts
+          npx --yes "supabase@${SUPABASE_CLI_VERSION}" gen types typescript --local > artifacts/database.types.ts
           cp artifacts/database.types.ts src/integrations/supabase/types.ts
           if ! git diff --quiet -- src/integrations/supabase/types.ts; then
             git config user.name github-actions[bot]
@@ -90,7 +90,7 @@ jobs:
 
       - name: Exportar tipos gerados
         if: steps.types.outcome == 'success'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: database-types-${{ github.sha }}
           path: artifacts/database.types.ts
@@ -98,7 +98,7 @@ jobs:
 
       - name: Evidência
         if: always()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           INSTALL: ${{ steps.install.outcome }}
           LINT: ${{ steps.lint.outcome }}
