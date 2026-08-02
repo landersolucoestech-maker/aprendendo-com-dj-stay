@@ -41,3 +41,5 @@ if (failures.length > 0) {
 console.log(
   "Contrato B48 aprovado: criação da evidência usa REST versionada em 2026-03-10 e mídia oficial GitHub.",
 );
+
+await import("./check-gate-evidence-lifecycle.mjs");
