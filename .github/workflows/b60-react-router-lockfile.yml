@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: b60-react-router-lockfile
@@ -20,15 +21,32 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Registrar início
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.request("POST /repos/{owner}/{repo}/issues/{issue_number}/comments", {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 449,
+              body: `Bootstrap B60 iniciado no run ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}.`,
+              headers: {
+                accept: "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2026-03-10"
+              }
+            });
+
       - uses: actions/setup-node@v6
         with:
           node-version: 22.16.0
           cache: npm
 
       - name: Atualizar manifesto e lockfile
+        id: update
         run: npm install 'react-router-dom@^7.18.2' --save --package-lock-only
 
       - name: Validar alteração restrita
+        id: validate
         run: |
           node --input-type=module <<'NODE'
           import { readFileSync } from "node:fs";
@@ -51,15 +69,44 @@ jobs:
           test "$changed" = "$expected"
 
       - name: Instalar e auditar
+        id: audit
         run: |
           npm ci
           npm audit --omit=dev --audit-level=moderate
           npm audit --audit-level=moderate
 
       - name: Persistir lockfile seguro
+        id: persist
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add package.json package-lock.json
           git commit -m "security(b60): atualizar React Router para 7.18.2 [skip ci]"
           git push origin HEAD:dev
+
+      - name: Registrar resultado
+        if: always()
+        uses: actions/github-script@v9
+        env:
+          UPDATE: ${{ steps.update.outcome }}
+          VALIDATE: ${{ steps.validate.outcome }}
+          AUDIT: ${{ steps.audit.outcome }}
+          PERSIST: ${{ steps.persist.outcome }}
+        with:
+          script: |
+            await github.request("POST /repos/{owner}/{repo}/issues/{issue_number}/comments", {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 449,
+              body: [
+                `Bootstrap B60 finalizado no run ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}.`,
+                `update: **${process.env.UPDATE}**`,
+                `validate: **${process.env.VALIDATE}**`,
+                `audit: **${process.env.AUDIT}**`,
+                `persist: **${process.env.PERSIST}**`
+              ].join("\n"),
+              headers: {
+                accept: "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2026-03-10"
+              }
+            });
