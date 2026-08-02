@@ -1,0 +1,31 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(24);
+
+select has_table('public', 'student_communication_preferences', 'communication preferences table exists');
+select has_pk('public', 'student_communication_preferences', 'preferences use user id as primary key');
+select has_fk('public', 'student_communication_preferences', 'preferences reference auth users');
+select has_check('public', 'student_communication_preferences', 'preferences enforce consent consistency');
+select ok((select relrowsecurity from pg_class where oid='public.student_communication_preferences'::regclass), 'preferences RLS enabled');
+select ok((select relforcerowsecurity from pg_class where oid='public.student_communication_preferences'::regclass), 'preferences RLS forced');
+select is((select count(*)::integer from information_schema.role_table_grants where table_schema='public' and table_name='student_communication_preferences' and grantee='anon'), 0, 'anonymous has no table grants');
+select is((select count(*)::integer from information_schema.role_table_grants where table_schema='public' and table_name='student_communication_preferences' and grantee='authenticated'), 0, 'authenticated has no direct table grants');
+select is((select count(*)::integer from pg_policies where schemaname='public' and tablename='student_communication_preferences' and policyname='student_communication_preferences_direct_access_denied'), 1, 'explicit deny policy exists');
+select is((select column_default from information_schema.columns where table_schema='public' and table_name='student_communication_preferences' and column_name='email_transactional'), 'false', 'transactional email defaults off');
+select is((select column_default from information_schema.columns where table_schema='public' and table_name='student_communication_preferences' and column_name='email_product_updates'), 'false', 'product update email defaults off');
+select is((select column_default from information_schema.columns where table_schema='public' and table_name='student_communication_preferences' and column_name='email_marketing'), 'false', 'marketing defaults off');
+select is((select column_default from information_schema.columns where table_schema='public' and table_name='student_communication_preferences' and column_name='privacy_analytics'), 'false', 'analytics defaults off');
+select has_function('private', 'get_my_student_communication_preferences', array[]::text[], 'private preferences reader exists');
+select has_function('private', 'update_my_student_communication_preferences', array['boolean','boolean','boolean','boolean','text'], 'private preferences updater exists');
+select ok((select prosecdef from pg_proc where oid='private.get_my_student_communication_preferences()'::regprocedure), 'private reader is security definer');
+select ok((select prosecdef from pg_proc where oid='private.update_my_student_communication_preferences(boolean,boolean,boolean,boolean,text)'::regprocedure), 'private updater is security definer');
+select ok(position('AUTH_REQUIRED' in pg_get_functiondef('private.get_my_student_communication_preferences()'::regprocedure)) > 0, 'reader requires authentication');
+select ok(position('CONSENT_VERSION_REQUIRED' in pg_get_functiondef('private.update_my_student_communication_preferences(boolean,boolean,boolean,boolean,text)'::regprocedure)) > 0, 'updater requires consent version for optional tracking');
+select ok(position('''in_app_transactional'', true' in pg_get_functiondef('private.get_my_student_communication_preferences()'::regprocedure)) > 0, 'in-app transactional notifications stay mandatory');
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('get_my_student_communication_preferences','update_my_student_communication_preferences') and p.prosecdef), 0, 'public wrappers are invoker');
+select is((select count(*)::integer from information_schema.role_routine_grants where specific_schema='public' and routine_name in ('get_my_student_communication_preferences','update_my_student_communication_preferences') and grantee='anon'), 0, 'anonymous cannot execute preference RPCs');
+select is((select count(*)::integer from information_schema.role_routine_grants where specific_schema='public' and routine_name in ('get_my_student_communication_preferences','update_my_student_communication_preferences') and grantee='authenticated'), 2, 'authenticated can execute guarded preference RPCs');
+select is((select count(*)::integer from pg_trigger where tgrelid='public.student_communication_preferences'::regclass and not tgisinternal and tgfoid='public.set_updated_at()'::regprocedure), 1, 'preferences maintain updated_at');
+
+select * from finish();
+rollback;
