@@ -40,6 +40,12 @@ jobs:
         continue-on-error: true
         run: npm run lint
 
+      - name: Testes unitários
+        id: unit
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: npm run test:unit
+
       - name: Configurar Supabase CLI
         id: cli
         if: steps.install.outcome == 'success'
@@ -102,6 +108,7 @@ jobs:
         env:
           INSTALL: ${{ steps.install.outcome }}
           LINT: ${{ steps.lint.outcome }}
+          UNIT: ${{ steps.unit.outcome }}
           CLI: ${{ steps.cli.outcome }}
           DB: ${{ steps.db.outcome }}
           TYPES: ${{ steps.types.outcome }}
@@ -116,6 +123,7 @@ jobs:
             const gateOutcomes = [
               process.env.INSTALL,
               process.env.LINT,
+              process.env.UNIT,
               process.env.CLI,
               process.env.DB,
               process.env.TYPES,
@@ -138,6 +146,7 @@ jobs:
                 `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
                 `npm ci: **${process.env.INSTALL}**`,
                 `lint: **${process.env.LINT}**`,
+                `testes unitários: **${process.env.UNIT}**`,
                 `Supabase CLI: **${process.env.CLI}**`,
                 `banco + pgTAP: **${process.env.DB}**`,
                 `tipos: **${process.env.TYPES}**`,
@@ -172,6 +181,7 @@ jobs:
         env:
           INSTALL: ${{ steps.install.outcome }}
           LINT: ${{ steps.lint.outcome }}
+          UNIT: ${{ steps.unit.outcome }}
           CLI: ${{ steps.cli.outcome }}
           DB: ${{ steps.db.outcome }}
           TYPES: ${{ steps.types.outcome }}
@@ -180,6 +190,7 @@ jobs:
         run: |
           test "$INSTALL" = success
           test "$LINT" = success
+          test "$UNIT" = success
           test "$CLI" = success
           test "$DB" = success
           test "$TYPES" = success
