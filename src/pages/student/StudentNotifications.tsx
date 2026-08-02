@@ -1,11 +1,8 @@
 import { Bell, CheckCheck, Circle } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
-import { getUserMetadataProfile } from "@/auth/user-metadata";
-import { useAuth } from "@/auth/use-auth";
+import { StudentPortalPageFrame } from "@/components/student/StudentPortalPageFrame";
 import { StudentSectionHeader } from "@/components/student/StudentPortalPrimitives";
-import { StudentPortalShell } from "@/components/student/StudentPortalShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,44 +24,13 @@ const typeLabels = {
 } as const;
 
 const StudentNotifications = () => {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const notificationsQuery = useStudentNotifications();
   const markRead = useMarkStudentNotificationRead();
   const markAllRead = useMarkAllStudentNotificationsRead();
-  const metadata = useMemo(() => {
-    if (!user) return null;
-    try {
-      return getUserMetadataProfile(user);
-    } catch {
-      return null;
-    }
-  }, [user]);
-
-  const handleSignOut = async () => {
-    setIsSigningOut(true);
-    try {
-      await signOut();
-      navigate("/login", { replace: true });
-    } finally {
-      setIsSigningOut(false);
-    }
-  };
-
-  if (!user) {
-    return <PageState variant="loading" title="Validando conta" description="Confirmando a sessão do aluno." />;
-  }
-
   const data = notificationsQuery.data;
 
   return (
-    <StudentPortalShell
-      displayName={metadata?.fullName ?? user.email ?? "Aluno"}
-      email={user.email ?? ""}
-      isSigningOut={isSigningOut}
-      onSignOut={() => void handleSignOut()}
-    >
+    <StudentPortalPageFrame>
       <div className="space-y-8">
         <StudentSectionHeader
           title="Notificações"
@@ -156,7 +122,7 @@ const StudentNotifications = () => {
           </section>
         )}
       </div>
-    </StudentPortalShell>
+    </StudentPortalPageFrame>
   );
 };
 
