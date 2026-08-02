@@ -54,27 +54,37 @@ insert into public.checkout_intents (
 (
   'b9000000-0000-4000-8000-000000000301','b9000000-0000-4000-8000-000000000101',
   'course','b9000000-0000-4000-8000-000000000201',null,'checkout_created','asaas','checkout-b90-pending',
-  'https://sandbox.asaas.com/checkout/b90-pending',19990,'BRL','Curso exato B90','{}'::jsonb,
+  'https://sandbox.asaas.com/checkout/b90-pending',19990,'BRL','Curso exato B90',
+  jsonb_build_object('subject_type','course','subject_id','b9000000-0000-4000-8000-000000000201','amount_cents',19990,'currency_code','BRL'),
   'b9000000-0000-4000-8000-000000000401',statement_timestamp()+interval '30 minutes'
 ),
 (
   'b9000000-0000-4000-8000-000000000302','b9000000-0000-4000-8000-000000000101',
   'course','b9000000-0000-4000-8000-000000000201',null,'checkout_created','asaas','checkout-b90-paid-course',
-  'https://sandbox.asaas.com/checkout/b90-paid-course',19990,'BRL','Curso exato B90','{}'::jsonb,
+  'https://sandbox.asaas.com/checkout/b90-paid-course',19990,'BRL','Curso exato B90',
+  jsonb_build_object('subject_type','course','subject_id','b9000000-0000-4000-8000-000000000201','amount_cents',19990,'currency_code','BRL'),
   'b9000000-0000-4000-8000-000000000402',statement_timestamp()+interval '30 minutes'
 ),
 (
   'b9000000-0000-4000-8000-000000000303','b9000000-0000-4000-8000-000000000102',
   'course','b9000000-0000-4000-8000-000000000201',null,'checkout_created','asaas','checkout-b90-other',
-  'https://sandbox.asaas.com/checkout/b90-other',19990,'BRL','Curso de outro usuário','{}'::jsonb,
+  'https://sandbox.asaas.com/checkout/b90-other',19990,'BRL','Curso de outro usuário',
+  jsonb_build_object('subject_type','course','subject_id','b9000000-0000-4000-8000-000000000201','amount_cents',19990,'currency_code','BRL'),
   'b9000000-0000-4000-8000-000000000403',statement_timestamp()+interval '30 minutes'
 ),
 (
   'b9000000-0000-4000-8000-000000000304','b9000000-0000-4000-8000-000000000101',
   'digital_product','b9000000-0000-4000-8000-000000000203','b9000000-0000-4000-8000-000000000204',
   'checkout_created','asaas','checkout-b90-paid-product','https://sandbox.asaas.com/checkout/b90-paid-product',
-  7990,'BRL','Produto exato B90','{}'::jsonb,'b9000000-0000-4000-8000-000000000404',
-  statement_timestamp()+interval '30 minutes'
+  7990,'BRL','Produto exato B90',
+  jsonb_build_object(
+    'subject_type','digital_product',
+    'subject_id','b9000000-0000-4000-8000-000000000203',
+    'amount_cents',7990,
+    'currency_code','BRL',
+    'license',private.digital_product_license_snapshot('b9000000-0000-4000-8000-000000000204')
+  ),
+  'b9000000-0000-4000-8000-000000000404',statement_timestamp()+interval '30 minutes'
 );
 
 insert into public.enrollments (
@@ -84,54 +94,19 @@ insert into public.enrollments (
   'b9000000-0000-4000-8000-000000000202','active','manual_grant',statement_timestamp()
 );
 
-insert into public.enrollments (
-  id,user_id,course_id,status,source,source_reference,payment_confirmed_at,starts_at
-)
-select
-  'b9000000-0000-4000-8000-000000000502',payment_order.user_id,
-  payment_order.subject_id,'active','purchase',payment_order.id::text,
-  statement_timestamp(),statement_timestamp()
-from public.payment_orders payment_order
-where payment_order.checkout_intent_id='b9000000-0000-4000-8000-000000000302';
-
 update public.payment_orders
 set status='paid',payment_confirmed_at=statement_timestamp()
 where checkout_intent_id='b9000000-0000-4000-8000-000000000302';
 update public.payment_attempts
 set status='confirmed',billing_type='pix',provider_status='CONFIRMED',confirmed_at=statement_timestamp()
 where checkout_intent_id='b9000000-0000-4000-8000-000000000302';
-insert into public.payment_entitlements (
-  id,order_id,user_id,subject_type,subject_id,enrollment_id,controls_access,status
-)
-select
-  'b9000000-0000-4000-8000-000000000601',payment_order.id,payment_order.user_id,
-  payment_order.subject_type,payment_order.subject_id,'b9000000-0000-4000-8000-000000000502',true,'active'
-from public.payment_orders payment_order
-where payment_order.checkout_intent_id='b9000000-0000-4000-8000-000000000302';
 
-insert into public.digital_product_accesses (
-  id,product_id,user_id,license_id,status,source,source_reference,license_snapshot
-)
-select
-  'b9000000-0000-4000-8000-000000000701','b9000000-0000-4000-8000-000000000203',
-  'b9000000-0000-4000-8000-000000000101','b9000000-0000-4000-8000-000000000204',
-  'active','purchase',payment_order.id::text,'{}'::jsonb
-from public.payment_orders payment_order
-where payment_order.checkout_intent_id='b9000000-0000-4000-8000-000000000304';
 update public.payment_orders
 set status='paid',payment_confirmed_at=statement_timestamp()
 where checkout_intent_id='b9000000-0000-4000-8000-000000000304';
 update public.payment_attempts
 set status='received',billing_type='credit_card',provider_status='RECEIVED',received_at=statement_timestamp()
 where checkout_intent_id='b9000000-0000-4000-8000-000000000304';
-insert into public.payment_entitlements (
-  id,order_id,user_id,subject_type,subject_id,digital_product_access_id,controls_access,status
-)
-select
-  'b9000000-0000-4000-8000-000000000702',payment_order.id,payment_order.user_id,
-  payment_order.subject_type,payment_order.subject_id,'b9000000-0000-4000-8000-000000000701',true,'active'
-from public.payment_orders payment_order
-where payment_order.checkout_intent_id='b9000000-0000-4000-8000-000000000304';
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"b9000000-0000-4000-8000-000000000101","role":"authenticated","session_id":"b9000000-0000-4000-8000-000000000801","is_anonymous":false}',true);
@@ -151,13 +126,21 @@ select is(public.get_my_checkout_return('b9000000-0000-4000-8000-000000000302')-
 select is(public.get_my_checkout_return('b9000000-0000-4000-8000-000000000302') #>> '{order,status}','paid','paid course returns the exact paid order');
 select ok((public.get_my_checkout_return('b9000000-0000-4000-8000-000000000302') #>> '{order,payment_confirmed_at}') is not null,'paid course exposes confirmation timestamp');
 select is(public.get_my_checkout_return('b9000000-0000-4000-8000-000000000302') #>> '{entitlement,status}','active','paid course returns active entitlement');
-select is(public.get_my_checkout_return('b9000000-0000-4000-8000-000000000302') #>> '{entitlement,enrollment_id}','b9000000-0000-4000-8000-000000000502','paid course returns the entitlement enrollment');
+select is(
+  public.get_my_checkout_return('b9000000-0000-4000-8000-000000000302') #>> '{entitlement,enrollment_id}',
+  (select enrollment.id::text from public.enrollments enrollment where enrollment.source='purchase' and enrollment.source_reference=(select payment_order.id::text from public.payment_orders payment_order where payment_order.checkout_intent_id='b9000000-0000-4000-8000-000000000302')),
+  'paid course returns the enrollment created by fulfillment'
+);
 select isnt(public.get_my_checkout_return('b9000000-0000-4000-8000-000000000302') #>> '{entitlement,enrollment_id}','b9000000-0000-4000-8000-000000000501','unrelated active enrollment is never used as fallback');
 
 select is(public.get_my_checkout_return('b9000000-0000-4000-8000-000000000304')->>'subject_type','digital_product','shared return identifies a digital product');
 select is(public.get_my_checkout_return('b9000000-0000-4000-8000-000000000304')->>'license_id','b9000000-0000-4000-8000-000000000204','digital return preserves the purchased license');
 select is(public.get_my_checkout_return('b9000000-0000-4000-8000-000000000304') #>> '{order,status}','paid','digital product returns the exact paid order');
-select is(public.get_my_checkout_return('b9000000-0000-4000-8000-000000000304') #>> '{entitlement,digital_product_access_id}','b9000000-0000-4000-8000-000000000701','digital product returns the exact granted access');
+select is(
+  public.get_my_checkout_return('b9000000-0000-4000-8000-000000000304') #>> '{entitlement,digital_product_access_id}',
+  (select access.id::text from public.digital_product_accesses access where access.source='purchase' and access.source_reference=(select payment_order.id::text from public.payment_orders payment_order where payment_order.checkout_intent_id='b9000000-0000-4000-8000-000000000304')),
+  'digital product returns the access created by fulfillment'
+);
 select is(public.get_my_checkout_return('b9000000-0000-4000-8000-000000000304') #>> '{entitlement,enrollment_id}',null,'digital product return cannot invent a course enrollment');
 select is(public.get_my_checkout_return('b9000000-0000-4000-8000-000000000304') #>> '{entitlement,status}','active','digital product return exposes active entitlement');
 select ok(not (public.get_my_checkout_return('b9000000-0000-4000-8000-000000000304') ? 'provider_event_payload'),'return does not expose provider event payload');
