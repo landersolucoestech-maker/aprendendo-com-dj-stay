@@ -1,9 +1,16 @@
 import { z } from "zod";
 
 const notificationTimestampSchema = z.string().datetime({ offset: true });
-const internalActionPathSchema = z.string().regex(/^\/(?!\/)/, {
-  message: "O caminho de ação deve ser interno e iniciar com uma barra simples.",
-});
+const internalActionPathSchema = z.string().refine(
+  (value) =>
+    value.startsWith("/") &&
+    !value.startsWith("//") &&
+    !value.includes("\\"),
+  {
+    message:
+      "O caminho de ação deve ser interno, iniciar com uma barra simples e não conter barra invertida.",
+  },
+);
 
 export const studentNotificationTypeSchema = z.enum([
   "support_reply",
