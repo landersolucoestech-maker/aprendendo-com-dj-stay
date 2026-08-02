@@ -102,6 +102,7 @@ jobs:
         env:
           INSTALL: ${{ steps.install.outcome }}
           LINT: ${{ steps.lint.outcome }}
+          CLI: ${{ steps.cli.outcome }}
           DB: ${{ steps.db.outcome }}
           TYPES: ${{ steps.types.outcome }}
           TYPECHECK: ${{ steps.typecheck.outcome }}
@@ -115,12 +116,18 @@ jobs:
             const gateOutcomes = [
               process.env.INSTALL,
               process.env.LINT,
+              process.env.CLI,
               process.env.DB,
               process.env.TYPES,
               process.env.TYPECHECK,
               process.env.BUILD
             ];
             const gateSucceeded = gateOutcomes.every((outcome) => outcome === "success");
+            const gateFailed = gateOutcomes.some((outcome) => outcome === "failure");
+            const gateIncomplete = gateOutcomes.some(
+              (outcome) => outcome === "cancelled" || outcome === "skipped"
+            );
+            const gateSuperseded = !gateFailed && gateIncomplete;
 
             const evidence = await github.request("POST /repos/{owner}/{repo}/issues", {
               owner: context.repo.owner,
@@ -131,6 +138,7 @@ jobs:
                 `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
                 `npm ci: **${process.env.INSTALL}**`,
                 `lint: **${process.env.LINT}**`,
+                `Supabase CLI: **${process.env.CLI}**`,
                 `banco + pgTAP: **${process.env.DB}**`,
                 `tipos: **${process.env.TYPES}**`,
                 `TypeScript: **${process.env.TYPECHECK}**`,
@@ -148,6 +156,15 @@ jobs:
                 state_reason: "completed",
                 headers: githubApiHeaders
               });
+            } else if (gateSuperseded) {
+              await github.request("PATCH /repos/{owner}/{repo}/issues/{issue_number}", {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: evidence.data.number,
+                state: "closed",
+                state_reason: "not_planned",
+                headers: githubApiHeaders
+              });
             }
 
       - name: Gate final
@@ -155,6 +172,7 @@ jobs:
         env:
           INSTALL: ${{ steps.install.outcome }}
           LINT: ${{ steps.lint.outcome }}
+          CLI: ${{ steps.cli.outcome }}
           DB: ${{ steps.db.outcome }}
           TYPES: ${{ steps.types.outcome }}
           TYPECHECK: ${{ steps.typecheck.outcome }}
@@ -162,6 +180,7 @@ jobs:
         run: |
           test "$INSTALL" = success
           test "$LINT" = success
+          test "$CLI" = success
           test "$DB" = success
           test "$TYPES" = success
           test "$TYPECHECK" = success
