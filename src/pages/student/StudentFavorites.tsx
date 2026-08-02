@@ -1,7 +1,7 @@
 import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import { FavoriteToggleButton } from "@/components/marketplace/FavoriteToggleButton";
+import { FavoriteToggleButton } from "@/components/student/FavoriteToggleButton";
 import { StudentPortalPageFrame } from "@/components/student/StudentPortalPageFrame";
 import { StudentSectionHeader } from "@/components/student/StudentPortalPrimitives";
 import { Badge } from "@/components/ui/badge";
@@ -74,8 +74,8 @@ const StudentFavorites = () => {
                       </CardDescription>
                     </div>
                     <FavoriteToggleButton
-                      itemType={favorite.item_type}
-                      itemId={favorite.item_id}
+                      subjectType={favorite.item_type}
+                      subjectId={favorite.item_id}
                       compact
                     />
                   </div>
