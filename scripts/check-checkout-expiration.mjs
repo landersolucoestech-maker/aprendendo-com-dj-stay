@@ -7,6 +7,7 @@ const paths = {
   page: "src/pages/PaymentSuccess.tsx",
   idempotency: "src/lib/hosted-checkout-idempotency.ts",
   b90: "scripts/check-exact-checkout-return.mjs",
+  child: "scripts/check-checkout-expiration-cron.mjs",
   documentation: "docs/refactor/FASE-B91-CHECKOUT-EXPIRATION-RECONCILIATION.md",
   status: "docs/STATUS.md",
 };
@@ -125,3 +126,4 @@ if (failures.length > 0) {
 console.log(
   "Contrato B91 aprovado: checkouts vencidos são reconciliados pelo servidor sem reabrir pedidos financeiramente terminais.",
 );
+await import("./check-checkout-expiration-cron.mjs");
