@@ -5,8 +5,11 @@ import { publicConfig } from "@/config/public-config";
 import { parseDataContract } from "@/contracts/contract-error";
 import { lessonIdSchema } from "@/contracts/learning";
 import {
+  playbackCredentialsSchema,
+  playbackFingerprintSchema,
   playbackGatewayResponseSchema,
   playbackTokenResponseSchema,
+  playbackTokenSchema,
   type LessonMediaProvider,
 } from "@/contracts/playback";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +28,7 @@ export interface LessonPlaybackSession {
 const reasonMessages: Readonly<Record<string, string>> = {
   ACTIVE_ENROLLMENT_REQUIRED: "Sua matrícula não está ativa para esta aula.",
   AUTH_SESSION_REQUIRED: "Sua sessão precisa ser renovada para reproduzir esta aula.",
+  INVALID_FINGERPRINT: "Não foi possível validar este dispositivo para reprodução.",
   MEDIA_NOT_AVAILABLE: "A mídia desta aula ainda não está disponível.",
   PRIVATE_MEDIA_OBJECT_UNAVAILABLE: "O arquivo de vídeo não está disponível no momento.",
   ROLE_NOT_ALLOWED: "Seu perfil não possui acesso à reprodução desta aula.",
@@ -39,8 +43,13 @@ const resolvePlayback = async (
   token: string,
   fingerprint: string,
 ): Promise<Omit<LessonPlaybackSession, "token" | "fingerprint">> => {
+  const credentials = parseDataContract(
+    playbackCredentialsSchema,
+    { token, fingerprint },
+    "credenciais para resolução do playback",
+  );
   const { data, error } = await supabase.functions.invoke("media-playback", {
-    body: { token, fingerprint },
+    body: credentials,
   });
 
   if (error) throw error;
@@ -66,7 +75,11 @@ const issuePlayback = async (lessonId: string): Promise<LessonPlaybackSession> =
     lessonId,
     "identificador da aula para reprodução",
   );
-  const fingerprint = await getPlaybackFingerprint();
+  const fingerprint = parseDataContract(
+    playbackFingerprintSchema,
+    await getPlaybackFingerprint(),
+    "fingerprint para emissão do playback",
+  );
   const { data, error } = await supabase.rpc("request_lesson_playback_token", {
     p_lesson_id: validatedLessonId,
     p_fingerprint_hash: fingerprint,
@@ -80,13 +93,12 @@ const issuePlayback = async (lessonId: string): Promise<LessonPlaybackSession> =
     "emissão do token de reprodução",
   );
 
-  if (
-    !issued?.granted ||
-    issued.token === null ||
-    issued.expires_at === null ||
-    issued.provider === null
-  ) {
-    throw new Error(getReasonMessage(issued?.reason ?? null));
+  if (!issued) {
+    throw new Error("A emissão do playback não retornou resultado.");
+  }
+
+  if (!issued.granted) {
+    throw new Error(getReasonMessage(issued.reason));
   }
 
   if (issued.provider === "private_asset") {
@@ -107,7 +119,14 @@ const issuePlayback = async (lessonId: string): Promise<LessonPlaybackSession> =
 };
 
 const revokePlayback = async (token: string): Promise<void> => {
-  const { error } = await supabase.rpc("revoke_lesson_playback_token", { p_token: token });
+  const validatedToken = parseDataContract(
+    playbackTokenSchema,
+    token,
+    "token para revogação do playback",
+  );
+  const { error } = await supabase.rpc("revoke_lesson_playback_token", {
+    p_token: validatedToken,
+  });
   if (error) console.warn("Não foi possível revogar o token de reprodução.");
 };
 
