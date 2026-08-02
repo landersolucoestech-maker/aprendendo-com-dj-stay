@@ -5,6 +5,7 @@ import {
   Bug,
   GraduationCap,
   HandCoins,
+  LayoutDashboard,
   LifeBuoy,
   MessagesSquare,
   ShieldCheck,
@@ -15,6 +16,7 @@ import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const adminNavigation = [
+  { to: "/admin", label: "Visão geral", icon: LayoutDashboard },
   { to: "/admin/cursos", label: "Cursos", icon: BookOpen },
   { to: "/admin/produtos", label: "Produtos", icon: Boxes },
   { to: "/admin/pagamentos", label: "Pagamentos", icon: Banknote },
@@ -46,6 +48,7 @@ export const AdminNavigation = () => (
           <NavLink
             key={to}
             to={to}
+            end={to === "/admin"}
             className={({ isActive }) =>
               cn(
                 "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400",
