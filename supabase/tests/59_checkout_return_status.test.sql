@@ -79,15 +79,20 @@ insert into public.checkout_intents (
 
 insert into public.enrollments (
   id,user_id,course_id,status,source,starts_at
-) values
-(
+) values (
   'b9000000-0000-4000-8000-000000000501','b9000000-0000-4000-8000-000000000101',
   'b9000000-0000-4000-8000-000000000202','active','manual_grant',statement_timestamp()
-),
-(
-  'b9000000-0000-4000-8000-000000000502','b9000000-0000-4000-8000-000000000101',
-  'b9000000-0000-4000-8000-000000000201','active','purchase',statement_timestamp()
 );
+
+insert into public.enrollments (
+  id,user_id,course_id,status,source,source_reference,payment_confirmed_at,starts_at
+)
+select
+  'b9000000-0000-4000-8000-000000000502',payment_order.user_id,
+  payment_order.subject_id,'active','purchase',payment_order.id::text,
+  statement_timestamp(),statement_timestamp()
+from public.payment_orders payment_order
+where payment_order.checkout_intent_id='b9000000-0000-4000-8000-000000000302';
 
 update public.payment_orders
 set status='paid',payment_confirmed_at=statement_timestamp()
