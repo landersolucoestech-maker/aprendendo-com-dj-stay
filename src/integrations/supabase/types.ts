@@ -4847,6 +4847,10 @@ export type Database = {
         Returns: Json
       }
       get_my_certificates: { Args: never; Returns: Json }
+      get_my_checkout_return: {
+        Args: { p_checkout_intent_id: string }
+        Returns: Json
+      }
       get_my_payment_history: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
