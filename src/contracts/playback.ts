@@ -3,11 +3,7 @@ import { z } from "zod";
 const timestampSchema = z.string().datetime({ offset: true });
 const nullableWatermarkSchema = z.string().trim().min(1).max(120).nullable();
 
-export const lessonMediaProviderSchema = z.enum(["private_asset", "youtube", "vimeo"]);
-export const playbackTokenSchema = z.string().regex(/^[a-f0-9]{48}$/);
-export const playbackFingerprintSchema = z.string().regex(/^[a-f0-9]{64}$/);
-
-export const playbackDenialReasonSchema = z.enum([
+const PLAYBACK_DENIAL_REASONS = [
   "AUTH_SESSION_REQUIRED",
   "INVALID_FINGERPRINT",
   "MEDIA_NOT_AVAILABLE",
@@ -22,10 +18,10 @@ export const playbackDenialReasonSchema = z.enum([
   "MEDIA_DISABLED",
   "ENROLLMENT_NOT_ACTIVE",
   "ADMIN_ROLE_REMOVED",
-]);
+] as const;
 
-export const playbackGatewayErrorCodeSchema = z.enum([
-  ...playbackDenialReasonSchema.options,
+const PLAYBACK_GATEWAY_ERROR_CODES = [
+  ...PLAYBACK_DENIAL_REASONS,
   "ORIGIN_NOT_ALLOWED",
   "METHOD_NOT_ALLOWED",
   "PLAYBACK_RESOLUTION_FAILED",
@@ -33,7 +29,13 @@ export const playbackGatewayErrorCodeSchema = z.enum([
   "PRIVATE_MEDIA_REQUIRED",
   "MEDIA_UNAVAILABLE",
   "PLAYBACK_GATEWAY_ERROR",
-]);
+] as const;
+
+export const lessonMediaProviderSchema = z.enum(["private_asset", "youtube", "vimeo"]);
+export const playbackTokenSchema = z.string().regex(/^[a-f0-9]{48}$/);
+export const playbackFingerprintSchema = z.string().regex(/^[a-f0-9]{64}$/);
+export const playbackDenialReasonSchema = z.enum(PLAYBACK_DENIAL_REASONS);
+export const playbackGatewayErrorCodeSchema = z.enum(PLAYBACK_GATEWAY_ERROR_CODES);
 
 export const playbackCredentialsSchema = z
   .object({
@@ -89,6 +91,7 @@ const youtubeEmbedUrlSchema = z
   .refine((value) => {
     const url = new URL(value);
     return (
+      url.protocol === "https:" &&
       url.hostname === "www.youtube-nocookie.com" &&
       /^\/embed\/[A-Za-z0-9_-]{11}$/.test(url.pathname)
     );
@@ -99,7 +102,11 @@ const vimeoEmbedUrlSchema = z
   .url()
   .refine((value) => {
     const url = new URL(value);
-    return url.hostname === "player.vimeo.com" && /^\/video\/[0-9]{6,12}$/.test(url.pathname);
+    return (
+      url.protocol === "https:" &&
+      url.hostname === "player.vimeo.com" &&
+      /^\/video\/[0-9]{6,12}$/.test(url.pathname)
+    );
   }, "A URL do Vimeo deve usar o player oficial e um vídeo válido.");
 
 const privateGatewayResponseSchema = z
