@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   contactAdminDashboardSchema,
+  contactStatusUpdateInputSchema,
   contactStatusUpdateResultSchema,
   contactSubmissionInputSchema,
   contactSubmissionResultSchema,
@@ -72,11 +73,16 @@ export const useUpdateContactMessageStatus = () => {
       status: ContactMessageStatus;
       note: string | null;
     }) => {
-      const normalizedNote = input.note?.trim();
+      const normalizedNote = input.note?.trim() || null;
+      const value = parseDataContract(
+        contactStatusUpdateInputSchema,
+        { ...input, note: normalizedNote },
+        "alteração do status do contato",
+      );
       const { data, error } = await supabase.rpc("update_contact_message_status", {
-        p_contact_message_id: input.contactMessageId,
-        p_status: input.status,
-        ...(normalizedNote ? { p_note: normalizedNote } : {}),
+        p_contact_message_id: value.contactMessageId,
+        p_status: value.status,
+        ...(value.note ? { p_note: value.note } : {}),
       });
       if (error) throw error;
       return parseDataContract(
