@@ -15,6 +15,9 @@ export const StudentFavorites = lazy(
 export const StudentCommunicationPreferences = lazy(
   () => import("@/pages/student/StudentCommunicationPreferences"),
 );
+export const StudentPrivacyRights = lazy(
+  () => import("@/pages/student/StudentPrivacyRights"),
+);
 export const Certificates = lazy(() => import("@/pages/student/Certificates"));
 export const EditProfile = lazy(() => import("@/pages/EditProfile"));
 export const Lesson = lazy(() => import("@/pages/Lesson"));
