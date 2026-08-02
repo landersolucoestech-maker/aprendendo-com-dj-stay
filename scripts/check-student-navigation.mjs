@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 const paths = {
   app: "src/App.tsx",
   shell: "src/components/student/StudentPortalShell.tsx",
+  pageFrame: "src/components/student/StudentPortalPageFrame.tsx",
   certificates: "src/pages/student/Certificates.tsx",
   products: "src/pages/student/MyDigitalProducts.tsx",
   certificateContract: "scripts/check-students-certificates-contract.mjs",
@@ -22,6 +23,7 @@ for (const path of Object.values(paths)) {
 
 const app = read(paths.app);
 const shell = read(paths.shell);
+const pageFrame = read(paths.pageFrame);
 const certificates = read(paths.certificates);
 const products = read(paths.products);
 const certificateContract = read(paths.certificateContract);
@@ -99,29 +101,55 @@ for (const forbiddenRoute of [
 }
 
 for (const fragment of [
+  "<StudentPortalShell",
+  "getUserMetadataProfile",
+  "signOut",
+  'navigate("/login", { replace: true })',
+]) {
+  expect(pageFrame.includes(fragment), `Frame B84 ausente na navegação: ${fragment}`);
+}
+
+for (const fragment of [
   "useMyCertificates",
   "Meus certificados",
   'to="/aluno"',
+  "<StudentPortalPageFrame>",
 ]) {
-  expect(certificates.includes(fragment), `Página de certificados B83 ausente: ${fragment}`);
+  expect(certificates.includes(fragment), `Página de certificados B83/B84 ausente: ${fragment}`);
 }
+expect(
+  !certificates.includes("AppPageShell"),
+  "Certificados não podem remover o shell ao abrir a rota navegável.",
+);
+
 for (const fragment of [
   "useMyDigitalProducts",
   "Meus produtos",
   'to="/portal"',
+  "readonly studentPortal?: boolean",
+  "<StudentPortalPageFrame>",
+  "<AppPageShell",
 ]) {
-  expect(products.includes(fragment), `Página de produtos B83 ausente: ${fragment}`);
+  expect(products.includes(fragment), `Página de produtos B83/B84 ausente: ${fragment}`);
 }
+expect(
+  app.includes('path="/aluno/produtos" element={<StudentRoute><MyDigitalProducts studentPortal /></StudentRoute>}'),
+  "A rota navegável de produtos deve ativar o shell do aluno.",
+);
+expect(
+  app.includes('path="/meus-produtos" element={<MarketplaceRoute><MyDigitalProducts /></MarketplaceRoute>}'),
+  "A rota genérica de produtos deve preservar o layout multi-papel.",
+);
 
 for (const fragment of [
   "src/components/student/StudentPortalShell.tsx",
   '/aluno/certificados",',
   "studentNavigation.map",
-  "acesso navegável aos certificados",
+  "shell persistente",
 ]) {
   expect(
     certificateContract.includes(fragment),
-    `Ponte B21/B83 ausente: ${fragment}`,
+    `Ponte B21/B83/B84 ausente: ${fragment}`,
   );
 }
 
@@ -156,10 +184,10 @@ expect(
 );
 
 if (failures.length > 0) {
-  console.error("Falhas no contrato B83:\n- " + failures.join("\n- "));
+  console.error("Falhas no contrato B83/B84:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  `Contrato B83 aprovado: ${navigationRoutes.length} rotas principais do aluno estão disponíveis no menu desktop e mobile sem duplicatas.`,
+  `Contrato B83/B84 aprovado: ${navigationRoutes.length} rotas principais permanecem disponíveis no menu desktop/mobile e as novas entradas preservam o shell.`,
 );
