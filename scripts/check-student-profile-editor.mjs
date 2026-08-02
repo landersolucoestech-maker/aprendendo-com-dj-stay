@@ -155,7 +155,7 @@ for (const [name, source, fragments] of [
     [
       "editProfile",
       "EditProfile studentPortal",
-      "editor de perfil preserva o shell",
+      "Rota de edição do aluno deve ativar o frame",
     ],
   ],
 ]) {
