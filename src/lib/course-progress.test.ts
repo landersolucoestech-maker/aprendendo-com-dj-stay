@@ -13,47 +13,48 @@ const LESSON_B_ID = "44444444-4444-4444-8444-444444444444";
 const LESSON_C_ID = "55555555-5555-4555-8555-555555555555";
 const ORPHAN_LESSON_ID = "66666666-6666-4666-8666-666666666666";
 
-const MODULES: LearningModule[] = [
-  {
-    id: MODULE_A_ID,
-    title: "Módulo inicial",
-    description: "Fundamentos do curso",
-    order: 1,
-    lessons: [
-      {
-        id: LESSON_A_ID,
-        title: "Aula A",
-        description: "Primeira aula",
-        durationMinutes: 10,
-        durationLabel: "10 min",
-        order: 1,
-      },
-      {
-        id: LESSON_B_ID,
-        title: "Aula B",
-        description: null,
-        durationMinutes: null,
-        durationLabel: null,
-        order: 2,
-      },
-      {
-        id: LESSON_C_ID,
-        title: "Aula C",
-        description: "Terceira aula",
-        durationMinutes: 30,
-        durationLabel: "30 min",
-        order: 3,
-      },
-    ],
-  },
-  {
-    id: MODULE_B_ID,
-    title: "Módulo vazio",
-    description: null,
-    order: 2,
-    lessons: [],
-  },
-];
+const MODULE_A: LearningModule = {
+  id: MODULE_A_ID,
+  title: "Módulo inicial",
+  description: "Fundamentos do curso",
+  order: 1,
+  lessons: [
+    {
+      id: LESSON_A_ID,
+      title: "Aula A",
+      description: "Primeira aula",
+      durationMinutes: 10,
+      durationLabel: "10 min",
+      order: 1,
+    },
+    {
+      id: LESSON_B_ID,
+      title: "Aula B",
+      description: null,
+      durationMinutes: null,
+      durationLabel: null,
+      order: 2,
+    },
+    {
+      id: LESSON_C_ID,
+      title: "Aula C",
+      description: "Terceira aula",
+      durationMinutes: 30,
+      durationLabel: "30 min",
+      order: 3,
+    },
+  ],
+};
+
+const MODULE_B: LearningModule = {
+  id: MODULE_B_ID,
+  title: "Módulo vazio",
+  description: null,
+  order: 2,
+  lessons: [],
+};
+
+const MODULES: LearningModule[] = [MODULE_A, MODULE_B];
 
 const progress = (
   aulaId: string,
@@ -65,11 +66,11 @@ const progress = (
 
 describe("calculateModulesProgress", () => {
   it("mantém módulos sem aulas em zero por cento", () => {
-    const result = calculateModulesProgress([MODULES[1]], []);
+    const result = calculateModulesProgress([MODULE_B], []);
 
     expect(result).toEqual([
       {
-        ...MODULES[1],
+        ...MODULE_B,
         progress: 0,
         lessons: [],
       },
@@ -77,7 +78,7 @@ describe("calculateModulesProgress", () => {
   });
 
   it("mantém todas as aulas incompletas sem progresso confirmado", () => {
-    const [module] = calculateModulesProgress([MODULES[0]], [
+    const [module] = calculateModulesProgress([MODULE_A], [
       progress(LESSON_A_ID, false),
       progress(LESSON_B_ID, false),
     ]);
@@ -91,7 +92,7 @@ describe("calculateModulesProgress", () => {
   });
 
   it("arredonda a conclusão parcial do módulo", () => {
-    const [module] = calculateModulesProgress([MODULES[0]], [
+    const [module] = calculateModulesProgress([MODULE_A], [
       progress(LESSON_A_ID, true),
     ]);
 
@@ -104,7 +105,7 @@ describe("calculateModulesProgress", () => {
   });
 
   it("arredonda dois terços para sessenta e sete por cento", () => {
-    const [module] = calculateModulesProgress([MODULES[0]], [
+    const [module] = calculateModulesProgress([MODULE_A], [
       progress(LESSON_A_ID, true),
       progress(LESSON_C_ID, true),
     ]);
@@ -113,7 +114,7 @@ describe("calculateModulesProgress", () => {
   });
 
   it("marca conclusão total em cem por cento", () => {
-    const [module] = calculateModulesProgress([MODULES[0]], [
+    const [module] = calculateModulesProgress([MODULE_A], [
       progress(LESSON_A_ID, true),
       progress(LESSON_B_ID, true),
       progress(LESSON_C_ID, true),
@@ -124,7 +125,7 @@ describe("calculateModulesProgress", () => {
   });
 
   it("não deixa linhas duplicadas inflarem o percentual", () => {
-    const [module] = calculateModulesProgress([MODULES[0]], [
+    const [module] = calculateModulesProgress([MODULE_A], [
       progress(LESSON_A_ID, true),
       progress(LESSON_A_ID, true),
       progress(LESSON_A_ID, true),
@@ -135,7 +136,7 @@ describe("calculateModulesProgress", () => {
   });
 
   it("considera a aula concluída quando existe ao menos uma linha verdadeira", () => {
-    const [module] = calculateModulesProgress([MODULES[0]], [
+    const [module] = calculateModulesProgress([MODULE_A], [
       progress(LESSON_A_ID, false),
       progress(LESSON_A_ID, true),
       progress(LESSON_A_ID, false),
@@ -146,7 +147,7 @@ describe("calculateModulesProgress", () => {
   });
 
   it("ignora progresso de aulas inexistentes no currículo", () => {
-    const [module] = calculateModulesProgress([MODULES[0]], [
+    const [module] = calculateModulesProgress([MODULE_A], [
       progress(ORPHAN_LESSON_ID, true),
     ]);
 
