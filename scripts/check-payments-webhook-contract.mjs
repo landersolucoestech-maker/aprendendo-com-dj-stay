@@ -10,6 +10,7 @@ const paths = {
   config: "supabase/config.toml",
   checkoutContract: "src/contracts/checkout.ts",
   checkoutHook: "src/hooks/useHostedCheckout.ts",
+  checkoutIdempotency: "src/lib/hosted-checkout-idempotency.ts",
   marketplace: "src/pages/marketplace/DigitalMarketplace.tsx",
   paymentReturn: "src/pages/PaymentSuccess.tsx",
   schemaTest: "supabase/tests/29_payments_schema.test.sql",
@@ -36,6 +37,7 @@ const webhookFunction = read(paths.webhookFunction);
 const config = read(paths.config);
 const checkoutContract = read(paths.checkoutContract);
 const checkoutHook = read(paths.checkoutHook);
+const checkoutIdempotency = read(paths.checkoutIdempotency);
 const marketplace = read(paths.marketplace);
 const paymentReturn = read(paths.paymentReturn);
 const tests = [paths.schemaTest, paths.lifecycleTest, paths.webhookTest].map(read).join("\n");
@@ -133,7 +135,9 @@ expect(
   "Frontend deve invocar a Edge Function oficial.",
 );
 expect(
-  checkoutHook.includes("sessionStorage") && checkoutHook.includes("crypto.randomUUID"),
+  checkoutHook.includes('from "@/lib/hosted-checkout-idempotency"') &&
+    checkoutIdempotency.includes("sessionStorage") &&
+    checkoutIdempotency.includes("crypto.randomUUID"),
   "Frontend deve manter chave idempotente por sessão.",
 );
 expect(
@@ -163,6 +167,7 @@ const combined = [
   webhookFunction,
   checkoutContract,
   checkoutHook,
+  checkoutIdempotency,
   marketplace,
 ].join("\n");
 
