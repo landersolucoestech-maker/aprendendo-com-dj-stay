@@ -116,6 +116,8 @@ for (const fragment of [
   "digitalProductLicenseSchema",
   "digitalProductDeliverableRowSchema",
   "digitalProductAccessesSchema",
+  "marketplaceLicenseLifecycleInputSchema",
+  "p_license_id: value.licenseId",
   "parseDataContract",
 ]) {
   expect(hooks.includes(fragment), `Consumidor B72 ausente: ${fragment}`);
