@@ -24,16 +24,33 @@ Esse critério preserva abertas todas as evidências não verdes, independenteme
 
 ## Execução temporária
 
-A operação utiliza um workflow temporário versionado exclusivamente para:
+A operação utilizou um workflow temporário versionado exclusivamente para:
 
 1. carregar todas as issues abertas antes de iniciar mutações;
 2. classificar as evidências pelo critério conservador;
 3. encerrar sequencialmente somente as evidências verdes como `completed`;
 4. carregar novamente todas as issues abertas;
-5. falhar se alguma evidência verde ainda permanecer aberta;
+5. falhar se alguma evidência verde ainda permanecesse aberta;
 6. registrar no resumo do job e na issue B50 as quantidades reconciliadas e preservadas.
 
-A coleta integral ocorre antes dos encerramentos para evitar saltos de paginação causados pela redução da lista de issues abertas durante a própria execução.
+A coleta integral ocorreu antes dos encerramentos para evitar saltos de paginação causados pela redução da lista de issues abertas durante a própria execução.
+
+## Resultado
+
+Primeira execução, run `30730389174`:
+
+- 386 evidências de gate abertas no início;
+- 72 evidências verdes encerradas;
+- 314 evidências não verdes preservadas;
+- duas leituras imediatamente posteriores ainda observaram evidências verdes por consistência eventual da API.
+
+Verificação idempotente, run `30730434159`:
+
+- zero evidências verdes abertas;
+- zero novos encerramentos necessários;
+- 315 evidências não verdes preservadas, incluindo a evidência cancelada criada durante os commits sequenciais da própria fase.
+
+O intervalo das evidências verdes reconciliadas foi de `#7` a `#408`. A quantidade final preservada pode crescer quando novos commits intermediários forem cancelados pelo mecanismo de concorrência; isso não altera o critério da B50.
 
 ## Segurança operacional
 
@@ -47,7 +64,13 @@ A coleta integral ocorre antes dos encerramentos para evitar saltos de paginaç�
 
 ## Limpeza após execução
 
-O workflow temporário deve ser removido da branch `dev` após a reconciliação e verificação. A documentação e a issue B50 permanecem como evidência permanente da operação.
+O workflow temporário `.github/workflows/b50-reconcile-gate-evidence.yml` foi removido da branch `dev` após a reconciliação e verificação.
+
+O contrato permanente `scripts/check-gate-evidence-lifecycle.mjs` valida que:
+
+- o workflow temporário não reapareceu;
+- este documento permanece versionado;
+- o comportamento permanente da B49 continua encerrando automaticamente apenas evidências integralmente verdes.
 
 ## Critérios de aceite
 
@@ -56,4 +79,5 @@ O workflow temporário deve ser removido da branch `dev` após a reconciliação
 - quantidade reconciliada registrada;
 - quantidade não verde preservada registrada;
 - mecanismo temporário removido;
+- ausência do mecanismo temporário protegida por contrato permanente;
 - gate técnico da branch `dev` preservado.
