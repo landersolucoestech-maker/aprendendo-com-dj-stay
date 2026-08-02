@@ -83,3 +83,5 @@ if (failures.length > 0) {
 console.log(
   "Contrato B46 aprovado: workflow técnico determinístico e executado somente por actions Node 24.",
 );
+
+await import("./check-supabase-ci-cleanup.mjs");
