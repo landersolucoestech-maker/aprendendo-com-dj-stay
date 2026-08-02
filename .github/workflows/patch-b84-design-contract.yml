@@ -1,0 +1,76 @@
+name: Patch B84 Design Contract
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - .github/workflows/patch-b84-design-contract.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Alinhar B23 ao frame B84
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("scripts/check-design-system-contract.mjs")
+          source = path.read_text(encoding="utf-8")
+
+          frame_entry = '  "src/components/student/StudentPortalPageFrame.tsx",\n'
+          shell_entry = '  "src/components/student/StudentPortalShell.tsx",\n'
+          if frame_entry not in source:
+              if shell_entry not in source:
+                  raise SystemExit("Entrada do shell não encontrada")
+              source = source.replace(shell_entry, shell_entry + frame_entry, 1)
+
+          old = '''requireText("src/pages/student/Certificates.tsx", [
+            'context="course"',
+            'variant="course"','''
+          new = '''requireText("src/pages/student/Certificates.tsx", [
+            "<StudentPortalPageFrame>",
+            'variant="course"','''
+          if old in source:
+              source = source.replace(old, new, 1)
+          elif new not in source:
+              raise SystemExit("Contrato antigo de certificados não encontrado")
+
+          marker = '''forbidText("src/components/student/StudentPortalShell.tsx", [
+            "bg-black",'''
+          frame_check = '''requireText("src/components/student/StudentPortalPageFrame.tsx", [
+            'import { StudentPortalShell } from "@/components/student/StudentPortalShell"',
+            "<StudentPortalShell",
+          ]);
+
+          '''
+          if frame_check not in source:
+              if marker not in source:
+                  raise SystemExit("Marcador para frame não encontrado")
+              source = source.replace(marker, frame_check + marker, 1)
+
+          source = source.replace(
+              'console.log("Contrato estático do Portal do Aluno na FASE B23 aprovado.");',
+              'console.log("Contrato estático do Portal do Aluno na FASE B23/B84 aprovado com contexto visual delegado pelo shell.");',
+          )
+          path.write_text(source, encoding="utf-8")
+
+      - name: Remover workflow temporário
+        run: rm .github/workflows/patch-b84-design-contract.yml
+
+      - name: Publicar correção
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/check-design-system-contract.mjs .github/workflows/patch-b84-design-contract.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "test(b84): alinhar B23 ao frame persistente"
+          git push origin HEAD:dev
