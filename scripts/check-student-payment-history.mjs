@@ -9,6 +9,7 @@ const requiredFiles = [
   "src/pages/student/StudentFinancialPortal.tsx",
   "src/pages/student/StudentPortalRouter.tsx",
   "src/routing/lazy/student-pages.ts",
+  "src/App.tsx",
   "docs/refactor/FASE-B38-STUDENT-PAYMENT-HISTORY.md",
   "package.json",
 ];
@@ -26,8 +27,9 @@ if (failures.length === 0) {
   const page = readFileSync(requiredFiles[5], "utf8");
   const router = readFileSync(requiredFiles[6], "utf8");
   const lazyPages = readFileSync(requiredFiles[7], "utf8");
-  const docs = readFileSync(requiredFiles[8], "utf8");
-  const packageJson = readFileSync(requiredFiles[9], "utf8");
+  const app = readFileSync(requiredFiles[8], "utf8");
+  const docs = readFileSync(requiredFiles[9], "utf8");
+  const packageJson = readFileSync(requiredFiles[10], "utf8");
 
   for (const fragment of [
     "get_my_payment_history",
@@ -57,6 +59,9 @@ if (failures.length === 0) {
   if (!router.includes('section === "orders" || section === "payments"')) failures.push("Roteador B38 não intercepta seções financeiras.");
   if (!router.includes("StudentFinancialPortal")) failures.push("Roteador B38 não renderiza o portal financeiro.");
   if (!lazyPages.includes("StudentPortalRouter")) failures.push("Lazy route B38 ainda aponta para o placeholder antigo.");
+  for (const route of ['path="/aluno/pedidos"', 'path="/aluno/pagamentos"']) {
+    if (!app.includes(route)) failures.push(`Rota financeira B38 ausente: ${route}`);
+  }
   if (!docs.includes("não existe argumento `user_id`")) failures.push("Isolamento por auth.uid não documentado.");
   if (!packageJson.includes('"check:student-payment-history"')) failures.push("Script B38 ausente no package.json.");
   if (!packageJson.includes("npm run check:student-payment-history")) failures.push("B38 não está integrado ao typecheck.");
