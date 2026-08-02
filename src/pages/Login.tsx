@@ -159,6 +159,7 @@ const Login = () => {
             Não tem uma conta?{" "}
             <Link
               to="/matricule-se"
+              state={location.state}
               className="rounded-sm font-medium text-primary hover:underline"
             >
               Matricule-se
