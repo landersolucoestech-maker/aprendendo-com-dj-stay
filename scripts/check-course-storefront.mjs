@@ -1,45 +1,61 @@
 import { existsSync, readFileSync } from "node:fs";
 
-const requiredFiles = [
-  "supabase/migrations/20260802230000_course_checkout_resolution.sql",
-  "supabase/tests/58_course_checkout_resolution.test.sql",
-  "src/contracts/course-checkout.ts",
-  "src/contracts/course-checkout.test.ts",
-  "src/contracts/public-course-catalog.ts",
-  "src/hooks/useHostedCheckout.ts",
-  "src/hooks/useCourseCheckout.ts",
-  "src/pages/marketplace/CourseStorefront.tsx",
-  "src/routing/lazy/commerce-pages.ts",
-  "src/routing/RequireAuth.tsx",
-  "src/App.tsx",
-  "src/components/HeroSection.tsx",
-  "scripts/check-public-course-catalog.mjs",
-  "docs/refactor/FASE-B89-COURSE-STOREFRONT-CHECKOUT.md",
-  "docs/STATUS.md",
-];
+const paths = {
+  migration: "supabase/migrations/20260802230000_course_checkout_resolution.sql",
+  databaseTest: "supabase/tests/58_course_checkout_resolution.test.sql",
+  contract: "src/contracts/course-checkout.ts",
+  contractTest: "src/contracts/course-checkout.test.ts",
+  publicCatalogContract: "src/contracts/public-course-catalog.ts",
+  hostedCheckout: "src/hooks/useHostedCheckout.ts",
+  courseCheckout: "src/hooks/useCourseCheckout.ts",
+  storefront: "src/pages/marketplace/CourseStorefront.tsx",
+  lazyPages: "src/routing/lazy/commerce-pages.ts",
+  requireAuth: "src/routing/RequireAuth.tsx",
+  routeState: "src/routing/route-state.ts",
+  routeStateTest: "src/routing/route-state.test.ts",
+  authService: "src/auth/auth-service.ts",
+  login: "src/pages/Login.tsx",
+  register: "src/pages/Register.tsx",
+  verifyEmail: "src/pages/VerifyEmail.tsx",
+  verified: "src/pages/Verified.tsx",
+  studentShell: "src/components/student/StudentPortalShell.tsx",
+  app: "src/App.tsx",
+  hero: "src/components/HeroSection.tsx",
+  parentCheck: "scripts/check-public-course-catalog.mjs",
+  documentation: "docs/refactor/FASE-B89-COURSE-STOREFRONT-CHECKOUT.md",
+  status: "docs/STATUS.md",
+};
 
 const failures = [];
-for (const file of requiredFiles) {
-  if (!existsSync(file)) failures.push(`Arquivo B89 ausente: ${file}`);
+const read = (path) => readFileSync(path, "utf8");
+for (const path of Object.values(paths)) {
+  if (!existsSync(path)) failures.push(`Arquivo B89 ausente: ${path}`);
 }
 
 if (failures.length === 0) {
-  const read = (file) => readFileSync(file, "utf8");
-  const migration = read(requiredFiles[0]);
-  const databaseTest = read(requiredFiles[1]);
-  const contract = read(requiredFiles[2]);
-  const contractTest = read(requiredFiles[3]);
-  const publicCatalogContract = read(requiredFiles[4]);
-  const hostedCheckout = read(requiredFiles[5]);
-  const courseCheckout = read(requiredFiles[6]);
-  const storefront = read(requiredFiles[7]);
-  const lazyPages = read(requiredFiles[8]);
-  const requireAuth = read(requiredFiles[9]);
-  const app = read(requiredFiles[10]);
-  const hero = read(requiredFiles[11]);
-  const parentCheck = read(requiredFiles[12]);
-  const documentation = read(requiredFiles[13]);
-  const status = read(requiredFiles[14]);
+  const migration = read(paths.migration);
+  const databaseTest = read(paths.databaseTest);
+  const contract = read(paths.contract);
+  const contractTest = read(paths.contractTest);
+  const publicCatalogContract = read(paths.publicCatalogContract);
+  const hostedCheckout = read(paths.hostedCheckout);
+  const courseCheckout = read(paths.courseCheckout);
+  const storefront = read(paths.storefront);
+  const lazyPages = read(paths.lazyPages);
+  const requireAuth = read(paths.requireAuth);
+  const routeState = read(paths.routeState);
+  const routeStateTest = read(paths.routeStateTest);
+  const authService = read(paths.authService);
+  const login = read(paths.login);
+  const register = read(paths.register);
+  const verifyEmail = read(paths.verifyEmail);
+  const verified = read(paths.verified);
+  const studentShell = read(paths.studentShell);
+  const app = read(paths.app);
+  const hero = read(paths.hero);
+  const parentCheck = read(paths.parentCheck);
+  const documentation = read(paths.documentation);
+  const status = read(paths.status);
 
   for (const fragment of [
     "private.resolve_course_checkout_subject",
@@ -133,6 +149,58 @@ if (failures.length === 0) {
     'featuredCourse ? "Comprar curso" : "Criar conta"',
   ]) {
     if (!hero.includes(fragment)) failures.push(`CTA público B89 incompleto: ${fragment}`);
+  }
+  for (const fragment of [
+    '{ to: "/cursos", label: "Comprar cursos", icon: ShoppingCart, end: false }',
+    "ShoppingCart",
+  ]) {
+    if (!studentShell.includes(fragment)) failures.push(`Descoberta B89 ausente no portal: ${fragment}`);
+  }
+
+  for (const fragment of [
+    "getSafeInternalPath",
+    "toSafeReturnLocation",
+    'value.startsWith("//")',
+    'value.includes("\\\\")',
+  ]) {
+    if (!routeState.includes(fragment)) failures.push(`Sanitização B89 incompleta: ${fragment}`);
+  }
+  for (const fragment of [
+    'describe("safe return paths"',
+    "preserves an internal course path with query string",
+    "rejects protocol-relative and backslash redirects",
+  ]) {
+    if (!routeStateTest.includes(fragment)) failures.push(`Teste de retorno B89 ausente: ${fragment}`);
+  }
+  for (const fragment of [
+    "signupCallbackPath",
+    "getSafeInternalPath(returnPath)",
+    "emailRedirectTo: absoluteAppUrl(signupCallbackPath",
+  ]) {
+    if (!authService.includes(fragment)) failures.push(`Callback de cadastro B89 incompleto: ${fragment}`);
+  }
+  if (!login.includes("state={location.state}")) failures.push("Login não preserva o curso ao abrir o cadastro.");
+  for (const fragment of [
+    "const returnPath = getSafeReturnPath(location.state)",
+    "returnPath,",
+    "navigate(returnPath, { replace: true })",
+    "state={location.state}",
+  ]) {
+    if (!register.includes(fragment)) failures.push(`Cadastro B89 incompleto: ${fragment}`);
+  }
+  for (const fragment of [
+    "registration.returnPath",
+    "resendSignupConfirmation",
+    "state={{ from: returnLocation }}",
+  ]) {
+    if (!verifyEmail.includes(fragment)) failures.push(`Verificação B89 incompleta: ${fragment}`);
+  }
+  for (const fragment of [
+    'searchParams.get("return")',
+    "toSafeReturnLocation(returnPath)",
+    "state={primaryState}",
+  ]) {
+    if (!verified.includes(fragment)) failures.push(`Confirmação B89 incompleta: ${fragment}`);
   }
 
   if (!parentCheck.includes('await import("./check-course-storefront.mjs")')) {
