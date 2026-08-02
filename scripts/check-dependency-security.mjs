@@ -7,7 +7,7 @@ const viteConfig = readFileSync("vite.config.ts", "utf8");
 
 const expectedDependencies = Object.freeze({
   "@supabase/supabase-js": "^2.110.8",
-  "react-router-dom": "^6.30.4",
+  "react-router-dom": "^7.18.2",
 });
 const expectedDevDependencies = Object.freeze({
   "@vitejs/plugin-react-swc": "^4.3.2",
@@ -65,17 +65,19 @@ for (const temporaryPath of [
   "scripts/apply-b27-eslint-alignment.mjs",
   ".github/workflows/b27-lockfile-bootstrap.yml",
   ".github/workflows/b27-eslint-bootstrap.yml",
+  ".github/workflows/b60-react-router-lockfile.yml",
+  "docs/refactor/.b60-react-router-upgrade",
 ]) {
   if (existsSync(temporaryPath)) {
     baselineFailures.push(
-      `Mecanismo temporário B27 deve ser removido: ${temporaryPath}.`,
+      `Mecanismo temporário deve ser removido: ${temporaryPath}.`,
     );
   }
 }
 
 if (baselineFailures.length > 0) {
   console.error(
-    "Baseline B27 inválida:\n- " + baselineFailures.join("\n- "),
+    "Baseline B27/B60 inválida:\n- " + baselineFailures.join("\n- "),
   );
   process.exit(1);
 }
@@ -225,17 +227,19 @@ printVulnerabilities("Riscos moderados em produção", productionModerate);
 printVulnerabilities("Riscos moderados no grafo completo", completeModerate);
 
 if (
+  productionCounts.moderate > 0 ||
   productionCounts.high > 0 ||
   productionCounts.critical > 0 ||
+  completeCounts.moderate > 0 ||
   completeCounts.high > 0 ||
   completeCounts.critical > 0
 ) {
   console.error(
-    "Gate B27 bloqueado: o grafo de dependências possui vulnerabilidades altas ou críticas.",
+    "Gate B27/B60 bloqueado: o grafo de dependências possui vulnerabilidades moderadas, altas ou críticas.",
   );
   process.exit(1);
 }
 
 console.log(
-  "Contrato B27 aprovado: baseline atualizada, riscos moderados detalhados e nenhuma vulnerabilidade alta ou crítica em runtime ou desenvolvimento.",
+  "Contrato B27/B60 aprovado: baseline segura e nenhuma vulnerabilidade moderada, alta ou crítica em runtime ou desenvolvimento.",
 );
