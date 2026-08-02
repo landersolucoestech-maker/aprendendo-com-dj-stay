@@ -3218,6 +3218,98 @@ export type Database = {
           },
         ]
       }
+      privacy_rights_request_events: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          from_status:
+            | Database["public"]["Enums"]["privacy_rights_request_status"]
+            | null
+          id: string
+          notes: string | null
+          request_id: string
+          to_status:
+            | Database["public"]["Enums"]["privacy_rights_request_status"]
+            | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          from_status?:
+            | Database["public"]["Enums"]["privacy_rights_request_status"]
+            | null
+          id?: string
+          notes?: string | null
+          request_id: string
+          to_status?:
+            | Database["public"]["Enums"]["privacy_rights_request_status"]
+            | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          from_status?:
+            | Database["public"]["Enums"]["privacy_rights_request_status"]
+            | null
+          id?: string
+          notes?: string | null
+          request_id?: string
+          to_status?:
+            | Database["public"]["Enums"]["privacy_rights_request_status"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "privacy_rights_request_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "privacy_rights_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      privacy_rights_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          description: string
+          handled_at: string | null
+          handled_by: string | null
+          id: string
+          request_type: Database["public"]["Enums"]["privacy_rights_request_type"]
+          status: Database["public"]["Enums"]["privacy_rights_request_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          description: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          request_type: Database["public"]["Enums"]["privacy_rights_request_type"]
+          status?: Database["public"]["Enums"]["privacy_rights_request_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          request_type?: Database["public"]["Enums"]["privacy_rights_request_type"]
+          status?: Database["public"]["Enums"]["privacy_rights_request_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       progresso_aulas: {
         Row: {
           aula_id: string
@@ -3656,6 +3748,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_get_privacy_rights_requests: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_request_type?: Database["public"]["Enums"]["privacy_rights_request_type"]
+          p_status?: Database["public"]["Enums"]["privacy_rights_request_status"]
+        }
+        Returns: Json
+      }
       admin_mark_affiliate_payout_paid: {
         Args: { p_external_reference: string; p_payout_id: string }
         Returns: {
@@ -3715,6 +3816,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      admin_update_privacy_rights_request: {
+        Args: {
+          p_admin_notes?: string
+          p_request_id: string
+          p_status: Database["public"]["Enums"]["privacy_rights_request_status"]
+        }
+        Returns: Json
       }
       archive_assessment: {
         Args: { p_assessment_id: string; p_expected_version: number }
@@ -3992,6 +4101,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      cancel_my_privacy_rights_request: {
+        Args: { p_request_id: string }
+        Returns: Json
       }
       capture_frontend_error: {
         Args: {
@@ -4396,6 +4509,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_my_privacy_rights_request: {
+        Args: {
+          p_description: string
+          p_request_type: Database["public"]["Enums"]["privacy_rights_request_type"]
+        }
+        Returns: Json
+      }
       create_support_ticket: {
         Args: {
           p_category: string
@@ -4728,6 +4848,10 @@ export type Database = {
       }
       get_my_certificates: { Args: never; Returns: Json }
       get_my_payment_history: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
+      get_my_privacy_rights_requests: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
       }
@@ -6545,6 +6669,13 @@ export type Database = {
         | "denied"
         | "expired"
         | "revoked"
+      privacy_rights_request_status:
+        | "submitted"
+        | "in_review"
+        | "completed"
+        | "rejected"
+        | "cancelled"
+      privacy_rights_request_type: "access_export" | "correction" | "deletion"
       student_favorite_subject_type: "course" | "digital_product"
       student_notification_type:
         | "support_reply"
@@ -6953,6 +7084,14 @@ export const Constants = {
         "expired",
         "revoked",
       ],
+      privacy_rights_request_status: [
+        "submitted",
+        "in_review",
+        "completed",
+        "rejected",
+        "cancelled",
+      ],
+      privacy_rights_request_type: ["access_export", "correction", "deletion"],
       student_favorite_subject_type: ["course", "digital_product"],
       student_notification_type: [
         "support_reply",
