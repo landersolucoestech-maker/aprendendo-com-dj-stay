@@ -1,0 +1,74 @@
+name: Integrar gate B72
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/integrate-b72-gate.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: integrate-b72-gate
+  cancel-in-progress: false
+
+jobs:
+  integrate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Integrar contratos B72
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          hook_path = Path("src/hooks/useDigitalMarketplace.ts")
+          hook = hook_path.read_text(encoding="utf-8")
+          hook = hook.replace(
+              "  marketplaceCreateProductInputSchema,\n  marketplaceProductLifecycleInputSchema,",
+              "  marketplaceCreateProductInputSchema,\n  marketplaceLicenseLifecycleInputSchema,\n  marketplaceProductLifecycleInputSchema,",
+              1,
+          )
+          old = '''    mutationFn: async (\n      licenseId: string,\n    ): Promise<DigitalProductLicense> => {\n      const { data, error } = await supabase.rpc(\n        "publish_digital_product_license",\n        {\n          p_license_id: licenseId,\n        },\n      );'''
+          new = '''    mutationFn: async (\n      licenseId: string,\n    ): Promise<DigitalProductLicense> => {\n      const value = parseDataContract(\n        marketplaceLicenseLifecycleInputSchema,\n        { licenseId },\n        "publicação da licença digital",\n      );\n      const { data, error } = await supabase.rpc(\n        "publish_digital_product_license",\n        {\n          p_license_id: value.licenseId,\n        },\n      );'''
+          if old not in hook:
+              raise SystemExit("Trecho de publicação de licença não encontrado.")
+          hook_path.write_text(hook.replace(old, new, 1), encoding="utf-8")
+          PY
+
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = "package.json";
+          const packageJson = JSON.parse(fs.readFileSync(path, "utf8"));
+          const marker = "npm run check:affiliate-contract-tests";
+          const addition = "npm run check:marketplace-contract-tests";
+
+          packageJson.scripts["check:marketplace-contract-tests"] =
+            "node scripts/check-marketplace-contract-tests.mjs";
+
+          if (!packageJson.scripts.typecheck.includes(addition)) {
+            if (!packageJson.scripts.typecheck.includes(marker)) {
+              throw new Error("Marcador B71 não encontrado no typecheck.");
+            }
+            packageJson.scripts.typecheck = packageJson.scripts.typecheck.replace(
+              `${marker} &&`,
+              `${marker} && ${addition} &&`,
+            );
+          }
+
+          fs.writeFileSync(path, `${JSON.stringify(packageJson, null, 2)}\n`);
+          NODE
+
+      - name: Publicar integração
+        run: |
+          rm .github/workflows/integrate-b72-gate.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/hooks/useDigitalMarketplace.ts package.json .github/workflows/integrate-b72-gate.yml
+          git commit -m "test(b72): integrar contratos do marketplace ao gate"
+          git push origin HEAD:dev
