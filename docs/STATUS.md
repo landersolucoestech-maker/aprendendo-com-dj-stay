@@ -21,6 +21,7 @@ Os seguintes domínios possuem implementação, persistência, autorização e c
 | Autenticação e papéis | sessão Supabase, resolução canônica de papel e proteção de rotas |
 | Storage privado | ativos persistidos, grants, eventos, URLs temporárias e reprodução protegida |
 | Cursos e currículo | cursos, módulos, aulas, pré-requisitos, avaliações e fluxo editorial |
+| Catálogo público | read model anônimo de cursos publicados, preços, módulos e totais derivados, sem exposição de assets ou campos administrativos |
 | Portal do aluno | matrículas, biblioteca, player, retomada e progresso monotônico |
 | Marketplace digital | produtos, licenças, entregáveis, acessos e biblioteca do comprador |
 | Pagamentos | checkout, ordens, tentativas, eventos do provider e concessão/revogação de acesso |
@@ -31,6 +32,8 @@ Os seguintes domínios possuem implementação, persistência, autorização e c
 | Administração do proprietário | dashboard administrativo do proprietário com indicadores reais de financeiro, acadêmico, catálogo, suporte e contatos |
 | Supply chain | audit de dependências, lockfile validado, SBOM e manifesto de fontes |
 | Frontend | lazy loading, Error Boundary, datas canônicas, acessibilidade e grafo de chunks acíclico |
+
+A home pública não apresenta números de alunos, avaliações, streams, rankings, depoimentos, parcerias, preços ou entregáveis sem uma fonte persistida e contratada. O catálogo é calculado a partir do CMS publicado; estados vazios ou indisponíveis não recebem dados substitutos.
 
 O gate técnico executa instalação limpa, lint, reconstrução local do Supabase, pgTAP, sincronização de tipos, contratos estáticos, TypeScript, audit de dependências, build e validação de chunks.
 
