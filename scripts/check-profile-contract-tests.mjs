@@ -96,6 +96,9 @@ for (const fragment of [
   "rejeita UUIDs, timestamps e campos extras",
   "normaliza nome, textos e URLs antes da gravação",
   "aceita campos opcionais vazios após trim",
+  "aceita os limites exatos de texto e URL",
+  "EXACT_HTTPS_URL",
+  "500 - EXACT_HTTPS_URL_PREFIX.length",
   "rejeita URL não HTTPS ou incompleta",
   "rejeita nome vazio, limites excedidos e campos extras",
   "reutiliza normalização e preserva metadados desconhecidos",
@@ -190,5 +193,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B79 aprovado: perfil persistido, metadados de leitura e gravação e vínculo de avatar compartilham validação canônica e cobertura determinística.",
+  "Contrato B79 aprovado: perfil persistido, metadados de leitura e gravação, limites exatos e vínculo de avatar compartilham validação canônica e cobertura determinística.",
 );
