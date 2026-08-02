@@ -1,0 +1,59 @@
+name: Patch B85 Package
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - .github/workflows/patch-b85-package.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Integrar contrato B85
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+
+          frame_path = Path("scripts/check-student-page-frame.mjs")
+          frame = frame_path.read_text(encoding="utf-8")
+          old_message = "Contrato B84/B85 aprovado: certificados, produtos e editor de perfil preservam o shell; a rota genérica multi-papel continua compatível."
+          new_message = "Contrato B84/B85 aprovado: certificados e produtos preservam o shell; o editor de perfil preserva o shell; a rota genérica multi-papel continua compatível."
+          if new_message not in frame:
+              if old_message not in frame:
+                  raise SystemExit("Mensagem B84/B85 não encontrada")
+              frame = frame.replace(old_message, new_message, 1)
+          frame_path.write_text(frame, encoding="utf-8")
+
+          package_path = Path("package.json")
+          package = json.loads(package_path.read_text(encoding="utf-8"))
+          scripts = package["scripts"]
+          scripts["check:student-profile-editor"] = "node scripts/check-student-profile-editor.mjs"
+          old_chain = "npm run check:student-page-frame && npm run check:player-progress"
+          new_chain = "npm run check:student-page-frame && npm run check:student-profile-editor && npm run check:player-progress"
+          if new_chain not in scripts["typecheck"]:
+              if old_chain not in scripts["typecheck"]:
+                  raise SystemExit("Ordem B84/player não encontrada")
+              scripts["typecheck"] = scripts["typecheck"].replace(old_chain, new_chain, 1)
+          package_path.write_text(json.dumps(package, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+      - name: Remover workflow temporário
+        run: rm .github/workflows/patch-b85-package.yml
+
+      - name: Publicar integração
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json scripts/check-student-page-frame.mjs .github/workflows/patch-b85-package.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "test(b85): integrar editor de perfil ao typecheck"
+          git push origin HEAD:dev
