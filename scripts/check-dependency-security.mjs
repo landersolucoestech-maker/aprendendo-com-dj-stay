@@ -178,7 +178,7 @@ const printSummary = (label, report) => {
 
 const printVulnerabilities = (label, vulnerabilities) => {
   if (vulnerabilities.length === 0) {
-    console.log(`${label}: nenhuma vulnerabilidade alta ou crítica.`);
+    console.log(`${label}: nenhuma vulnerabilidade encontrada.`);
     return;
   }
 
@@ -204,14 +204,25 @@ const productionCounts = printSummary("Auditoria de produção", productionRepor
 const completeCounts = printSummary("Auditoria completa", completeReport);
 
 const severeLevels = new Set(["high", "critical"]);
+const moderateLevels = new Set(["moderate"]);
 const productionSevere = listRelevantVulnerabilities(
   productionReport,
   severeLevels,
 );
 const completeSevere = listRelevantVulnerabilities(completeReport, severeLevels);
+const productionModerate = listRelevantVulnerabilities(
+  productionReport,
+  moderateLevels,
+);
+const completeModerate = listRelevantVulnerabilities(
+  completeReport,
+  moderateLevels,
+);
 
 printVulnerabilities("Riscos altos/críticos em produção", productionSevere);
 printVulnerabilities("Riscos altos/críticos no grafo completo", completeSevere);
+printVulnerabilities("Riscos moderados em produção", productionModerate);
+printVulnerabilities("Riscos moderados no grafo completo", completeModerate);
 
 if (
   productionCounts.high > 0 ||
@@ -226,5 +237,5 @@ if (
 }
 
 console.log(
-  "Contrato B27 aprovado: baseline atualizada e nenhuma vulnerabilidade alta ou crítica em runtime ou desenvolvimento.",
+  "Contrato B27 aprovado: baseline atualizada, riscos moderados detalhados e nenhuma vulnerabilidade alta ou crítica em runtime ou desenvolvimento.",
 );
