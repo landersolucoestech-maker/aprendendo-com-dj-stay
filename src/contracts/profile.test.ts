@@ -16,6 +16,10 @@ const USER_ID = "22222222-2222-4222-8222-222222222222";
 const ASSET_ID = "33333333-3333-4333-8333-333333333333";
 const CREATED_AT = "2026-08-02T15:00:00.000Z";
 const UPDATED_AT = "2026-08-02T16:00:00.000Z";
+const EXACT_HTTPS_URL_PREFIX = "https://example.com/";
+const EXACT_HTTPS_URL = `${EXACT_HTTPS_URL_PREFIX}${"x".repeat(
+  500 - EXACT_HTTPS_URL_PREFIX.length,
+)}`;
 
 const PROFILE_ROW = {
   id: PROFILE_ID,
@@ -89,6 +93,22 @@ describe("profileMetadataInputSchema", () => {
     });
   });
 
+  it("aceita os limites exatos de texto e URL", () => {
+    const parsed = profileMetadataInputSchema.parse({
+      name: "n".repeat(120),
+      phone: "p".repeat(40),
+      bio: "b".repeat(1000),
+      instagram: EXACT_HTTPS_URL,
+      youtube: EXACT_HTTPS_URL,
+      website: EXACT_HTTPS_URL,
+    });
+
+    expect(parsed.name).toHaveLength(120);
+    expect(parsed.phone).toHaveLength(40);
+    expect(parsed.bio).toHaveLength(1000);
+    expect(parsed.website).toHaveLength(500);
+  });
+
   it.each([
     "http://example.com",
     "javascript:alert(1)",
@@ -122,7 +142,7 @@ describe("profileMetadataInputSchema", () => {
     expect(
       profileMetadataInputSchema.safeParse({
         ...METADATA_INPUT,
-        website: `https://example.com/${"x".repeat(500)}`,
+        website: `${EXACT_HTTPS_URL}x`,
       }).success,
     ).toBe(false);
     expect(
