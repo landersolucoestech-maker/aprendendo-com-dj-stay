@@ -32,37 +32,59 @@ export const privacyRightsRequestEventSchema = z
   .superRefine((value, context) => {
     if (
       value.action === "created" &&
-      (value.from_status !== null || value.to_status !== "submitted")
+      (value.from_status !== null ||
+        value.to_status !== "submitted" ||
+        value.notes !== null)
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["to_status"],
-        message: "Evento de criação deve iniciar no status submitted.",
+        message:
+          "Evento de criação deve iniciar sem status anterior, terminar como submitted e não conter notas.",
       });
     }
 
     if (
       value.action === "cancelled" &&
-      (value.from_status !== "submitted" || value.to_status !== "cancelled")
+      (value.from_status !== "submitted" ||
+        value.to_status !== "cancelled" ||
+        value.notes !== null)
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["to_status"],
-        message: "Evento de cancelamento deve representar submitted → cancelled.",
+        message:
+          "Evento de cancelamento deve representar submitted → cancelled sem notas.",
       });
     }
 
-    if (
-      value.action === "status_changed" &&
-      (value.from_status === null ||
-        value.to_status === null ||
-        value.from_status === value.to_status)
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["to_status"],
-        message: "Mudança de status exige estados distintos de origem e destino.",
-      });
+    if (value.action === "status_changed") {
+      const validFromStatus =
+        value.from_status === "submitted" || value.from_status === "in_review";
+      const validToStatus =
+        value.to_status === "in_review" ||
+        value.to_status === "completed" ||
+        value.to_status === "rejected";
+
+      if (
+        !validFromStatus ||
+        !validToStatus ||
+        value.from_status === value.to_status
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["to_status"],
+          message: "Mudança administrativa contém uma transição inválida.",
+        });
+      }
+
+      if (value.to_status === "rejected" && value.notes === null) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["notes"],
+          message: "Evento de rejeição exige justificativa.",
+        });
+      }
     }
   });
 
