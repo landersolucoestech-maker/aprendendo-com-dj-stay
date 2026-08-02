@@ -2,26 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 
 import { parseDataContract } from "@/contracts/contract-error";
 import { recentProgressResponseSchema } from "@/contracts/learning";
-import { formatAppRelativeTime } from "@/lib/date-time";
+import {
+  normalizeRecentActivityLimit,
+  toRecentActivities,
+  type RecentActivity,
+} from "@/lib/recent-activities";
 import { supabase } from "@/integrations/supabase/client";
 
-export interface RecentActivity {
-  id: string;
-  activity: string;
-  time: string;
-  type: "lesson_completed" | "lesson_started";
-  updatedAt: string;
-  lessonTitle: string;
-  moduleTitle: string;
-  progressPercent: number;
-  completed: boolean;
-}
-
-const formatRelativeTime = (timestamp: string): string =>
-  formatAppRelativeTime(timestamp);
+export type { RecentActivity } from "@/lib/recent-activities";
 
 export const useRecentActivities = (limit = 10) => {
-  const normalizedLimit = Math.min(100, Math.max(1, Math.trunc(limit)));
+  const normalizedLimit = normalizeRecentActivityLimit(limit);
 
   return useQuery({
     queryKey: ["recent-activities", normalizedLimit],
@@ -51,27 +42,7 @@ export const useRecentActivities = (limit = 10) => {
         "atividades recentes",
       );
 
-      return progressRows.map((progress) => {
-        const lessonTitle = progress.aulas.titulo;
-        const moduleTitle = progress.aulas.modulos.titulo;
-        const activity = progress.completada
-          ? `Completou "${lessonTitle}" em ${moduleTitle}`
-          : progress.progresso_percentual > 0
-            ? `Assistiu ${progress.progresso_percentual}% de "${lessonTitle}"`
-            : `Iniciou "${lessonTitle}" em ${moduleTitle}`;
-
-        return {
-          id: progress.id,
-          activity,
-          time: formatRelativeTime(progress.updated_at),
-          type: progress.completada ? "lesson_completed" : "lesson_started",
-          updatedAt: progress.updated_at,
-          lessonTitle,
-          moduleTitle,
-          progressPercent: progress.progresso_percentual,
-          completed: progress.completada,
-        };
-      });
+      return toRecentActivities(progressRows);
     },
   });
 };
