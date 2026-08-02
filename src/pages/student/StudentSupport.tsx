@@ -1,11 +1,8 @@
 import { LifeBuoy, Loader2, MessageSquarePlus, Send } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
-import { getUserMetadataProfile } from "@/auth/user-metadata";
-import { useAuth } from "@/auth/use-auth";
+import { StudentPortalPageFrame } from "@/components/student/StudentPortalPageFrame";
 import { StudentSectionHeader } from "@/components/student/StudentPortalPrimitives";
-import { StudentPortalShell } from "@/components/student/StudentPortalShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,10 +42,7 @@ const priorityLabels: Record<SupportTicketPriority, string> = {
 };
 
 const StudentSupport = () => {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const [subject, setSubject] = useState("");
   const [category, setCategory] = useState("Acesso à plataforma");
   const [priority, setPriority] = useState<SupportTicketPriority>("normal");
@@ -57,24 +51,6 @@ const StudentSupport = () => {
   const ticketsQuery = useMySupportTickets();
   const createMutation = useCreateSupportTicket();
   const replyMutation = useAddMySupportMessage();
-  const metadata = useMemo(() => {
-    if (!user) return null;
-    try {
-      return getUserMetadataProfile(user);
-    } catch {
-      return null;
-    }
-  }, [user]);
-
-  const handleSignOut = async () => {
-    setIsSigningOut(true);
-    try {
-      await signOut();
-      navigate("/login", { replace: true });
-    } finally {
-      setIsSigningOut(false);
-    }
-  };
 
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -122,17 +98,8 @@ const StudentSupport = () => {
     }
   };
 
-  if (!user) {
-    return <PageState variant="loading" title="Validando conta" />;
-  }
-
   return (
-    <StudentPortalShell
-      displayName={metadata?.fullName ?? user.email ?? "Aluno"}
-      email={user.email ?? ""}
-      isSigningOut={isSigningOut}
-      onSignOut={() => void handleSignOut()}
-    >
+    <StudentPortalPageFrame>
       <div className="space-y-8">
         <StudentSectionHeader
           title="Suporte"
@@ -303,7 +270,7 @@ const StudentSupport = () => {
           </section>
         )}
       </div>
-    </StudentPortalShell>
+    </StudentPortalPageFrame>
   );
 };
 
