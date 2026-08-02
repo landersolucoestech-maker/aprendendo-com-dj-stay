@@ -29,7 +29,9 @@ const packageJson = existsSync(paths.package)
 
 for (const fragment of [
   "datetime({ offset: true })",
-  "/^\\/(?!\\/)/",
+  'value.startsWith("/")',
+  '!value.startsWith("//")',
+  '!value.includes("\\\\")',
   "z.string().trim().min(3).max(160)",
   "z.string().trim().min(3).max(1000)",
   "studentNotificationSchema",
@@ -62,6 +64,8 @@ for (const fragment of [
   '"https://example.com"',
   '"//example.com/path"',
   '"mailto:suporte@example.com"',
+  '"/\\\\example.com"',
+  '"/aluno\\\\suporte"',
   'created_at: "2026-08-02T06:30:00"',
   'id: "notificacao-invalida"',
   "idempotency_key",
@@ -101,5 +105,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B64 aprovado: notificações e resultados de leitura possuem validação estrita, caminhos internos e cobertura unitária alinhada ao banco.",
+  "Contrato B64 aprovado: notificações e resultados de leitura possuem validação estrita, caminhos internos sem barras invertidas e cobertura unitária alinhada ao banco.",
 );
