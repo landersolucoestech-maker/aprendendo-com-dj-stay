@@ -8,12 +8,15 @@ import {
   curriculumLessonRowsSchema,
   curriculumModuleRowSchema,
   curriculumModuleRowsSchema,
+  disableLessonMediaInputSchema,
+  externalLessonMediaInputSchema,
   lessonFormToPayload,
   lessonMediaRowSchema,
   lessonMediaRowsSchema,
   lessonPrerequisiteRowsSchema,
   moduleFormToPayload,
   modulePrerequisiteRowsSchema,
+  privateLessonMediaInputSchema,
   type CurriculumLessonRow,
   type CurriculumModuleRow,
   type LessonFormValues,
@@ -332,11 +335,16 @@ export const useCurriculumCmsMutations = (courseId: string) => {
       sourceUrl: string;
       watermarkEnabled: boolean;
     }): Promise<LessonMediaRow> => {
+      const input = parseDataContract(
+        externalLessonMediaInputSchema,
+        { lessonId, provider, sourceUrl, watermarkEnabled },
+        "entrada da mídia externa da aula",
+      );
       const { data, error } = await supabase.rpc("upsert_external_lesson_media", {
-        p_lesson_id: lessonId,
-        p_provider: provider,
-        p_source_url: sourceUrl,
-        p_watermark_enabled: watermarkEnabled,
+        p_lesson_id: input.lessonId,
+        p_provider: input.provider,
+        p_source_url: input.sourceUrl,
+        p_watermark_enabled: input.watermarkEnabled,
       });
       if (error) throw error;
       return parseDataContract(lessonMediaRowSchema, data, "mídia externa da aula");
@@ -350,10 +358,15 @@ export const useCurriculumCmsMutations = (courseId: string) => {
       assetId: string;
       watermarkEnabled: boolean;
     }): Promise<LessonMediaRow> => {
+      const input = parseDataContract(
+        privateLessonMediaInputSchema,
+        { lessonId, assetId, watermarkEnabled },
+        "entrada da mídia privada da aula",
+      );
       const { data, error } = await supabase.rpc("upsert_private_lesson_media", {
-        p_lesson_id: lessonId,
-        p_asset_id: assetId,
-        p_watermark_enabled: watermarkEnabled,
+        p_lesson_id: input.lessonId,
+        p_asset_id: input.assetId,
+        p_watermark_enabled: input.watermarkEnabled,
       });
       if (error) throw error;
       return parseDataContract(lessonMediaRowSchema, data, "mídia privada da aula");
@@ -363,7 +376,14 @@ export const useCurriculumCmsMutations = (courseId: string) => {
 
   const disableMedia = useMutation({
     mutationFn: async (lessonId: string): Promise<boolean> => {
-      const { data, error } = await supabase.rpc("disable_lesson_media", { p_lesson_id: lessonId });
+      const input = parseDataContract(
+        disableLessonMediaInputSchema,
+        { lessonId },
+        "entrada da desativação da mídia da aula",
+      );
+      const { data, error } = await supabase.rpc("disable_lesson_media", {
+        p_lesson_id: input.lessonId,
+      });
       if (error) throw error;
       return parseDataContract(z.boolean(), data, "desativação da mídia da aula");
     },

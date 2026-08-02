@@ -62,6 +62,65 @@ export const lessonMediaProviderSchema = z.enum([
   "youtube",
   "vimeo",
 ]);
+export const youtubeVideoIdSchema = z
+  .string()
+  .trim()
+  .regex(/^[A-Za-z0-9_-]{11}$/);
+export const vimeoVideoIdSchema = z
+  .string()
+  .trim()
+  .regex(/^[0-9]{6,12}$/);
+
+const externalMediaSourceUrlSchema = z.string().trim().min(1).max(1000).url();
+const youtubeSourceUrlPatterns = [
+  /^https:\/\/(?:www\.|m\.)?youtube\.com\/watch\?(?:[^#]*&)?v=[A-Za-z0-9_-]{11}(?:[&#].*)?$/i,
+  /^https:\/\/youtu\.be\/[A-Za-z0-9_-]{11}(?:[/?#].*)?$/i,
+  /^https:\/\/(?:www\.)?youtube(?:-nocookie)?\.com\/(?:embed|shorts)\/[A-Za-z0-9_-]{11}(?:[/?#].*)?$/i,
+] as const;
+const vimeoSourceUrlPatterns = [
+  /^https:\/\/(?:www\.)?vimeo\.com\/[0-9]{6,12}(?:[/?#].*)?$/i,
+  /^https:\/\/player\.vimeo\.com\/video\/[0-9]{6,12}(?:[/?#].*)?$/i,
+] as const;
+
+const youtubeSourceUrlSchema = externalMediaSourceUrlSchema.refine(
+  (value) => youtubeSourceUrlPatterns.some((pattern) => pattern.test(value)),
+  "Informe uma URL válida do YouTube.",
+);
+const vimeoSourceUrlSchema = externalMediaSourceUrlSchema.refine(
+  (value) => vimeoSourceUrlPatterns.some((pattern) => pattern.test(value)),
+  "Informe uma URL válida do Vimeo.",
+);
+
+export const externalLessonMediaInputSchema = z.discriminatedUnion("provider", [
+  z
+    .object({
+      lessonId: uuidSchema,
+      provider: z.literal("youtube"),
+      sourceUrl: youtubeSourceUrlSchema,
+      watermarkEnabled: z.boolean(),
+    })
+    .strict(),
+  z
+    .object({
+      lessonId: uuidSchema,
+      provider: z.literal("vimeo"),
+      sourceUrl: vimeoSourceUrlSchema,
+      watermarkEnabled: z.boolean(),
+    })
+    .strict(),
+]);
+
+export const privateLessonMediaInputSchema = z
+  .object({
+    lessonId: uuidSchema,
+    assetId: uuidSchema,
+    watermarkEnabled: z.boolean(),
+  })
+  .strict();
+
+export const disableLessonMediaInputSchema = z
+  .object({ lessonId: uuidSchema })
+  .strict();
 
 type PersistedReleaseContract = {
   readonly release_mode: z.infer<typeof curriculumReleaseModeSchema>;
@@ -289,6 +348,31 @@ export const lessonMediaRowSchema = z
         message: "Mídia externa exige identificador e não aceita asset privado.",
       });
     }
+
+  if (
+    value.provider === "youtube" &&
+    value.external_video_id !== null &&
+    !youtubeVideoIdSchema.safeParse(value.external_video_id).success
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["external_video_id"],
+      message: "Identificador persistido do YouTube inválido.",
+    });
+  }
+
+  if (
+    value.provider === "vimeo" &&
+    value.external_video_id !== null &&
+    !vimeoVideoIdSchema.safeParse(value.external_video_id).success
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["external_video_id"],
+      message: "Identificador persistido do Vimeo inválido.",
+    });
+  }
+
   });
 
 export const curriculumModuleRowsSchema = z.array(curriculumModuleRowSchema);
