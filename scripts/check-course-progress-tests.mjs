@@ -8,6 +8,7 @@ const paths = {
   userProgressHook: "src/hooks/useUserProgress.ts",
   dashboard: "src/pages/Dashboard.tsx",
   lessonGrid: "src/components/LessonGrid.tsx",
+  lessonCard: "src/components/LessonCard.tsx",
   moduleProgress: "src/components/ModuleProgress.tsx",
   documentation: "docs/refactor/FASE-B81-COURSE-PROGRESS-TESTS.md",
   package: "package.json",
@@ -30,6 +31,7 @@ const progressHook = read(paths.progressHook);
 const userProgressHook = read(paths.userProgressHook);
 const dashboard = read(paths.dashboard);
 const lessonGrid = read(paths.lessonGrid);
+const lessonCard = read(paths.lessonCard);
 const moduleProgress = read(paths.moduleProgress);
 const documentation = read(paths.documentation);
 const packageJson = existsSync(paths.package)
@@ -151,9 +153,19 @@ for (const fragment of [
   "ModuleWithProgress",
   'from "@/hooks/useProgressCalculation"',
   "module.progress",
-  "lesson.completed",
+  "lesson={lesson}",
+  "LessonCard",
 ]) {
   expect(lessonGrid.includes(fragment), `LessonGrid B81 ausente: ${fragment}`);
+}
+
+for (const fragment of [
+  "ModuleLessonWithProgress",
+  'from "@/hooks/useProgressCalculation"',
+  "lesson.completed",
+  'lesson.completed ? "Revisar" : "Assistir"',
+]) {
+  expect(lessonCard.includes(fragment), `LessonCard B81 ausente: ${fragment}`);
 }
 
 for (const fragment of [
