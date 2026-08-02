@@ -29,6 +29,9 @@ export interface LessonCompletionProgress {
   readonly completada: boolean;
 }
 
+const clampProgress = (progress: number): number =>
+  Math.min(100, Math.max(0, progress));
+
 export const calculateModulesProgress = (
   modules: readonly LearningModule[],
   progressRows: readonly LessonCompletionProgress[],
@@ -48,13 +51,14 @@ export const calculateModulesProgress = (
       (total, lesson) => total + (lesson.completed ? 1 : 0),
       0,
     );
+    const progress =
+      lessons.length === 0
+        ? 0
+        : Math.round((completedLessons / lessons.length) * 100);
 
     return {
       ...module,
-      progress:
-        lessons.length === 0
-          ? 0
-          : Math.round((completedLessons / lessons.length) * 100),
+      progress: clampProgress(progress),
       lessons,
     };
   });
