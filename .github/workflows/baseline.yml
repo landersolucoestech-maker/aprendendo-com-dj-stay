@@ -16,13 +16,13 @@ concurrency:
 
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22.16.0
           cache: npm
@@ -44,7 +44,7 @@ jobs:
         continue-on-error: true
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.101.0
 
       - name: Reconstruir banco e executar pgTAP
         id: db
@@ -90,7 +90,7 @@ jobs:
 
       - name: Exportar tipos gerados
         if: steps.types.outcome == 'success'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: database-types-${{ github.sha }}
           path: artifacts/database.types.ts
@@ -98,7 +98,7 @@ jobs:
 
       - name: Evidência
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           INSTALL: ${{ steps.install.outcome }}
           LINT: ${{ steps.lint.outcome }}
