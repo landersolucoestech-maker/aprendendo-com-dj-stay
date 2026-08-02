@@ -2,6 +2,8 @@ import { Download, FileArchive, Library, PackageCheck, ShieldCheck } from "lucid
 import { Link } from "react-router-dom";
 
 import { AppPageShell } from "@/components/layout/AppPageShell";
+import { StudentPortalPageFrame } from "@/components/student/StudentPortalPageFrame";
+import { StudentSectionHeader } from "@/components/student/StudentPortalPrimitives";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -157,8 +159,77 @@ const OwnedProductCard = ({ item }: { item: OwnedDigitalProduct }) => {
   );
 };
 
-const MyDigitalProducts = () => {
+const DigitalProductsContent = () => {
   const ownedProductsQuery = useMyDigitalProducts();
+
+  if (ownedProductsQuery.isLoading) {
+    return (
+      <PageState
+        variant="loading"
+        title="Carregando seus produtos"
+        description="Validando acessos, licenças e entregáveis privados."
+      />
+    );
+  }
+
+  if (ownedProductsQuery.error) {
+    return (
+      <PageState
+        variant="error"
+        title="Biblioteca indisponível"
+        description={getErrorMessage(
+          ownedProductsQuery.error,
+          "Não foi possível carregar seus produtos.",
+        )}
+      />
+    );
+  }
+
+  const ownedProducts = ownedProductsQuery.data ?? [];
+  if (ownedProducts.length === 0) {
+    return (
+      <PageState
+        variant="empty"
+        icon={PackageCheck}
+        title="Nenhum produto liberado"
+        description="Somente acessos ativos e comprovados aparecem aqui. Redirecionamentos de pagamento não liberam arquivos."
+      />
+    );
+  }
+
+  return (
+    <section className="space-y-6" aria-label="Produtos digitais adquiridos">
+      {ownedProducts.map((item) => (
+        <OwnedProductCard key={item.access.id} item={item} />
+      ))}
+    </section>
+  );
+};
+
+interface MyDigitalProductsProps {
+  readonly studentPortal?: boolean;
+}
+
+const MyDigitalProducts = ({ studentPortal = false }: MyDigitalProductsProps) => {
+  if (studentPortal) {
+    return (
+      <StudentPortalPageFrame>
+        <div className="space-y-8">
+          <StudentSectionHeader
+            eyebrow="Biblioteca digital"
+            title="Meus produtos"
+            description="Produtos digitais com acesso ativo, licença registrada e downloads privados."
+            action={
+              <Button asChild variant="outline">
+                <Link to="/marketplace">Ver marketplace</Link>
+              </Button>
+            }
+          />
+          <DigitalProductsContent />
+        </div>
+      </StudentPortalPageFrame>
+    );
+  }
 
   return (
     <AppPageShell
@@ -183,35 +254,7 @@ const MyDigitalProducts = () => {
         </>
       }
     >
-      {ownedProductsQuery.isLoading ? (
-        <PageState
-          variant="loading"
-          title="Carregando seus produtos"
-          description="Validando acessos, licenças e entregáveis privados."
-        />
-      ) : ownedProductsQuery.error ? (
-        <PageState
-          variant="error"
-          title="Biblioteca indisponível"
-          description={getErrorMessage(
-            ownedProductsQuery.error,
-            "Não foi possível carregar seus produtos.",
-          )}
-        />
-      ) : (ownedProductsQuery.data ?? []).length === 0 ? (
-        <PageState
-          variant="empty"
-          icon={PackageCheck}
-          title="Nenhum produto liberado"
-          description="Somente acessos ativos e comprovados aparecem aqui. Redirecionamentos de pagamento não liberam arquivos."
-        />
-      ) : (
-        <section className="space-y-6" aria-label="Produtos digitais adquiridos">
-          {(ownedProductsQuery.data ?? []).map((item) => (
-            <OwnedProductCard key={item.access.id} item={item} />
-          ))}
-        </section>
-      )}
+      <DigitalProductsContent />
     </AppPageShell>
   );
 };
