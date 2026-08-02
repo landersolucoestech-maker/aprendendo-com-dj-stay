@@ -63,3 +63,22 @@ export const calculateModulesProgress = (
     };
   });
 };
+
+export const calculateOverallCourseProgress = (
+  modules: readonly ModuleWithProgress[],
+): number => {
+  let totalLessons = 0;
+  let completedLessons = 0;
+
+  for (const module of modules) {
+    totalLessons += module.lessons.length;
+    completedLessons += module.lessons.reduce(
+      (total, lesson) => total + (lesson.completed ? 1 : 0),
+      0,
+    );
+  }
+
+  if (totalLessons === 0) return 0;
+
+  return clampProgress(Math.round((completedLessons / totalLessons) * 100));
+};
