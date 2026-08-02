@@ -8,9 +8,9 @@ import { brandConfig } from "@/config/brand";
 
 const sectionLinks = [
   { label: "Início", sectionId: "home" },
-  { label: "Curso", sectionId: "curso" },
+  { label: "Cursos", sectionId: "curso" },
   { label: "Instrutor", sectionId: "instrutor" },
-  { label: "Depoimentos", sectionId: "depoimentos" },
+  { label: "Transparência", sectionId: "transparencia" },
 ] as const;
 
 const navigationItemClassName =
