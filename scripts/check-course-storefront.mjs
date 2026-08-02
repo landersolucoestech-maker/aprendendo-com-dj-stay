@@ -54,7 +54,7 @@ if (failures.length === 0) {
   const app = read(paths.app);
   const hero = read(paths.hero);
   const parentCheck = read(paths.parentCheck);
-  const documentation = read(paths.documentation);
+  const documentation = read(paths.documentation).toLowerCase();
   const status = read(paths.status);
 
   for (const fragment of [
