@@ -32,29 +32,25 @@ export const privacyRightsRequestEventSchema = z
   .superRefine((value, context) => {
     if (
       value.action === "created" &&
-      (value.from_status !== null ||
-        value.to_status !== "submitted" ||
-        value.notes !== null)
+      (value.from_status !== null || value.to_status !== "submitted")
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["to_status"],
         message:
-          "Evento de criação deve iniciar sem status anterior, terminar como submitted e não conter notas.",
+          "Evento de criação deve iniciar sem status anterior e terminar como submitted.",
       });
     }
 
     if (
       value.action === "cancelled" &&
-      (value.from_status !== "submitted" ||
-        value.to_status !== "cancelled" ||
-        value.notes !== null)
+      (value.from_status !== "submitted" || value.to_status !== "cancelled")
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["to_status"],
         message:
-          "Evento de cancelamento deve representar submitted → cancelled sem notas.",
+          "Evento de cancelamento deve representar submitted → cancelled.",
       });
     }
 
