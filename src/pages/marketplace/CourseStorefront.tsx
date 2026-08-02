@@ -171,7 +171,7 @@ const CoursePurchaseCard = ({
             <p className="text-sm text-muted-foreground">
               Nenhum novo checkout foi criado para evitar uma compra duplicada.
             </p>
-            <Button asChild variant="course" className="w-full sm:w-auto">
+            <Button asChild variant="context" className="w-full sm:w-auto">
               <Link to="/aluno/cursos">Abrir meus cursos</Link>
             </Button>
           </div>
@@ -179,7 +179,7 @@ const CoursePurchaseCard = ({
           <div className="space-y-3">
             <Button
               type="button"
-              variant="course"
+              variant="context"
               className="w-full sm:w-auto"
               disabled={checkoutMutation.isPending}
               onClick={() => void startCheckout()}
