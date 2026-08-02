@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 const paths = {
   contracts: "src/contracts/curriculum-cms.ts",
   tests: "src/contracts/lesson-media.test.ts",
+  legacyTests: "src/contracts/curriculum-cms.test.ts",
   hook: "src/hooks/useCurriculumCms.ts",
   migration: "supabase/migrations/20260730200300_lesson_media.sql",
   documentation: "docs/refactor/FASE-B78-LESSON-MEDIA-CONTRACT-TESTS.md",
@@ -21,6 +22,7 @@ for (const path of Object.values(paths)) {
 const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
 const contracts = read(paths.contracts);
 const tests = read(paths.tests);
+const legacyTests = read(paths.legacyTests);
 const hook = read(paths.hook);
 const migration = read(paths.migration);
 const documentation = read(paths.documentation);
@@ -70,6 +72,16 @@ expect(
     !tests.includes("@/integrations/supabase") &&
     !tests.includes("@/config/public-config"),
   "A suíte B78 deve permanecer independente do hook, Supabase e configuração pública.",
+);
+expect(
+  legacyTests.includes('external_video_id: "AbCdEf123_-"'),
+  "A suíte legada do currículo deve usar identificador canônico do YouTube.",
+);
+expect(
+  !legacyTests.includes(
+    'provider: "youtube",\n        asset_id: null,\n        external_video_id: "video-123",',
+  ),
+  "A suíte legada não pode restaurar video-123 como identificador positivo do YouTube.",
 );
 
 for (const fragment of [
@@ -133,5 +145,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B78 aprovado: IDs persistidos, URLs por provedor e mutações administrativas de mídia possuem validação estrita alinhada ao PostgreSQL.",
+  "Contrato B78 aprovado: IDs persistidos, URLs por provedor, fixture legado e mutações administrativas de mídia possuem validação estrita alinhada ao PostgreSQL.",
 );
