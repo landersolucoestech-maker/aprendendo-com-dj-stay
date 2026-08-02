@@ -61,7 +61,9 @@ O gate consolidado é:
 npm run check
 ```
 
-Ele executa lint, contratos, TypeScript, audit de dependências, build e validação dos chunks. No CI, a validação inclui reconstrução local do Supabase, pgTAP, sincronização de tipos e artefatos de supply chain.
+Ele executa lint, testes unitários, contratos, TypeScript, audit de dependências, build e validação dos chunks. No CI, a validação inclui reconstrução local do Supabase, pgTAP, sincronização de tipos e artefatos de supply chain.
+
+A suíte unitária usa Vitest fixado no lockfile e roda sem watch por `npm run test:unit`. A primeira baseline protege os contratos de timezone, UTC, fallbacks e tempo relativo em `src/lib/date-time.ts`.
 
 Cada execução do CI cria uma issue de evidência. Evidências integralmente verdes são encerradas automaticamente como `completed`. Evidências que registram ao menos uma etapa em `failure` permanecem abertas e acionáveis. Execuções sem `failure`, mas interrompidas com etapas `cancelled` ou `skipped`, são encerradas como `not_planned`, preservando o histórico sem misturá-las com falhas técnicas. O passivo histórico de evidências verdes foi reconciliado na fase B50.
 
@@ -69,6 +71,7 @@ Comandos individuais:
 
 ```bash
 npm run lint
+npm run test:unit
 npm run typecheck
 npm run build
 ```
