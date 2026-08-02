@@ -10,6 +10,7 @@ const paths = {
   marketplaceContract: "scripts/check-digital-marketplace-contract.mjs",
   certificateContract: "scripts/check-students-certificates-contract.mjs",
   navigationContract: "scripts/check-student-navigation.mjs",
+  designSystemContract: "scripts/check-design-system-contract.mjs",
   documentation: "docs/refactor/FASE-B84-STUDENT-PAGE-FRAME.md",
   package: "package.json",
 };
@@ -33,6 +34,7 @@ const financialPortal = read(paths.financialPortal);
 const marketplaceContract = read(paths.marketplaceContract);
 const certificateContract = read(paths.certificateContract);
 const navigationContract = read(paths.navigationContract);
+const designSystemContract = read(paths.designSystemContract);
 const documentation = read(paths.documentation);
 const packageJson = existsSync(paths.package)
   ? JSON.parse(read(paths.package))
@@ -117,6 +119,7 @@ for (const fragment of [
   "<StudentNavigation mobile />",
   "displayName",
   "isSigningOut",
+  'data-context="course"',
 ]) {
   expect(shell.includes(fragment), `Shell compartilhado B84 ausente: ${fragment}`);
 }
@@ -151,6 +154,16 @@ for (const [name, source, fragments] of [
     ],
   ],
   [
+    "B23",
+    designSystemContract,
+    [
+      "src/components/student/StudentPortalPageFrame.tsx",
+      'data-context="course"',
+      "<StudentPortalPageFrame>",
+      "contexto visual delegado pelo shell",
+    ],
+  ],
+  [
     "B83",
     navigationContract,
     [
@@ -164,6 +177,12 @@ for (const [name, source, fragments] of [
     expect(source.includes(fragment), `Ponte ${name}/B84 ausente: ${fragment}`);
   }
 }
+expect(
+  !designSystemContract.includes(
+    'requireText("src/pages/student/Certificates.tsx", [\n  \'context="course"\'',
+  ),
+  "B23 não pode voltar a exigir o contexto visual diretamente em Certificates.tsx.",
+);
 
 expect(
   documentation.includes("Fase B84") &&
@@ -200,5 +219,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B84 aprovado: certificados e produtos do aluno preservam o shell compartilhado, enquanto a rota multi-papel mantém o layout genérico.",
+  "Contrato B84 aprovado: certificados e produtos do aluno preservam o shell e o contexto visual compartilhados, enquanto a rota multi-papel mantém o layout genérico.",
 );
