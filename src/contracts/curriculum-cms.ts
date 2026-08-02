@@ -5,95 +5,289 @@ import { uuidSchema } from "@/contracts/learning";
 
 const timestampSchema = z.string().datetime({ offset: true });
 const nullableTimestampSchema = timestampSchema.nullable();
+const nullableTrimmedTextSchema = (maximum: number) =>
+  z.string().trim().min(1).max(maximum).nullable();
+
+const dateTimeLocalPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+const isValidDateTimeLocal = (value: string): boolean => {
+  if (!dateTimeLocalPattern.test(value)) return false;
+
+  const [datePart, timePart] = value.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+  const date = new Date(value);
+
+  return (
+    !Number.isNaN(date.getTime()) &&
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day &&
+    date.getHours() === hour &&
+    date.getMinutes() === minute
+  );
+};
+
 const optionalDateTimeLocalSchema = z.string().refine(
-  (value) => value === "" || !Number.isNaN(new Date(value).getTime()),
+  (value) => value === "" || isValidDateTimeLocal(value),
   "Data e hora inválidas.",
 );
 
-export const curriculumItemStatusSchema = z.enum(["draft", "published", "archived"]);
-export const curriculumReleaseModeSchema = z.enum(["immediate", "scheduled", "drip", "after_prerequisites"]);
-export const lessonContentKindSchema = z.enum(["text", "video", "audio", "mixed"]);
-export const lessonCompletionModeSchema = z.enum(["manual", "media_progress", "reading_acknowledgement", "any_activity"]);
-export const lessonMediaProviderSchema = z.enum(["private_asset", "youtube", "vimeo"]);
+export const curriculumItemStatusSchema = z.enum([
+  "draft",
+  "published",
+  "archived",
+]);
+export const curriculumReleaseModeSchema = z.enum([
+  "immediate",
+  "scheduled",
+  "drip",
+  "after_prerequisites",
+]);
+export const lessonContentKindSchema = z.enum([
+  "text",
+  "video",
+  "audio",
+  "mixed",
+]);
+export const lessonCompletionModeSchema = z.enum([
+  "manual",
+  "media_progress",
+  "reading_acknowledgement",
+  "any_activity",
+]);
+export const lessonMediaProviderSchema = z.enum([
+  "private_asset",
+  "youtube",
+  "vimeo",
+]);
 
-export const curriculumModuleRowSchema = z.object({
-  id: uuidSchema,
-  course_id: uuidSchema,
-  titulo: z.string().trim().min(1).max(200),
-  descricao: z.string().max(20_000).nullable(),
-  ordem: z.number().int().nonnegative(),
-  status: curriculumItemStatusSchema,
-  obrigatorio: z.boolean(),
-  release_mode: curriculumReleaseModeSchema,
-  release_at: nullableTimestampSchema,
-  drip_delay_days: z.number().int().min(0).max(3650).nullable(),
-  preview_enabled: z.boolean(),
-  version: z.number().int().positive(),
-  duplicated_from_module_id: uuidSchema.nullable(),
-  created_by_user_id: uuidSchema.nullable(),
-  updated_by_user_id: uuidSchema.nullable(),
-  archived_at: nullableTimestampSchema,
-  deleted_at: nullableTimestampSchema,
-  created_at: timestampSchema,
-  updated_at: timestampSchema,
-}).strict();
+type PersistedReleaseContract = {
+  readonly release_mode: z.infer<typeof curriculumReleaseModeSchema>;
+  readonly release_at: string | null;
+  readonly drip_delay_days: number | null;
+};
 
-export const curriculumLessonRowSchema = z.object({
-  id: uuidSchema,
-  modulo_id: uuidSchema,
-  titulo: z.string().trim().min(1).max(200),
-  descricao: z.string().max(20_000).nullable(),
-  conteudo_texto: z.string().max(50_000).nullable(),
-  ordem: z.number().int().nonnegative(),
-  duracao: z.number().int().nonnegative().nullable(),
-  status: curriculumItemStatusSchema,
-  content_kind: lessonContentKindSchema,
-  audio_asset_id: uuidSchema.nullable(),
-  obrigatoria: z.boolean(),
-  completion_mode: lessonCompletionModeSchema,
-  completion_percent: z.number().int().min(1).max(100).nullable(),
-  preview_enabled: z.boolean(),
-  release_mode: curriculumReleaseModeSchema,
-  release_at: nullableTimestampSchema,
-  drip_delay_days: z.number().int().min(0).max(3650).nullable(),
-  availability_starts_at: nullableTimestampSchema,
-  availability_ends_at: nullableTimestampSchema,
-  version: z.number().int().positive(),
-  duplicated_from_lesson_id: uuidSchema.nullable(),
-  created_by_user_id: uuidSchema.nullable(),
-  updated_by_user_id: uuidSchema.nullable(),
-  archived_at: nullableTimestampSchema,
-  deleted_at: nullableTimestampSchema,
-  created_at: timestampSchema,
-  updated_at: timestampSchema,
-}).strict();
+const persistedReleaseContractIsValid = (
+  value: PersistedReleaseContract,
+): boolean => {
+  if (value.release_mode === "immediate") {
+    return value.release_at === null && value.drip_delay_days === null;
+  }
+  if (value.release_mode === "scheduled") {
+    return value.release_at !== null && value.drip_delay_days === null;
+  }
+  if (value.release_mode === "drip") {
+    return value.release_at === null && value.drip_delay_days !== null;
+  }
+  return value.release_at === null && value.drip_delay_days === null;
+};
 
-export const modulePrerequisiteRowSchema = z.object({
-  module_id: uuidSchema,
-  prerequisite_module_id: uuidSchema,
-  created_by_user_id: uuidSchema,
-  created_at: timestampSchema,
-}).strict();
+const validatePersistedRelease = (
+  value: PersistedReleaseContract,
+  context: z.RefinementCtx,
+): void => {
+  if (!persistedReleaseContractIsValid(value)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["release_mode"],
+      message: "Contrato de liberação persistido inválido.",
+    });
+  }
+};
 
-export const lessonPrerequisiteRowSchema = z.object({
-  lesson_id: uuidSchema,
-  prerequisite_lesson_id: uuidSchema,
-  created_by_user_id: uuidSchema,
-  created_at: timestampSchema,
-}).strict();
+const validateLifecycle = (
+  value: {
+    readonly status: z.infer<typeof curriculumItemStatusSchema>;
+    readonly archived_at: string | null;
+    readonly deleted_at: string | null;
+  },
+  context: z.RefinementCtx,
+): void => {
+  if (value.status === "archived" && value.archived_at === null) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["archived_at"],
+      message: "Item arquivado exige horário de arquivamento.",
+    });
+  }
 
-export const lessonMediaRowSchema = z.object({
-  id: uuidSchema,
-  lesson_id: uuidSchema,
-  provider: lessonMediaProviderSchema,
-  asset_id: uuidSchema.nullable(),
-  external_video_id: z.string().trim().min(1).max(255).nullable(),
-  watermark_enabled: z.boolean(),
-  is_active: z.boolean(),
-  created_by_user_id: uuidSchema,
-  created_at: timestampSchema,
-  updated_at: timestampSchema,
-}).strict();
+  if (value.deleted_at !== null && value.status !== "archived") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["deleted_at"],
+      message: "Item excluído deve permanecer arquivado.",
+    });
+  }
+};
+
+export const curriculumModuleRowSchema = z
+  .object({
+    id: uuidSchema,
+    course_id: uuidSchema,
+    titulo: z.string().trim().min(1).max(200),
+    descricao: nullableTrimmedTextSchema(20_000),
+    ordem: z.number().int().nonnegative(),
+    status: curriculumItemStatusSchema,
+    obrigatorio: z.boolean(),
+    release_mode: curriculumReleaseModeSchema,
+    release_at: nullableTimestampSchema,
+    drip_delay_days: z.number().int().min(0).max(3650).nullable(),
+    preview_enabled: z.boolean(),
+    version: z.number().int().positive(),
+    duplicated_from_module_id: uuidSchema.nullable(),
+    created_by_user_id: uuidSchema.nullable(),
+    updated_by_user_id: uuidSchema.nullable(),
+    archived_at: nullableTimestampSchema,
+    deleted_at: nullableTimestampSchema,
+    created_at: timestampSchema,
+    updated_at: timestampSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    validatePersistedRelease(value, context);
+    validateLifecycle(value, context);
+  });
+
+export const curriculumLessonRowSchema = z
+  .object({
+    id: uuidSchema,
+    modulo_id: uuidSchema,
+    titulo: z.string().trim().min(1).max(200),
+    descricao: nullableTrimmedTextSchema(20_000),
+    conteudo_texto: nullableTrimmedTextSchema(50_000),
+    ordem: z.number().int().nonnegative(),
+    duracao: z.number().int().nonnegative().nullable(),
+    status: curriculumItemStatusSchema,
+    content_kind: lessonContentKindSchema,
+    audio_asset_id: uuidSchema.nullable(),
+    obrigatoria: z.boolean(),
+    completion_mode: lessonCompletionModeSchema,
+    completion_percent: z.number().int().min(1).max(100).nullable(),
+    preview_enabled: z.boolean(),
+    release_mode: curriculumReleaseModeSchema,
+    release_at: nullableTimestampSchema,
+    drip_delay_days: z.number().int().min(0).max(3650).nullable(),
+    availability_starts_at: nullableTimestampSchema,
+    availability_ends_at: nullableTimestampSchema,
+    version: z.number().int().positive(),
+    duplicated_from_lesson_id: uuidSchema.nullable(),
+    created_by_user_id: uuidSchema.nullable(),
+    updated_by_user_id: uuidSchema.nullable(),
+    archived_at: nullableTimestampSchema,
+    deleted_at: nullableTimestampSchema,
+    created_at: timestampSchema,
+    updated_at: timestampSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    validatePersistedRelease(value, context);
+    validateLifecycle(value, context);
+
+    const requiresPercent = value.completion_mode === "media_progress";
+    if (requiresPercent !== (value.completion_percent !== null)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["completion_percent"],
+        message: "Percentual deve existir somente para progresso de mídia.",
+      });
+    }
+
+    if (
+      (value.content_kind === "text" || value.content_kind === "mixed") &&
+      value.conteudo_texto === null
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["conteudo_texto"],
+        message: "Aula textual ou mista exige conteúdo textual.",
+      });
+    }
+
+    if (
+      value.availability_starts_at !== null &&
+      value.availability_ends_at !== null &&
+      Date.parse(value.availability_ends_at) <=
+        Date.parse(value.availability_starts_at)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["availability_ends_at"],
+        message: "O término da disponibilidade deve ser posterior ao início.",
+      });
+    }
+  });
+
+export const modulePrerequisiteRowSchema = z
+  .object({
+    module_id: uuidSchema,
+    prerequisite_module_id: uuidSchema,
+    created_by_user_id: uuidSchema,
+    created_at: timestampSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.module_id === value.prerequisite_module_id) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["prerequisite_module_id"],
+        message: "Módulo não pode exigir a si próprio.",
+      });
+    }
+  });
+
+export const lessonPrerequisiteRowSchema = z
+  .object({
+    lesson_id: uuidSchema,
+    prerequisite_lesson_id: uuidSchema,
+    created_by_user_id: uuidSchema,
+    created_at: timestampSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.lesson_id === value.prerequisite_lesson_id) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["prerequisite_lesson_id"],
+        message: "Aula não pode exigir a si própria.",
+      });
+    }
+  });
+
+export const lessonMediaRowSchema = z
+  .object({
+    id: uuidSchema,
+    lesson_id: uuidSchema,
+    provider: lessonMediaProviderSchema,
+    asset_id: uuidSchema.nullable(),
+    external_video_id: z.string().trim().min(1).max(255).nullable(),
+    watermark_enabled: z.boolean(),
+    is_active: z.boolean(),
+    created_by_user_id: uuidSchema,
+    created_at: timestampSchema,
+    updated_at: timestampSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    const isPrivate = value.provider === "private_asset";
+    const hasAsset = value.asset_id !== null;
+    const hasExternalId = value.external_video_id !== null;
+
+    if (isPrivate && (!hasAsset || hasExternalId)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["provider"],
+        message: "Mídia privada exige asset e não aceita identificador externo.",
+      });
+    }
+
+    if (!isPrivate && (hasAsset || !hasExternalId)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["provider"],
+        message: "Mídia externa exige identificador e não aceita asset privado.",
+      });
+    }
+  });
 
 export const curriculumModuleRowsSchema = z.array(curriculumModuleRowSchema);
 export const curriculumLessonRowsSchema = z.array(curriculumLessonRowSchema);
@@ -101,67 +295,234 @@ export const modulePrerequisiteRowsSchema = z.array(modulePrerequisiteRowSchema)
 export const lessonPrerequisiteRowsSchema = z.array(lessonPrerequisiteRowSchema);
 export const lessonMediaRowsSchema = z.array(lessonMediaRowSchema);
 
-const releaseContract = <T extends { releaseMode: z.infer<typeof curriculumReleaseModeSchema>; releaseAt: string; dripDelayDays: string }>(
-  values: T,
+const prerequisiteIdsSchema = z.array(uuidSchema).max(2_000);
+
+const validatePrerequisiteIds = (
+  prerequisiteIds: readonly string[],
+  entityId: string | undefined,
   context: z.RefinementCtx,
-) => {
-  if (values.releaseMode === "scheduled" && values.releaseAt === "") {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ["releaseAt"], message: "Informe a data de liberação." });
+): void => {
+  if (new Set(prerequisiteIds).size !== prerequisiteIds.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["prerequisiteIds"],
+      message: "Pré-requisitos duplicados não são permitidos.",
+    });
   }
-  if (values.releaseMode === "drip") {
-    const days = Number(values.dripDelayDays);
-    if (!Number.isInteger(days) || days < 0 || days > 3650) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["dripDelayDays"], message: "Informe de 0 a 3650 dias." });
-    }
+
+  if (entityId !== undefined && prerequisiteIds.includes(entityId)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["prerequisiteIds"],
+      message: "Item não pode exigir a si próprio.",
+    });
   }
 };
 
-export const moduleFormSchema = z.object({
-  title: z.string().trim().min(1, "Informe o título.").max(200),
-  description: z.string().max(20_000),
-  status: curriculumItemStatusSchema,
-  required: z.boolean(),
-  releaseMode: curriculumReleaseModeSchema,
-  releaseAt: optionalDateTimeLocalSchema,
-  dripDelayDays: z.string().regex(/^\d*$/, "Use somente números."),
-  previewEnabled: z.boolean(),
-  prerequisiteIds: z.array(uuidSchema).max(500),
-}).superRefine(releaseContract);
+type ReleaseFormValue = {
+  readonly releaseMode: z.infer<typeof curriculumReleaseModeSchema>;
+  readonly releaseAt: string;
+  readonly dripDelayDays: string;
+  readonly prerequisiteIds: readonly string[];
+};
 
-export const lessonFormSchema = z.object({
-  title: z.string().trim().min(1, "Informe o título.").max(200),
-  description: z.string().max(20_000),
-  textContent: z.string().max(50_000),
-  durationSeconds: z.string().regex(/^\d*$/, "Use somente números."),
-  status: curriculumItemStatusSchema,
-  contentKind: lessonContentKindSchema,
-  required: z.boolean(),
-  completionMode: lessonCompletionModeSchema,
-  completionPercent: z.string().regex(/^\d*$/, "Use somente números."),
-  previewEnabled: z.boolean(),
-  releaseMode: curriculumReleaseModeSchema,
-  releaseAt: optionalDateTimeLocalSchema,
-  dripDelayDays: z.string().regex(/^\d*$/, "Use somente números."),
-  availabilityStartsAt: optionalDateTimeLocalSchema,
-  availabilityEndsAt: optionalDateTimeLocalSchema,
-  prerequisiteIds: z.array(uuidSchema).max(2_000),
-}).superRefine((values, context) => {
-  releaseContract(values, context);
-  if (values.completionMode === "media_progress") {
-    const percent = Number(values.completionPercent);
-    if (!Number.isInteger(percent) || percent < 1 || percent > 100) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["completionPercent"], message: "Informe um percentual entre 1 e 100." });
+const validateReleaseForm = (
+  value: ReleaseFormValue,
+  context: z.RefinementCtx,
+): void => {
+  if (value.releaseMode === "scheduled" && value.releaseAt === "") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["releaseAt"],
+      message: "Informe a data de liberação.",
+    });
+  }
+
+  if (value.releaseMode === "drip") {
+    const days = Number(value.dripDelayDays);
+    if (!Number.isInteger(days) || days < 0 || days > 3650) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["dripDelayDays"],
+        message: "Informe de 0 a 3650 dias.",
+      });
     }
   }
-  if ((values.contentKind === "text" || values.contentKind === "mixed") && values.textContent.trim() === "") {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ["textContent"], message: "Informe o conteúdo textual." });
+
+  if (
+    value.releaseMode === "after_prerequisites" &&
+    value.prerequisiteIds.length === 0
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["prerequisiteIds"],
+      message: "Liberação por pré-requisitos exige ao menos um item.",
+    });
   }
-  if (values.availabilityStartsAt && values.availabilityEndsAt) {
-    if (new Date(values.availabilityEndsAt).getTime() <= new Date(values.availabilityStartsAt).getTime()) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["availabilityEndsAt"], message: "O término deve ser posterior ao início." });
+};
+
+export const moduleFormSchema = z
+  .object({
+    entityId: uuidSchema.optional(),
+    title: z.string().trim().min(1, "Informe o título.").max(200),
+    description: z.string().trim().max(20_000),
+    status: curriculumItemStatusSchema,
+    required: z.boolean(),
+    releaseMode: curriculumReleaseModeSchema,
+    releaseAt: optionalDateTimeLocalSchema,
+    dripDelayDays: z.string().regex(/^\d*$/, "Use somente números."),
+    previewEnabled: z.boolean(),
+    prerequisiteIds: prerequisiteIdsSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    validateReleaseForm(value, context);
+    validatePrerequisiteIds(value.prerequisiteIds, value.entityId, context);
+  });
+
+export const lessonFormSchema = z
+  .object({
+    entityId: uuidSchema.optional(),
+    title: z.string().trim().min(1, "Informe o título.").max(200),
+    description: z.string().trim().max(20_000),
+    textContent: z.string().trim().max(50_000),
+    durationSeconds: z.string().regex(/^\d*$/, "Use somente números."),
+    status: curriculumItemStatusSchema,
+    contentKind: lessonContentKindSchema,
+    required: z.boolean(),
+    completionMode: lessonCompletionModeSchema,
+    completionPercent: z.string().regex(/^\d*$/, "Use somente números."),
+    previewEnabled: z.boolean(),
+    releaseMode: curriculumReleaseModeSchema,
+    releaseAt: optionalDateTimeLocalSchema,
+    dripDelayDays: z.string().regex(/^\d*$/, "Use somente números."),
+    availabilityStartsAt: optionalDateTimeLocalSchema,
+    availabilityEndsAt: optionalDateTimeLocalSchema,
+    prerequisiteIds: prerequisiteIdsSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    validateReleaseForm(value, context);
+    validatePrerequisiteIds(value.prerequisiteIds, value.entityId, context);
+
+    if (value.durationSeconds !== "") {
+      const duration = Number(value.durationSeconds);
+      if (!Number.isSafeInteger(duration) || duration < 0) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["durationSeconds"],
+          message: "A duração deve ser um inteiro não negativo.",
+        });
+      }
     }
-  }
-});
+
+    if (value.completionMode === "media_progress") {
+      const percent = Number(value.completionPercent);
+      if (!Number.isInteger(percent) || percent < 1 || percent > 100) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["completionPercent"],
+          message: "Informe um percentual entre 1 e 100.",
+        });
+      }
+    }
+
+    if (
+      (value.contentKind === "text" || value.contentKind === "mixed") &&
+      value.textContent.trim() === ""
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["textContent"],
+        message: "Informe o conteúdo textual.",
+      });
+    }
+
+    if (
+      value.availabilityStartsAt !== "" &&
+      value.availabilityEndsAt !== "" &&
+      Date.parse(value.availabilityEndsAt) <=
+        Date.parse(value.availabilityStartsAt)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["availabilityEndsAt"],
+        message: "O término deve ser posterior ao início.",
+      });
+    }
+  });
+
+const modulePayloadSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200),
+    description: nullableTrimmedTextSchema(20_000),
+    status: curriculumItemStatusSchema,
+    required: z.boolean(),
+    release_mode: curriculumReleaseModeSchema,
+    release_at: nullableTimestampSchema,
+    drip_delay_days: z.number().int().min(0).max(3650).nullable(),
+    preview_enabled: z.boolean(),
+  })
+  .strict()
+  .superRefine(validatePersistedRelease);
+
+const lessonPayloadSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200),
+    description: nullableTrimmedTextSchema(20_000),
+    text_content: nullableTrimmedTextSchema(50_000),
+    duration: z.number().int().nonnegative().nullable(),
+    status: curriculumItemStatusSchema,
+    content_kind: lessonContentKindSchema,
+    required: z.boolean(),
+    completion_mode: lessonCompletionModeSchema,
+    completion_percent: z.number().int().min(1).max(100).nullable(),
+    preview_enabled: z.boolean(),
+    release_mode: curriculumReleaseModeSchema,
+    release_at: nullableTimestampSchema,
+    drip_delay_days: z.number().int().min(0).max(3650).nullable(),
+    availability_starts_at: nullableTimestampSchema,
+    availability_ends_at: nullableTimestampSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    validatePersistedRelease(value, context);
+
+    if (
+      (value.completion_mode === "media_progress") !==
+      (value.completion_percent !== null)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["completion_percent"],
+        message: "Percentual deve existir somente para progresso de mídia.",
+      });
+    }
+
+    if (
+      (value.content_kind === "text" || value.content_kind === "mixed") &&
+      value.text_content === null
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["text_content"],
+        message: "Aula textual ou mista exige conteúdo textual.",
+      });
+    }
+
+    if (
+      value.availability_starts_at !== null &&
+      value.availability_ends_at !== null &&
+      Date.parse(value.availability_ends_at) <=
+        Date.parse(value.availability_starts_at)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["availability_ends_at"],
+        message: "O término deve ser posterior ao início.",
+      });
+    }
+  });
 
 export type CurriculumModuleRow = z.infer<typeof curriculumModuleRowSchema>;
 export type CurriculumLessonRow = z.infer<typeof curriculumLessonRowSchema>;
@@ -203,71 +564,105 @@ export const emptyLessonFormValues: LessonFormValues = {
 };
 
 const toDateTimeLocal = (value: string | null): string => {
-  if (!value) return "";
+  if (value === null) return "";
   const date = new Date(value);
-  const pad = (part: number) => part.toString().padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
 };
 
-const toIsoOrNull = (value: string): string | null => value === "" ? null : new Date(value).toISOString();
-const textOrNull = (value: string): string | null => value.trim() === "" ? null : value.trim();
+const toIsoOrNull = (value: string): string | null =>
+  value === "" ? null : new Date(value).toISOString();
+const textOrNull = (value: string): string | null =>
+  value.trim() === "" ? null : value.trim();
 
-export const moduleToFormValues = (module: CurriculumModuleRow, prerequisiteIds: string[]): ModuleFormValues => ({
-  title: module.titulo,
-  description: module.descricao ?? "",
-  status: module.status,
-  required: module.obrigatorio,
-  releaseMode: module.release_mode,
-  releaseAt: toDateTimeLocal(module.release_at),
-  dripDelayDays: module.drip_delay_days?.toString() ?? "",
-  previewEnabled: module.preview_enabled,
-  prerequisiteIds,
-});
+export const moduleToFormValues = (
+  module: CurriculumModuleRow,
+  prerequisiteIds: string[],
+): ModuleFormValues => {
+  const parsedModule = curriculumModuleRowSchema.parse(module);
+  return moduleFormSchema.parse({
+    entityId: parsedModule.id,
+    title: parsedModule.titulo,
+    description: parsedModule.descricao ?? "",
+    status: parsedModule.status,
+    required: parsedModule.obrigatorio,
+    releaseMode: parsedModule.release_mode,
+    releaseAt: toDateTimeLocal(parsedModule.release_at),
+    dripDelayDays: parsedModule.drip_delay_days?.toString() ?? "",
+    previewEnabled: parsedModule.preview_enabled,
+    prerequisiteIds,
+  });
+};
 
-export const lessonToFormValues = (lesson: CurriculumLessonRow, prerequisiteIds: string[]): LessonFormValues => ({
-  title: lesson.titulo,
-  description: lesson.descricao ?? "",
-  textContent: lesson.conteudo_texto ?? "",
-  durationSeconds: lesson.duracao?.toString() ?? "",
-  status: lesson.status,
-  contentKind: lesson.content_kind,
-  required: lesson.obrigatoria,
-  completionMode: lesson.completion_mode,
-  completionPercent: lesson.completion_percent?.toString() ?? "",
-  previewEnabled: lesson.preview_enabled,
-  releaseMode: lesson.release_mode,
-  releaseAt: toDateTimeLocal(lesson.release_at),
-  dripDelayDays: lesson.drip_delay_days?.toString() ?? "",
-  availabilityStartsAt: toDateTimeLocal(lesson.availability_starts_at),
-  availabilityEndsAt: toDateTimeLocal(lesson.availability_ends_at),
-  prerequisiteIds,
-});
+export const lessonToFormValues = (
+  lesson: CurriculumLessonRow,
+  prerequisiteIds: string[],
+): LessonFormValues => {
+  const parsedLesson = curriculumLessonRowSchema.parse(lesson);
+  return lessonFormSchema.parse({
+    entityId: parsedLesson.id,
+    title: parsedLesson.titulo,
+    description: parsedLesson.descricao ?? "",
+    textContent: parsedLesson.conteudo_texto ?? "",
+    durationSeconds: parsedLesson.duracao?.toString() ?? "",
+    status: parsedLesson.status,
+    contentKind: parsedLesson.content_kind,
+    required: parsedLesson.obrigatoria,
+    completionMode: parsedLesson.completion_mode,
+    completionPercent: parsedLesson.completion_percent?.toString() ?? "",
+    previewEnabled: parsedLesson.preview_enabled,
+    releaseMode: parsedLesson.release_mode,
+    releaseAt: toDateTimeLocal(parsedLesson.release_at),
+    dripDelayDays: parsedLesson.drip_delay_days?.toString() ?? "",
+    availabilityStartsAt: toDateTimeLocal(parsedLesson.availability_starts_at),
+    availabilityEndsAt: toDateTimeLocal(parsedLesson.availability_ends_at),
+    prerequisiteIds,
+  });
+};
 
-export const moduleFormToPayload = (values: ModuleFormValues): Json => ({
-  title: values.title.trim(),
-  description: textOrNull(values.description),
-  status: values.status,
-  required: values.required,
-  release_mode: values.releaseMode,
-  release_at: values.releaseMode === "scheduled" ? toIsoOrNull(values.releaseAt) : null,
-  drip_delay_days: values.releaseMode === "drip" ? Number(values.dripDelayDays) : null,
-  preview_enabled: values.previewEnabled,
-});
+export const moduleFormToPayload = (values: ModuleFormValues): Json => {
+  const parsed = moduleFormSchema.parse(values);
+  return modulePayloadSchema.parse({
+    title: parsed.title,
+    description: textOrNull(parsed.description),
+    status: parsed.status,
+    required: parsed.required,
+    release_mode: parsed.releaseMode,
+    release_at:
+      parsed.releaseMode === "scheduled"
+        ? toIsoOrNull(parsed.releaseAt)
+        : null,
+    drip_delay_days:
+      parsed.releaseMode === "drip" ? Number(parsed.dripDelayDays) : null,
+    preview_enabled: parsed.previewEnabled,
+  });
+};
 
-export const lessonFormToPayload = (values: LessonFormValues): Json => ({
-  title: values.title.trim(),
-  description: textOrNull(values.description),
-  text_content: textOrNull(values.textContent),
-  duration: values.durationSeconds === "" ? null : Number(values.durationSeconds),
-  status: values.status,
-  content_kind: values.contentKind,
-  required: values.required,
-  completion_mode: values.completionMode,
-  completion_percent: values.completionMode === "media_progress" ? Number(values.completionPercent) : null,
-  preview_enabled: values.previewEnabled,
-  release_mode: values.releaseMode,
-  release_at: values.releaseMode === "scheduled" ? toIsoOrNull(values.releaseAt) : null,
-  drip_delay_days: values.releaseMode === "drip" ? Number(values.dripDelayDays) : null,
-  availability_starts_at: toIsoOrNull(values.availabilityStartsAt),
-  availability_ends_at: toIsoOrNull(values.availabilityEndsAt),
-});
+export const lessonFormToPayload = (values: LessonFormValues): Json => {
+  const parsed = lessonFormSchema.parse(values);
+  return lessonPayloadSchema.parse({
+    title: parsed.title,
+    description: textOrNull(parsed.description),
+    text_content: textOrNull(parsed.textContent),
+    duration:
+      parsed.durationSeconds === "" ? null : Number(parsed.durationSeconds),
+    status: parsed.status,
+    content_kind: parsed.contentKind,
+    required: parsed.required,
+    completion_mode: parsed.completionMode,
+    completion_percent:
+      parsed.completionMode === "media_progress"
+        ? Number(parsed.completionPercent)
+        : null,
+    preview_enabled: parsed.previewEnabled,
+    release_mode: parsed.releaseMode,
+    release_at:
+      parsed.releaseMode === "scheduled"
+        ? toIsoOrNull(parsed.releaseAt)
+        : null,
+    drip_delay_days:
+      parsed.releaseMode === "drip" ? Number(parsed.dripDelayDays) : null,
+    availability_starts_at: toIsoOrNull(parsed.availabilityStartsAt),
+    availability_ends_at: toIsoOrNull(parsed.availabilityEndsAt),
+  });
+};
