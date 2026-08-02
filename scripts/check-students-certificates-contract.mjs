@@ -15,6 +15,7 @@ const requiredFiles = [
   "src/pages/admin/StudentsAdmin.tsx",
   "src/pages/CertificateValidation.tsx",
   "src/components/student/StudentPortalShell.tsx",
+  "src/components/student/StudentPortalPageFrame.tsx",
   "src/App.tsx",
 ];
 
@@ -80,6 +81,26 @@ requireText("src/components/student/StudentPortalShell.tsx", [
   "<StudentNavigation mobile />",
 ]);
 
+requireText("src/components/student/StudentPortalPageFrame.tsx", [
+  "getUserMetadataProfile",
+  "useAuth()",
+  "signOut",
+  '<StudentPortalShell',
+  'navigate("/login", { replace: true })',
+]);
+
+requireText("src/pages/student/Certificates.tsx", [
+  "useMyCertificates",
+  "<StudentPortalPageFrame>",
+  "<StudentSectionHeader",
+  "Abrir validação pública",
+  "Imprimir",
+]);
+const certificatePage = contents.get("src/pages/student/Certificates.tsx") ?? "";
+if (certificatePage.includes("AppPageShell")) {
+  fail("certificados do aluno não podem sair do shell persistente");
+}
+
 requireText("src/pages/CertificateValidation.tsx", [
   "useCertificateValidation(code)",
   "Certificado válido",
@@ -142,4 +163,4 @@ for (const sourceFile of await collectSourceFiles(path.join(root, "src"))) {
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log("Contrato estático da FASE B21 aprovado com acesso navegável aos certificados.");
+console.log("Contrato estático da FASE B21/B84 aprovado com certificados no shell persistente.");
