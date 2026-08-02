@@ -23,43 +23,45 @@ type NullableLicenseAttributionArgs = Omit<GeneratedAttributionArgs, "p_license_
   p_license_id: string | null;
 };
 
-export const useHostedCheckout = () =>
-  useMutation({
-    mutationFn: async (input: HostedCheckoutInput): Promise<HostedCheckoutResult> => {
-      const value = parseDataContract(
-        hostedCheckoutInputSchema,
-        input,
-        "solicitação de checkout hospedado",
-      );
-      const affiliateVisitorToken = getStoredAffiliateVisitorToken();
-      const attributionArgs: NullableLicenseAttributionArgs = {
-        p_subject_type: value.subjectType,
-        p_subject_id: value.subjectId,
-        p_license_id: value.licenseId,
-        p_idempotency_key: value.idempotencyKey,
-        ...(affiliateVisitorToken
-          ? { p_affiliate_visitor_token: affiliateVisitorToken }
-          : {}),
-      };
+export const createHostedCheckout = async (
+  input: HostedCheckoutInput,
+): Promise<HostedCheckoutResult> => {
+  const value = parseDataContract(
+    hostedCheckoutInputSchema,
+    input,
+    "solicitação de checkout hospedado",
+  );
+  const affiliateVisitorToken = getStoredAffiliateVisitorToken();
+  const attributionArgs: NullableLicenseAttributionArgs = {
+    p_subject_type: value.subjectType,
+    p_subject_id: value.subjectId,
+    p_license_id: value.licenseId,
+    p_idempotency_key: value.idempotencyKey,
+    ...(affiliateVisitorToken
+      ? { p_affiliate_visitor_token: affiliateVisitorToken }
+      : {}),
+  };
 
-      // PostgreSQL aceita NULL para o UUID da licença; o gerador de tipos não
-      // representa nulabilidade de argumentos sem DEFAULT. A adaptação fica
-      // restrita a esta fronteira e preserva a assinatura pública existente.
-      const { error: attributionError } = await supabase.rpc(
-        "prepare_checkout_intent_with_attribution",
-        attributionArgs as unknown as GeneratedAttributionArgs,
-      );
-      if (attributionError) throw attributionError;
+  // PostgreSQL aceita NULL para o UUID da licença; o gerador de tipos não
+  // representa nulabilidade de argumentos sem DEFAULT. A adaptação fica
+  // restrita a esta fronteira e preserva a assinatura pública existente.
+  const { error: attributionError } = await supabase.rpc(
+    "prepare_checkout_intent_with_attribution",
+    attributionArgs as unknown as GeneratedAttributionArgs,
+  );
+  if (attributionError) throw attributionError;
 
-      const { data, error } = await supabase.functions.invoke("create-asaas-checkout", {
-        body: value,
-      });
-
-      if (error) throw error;
-      return parseDataContract(
-        hostedCheckoutResultSchema,
-        data,
-        "resposta do checkout hospedado",
-      );
-    },
+  const { data, error } = await supabase.functions.invoke("create-asaas-checkout", {
+    body: value,
   });
+
+  if (error) throw error;
+  return parseDataContract(
+    hostedCheckoutResultSchema,
+    data,
+    "resposta do checkout hospedado",
+  );
+};
+
+export const useHostedCheckout = () =>
+  useMutation({ mutationFn: createHostedCheckout });
