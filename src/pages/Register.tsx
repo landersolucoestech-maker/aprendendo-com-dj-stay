@@ -1,6 +1,6 @@
 import { Eye, EyeOff, Lock, Mail, Phone, User } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { getAuthErrorMessage } from "@/auth/auth-errors";
 import { signUpWithPassword } from "@/auth/auth-service";
@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { getSafeReturnPath } from "@/routing/route-state";
 
 interface RegistrationForm {
   readonly name: string;
@@ -40,7 +41,9 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const location = useLocation();
   const navigate = useNavigate();
+  const returnPath = getSafeReturnPath(location.state);
   const { toast } = useToast();
 
   const setField = <Key extends keyof RegistrationForm>(
@@ -87,6 +90,7 @@ const Register = () => {
       password: form.password,
       fullName: form.name,
       phone: form.phone,
+      returnPath,
     });
     setIsLoading(false);
 
@@ -96,13 +100,16 @@ const Register = () => {
     }
 
     if (data.session) {
-      navigate("/portal", { replace: true });
+      navigate(returnPath, { replace: true });
       return;
     }
 
     navigate("/verificar-email", {
       replace: true,
-      state: { email: form.email.trim().toLowerCase() },
+      state: {
+        email: form.email.trim().toLowerCase(),
+        returnPath,
+      },
     });
   };
 
@@ -286,6 +293,7 @@ const Register = () => {
             Já possui conta?{" "}
             <Link
               to="/login"
+              state={location.state}
               className="rounded-sm font-medium text-primary hover:underline"
             >
               Entrar
