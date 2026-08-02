@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 const paths = {
   contracts: "src/contracts/privacy-rights-requests.ts",
   tests: "src/contracts/privacy-rights-requests.test.ts",
+  transitions: "src/contracts/privacy-rights-transitions.test.ts",
   migration: "supabase/migrations/20260802000000_privacy_rights_requests.sql",
   documentation: "docs/refactor/FASE-B67-PRIVACY-RIGHTS-CONTRACT-TESTS.md",
   package: "package.json",
@@ -20,6 +21,7 @@ for (const path of Object.values(paths)) {
 const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
 const contracts = read(paths.contracts);
 const tests = read(paths.tests);
+const transitions = read(paths.transitions);
 const migration = read(paths.migration);
 const documentation = read(paths.documentation);
 const packageJson = existsSync(paths.package)
@@ -35,7 +37,10 @@ for (const fragment of [
   "value.action === \"created\"",
   "value.action === \"cancelled\"",
   "value.action === \"status_changed\"",
+  "validFromStatus",
+  "validToStatus",
   "value.from_status === value.to_status",
+  "value.to_status === \"rejected\" && value.notes === null",
   "isHandled !== hasHandledAt",
   "value.handled_by !== undefined",
   "value.status === \"rejected\" && value.admin_notes === null",
@@ -87,6 +92,23 @@ for (const fragment of [
   expect(tests.includes(fragment), `Cobertura B67 ausente: ${fragment}`);
 }
 
+for (const fragment of [
+  "transições administrativas de privacidade",
+  'from_status: "cancelled", to_status: "submitted"',
+  'from_status: "completed", to_status: "in_review"',
+  'from_status: "rejected", to_status: "completed"',
+  'from_status: "in_review", to_status: "submitted"',
+  'from_status: "submitted", to_status: "cancelled"',
+  'to_status: "rejected"',
+  "notes: null",
+  "safeParse",
+]) {
+  expect(
+    transitions.includes(fragment),
+    `Cobertura de transições B67 ausente: ${fragment}`,
+  );
+}
+
 expect(
   documentation.includes("Fase B67") &&
     documentation.includes("Nenhuma migration"),
@@ -110,5 +132,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B67 aprovado: solicitações, eventos, listas e mutações de privacidade são estritos, coerentes e cobertos por testes unitários.",
+  "Contrato B67 aprovado: solicitações, eventos, transições, listas e mutações de privacidade são estritos, coerentes e cobertos por testes unitários.",
 );
