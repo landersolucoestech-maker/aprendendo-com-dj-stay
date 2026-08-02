@@ -146,15 +146,21 @@ for (const fragment of [
   expect(shell.includes(fragment), `Shell compartilhado B84 ausente: ${fragment}`);
 }
 for (const fragment of [
-  "<StudentPortalShell",
+  "<StudentPortalPageFrame>",
   "useStudentPaymentHistory",
   'section: "orders" | "payments"',
 ]) {
   expect(
     financialPortal.includes(fragment),
-    `Referência B38 de página independente no shell ausente: ${fragment}`,
+    `Referência B38 de página financeira no frame ausente: ${fragment}`,
   );
 }
+expect(
+  !financialPortal.includes("StudentPortalShell") &&
+    !financialPortal.includes("useAuth()") &&
+    !financialPortal.includes("getUserMetadataProfile"),
+  "Financeiro não pode restaurar o wrapper local removido pela B86.",
+);
 
 for (const [name, source, fragments] of [
   [
@@ -237,10 +243,10 @@ expect(
 );
 
 if (failures.length > 0) {
-  console.error("Falhas no contrato B84:\n- " + failures.join("\n- "));
+  console.error("Falhas no contrato B84/B86:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Contrato B84/B85 aprovado: certificados e produtos preservam o shell; o editor de perfil preserva o shell; a rota genérica multi-papel continua compatível.",
+  "Contrato B84/B85/B86 aprovado: certificados, produtos, editor e financeiro preservam o frame compartilhado, sem wrappers locais duplicados.",
 );
