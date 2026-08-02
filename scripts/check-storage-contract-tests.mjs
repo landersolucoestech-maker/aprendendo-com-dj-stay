@@ -56,6 +56,32 @@ for (const fragment of [
   expect(contracts.includes(fragment), `Contrato B75 ausente: ${fragment}`);
 }
 
+const purposes = [
+  "avatar",
+  "video",
+  "audio",
+  "image",
+  "document",
+  "sample",
+  "preset",
+  "stem",
+  "project",
+  "archive",
+  "template",
+  "support_file",
+  "digital_product",
+];
+for (const purpose of purposes) {
+  expect(
+    contracts.includes(`${purpose}: {`),
+    `Política B75 ausente para o propósito ${purpose}.`,
+  );
+  expect(
+    tests.includes(`["${purpose}",`),
+    `Caso unitário B75 ausente para o propósito ${purpose}.`,
+  );
+}
+
 for (const fragment of [
   "assets_bucket_private",
   "assets_original_name_length",
