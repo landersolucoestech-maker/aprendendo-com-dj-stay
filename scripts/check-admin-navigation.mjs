@@ -15,6 +15,7 @@ const documentation = await readFile(
 );
 
 const requiredRoutes = [
+  "/admin",
   "/admin/cursos",
   "/admin/produtos",
   "/admin/pagamentos",
