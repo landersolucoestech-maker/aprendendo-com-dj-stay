@@ -54,6 +54,7 @@ import {
   Certificates,
   EditProfile,
   Lesson,
+  StudentCommunicationPreferences,
   StudentFavorites,
   StudentNotifications,
   StudentPortal,
@@ -140,6 +141,7 @@ const App = () => (
                   <Route path="/aluno/suporte" element={<StudentRoute><StudentSupport /></StudentRoute>} />
                   <Route path="/aluno/perfil" element={<StudentRoute><StudentPortal section="profile" /></StudentRoute>} />
                   <Route path="/aluno/perfil/editar" element={<StudentRoute><EditProfile /></StudentRoute>} />
+                  <Route path="/aluno/preferencias" element={<StudentRoute><StudentCommunicationPreferences /></StudentRoute>} />
                   <Route path="/aluno/historico" element={<StudentRoute><StudentPortal section="history" /></StudentRoute>} />
                   <Route path="/dashboard" element={<StudentRoute><Navigate to="/aluno" replace /></StudentRoute>} />
                   <Route path="/aula/:lessonId" element={<RequireAuth><RequireRole allowedRoles={["aluno", "administrador_proprietario"]}><Lesson /></RequireRole></RequireAuth>} />
