@@ -3274,6 +3274,30 @@ export type Database = {
           },
         ]
       }
+      student_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["student_favorite_subject_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          subject_id: string
+          subject_type: Database["public"]["Enums"]["student_favorite_subject_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          subject_id?: string
+          subject_type?: Database["public"]["Enums"]["student_favorite_subject_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       student_notifications: {
         Row: {
           action_path: string | null
@@ -4671,6 +4695,10 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
       }
+      get_my_student_favorites: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
       get_my_student_notifications: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
@@ -4788,6 +4816,13 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      is_my_student_favorite: {
+        Args: {
+          p_subject_id: string
+          p_subject_type: Database["public"]["Enums"]["student_favorite_subject_type"]
+        }
+        Returns: boolean
       }
       issue_enrollment_certificate: {
         Args: { p_enrollment_id: string }
@@ -5716,6 +5751,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      toggle_my_student_favorite: {
+        Args: {
+          p_subject_id: string
+          p_subject_type: Database["public"]["Enums"]["student_favorite_subject_type"]
+        }
+        Returns: Json
+      }
       transition_asset_state: {
         Args: {
           p_asset_id: string
@@ -6456,6 +6498,7 @@ export type Database = {
         | "denied"
         | "expired"
         | "revoked"
+      student_favorite_subject_type: "course" | "digital_product"
       student_notification_type:
         | "support_reply"
         | "payment_confirmed"
@@ -6863,6 +6906,7 @@ export const Constants = {
         "expired",
         "revoked",
       ],
+      student_favorite_subject_type: ["course", "digital_product"],
       student_notification_type: [
         "support_reply",
         "payment_confirmed",
