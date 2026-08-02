@@ -5583,6 +5583,10 @@ export type Database = {
           watermark_text: string
         }[]
       }
+      resolve_course_checkout_subject: {
+        Args: { p_course_slug: string }
+        Returns: Json
+      }
       resolve_lesson_playback_token: {
         Args: { p_fingerprint_hash: string; p_token: string }
         Returns: {
