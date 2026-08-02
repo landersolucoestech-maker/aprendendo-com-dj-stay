@@ -1,0 +1,41 @@
+name: Acionar gate final B71
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/dispatch-b71-gate.yml"
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Remover workflow temporário
+        run: |
+          rm .github/workflows/dispatch-b71-gate.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/workflows/dispatch-b71-gate.yml
+          git commit -m "chore(b71): remover acionador temporário do gate"
+          git push origin HEAD:dev
+
+      - name: Acionar gate oficial
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2026-03-10" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/baseline.yml/dispatches" \
+            --data '{"ref":"dev"}'
