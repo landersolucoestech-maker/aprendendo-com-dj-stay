@@ -3,23 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { parseDataContract } from "@/contracts/contract-error";
 import { modulesResponseSchema } from "@/contracts/learning";
 import { supabase } from "@/integrations/supabase/client";
+import type { LearningModule } from "@/lib/course-progress";
 
-export interface ModuleLesson {
-  id: string;
-  title: string;
-  description: string | null;
-  durationMinutes: number | null;
-  durationLabel: string | null;
-  order: number;
-}
-
-export interface LearningModule {
-  id: string;
-  title: string;
-  description: string | null;
-  order: number;
-  lessons: ModuleLesson[];
-}
+export type { LearningModule, ModuleLesson } from "@/lib/course-progress";
 
 const formatDuration = (minutes: number | null): string | null =>
   minutes === null ? null : `${minutes} min`;
