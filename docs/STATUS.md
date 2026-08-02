@@ -28,6 +28,7 @@ Os seguintes domínios possuem implementação, persistência, autorização e c
 | Pagamentos | checkout, ordens, tentativas, eventos do provider e concessão/revogação de acesso |
 | Retorno financeiro exato | consulta autenticada pelo `checkout_intent` retornado pelo provider, com pedido, tentativa e entitlement da compra correspondente, sem fallback por outra matrícula ou acesso |
 | Expiração de checkout | reconciliação pelo horário do servidor, sincronização de intent/pedido/tentativa e bloqueio de reabertura de pedidos financeiramente terminais |
+| Cron de expiração | job PostgreSQL a cada cinco minutos, executado como `postgres`, com batch limitado, idempotente e sem segredo HTTP |
 | Afiliados | perfis, links, atribuições, comissões, ajustes e pagamentos |
 | Certificados | emissão, revogação, consulta do aluno e validação pública |
 | Contatos | submissão idempotente, protocolo e tratamento administrativo |
@@ -44,6 +45,8 @@ O retorno do checkout usa exclusivamente o parâmetro `checkout_intent` pertence
 
 Checkouts vencidos são reconciliados por `expires_at` e pelo relógio do PostgreSQL. Somente intents ainda não pagos podem expirar; pedidos pagos, em reembolso ou em chargeback não são reabertos pelo claim do provedor. A chave idempotente local só é removida quando o estado persistido confirma expiração ou cancelamento.
 
+O job `expire-due-checkout-intents` executa `private.expire_due_checkout_intents(100)` a cada cinco minutos. Ele é criado por `postgres`, não depende de navegador ou Edge Function e mantém os metadados e resultados operacionais nas tabelas nativas do Supabase Cron.
+
 O gate técnico executa instalação limpa, lint, reconstrução local do Supabase, pgTAP, sincronização de tipos, contratos estáticos, TypeScript, audit de dependências, build e validação de chunks.
 
 ## Integrações implantadas em `dev`
@@ -56,6 +59,8 @@ As Edge Functions abaixo fazem parte da implementação de desenvolvimento:
 
 A presença da função e a aprovação do gate não equivalem a uma transação financeira homologada pelo provider.
 
+O módulo PostgreSQL `pg_cron` e o job de expiração fazem parte das migrations versionadas em `dev`, mas ainda não foram promovidos ao Supabase remoto ou à produção.
+
 ## Dependências de homologação externa
 
 Ainda exigem validação fora do repositório:
@@ -63,7 +68,7 @@ Ainda exigem validação fora do repositório:
 - credenciais válidas do sandbox Asaas;
 - configuração do webhook no painel do provider;
 - execução de compra, confirmação, reembolso e chargeback no sandbox;
-- agendamento do batch de expiração por um executor confiável, caso seja desejada reconciliação sem visita à página de retorno;
+- observação de `cron.job_run_details` após a aplicação da migration no ambiente remoto;
 - validação dos e-mails transacionais, caso um provider de e-mail seja configurado;
 - testes de carga e observação de índices com tráfego representativo;
 - pentest independente antes da promoção para produção.
