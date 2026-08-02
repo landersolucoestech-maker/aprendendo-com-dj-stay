@@ -58,7 +58,7 @@ as $$
       lesson_record.modulo_id,
       count(*)::integer as lesson_count,
       coalesce(sum(coalesce(lesson_record.duracao, 0)), 0)::integer as duration_minutes,
-      count(*) filter (where lesson_record.preview_enabled)::integer as preview_lesson_count
+      (count(*) filter (where lesson_record.preview_enabled))::integer as preview_lesson_count
     from public.aulas lesson_record
     join visible_modules module_record
       on module_record.id = lesson_record.modulo_id
