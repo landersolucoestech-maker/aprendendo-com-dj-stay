@@ -21,6 +21,10 @@ walk(sourceRoot);
 const imports = [];
 const navigation = [];
 const prohibited = [];
+const routerImportPattern =
+  /from\s+["'](?:react-router-dom|react-router|@react-router\/[^"']+)["']/;
+const prohibitedRouterImportPattern =
+  /from\s+["'](?:react-router|@react-router\/[^"']+)["']/;
 const prohibitedApis = [
   "createBrowserRouter",
   "createMemoryRouter",
@@ -43,7 +47,7 @@ for (const path of files.sort()) {
   const lines = source.split("\n");
 
   lines.forEach((line, index) => {
-    if (/from\s+["'](?:react-router-dom|react-router|@react-router\/)/.test(line)) {
+    if (routerImportPattern.test(line)) {
       imports.push(`${relativePath}:${index + 1}: ${line.trim()}`);
     }
     if (
@@ -53,7 +57,7 @@ for (const path of files.sort()) {
     }
   });
 
-  if (/from\s+["'](?:react-router|@react-router\/)/.test(source)) {
+  if (prohibitedRouterImportPattern.test(source)) {
     prohibited.push(`${relativePath}: import direto de Data/Framework Router`);
   }
 
