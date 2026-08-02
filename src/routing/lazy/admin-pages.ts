@@ -17,5 +17,8 @@ export const FrontendErrorsAdmin = lazy(
   () => import("@/pages/admin/FrontendErrorsAdminWithHistory"),
 );
 export const PaymentsAdmin = lazy(() => import("@/pages/admin/PaymentsAdmin"));
+export const PrivacyRightsAdmin = lazy(
+  () => import("@/pages/admin/PrivacyRightsAdmin"),
+);
 export const StudentsAdmin = lazy(() => import("@/pages/admin/StudentsAdmin"));
 export const SupportAdmin = lazy(() => import("@/pages/admin/SupportAdmin"));
