@@ -3,14 +3,30 @@ const SESSION_NONCE_KEY = "djstay.playback.session-nonce";
 const toHex = (bytes: Uint8Array): string =>
   Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 
+const readStoredSessionNonce = (): string | null => {
+  try {
+    return window.sessionStorage.getItem(SESSION_NONCE_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const persistSessionNonce = (nonce: string): void => {
+  try {
+    window.sessionStorage.setItem(SESSION_NONCE_KEY, nonce);
+  } catch {
+    // O fingerprint continua best-effort quando o storage da sessão está indisponível.
+  }
+};
+
 const getSessionNonce = (): string => {
-  const existing = window.sessionStorage.getItem(SESSION_NONCE_KEY);
+  const existing = readStoredSessionNonce();
   if (existing) {
     return existing;
   }
 
   const nonce = crypto.randomUUID();
-  window.sessionStorage.setItem(SESSION_NONCE_KEY, nonce);
+  persistSessionNonce(nonce);
   return nonce;
 };
 
