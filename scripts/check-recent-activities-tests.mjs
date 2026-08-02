@@ -42,6 +42,7 @@ for (const fragment of [
   "normalizeRecentActivityLimit",
   "toRecentActivity",
   "toRecentActivities",
+  "readonly RecentProgressRow[]",
   "formatAppRelativeTime(progress.updated_at, now)",
   'type: progress.completada ? "lesson_completed" : "lesson_started"',
   "progress.progresso_percentual > 0",
@@ -67,6 +68,7 @@ for (const fragment of [
   "transforma conclusão com tipo e texto próprios",
   "preserva ordem e aplica o mesmo instante de referência",
   "não altera as linhas de progresso recebidas",
+  "structuredClone",
   "aceita coleção vazia",
   'time: "há 1 hora"',
 ]) {
@@ -83,6 +85,7 @@ for (const fragment of [
   "normalizeRecentActivityLimit",
   "toRecentActivities",
   'export type { RecentActivity } from "@/lib/recent-activities";',
+  "export const useRecentActivities = (limit = 10)",
   'supabase.auth.getUser()',
   'from("progresso_aulas")',
   '.eq("user_id", user.id)',
@@ -145,11 +148,20 @@ expect(
   "Contrato B80 deve estar encadeado ao typecheck.",
 );
 
+const typecheck = packageJson.scripts?.typecheck ?? "";
+const progressIndex = typecheck.indexOf("npm run check:learning-progress-contract-tests");
+const recentIndex = typecheck.indexOf("npm run check:recent-activities-tests");
+const storageIndex = typecheck.indexOf("npm run check:storage-contract-tests");
+expect(
+  progressIndex >= 0 && recentIndex > progressIndex && storageIndex > recentIndex,
+  "O gate B80 deve executar após o contrato de progresso e antes do contrato de Storage.",
+);
+
 if (failures.length > 0) {
   console.error("Falhas no contrato B80:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Contrato B80 aprovado: limite finito e transformação determinística das atividades recentes permanecem isolados da consulta Supabase.",
+  "Contrato B80 aprovado: limite finito, imutabilidade e transformação determinística das atividades recentes permanecem isolados da consulta Supabase.",
 );
