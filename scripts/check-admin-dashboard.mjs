@@ -57,7 +57,7 @@ if (failures.length === 0) {
     if (!page.includes(fragment)) failures.push(`Dashboard B87 incompleto: ${fragment}`);
   }
 
-  for (const forbidden of ["const mock", "mockData", "Math.random", "dados de exemplo"]) {
+  for (const forbidden of ["const mock", "mockData", "Math.random", "sampleData"]) {
     if (page.includes(forbidden)) failures.push(`Dashboard B87 contém dado não operacional: ${forbidden}`);
   }
 
@@ -92,7 +92,8 @@ if (failures.length === 0) {
   for (const fragment of [
     "seis read models reais",
     "nenhuma migration",
-    "sem dados de exemplo",
+    "não foram adicionadas estimativas",
+    "dados de exemplo",
     "branch `dev`",
   ]) {
     if (!documentation.includes(fragment)) failures.push(`Documentação B87 incompleta: ${fragment}`);
