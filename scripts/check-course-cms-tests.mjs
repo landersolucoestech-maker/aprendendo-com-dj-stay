@@ -52,14 +52,25 @@ for (const fragment of [
 }
 
 for (const fragment of [
-  "course_text_array_items_chk",
-  "course_text_array_length_chk",
-  "courses_promotional_price_chk",
-  "courses_promotion_window_chk",
-  "courses_availability_window_chk",
-  "courses_release_contract_chk",
-  "courses_published_timestamp_chk",
-  "courses_deleted_archived_chk",
+  "private.course_text_array",
+  "cardinality(v_result) > 50",
+  "char_length(value) not between 1 and 500",
+  "courses_short_description_length",
+  "courses_description_length",
+  "courses_category_length",
+  "courses_language_code_format",
+  "courses_price_nonnegative",
+  "courses_currency_format",
+  "courses_promotional_price_valid",
+  "courses_promotion_window_valid",
+  "courses_promotion_window_order",
+  "courses_availability_window_order",
+  "courses_completion_percent_range",
+  "courses_certificate_percent_range",
+  "courses_release_contract",
+  "courses_version_positive",
+  "courses_published_timestamp",
+  "courses_deleted_archived",
 ]) {
   expect(migration.includes(fragment), `Constraint persistido B69 ausente: ${fragment}`);
 }
