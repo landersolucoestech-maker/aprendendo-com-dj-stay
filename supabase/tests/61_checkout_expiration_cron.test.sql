@@ -57,13 +57,13 @@ select is(
   'checkout expiration runs every five minutes'
 );
 select is(
-  (select username from cron.job where jobname='expire-due-checkout-intents'),
-  'postgres',
+  (select username::text from cron.job where jobname='expire-due-checkout-intents'),
+  'postgres'::text,
   'checkout expiration job runs as postgres'
 );
 select is(
-  (select database from cron.job where jobname='expire-due-checkout-intents'),
-  current_database(),
+  (select database::text from cron.job where jobname='expire-due-checkout-intents'),
+  current_database()::text,
   'checkout expiration job targets the current database'
 );
 select is(
