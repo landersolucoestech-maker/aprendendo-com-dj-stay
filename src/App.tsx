@@ -129,9 +129,9 @@ const App = () => (
                   <Route
                     path="/pagamento-sucesso"
                     element={
-                      <CourseBuyerRoute>
+                      <MarketplaceRoute>
                         <PaymentSuccess />
-                      </CourseBuyerRoute>
+                      </MarketplaceRoute>
                     }
                   />
 
