@@ -1,0 +1,84 @@
+name: Isolar filtro puro B76
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/patch-b76-pure-filter.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: patch-b76-pure-filter
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Atualizar suíte e contrato estático
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          test_path = Path("src/contracts/course-access.test.ts")
+          test = test_path.read_text(encoding="utf-8")
+          test = test.replace(
+              "  enrollmentsWithCourseSchema,\n} from \"@/contracts/course-access\";\nimport { getActiveEnrollments } from \"@/hooks/useCourseAccess\";",
+              "  enrollmentsWithCourseSchema,\n  getActiveEnrollments,\n} from \"@/contracts/course-access\";",
+              1,
+          )
+          if 'from "@/hooks/useCourseAccess"' in test:
+              raise SystemExit("Importação ambiental do hook ainda presente no teste.")
+          test_path.write_text(test, encoding="utf-8")
+
+          checker_path = Path("scripts/check-course-access-contract-tests.mjs")
+          checker = checker_path.read_text(encoding="utf-8")
+          old_contract_tail = '''  "enrollmentEventSchema",
+            ".strict()",
+          ]) {'''
+          new_contract_tail = '''  "enrollmentEventSchema",
+            "getActiveEnrollments",
+            'enrollment.status === "active"',
+            'enrollment.courses.status === "published"',
+            "startsAt <= now",
+            "expiresAt === null || expiresAt > now",
+            ".strict()",
+          ]) {'''
+          if old_contract_tail not in checker:
+              raise SystemExit("Bloco de contratos B76 não encontrado.")
+          checker = checker.replace(old_contract_tail, new_contract_tail, 1)
+
+          old_hook_block = '''  'eq("user_id", user.id)',
+            'enrollment.status === "active"',
+            'enrollment.courses.status === "published"',
+            "startsAt <= now",
+            "expiresAt === null || expiresAt > now",
+            "getActiveEnrollments",
+          ]) {'''
+          new_hook_block = '''  'eq("user_id", user.id)',
+            'export { getActiveEnrollments } from "@/contracts/course-access";',
+          ]) {'''
+          if old_hook_block not in checker:
+              raise SystemExit("Bloco do consumidor B76 não encontrado.")
+          checker = checker.replace(old_hook_block, new_hook_block, 1)
+          checker_path.write_text(checker, encoding="utf-8")
+          PY
+
+      - name: Publicar patch e remover workflow temporário
+        run: |
+          rm .github/workflows/patch-b76-pure-filter.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            src/contracts/course-access.test.ts \
+            scripts/check-course-access-contract-tests.mjs \
+            .github/workflows/patch-b76-pure-filter.yml
+          git commit -m "fix(b76): isolar filtro puro nos contratos"
+          git push origin HEAD:dev
