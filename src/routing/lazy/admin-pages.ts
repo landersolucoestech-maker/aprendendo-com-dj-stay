@@ -1,5 +1,8 @@
 import { lazy } from "react";
 
+export const AdminDashboard = lazy(
+  () => import("@/pages/admin/AdminDashboard"),
+);
 export const AffiliatesAdmin = lazy(
   () => import("@/pages/admin/AffiliatesAdmin"),
 );
