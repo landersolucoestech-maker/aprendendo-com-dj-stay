@@ -11,9 +11,6 @@ import {
 } from "./date-time";
 
 const REFERENCE_INSTANT = "2026-08-02T03:00:00.000Z";
-const relativeFormatter = new Intl.RelativeTimeFormat(APP_LOCALE, {
-  numeric: "auto",
-});
 
 describe("date-time", () => {
   it("preserva o locale e o timezone oficiais da aplicação", () => {
@@ -54,23 +51,21 @@ describe("date-time", () => {
   });
 
   it.each([
-    [30, 0, "second"],
-    [59, 0, "second"],
-    [60, 1, "minute"],
-    [-60, -1, "minute"],
-    [3_600, 1, "hour"],
-    [-86_400, -1, "day"],
-    [29 * 86_400, 29, "day"],
-    [30 * 86_400, 1, "month"],
-    [365 * 86_400, 1, "year"],
+    [30, "agora"],
+    [59, "agora"],
+    [60, "em 1 minuto"],
+    [-60, "há 1 minuto"],
+    [3_600, "em 1 hora"],
+    [-86_400, "ontem"],
+    [29 * 86_400, "em 29 dias"],
+    [30 * 86_400, "próximo mês"],
+    [365 * 86_400, "próximo ano"],
   ] as const)(
     "seleciona a unidade relativa correta para deslocamento de %s segundos",
-    (offsetSeconds, expectedValue, unit) => {
+    (offsetSeconds, expected) => {
       const target = Date.parse(REFERENCE_INSTANT) + offsetSeconds * 1_000;
 
-      expect(formatAppRelativeTime(target, REFERENCE_INSTANT)).toBe(
-        relativeFormatter.format(expectedValue, unit),
-      );
+      expect(formatAppRelativeTime(target, REFERENCE_INSTANT)).toBe(expected);
     },
   );
 });
