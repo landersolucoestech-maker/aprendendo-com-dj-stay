@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { checkoutSubjectTypeSchema } from "./checkout";
 import {
   studentFavoriteListSchema,
   studentFavoriteSchema,
@@ -22,6 +23,10 @@ const FAVORITE = {
 } as const;
 
 describe("studentFavoriteSubjectTypeSchema", () => {
+  it("reutiliza a definição canônica do checkout", () => {
+    expect(studentFavoriteSubjectTypeSchema).toBe(checkoutSubjectTypeSchema);
+  });
+
   it.each(["course", "digital_product"] as const)(
     "aceita o tipo canônico %s",
     (type) => {
