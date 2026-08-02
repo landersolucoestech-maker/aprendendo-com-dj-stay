@@ -21,6 +21,7 @@ const contracts = read("src/contracts/marketplace.ts");
 const catalog = read("src/pages/marketplace/DigitalMarketplace.tsx");
 const normalizedCatalog = catalog.replace(/\s+/g, " ");
 const owned = read("src/pages/student/MyDigitalProducts.tsx");
+const studentFrame = read("src/components/student/StudentPortalPageFrame.tsx");
 const admin = read("src/pages/admin/DigitalProductsAdmin.tsx");
 const privateAssets = read("src/lib/private-assets.ts");
 const schemaMigration = read(
@@ -72,6 +73,32 @@ expect(
 expect(
   adminProductsRoute.includes("</AdminRoute>"),
   "Guard administrativo do CMS de produtos deve permanecer fechado.",
+);
+
+expect(
+  app.includes('path="/meus-produtos" element={<MarketplaceRoute><MyDigitalProducts /></MarketplaceRoute>}'),
+  "Rota genérica de produtos deve preservar o layout multi-papel.",
+);
+expect(
+  app.includes('path="/aluno/produtos" element={<StudentRoute><MyDigitalProducts studentPortal /></StudentRoute>}'),
+  "Rota do aluno deve ativar o shell persistente.",
+);
+for (const fragment of [
+  "interface MyDigitalProductsProps",
+  "readonly studentPortal?: boolean",
+  "studentPortal = false",
+  "if (studentPortal)",
+  "<StudentPortalPageFrame>",
+  "<DigitalProductsContent />",
+  "<AppPageShell",
+]) {
+  expect(owned.includes(fragment), `Modo dual de produtos B84 ausente: ${fragment}`);
+}
+expect(
+  studentFrame.includes("<StudentPortalShell") &&
+    studentFrame.includes("getUserMetadataProfile") &&
+    studentFrame.includes("signOut"),
+  "Frame do aluno deve preservar identidade e logout no modo de produtos.",
 );
 
 for (const table of [
@@ -202,8 +229,8 @@ for (const path of [
 }
 
 if (failures.length) {
-  console.error("Contrato B16 inválido:\n- " + failures.join("\n- "));
+  console.error("Contrato B16/B84 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
-console.log("Contrato estático da FASE B16 aprovado.");
+console.log("Contrato estático da FASE B16/B84 aprovado com layout multi-papel preservado.");
