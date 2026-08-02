@@ -53,6 +53,9 @@ for (const fragment of [
   "completedLessonIds.has(lesson.id)",
   "Math.round((completedLessons / lessons.length) * 100)",
   "lessons.length === 0",
+  "clampProgress",
+  "Math.min(100, Math.max(0, progress))",
+  "progress: clampProgress(progress)",
 ]) {
   expect(pureModule.includes(fragment), `Módulo puro B81 ausente: ${fragment}`);
 }
@@ -212,5 +215,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B81 aprovado: tipos, cálculo percentual, deduplicação e consumidores do progresso dos módulos permanecem centralizados e determinísticos.",
+  "Contrato B81 aprovado: tipos, cálculo percentual, limite defensivo, deduplicação e consumidores do progresso dos módulos permanecem centralizados e determinísticos.",
 );
