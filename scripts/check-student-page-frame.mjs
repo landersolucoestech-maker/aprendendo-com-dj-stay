@@ -241,5 +241,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B84/B85 aprovado: certificados, produtos e editor de perfil preservam o shell; a rota genérica multi-papel continua compatível.",
+  "Contrato B84/B85 aprovado: certificados e produtos preservam o shell; o editor de perfil preserva o shell; a rota genérica multi-papel continua compatível.",
 );
