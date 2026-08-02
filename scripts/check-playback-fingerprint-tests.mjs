@@ -53,13 +53,22 @@ if (failures.length === 0) {
     "6b1d6240cb0479adba3b421db99f77f7bf42290705f5dd7a3a3cbdba04c5477a",
     "818c4fd0a174a7f830f1f90f90da2ab748ef4f403b12f25175c03cb5f7509da7",
     "toMatch(/^[0-9a-f]{64}$/)",
-    'toHaveBeenCalledWith(SESSION_NONCE_KEY, GENERATED_NONCE)',
     'readError: new Error("sessionStorage bloqueado")',
     'writeError: new Error("quota indisponível")',
   ]) {
     if (!test.includes(fragment)) {
       failures.push(`${testPath}: cobertura obrigatória ausente: ${fragment}`);
     }
+  }
+
+  if (
+    !/toHaveBeenCalledWith\(\s*SESSION_NONCE_KEY,\s*GENERATED_NONCE,?\s*\)/m.test(
+      test,
+    )
+  ) {
+    failures.push(
+      `${testPath}: cobertura obrigatória ausente: persistência do nonce gerado`,
+    );
   }
 
   for (const prohibited of [
