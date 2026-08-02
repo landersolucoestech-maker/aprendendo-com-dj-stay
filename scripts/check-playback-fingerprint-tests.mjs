@@ -48,6 +48,9 @@ if (failures.length === 0) {
     "vi.unstubAllGlobals()",
     'resolves.toBe("000f10ff")',
     "EXPECTED_SOURCE",
+    "const digestSources: string[] = []",
+    "digestSources.push(new TextDecoder().decode(bytes))",
+    "expect(environment.digestSources).toEqual([EXPECTED_SOURCE])",
     'toHaveBeenCalledWith(SESSION_NONCE_KEY, GENERATED_NONCE)',
     'readError: new Error("sessionStorage bloqueado")',
     'writeError: new Error("quota indisponível")',
@@ -55,6 +58,12 @@ if (failures.length === 0) {
     if (!test.includes(fragment)) {
       failures.push(`${testPath}: cobertura obrigatória ausente: ${fragment}`);
     }
+  }
+
+  if (test.includes("ReturnType<typeof vi.fn>")) {
+    failures.push(
+      `${testPath}: widening genérico de vi.fn não pode ser usado para ler argumentos do digest`,
+    );
   }
 
   if (
@@ -82,5 +91,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B57 aprovado: fingerprint preserva SHA-256 e opera em modo best-effort quando sessionStorage falha.",
+  "Contrato B57 aprovado: fingerprint preserva SHA-256, tolera falhas de sessionStorage e captura a fonte do digest sem widening do mock.",
 );
