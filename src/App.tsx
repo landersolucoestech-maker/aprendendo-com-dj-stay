@@ -142,7 +142,7 @@ const App = () => (
                   <Route path="/aluno/biblioteca" element={<StudentRoute><StudentPortal section="library" /></StudentRoute>} />
                   <Route path="/aluno/favoritos" element={<StudentRoute><StudentFavorites /></StudentRoute>} />
                   <Route path="/aluno/certificados" element={<StudentRoute><Certificates /></StudentRoute>} />
-                  <Route path="/aluno/produtos" element={<StudentRoute><MyDigitalProducts /></StudentRoute>} />
+                  <Route path="/aluno/produtos" element={<StudentRoute><MyDigitalProducts studentPortal /></StudentRoute>} />
                   <Route path="/aluno/pedidos" element={<StudentRoute><StudentPortal section="orders" /></StudentRoute>} />
                   <Route path="/aluno/pagamentos" element={<StudentRoute><StudentPortal section="payments" /></StudentRoute>} />
                   <Route path="/aluno/notificacoes" element={<StudentRoute><StudentNotifications /></StudentRoute>} />
