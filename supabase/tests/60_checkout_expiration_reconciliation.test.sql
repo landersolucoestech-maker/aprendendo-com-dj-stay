@@ -89,8 +89,8 @@ select is(public.reconcile_my_checkout_return('b9100000-0000-4000-8000-000000000
 select is((select count(*)::integer from public.checkout_intent_events where checkout_intent_id='b9100000-0000-4000-8000-000000000301' and event_type='expired'),1,'idempotent reconciliation does not duplicate audit events');
 select is(public.reconcile_my_checkout_return('b9100000-0000-4000-8000-000000000302')->>'intent_status','checkout_created','future checkout remains active');
 select is((public.reconcile_my_checkout_return('b9100000-0000-4000-8000-000000000304')->>'found')::boolean,false,'another user checkout remains indistinguishable from missing');
-select is((select status::text from public.checkout_intents where id='b9100000-0000-4000-8000-000000000304'),'checkout_created','another user cannot mutate checkout expiration');
 reset role;
+select is((select status::text from public.checkout_intents where id='b9100000-0000-4000-8000-000000000304'),'checkout_created','another user cannot mutate checkout expiration');
 
 set local role service_role;
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
