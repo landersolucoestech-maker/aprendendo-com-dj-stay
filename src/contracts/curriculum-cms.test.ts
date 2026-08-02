@@ -350,7 +350,7 @@ describe("lessonMediaRowSchema", () => {
         ...baseMedia,
         provider: "youtube",
         asset_id: null,
-        external_video_id: "video-123",
+        external_video_id: "AbCdEf123_-",
       }).provider,
     ).toBe("youtube");
   });
