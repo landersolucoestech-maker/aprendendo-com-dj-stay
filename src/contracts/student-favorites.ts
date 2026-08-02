@@ -1,29 +1,47 @@
 import { z } from "zod";
 
+const favoriteTimestampSchema = z.string().datetime({ offset: true });
+const internalActionPathSchema = z.string().refine(
+  (value) =>
+    value.startsWith("/") &&
+    !value.startsWith("//") &&
+    !value.includes("\\"),
+  {
+    message:
+      "O caminho de ação deve ser interno, iniciar com uma barra simples e não conter barra invertida.",
+  },
+);
+
 export const studentFavoriteSubjectTypeSchema = z.enum([
   "course",
   "digital_product",
 ]);
 
-export const studentFavoriteSchema = z.object({
-  id: z.string().uuid(),
-  subject_type: studentFavoriteSubjectTypeSchema,
-  subject_id: z.string().uuid(),
-  title: z.string(),
-  action_path: z.string(),
-  created_at: z.string(),
-});
+export const studentFavoriteSchema = z
+  .object({
+    id: z.string().uuid(),
+    subject_type: studentFavoriteSubjectTypeSchema,
+    subject_id: z.string().uuid(),
+    title: z.string().trim().min(1),
+    action_path: internalActionPathSchema,
+    created_at: favoriteTimestampSchema,
+  })
+  .strict();
 
-export const studentFavoriteListSchema = z.object({
-  total: z.number().int().nonnegative(),
-  favorites: z.array(studentFavoriteSchema),
-});
+export const studentFavoriteListSchema = z
+  .object({
+    total: z.number().int().nonnegative(),
+    favorites: z.array(studentFavoriteSchema),
+  })
+  .strict();
 
-export const studentFavoriteToggleResultSchema = z.object({
-  subject_type: studentFavoriteSubjectTypeSchema,
-  subject_id: z.string().uuid(),
-  is_favorite: z.boolean(),
-});
+export const studentFavoriteToggleResultSchema = z
+  .object({
+    subject_type: studentFavoriteSubjectTypeSchema,
+    subject_id: z.string().uuid(),
+    is_favorite: z.boolean(),
+  })
+  .strict();
 
 export const studentFavoriteStatusSchema = z.boolean();
 
