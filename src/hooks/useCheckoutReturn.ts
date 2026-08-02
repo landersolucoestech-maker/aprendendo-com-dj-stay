@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { z } from "zod";
 
-import { checkoutReturnSchema } from "@/contracts/checkout-return";
+import {
+  checkoutIntentIdSchema,
+  checkoutReturnSchema,
+} from "@/contracts/checkout-return";
 import { parseDataContract } from "@/contracts/contract-error";
 import { supabase } from "@/integrations/supabase/client";
 import { shouldPollCheckoutReturn } from "@/lib/checkout-return";
-
-const checkoutIntentIdSchema = z.string().uuid();
 
 export const checkoutReturnQueryKey = (checkoutIntentId: string | null) =>
   ["checkout-return", checkoutIntentId] as const;
