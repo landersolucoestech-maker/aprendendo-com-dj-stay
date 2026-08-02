@@ -191,6 +191,12 @@ const assetTypePolicy = {
 const includesText = (values: readonly string[], value: string): boolean =>
   values.includes(value);
 
+const hasControlCharacter = (value: string): boolean =>
+  Array.from(value).some((character) => {
+    const code = character.charCodeAt(0);
+    return code <= 31 || code === 127;
+  });
+
 const addIssue = (
   context: z.RefinementCtx,
   path: string,
@@ -221,7 +227,7 @@ export const assetRowSchema = z
       .string()
       .min(1)
       .max(255)
-      .refine((value) => !/[\\/]/.test(value) && !/[\u0000-\u001f\u007f]/.test(value)),
+      .refine((value) => !/[\\/]/.test(value) && !hasControlCharacter(value)),
     normalized_name: z.string().min(1).max(255).regex(/^[a-z0-9._-]+$/),
     extension: z.string().regex(/^[a-z0-9]{1,16}$/),
     mime_type: z
@@ -373,7 +379,7 @@ export const avatarFileSchema = z
       file.name.length >= 1 &&
       file.name.length <= 255 &&
       !/[\\/]/.test(file.name) &&
-      !/[\u0000-\u001f\u007f]/.test(file.name),
+      !hasControlCharacter(file.name),
     {
       message: "O nome do arquivo é inválido.",
     },
