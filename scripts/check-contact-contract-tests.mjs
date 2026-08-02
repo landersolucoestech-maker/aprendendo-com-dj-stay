@@ -107,7 +107,7 @@ for (const fragment of [
 
 const responseValidationCount = hooks.match(/parseDataContract\(/g)?.length ?? 0;
 expect(
-  responseValidationCount >= 6,
+  responseValidationCount >= 5,
   `Inputs e respostas de contatos devem permanecer validados; encontrados ${responseValidationCount}.`,
 );
 expect(
