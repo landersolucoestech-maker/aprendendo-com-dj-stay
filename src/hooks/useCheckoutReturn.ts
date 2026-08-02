@@ -21,15 +21,16 @@ export const useCheckoutReturn = (checkoutIntentId: string | null) => {
     queryFn: async () => {
       if (validId === null) throw new Error("CHECKOUT_INTENT_ID_INVALID");
 
-      const { data, error } = await supabase.rpc("get_my_checkout_return", {
-        p_checkout_intent_id: validId,
-      });
+      const { data, error } = await supabase.rpc(
+        "reconcile_my_checkout_return",
+        { p_checkout_intent_id: validId },
+      );
       if (error) throw error;
 
       return parseDataContract(
         checkoutReturnSchema,
         data,
-        "retorno financeiro do checkout",
+        "retorno financeiro reconciliado do checkout",
       );
     },
     refetchInterval: (query) => {
