@@ -3,6 +3,8 @@ import { z } from "zod";
 export const uuidSchema = z.string().uuid();
 const timestampSchema = z.string().datetime({ offset: true });
 const nonBlankTextSchema = z.string().trim().min(1);
+const progressPositionSchema = z.number().int().min(0).max(604_800);
+const progressDurationSchema = z.number().int().min(1).max(604_800);
 export const lessonIdSchema = uuidSchema;
 
 export const lessonCompletionModeSchema = z.enum([
@@ -23,7 +25,19 @@ export const lessonProgressEventTypeSchema = z.enum([
   "visibility_hidden",
 ]);
 
-export const lessonRowSchema = z
+const addIssue = (
+  context: z.RefinementCtx,
+  path: string,
+  message: string,
+): void => {
+  context.addIssue({
+    code: z.ZodIssueCode.custom,
+    path: [path],
+    message,
+  });
+};
+
+const lessonRowObjectSchema = z
   .object({
     id: uuidSchema,
     modulo_id: uuidSchema,
@@ -39,8 +53,34 @@ export const lessonRowSchema = z
   })
   .strict();
 
-export const lessonsResponseSchema = z.array(
-  lessonRowSchema.pick({
+const validateLessonCompletion = (
+  value: {
+    completion_mode: z.infer<typeof lessonCompletionModeSchema>;
+    completion_percent: number | null;
+  },
+  context: z.RefinementCtx,
+): void => {
+  const valid =
+    (value.completion_mode === "media_progress" &&
+      value.completion_percent !== null) ||
+    (value.completion_mode !== "media_progress" &&
+      value.completion_percent === null);
+
+  if (!valid) {
+    addIssue(
+      context,
+      "completion_percent",
+      "O percentual de conclusão deve acompanhar o modo da aula.",
+    );
+  }
+};
+
+export const lessonRowSchema = lessonRowObjectSchema.superRefine(
+  validateLessonCompletion,
+);
+
+const lessonResponseItemSchema = lessonRowObjectSchema
+  .pick({
     id: true,
     modulo_id: true,
     titulo: true,
@@ -50,16 +90,21 @@ export const lessonsResponseSchema = z.array(
     completion_mode: true,
     completion_percent: true,
     content_kind: true,
-  }),
-);
+  })
+  .strict()
+  .superRefine(validateLessonCompletion);
 
-const moduleLessonSchema = lessonRowSchema.pick({
-  id: true,
-  titulo: true,
-  descricao: true,
-  ordem: true,
-  duracao: true,
-});
+export const lessonsResponseSchema = z.array(lessonResponseItemSchema);
+
+const moduleLessonSchema = lessonRowObjectSchema
+  .pick({
+    id: true,
+    titulo: true,
+    descricao: true,
+    ordem: true,
+    duracao: true,
+  })
+  .strict();
 
 export const modulesResponseSchema = z.array(
   z
@@ -89,7 +134,33 @@ export const progressRowSchema = z
     created_at: timestampSchema,
     updated_at: timestampSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (value.completada && value.progresso_percentual !== 100) {
+      addIssue(
+        context,
+        "progresso_percentual",
+        "Uma aula concluída deve possuir progresso de 100%.",
+      );
+    }
+
+    const eventFields = [
+      value.last_event_id,
+      value.last_event_received_at,
+      value.last_client_instance_id,
+    ];
+    const populatedEventFields = eventFields.filter((field) => field !== null).length;
+    const initialStateIsValid = value.revision === 0 && populatedEventFields === 0;
+    const eventStateIsValid = value.revision > 0 && populatedEventFields === eventFields.length;
+
+    if (!initialStateIsValid && !eventStateIsValid) {
+      addIssue(
+        context,
+        "revision",
+        "A revisão deve ser coerente com os dados do último evento.",
+      );
+    }
+  });
 
 export const progressResponseSchema = z.array(progressRowSchema);
 
@@ -100,11 +171,83 @@ export const lessonProgressEventInputSchema = z
     clientInstanceId: uuidSchema,
     eventSequence: z.number().int().positive(),
     eventType: lessonProgressEventTypeSchema,
-    positionSeconds: z.number().int().min(0).max(604800),
-    durationSeconds: z.number().int().min(1).max(604800),
+    positionSeconds: progressPositionSchema,
+    durationSeconds: progressDurationSchema,
     observedAt: timestampSchema,
   })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.positionSeconds > value.durationSeconds + 30) {
+      addIssue(
+        context,
+        "positionSeconds",
+        "A posição não pode exceder a duração em mais de 30 segundos.",
+      );
+    }
+  });
+
+export const lessonProgressStreamSchema = z
+  .object({
+    user_id: uuidSchema,
+    aula_id: uuidSchema,
+    client_instance_id: uuidSchema,
+    auth_session_id: uuidSchema,
+    last_event_sequence: z.number().int().positive(),
+    last_event_id: uuidSchema,
+    last_position_seconds: progressPositionSchema,
+    created_at: timestampSchema,
+    updated_at: timestampSchema,
+  })
   .strict();
+
+export const lessonProgressStreamsSchema = z.array(lessonProgressStreamSchema);
+
+export const lessonProgressEventSchema = z
+  .object({
+    id: uuidSchema,
+    user_id: uuidSchema,
+    aula_id: uuidSchema,
+    client_instance_id: uuidSchema,
+    auth_session_id: uuidSchema,
+    event_sequence: z.number().int().positive(),
+    event_type: lessonProgressEventTypeSchema,
+    position_seconds: progressPositionSchema,
+    duration_seconds: progressDurationSchema.nullable(),
+    calculated_progress_percent: z.number().int().min(0).max(100),
+    resulting_completed: z.boolean(),
+    accepted: z.boolean(),
+    ignored_reason: z.string().min(1).max(100).nullable(),
+    resulting_revision: z.number().int().nonnegative(),
+    observed_at: timestampSchema,
+    received_at: timestampSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    const ignoredContractIsValid =
+      (value.accepted && value.ignored_reason === null) ||
+      (!value.accepted && value.ignored_reason !== null);
+
+    if (!ignoredContractIsValid) {
+      addIssue(
+        context,
+        "ignored_reason",
+        "A aceitação do evento deve ser coerente com o motivo de descarte.",
+      );
+    }
+
+    if (
+      value.duration_seconds !== null &&
+      value.position_seconds > value.duration_seconds + 30
+    ) {
+      addIssue(
+        context,
+        "position_seconds",
+        "A posição persistida não pode exceder a duração em mais de 30 segundos.",
+      );
+    }
+  });
+
+export const lessonProgressEventsSchema = z.array(lessonProgressEventSchema);
 
 export const userProfileSchema = z
   .object({
@@ -158,5 +301,7 @@ export type LessonProgressEventType = z.infer<typeof lessonProgressEventTypeSche
 export type LessonRow = z.infer<typeof lessonRowSchema>;
 export type ProgressRow = z.infer<typeof progressRowSchema>;
 export type LessonProgressEventInput = z.infer<typeof lessonProgressEventInputSchema>;
+export type LessonProgressStream = z.infer<typeof lessonProgressStreamSchema>;
+export type LessonProgressEvent = z.infer<typeof lessonProgressEventSchema>;
 export type UserProfileRow = z.infer<typeof userProfileSchema>;
 export type ProfileMetadataInput = z.infer<typeof profileMetadataInputSchema>;
