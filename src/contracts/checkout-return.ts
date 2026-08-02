@@ -3,6 +3,8 @@ import { z } from "zod";
 import { checkoutSubjectTypeSchema } from "@/contracts/checkout";
 import { paymentOrderStatusSchema } from "@/contracts/payment-admin";
 
+export const checkoutIntentIdSchema = z.string().uuid();
+
 export const checkoutIntentStatusSchema = z.enum([
   "prepared",
   "provider_creating",
@@ -117,7 +119,7 @@ const checkoutReturnNotFoundSchema = z
 export const checkoutReturnFoundSchema = z
   .object({
     found: z.literal(true),
-    checkout_intent_id: z.string().uuid(),
+    checkout_intent_id: checkoutIntentIdSchema,
     intent_status: checkoutIntentStatusSchema,
     subject_type: checkoutSubjectTypeSchema,
     subject_id: z.string().uuid(),
