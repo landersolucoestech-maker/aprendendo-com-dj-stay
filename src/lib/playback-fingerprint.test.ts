@@ -22,9 +22,16 @@ const installEnvironment = (options: EnvironmentOptions = {}) => {
     if (options.writeError) throw options.writeError;
   });
   const randomUUID = vi.fn(() => GENERATED_NONCE);
+  const digestSources: string[] = [];
   const digest = vi.fn(
-    async (_algorithm: AlgorithmIdentifier, _data: BufferSource) =>
-      Uint8Array.from([0, 15, 16, 255]).buffer,
+    async (_algorithm: AlgorithmIdentifier, data: BufferSource) => {
+      const bytes =
+        data instanceof ArrayBuffer
+          ? new Uint8Array(data)
+          : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+      digestSources.push(new TextDecoder().decode(bytes));
+      return Uint8Array.from([0, 15, 16, 255]).buffer;
+    },
   );
 
   vi.stubGlobal("window", {
@@ -46,20 +53,7 @@ const installEnvironment = (options: EnvironmentOptions = {}) => {
       }) as Intl.DateTimeFormat,
   );
 
-  return { getItem, setItem, randomUUID, digest };
-};
-
-const getDigestSource = (
-  digest: ReturnType<typeof vi.fn>,
-): string => {
-  const firstCall = digest.mock.calls[0];
-  const input = firstCall?.[1];
-
-  if (!(input instanceof Uint8Array)) {
-    throw new Error("O digest deveria receber a fonte codificada como Uint8Array.");
-  }
-
-  return new TextDecoder().decode(input);
+  return { getItem, setItem, randomUUID, digest, digestSources };
 };
 
 afterEach(() => {
@@ -78,7 +72,7 @@ describe("getPlaybackFingerprint", () => {
     expect(environment.setItem).not.toHaveBeenCalled();
     expect(environment.digest).toHaveBeenCalledOnce();
     expect(environment.digest.mock.calls[0]?.[0]).toBe("SHA-256");
-    expect(getDigestSource(environment.digest)).toBe(EXPECTED_SOURCE);
+    expect(environment.digestSources).toEqual([EXPECTED_SOURCE]);
   });
 
   it("gera e persiste nonce quando a sessão ainda não possui valor", async () => {
@@ -90,7 +84,7 @@ describe("getPlaybackFingerprint", () => {
       SESSION_NONCE_KEY,
       GENERATED_NONCE,
     );
-    expect(getDigestSource(environment.digest)).toContain(GENERATED_NONCE);
+    expect(environment.digestSources[0]).toContain(GENERATED_NONCE);
   });
 
   it("continua quando a leitura do sessionStorage falha", async () => {
@@ -104,7 +98,7 @@ describe("getPlaybackFingerprint", () => {
       SESSION_NONCE_KEY,
       GENERATED_NONCE,
     );
-    expect(getDigestSource(environment.digest)).toContain(GENERATED_NONCE);
+    expect(environment.digestSources[0]).toContain(GENERATED_NONCE);
   });
 
   it("continua quando a gravação do sessionStorage falha", async () => {
@@ -117,6 +111,6 @@ describe("getPlaybackFingerprint", () => {
       SESSION_NONCE_KEY,
       GENERATED_NONCE,
     );
-    expect(getDigestSource(environment.digest)).toContain(GENERATED_NONCE);
+    expect(environment.digestSources[0]).toContain(GENERATED_NONCE);
   });
 });
