@@ -37,6 +37,9 @@ const formatMoney = (value: number, currencyCode: string): string =>
 const HeroSection = () => {
   const catalogQuery = usePublicCourseCatalog();
   const featuredCourse = catalogQuery.data?.courses[0];
+  const primaryPath = featuredCourse
+    ? `/cursos?curso=${encodeURIComponent(featuredCourse.slug)}`
+    : "/matricule-se";
 
   return (
     <section
@@ -97,8 +100,8 @@ const HeroSection = () => {
 
             <div className="flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
               <Button asChild size="lg" className="btn-brand px-8 py-6 text-lg">
-                <Link to="/matricule-se">
-                  Criar conta
+                <Link to={primaryPath}>
+                  {featuredCourse ? "Comprar curso" : "Criar conta"}
                   <GraduationCap className="ml-2 h-5 w-5" aria-hidden="true" />
                 </Link>
               </Button>
