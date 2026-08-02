@@ -28,8 +28,9 @@ A leitura e a gravação foram separadas em operações best-effort:
 - resolução da tela;
 - `navigator.userAgent` e idioma;
 - timezone resolvido pelo `Intl`;
-- `crypto.randomUUID`;
-- `crypto.subtle.digest`.
+- `crypto.randomUUID`.
+
+O digest SHA-256 é executado pelo Web Crypto real do Node 22. A suíte valida hashes literais conhecidos, em vez de substituir `crypto.subtle.digest` por um mock tipado de `BufferSource`.
 
 A cobertura inclui:
 
@@ -39,11 +40,9 @@ A cobertura inclui:
 - continuidade após falha de leitura;
 - continuidade após falha de escrita;
 - composição determinística da fonte;
-- uso de SHA-256;
-- conversão byte a byte para hexadecimal com padding;
+- uso real de SHA-256;
+- saída hexadecimal de 64 caracteres;
 - restauração de globals e mocks após cada teste.
-
-A suíte usa digest controlado para testar a conversão hexadecimal sem substituir o contrato de produção do Web Crypto.
 
 ## Contrato permanente
 
@@ -54,6 +53,8 @@ A suíte usa digest controlado para testar a conversão hexadecimal sem substitu
 - geração via `crypto.randomUUID`;
 - preservação de SHA-256 e saída hexadecimal;
 - permanência dos cenários de sucesso e falha de storage;
+- persistência do nonce gerado, independentemente da formatação do teste;
+- ausência dos mocks de digest que produziram incompatibilidades com `BufferSource`;
 - script npm dedicado;
 - integração do contrato B57 ao `typecheck`.
 
