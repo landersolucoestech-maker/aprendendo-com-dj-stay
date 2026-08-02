@@ -24,6 +24,7 @@ import {
   DigitalProductsAdmin,
   FrontendErrorsAdmin,
   PaymentsAdmin,
+  PrivacyRightsAdmin,
   StudentsAdmin,
   SupportAdmin,
 } from "@/routing/lazy/admin-pages";
@@ -58,6 +59,7 @@ import {
   StudentFavorites,
   StudentNotifications,
   StudentPortal,
+  StudentPrivacyRights,
   StudentSupport,
 } from "@/routing/lazy/student-pages";
 
@@ -142,6 +144,7 @@ const App = () => (
                   <Route path="/aluno/perfil" element={<StudentRoute><StudentPortal section="profile" /></StudentRoute>} />
                   <Route path="/aluno/perfil/editar" element={<StudentRoute><EditProfile /></StudentRoute>} />
                   <Route path="/aluno/preferencias" element={<StudentRoute><StudentCommunicationPreferences /></StudentRoute>} />
+                  <Route path="/aluno/privacidade" element={<StudentRoute><StudentPrivacyRights /></StudentRoute>} />
                   <Route path="/aluno/historico" element={<StudentRoute><StudentPortal section="history" /></StudentRoute>} />
                   <Route path="/dashboard" element={<StudentRoute><Navigate to="/aluno" replace /></StudentRoute>} />
                   <Route path="/aula/:lessonId" element={<RequireAuth><RequireRole allowedRoles={["aluno", "administrador_proprietario"]}><Lesson /></RequireRole></RequireAuth>} />
@@ -157,6 +160,7 @@ const App = () => (
                   <Route path="/admin/alunos" element={<AdminRoute><StudentsAdmin /></AdminRoute>} />
                   <Route path="/admin/contatos" element={<AdminRoute><ContactsAdmin /></AdminRoute>} />
                   <Route path="/admin/suporte" element={<AdminRoute><SupportAdmin /></AdminRoute>} />
+                  <Route path="/admin/privacidade" element={<AdminRoute><PrivacyRightsAdmin /></AdminRoute>} />
                   <Route path="/admin/erros" element={<AdminRoute><FrontendErrorsAdmin /></AdminRoute>} />
 
                   <Route
