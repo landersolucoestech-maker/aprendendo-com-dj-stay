@@ -1,0 +1,82 @@
+name: Diagnóstico unitário B76
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/diagnose-b76-unit.yml"
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.16.0
+          cache: npm
+
+      - run: npm ci
+
+      - name: Executar apenas os testes B76
+        id: tests
+        continue-on-error: true
+        run: |
+          set +e
+          npx vitest run --config vitest.config.ts \
+            src/contracts/course-access.test.ts \
+            src/contracts/course-access-boundaries.test.ts \
+            --reporter=verbose > /tmp/b76-unit.log 2>&1
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit $status
+
+      - name: Publicar diagnóstico enxuto
+        if: always()
+        uses: actions/github-script@v9
+        env:
+          EXIT_CODE: ${{ steps.tests.outputs.exit_code }}
+        with:
+          script: |
+            const fs = require("node:fs");
+            const raw = fs.existsSync("/tmp/b76-unit.log")
+              ? fs.readFileSync("/tmp/b76-unit.log", "utf8")
+              : "Log não produzido.";
+            const relevant = raw
+              .split("\n")
+              .filter((line) =>
+                /FAIL|AssertionError|expected|received|course-access|Test Files|Tests|Error:/i.test(line),
+              )
+              .slice(-120)
+              .join("\n");
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Diagnóstico B76 — ${context.sha.slice(0, 12)}`,
+              body: [
+                `Commit: \`${context.sha}\``,
+                `Exit code: \`${process.env.EXIT_CODE ?? "unknown"}\``,
+                "",
+                "```text",
+                (relevant || raw.slice(-10000)).slice(-10000),
+                "```",
+              ].join("\n"),
+            });
+
+      - name: Remover workflow temporário
+        if: always()
+        run: |
+          rm .github/workflows/diagnose-b76-unit.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/workflows/diagnose-b76-unit.yml
+          git commit -m "chore(b76): remover diagnóstico unitário temporário"
+          git push origin HEAD:dev
