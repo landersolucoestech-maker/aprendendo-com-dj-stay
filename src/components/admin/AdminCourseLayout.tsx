@@ -1,4 +1,4 @@
-import { BookOpen, LogOut, UserRound } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -44,15 +44,6 @@ export const AdminCourseLayout = ({
       eyebrow="Administração"
       title={title}
       description={description}
-      navigation={
-        <Link
-          to="/admin/cursos"
-          className="inline-flex items-center gap-2 rounded-md text-sm font-medium text-admin hover:text-admin/80"
-        >
-          <BookOpen className="h-4 w-4" aria-hidden="true" />
-          CMS de cursos
-        </Link>
-      }
       actions={
         <>
           {actions}
