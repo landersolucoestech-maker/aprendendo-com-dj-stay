@@ -3274,6 +3274,42 @@ export type Database = {
           },
         ]
       }
+      student_communication_preferences: {
+        Row: {
+          consent_version: string | null
+          consented_at: string | null
+          created_at: string
+          email_marketing: boolean
+          email_product_updates: boolean
+          email_transactional: boolean
+          privacy_analytics: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          consent_version?: string | null
+          consented_at?: string | null
+          created_at?: string
+          email_marketing?: boolean
+          email_product_updates?: boolean
+          email_transactional?: boolean
+          privacy_analytics?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          consent_version?: string | null
+          consented_at?: string | null
+          created_at?: string
+          email_marketing?: boolean
+          email_product_updates?: boolean
+          email_transactional?: boolean
+          privacy_analytics?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       student_favorites: {
         Row: {
           created_at: string
@@ -4695,6 +4731,7 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
       }
+      get_my_student_communication_preferences: { Args: never; Returns: Json }
       get_my_student_favorites: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
@@ -6201,6 +6238,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      update_my_student_communication_preferences: {
+        Args: {
+          p_consent_version?: string
+          p_email_marketing: boolean
+          p_email_product_updates: boolean
+          p_email_transactional: boolean
+          p_privacy_analytics: boolean
+        }
+        Returns: Json
       }
       upsert_external_lesson_media: {
         Args: {
