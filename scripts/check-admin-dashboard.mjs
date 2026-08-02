@@ -48,7 +48,7 @@ if (failures.length === 0) {
     "Valor confirmado",
     "Matrículas ativas",
     "Fila operacional",
-    "Nenhum valor desta página é estimado",
+    "valor desta página é estimado ou preenchido com dados de exemplo",
     'to="/admin/pagamentos"',
     'to="/admin/alunos"',
     'to="/admin/suporte"',
