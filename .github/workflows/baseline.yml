@@ -57,6 +57,7 @@ jobs:
         if: steps.cli.outcome == 'success'
         continue-on-error: true
         run: |
+          npx --yes "supabase@${SUPABASE_CLI_VERSION}" stop --no-backup || true
           npx --yes "supabase@${SUPABASE_CLI_VERSION}" start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
           npx --yes "supabase@${SUPABASE_CLI_VERSION}" db reset --local --no-seed
           npx --yes "supabase@${SUPABASE_CLI_VERSION}" test db
@@ -77,6 +78,11 @@ jobs:
             git push origin HEAD:dev
           fi
           diff -u artifacts/database.types.ts src/integrations/supabase/types.ts
+
+      - name: Limpar Supabase local
+        if: always() && steps.cli.outcome == 'success'
+        continue-on-error: true
+        run: npx --yes "supabase@${SUPABASE_CLI_VERSION}" stop --no-backup || true
 
       - name: Typecheck
         id: typecheck
