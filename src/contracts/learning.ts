@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+export {
+  profileMetadataInputSchema,
+  userProfileSchema,
+  type ProfileMetadataInput,
+  type UserProfileRow,
+} from "@/contracts/profile";
+
 export const uuidSchema = z.string().uuid();
 const timestampSchema = z.string().datetime({ offset: true });
 const nonBlankTextSchema = z.string().trim().min(1);
@@ -257,15 +264,6 @@ export const lessonProgressEventSchema = z
 
 export const lessonProgressEventsSchema = z.array(lessonProgressEventSchema);
 
-export const userProfileSchema = z
-  .object({
-    id: uuidSchema,
-    user_id: uuidSchema,
-    avatar_asset_id: uuidSchema.nullable(),
-    created_at: timestampSchema,
-    updated_at: timestampSchema,
-  })
-  .strict();
 
 export const recentProgressResponseSchema = z.array(
   progressRowObjectSchema
@@ -286,25 +284,6 @@ export const recentProgressResponseSchema = z.array(
     .superRefine(validateProgressRow),
 );
 
-const optionalHttpsUrlSchema = z.union([
-  z.literal(""),
-  z
-    .string()
-    .max(500)
-    .url()
-    .refine((value) => new URL(value).protocol === "https:", "A URL deve utilizar HTTPS."),
-]);
-
-export const profileMetadataInputSchema = z
-  .object({
-    name: nonBlankTextSchema.max(120),
-    phone: z.string().trim().max(40),
-    bio: z.string().trim().max(1000),
-    instagram: optionalHttpsUrlSchema,
-    youtube: optionalHttpsUrlSchema,
-    website: optionalHttpsUrlSchema,
-  })
-  .strict();
 
 export type LessonCompletionMode = z.infer<typeof lessonCompletionModeSchema>;
 export type LessonContentKind = z.infer<typeof lessonContentKindSchema>;
@@ -314,5 +293,3 @@ export type ProgressRow = z.infer<typeof progressRowSchema>;
 export type LessonProgressEventInput = z.infer<typeof lessonProgressEventInputSchema>;
 export type LessonProgressStream = z.infer<typeof lessonProgressStreamSchema>;
 export type LessonProgressEvent = z.infer<typeof lessonProgressEventSchema>;
-export type UserProfileRow = z.infer<typeof userProfileSchema>;
-export type ProfileMetadataInput = z.infer<typeof profileMetadataInputSchema>;
