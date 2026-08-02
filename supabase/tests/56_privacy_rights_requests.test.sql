@@ -1,0 +1,37 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(30);
+
+select has_table('public', 'privacy_rights_requests', 'privacy requests table exists');
+select has_table('public', 'privacy_rights_request_events', 'privacy request events table exists');
+select has_pk('public', 'privacy_rights_requests', 'privacy requests have primary key');
+select has_pk('public', 'privacy_rights_request_events', 'privacy events have primary key');
+select has_fk('public', 'privacy_rights_requests', 'privacy requests have foreign keys');
+select has_fk('public', 'privacy_rights_request_events', 'privacy events have foreign keys');
+select has_check('public', 'privacy_rights_requests', 'privacy requests validate content');
+select has_check('public', 'privacy_rights_request_events', 'privacy events validate actions');
+select ok((select relrowsecurity and relforcerowsecurity from pg_class where oid='public.privacy_rights_requests'::regclass), 'privacy requests have forced RLS');
+select ok((select relrowsecurity and relforcerowsecurity from pg_class where oid='public.privacy_rights_request_events'::regclass), 'privacy events have forced RLS');
+select is((select count(*)::integer from information_schema.role_table_grants where table_schema='public' and table_name in ('privacy_rights_requests','privacy_rights_request_events') and grantee='anon'), 0, 'anonymous has no privacy table grants');
+select is((select count(*)::integer from information_schema.role_table_grants where table_schema='public' and table_name in ('privacy_rights_requests','privacy_rights_request_events') and grantee='authenticated'), 0, 'authenticated has no direct privacy table grants');
+select is((select count(*)::integer from pg_policies where schemaname='public' and tablename in ('privacy_rights_requests','privacy_rights_request_events') and policyname like '%direct_access_denied'), 2, 'privacy tables have deny policies');
+select has_index('public', 'privacy_rights_requests', 'privacy_rights_requests_open_unique_idx', 'open requests are unique by user and type');
+select has_index('public', 'privacy_rights_request_events', 'privacy_rights_request_events_actor_idx', 'privacy events cover actor foreign key');
+select has_function('private', 'create_my_privacy_rights_request', array['public.privacy_rights_request_type','text'], 'private create function exists');
+select has_function('private', 'get_my_privacy_rights_requests', array['integer','integer'], 'private student list exists');
+select has_function('private', 'cancel_my_privacy_rights_request', array['uuid'], 'private cancel exists');
+select has_function('private', 'admin_get_privacy_rights_requests', array['public.privacy_rights_request_status','public.privacy_rights_request_type','integer','integer'], 'private admin list exists');
+select has_function('private', 'admin_update_privacy_rights_request', array['uuid','public.privacy_rights_request_status','text'], 'private admin update exists');
+select ok(position('OPEN_PRIVACY_REQUEST_ALREADY_EXISTS' in pg_get_functiondef('private.create_my_privacy_rights_request(public.privacy_rights_request_type,text)'::regprocedure)) > 0, 'create prevents duplicate open requests');
+select ok(position('user_id = v_user_id' in pg_get_functiondef('private.get_my_privacy_rights_requests(integer,integer)'::regprocedure)) > 0, 'student list filters auth user');
+select ok(position('user_id = v_user_id' in pg_get_functiondef('private.cancel_my_privacy_rights_request(uuid)'::regprocedure)) > 0, 'cancel binds auth user');
+select ok(position('PRIVACY_REQUEST_CANNOT_BE_CANCELLED' in pg_get_functiondef('private.cancel_my_privacy_rights_request(uuid)'::regprocedure)) > 0, 'cancel is limited to submitted requests');
+select ok(position('ADMIN_REQUIRED' in pg_get_functiondef('private.admin_get_privacy_rights_requests(public.privacy_rights_request_status,public.privacy_rights_request_type,integer,integer)'::regprocedure)) > 0, 'admin list checks role');
+select ok(position('ADMIN_NOTES_REQUIRED' in pg_get_functiondef('private.admin_update_privacy_rights_request(uuid,public.privacy_rights_request_status,text)'::regprocedure)) > 0, 'rejections require notes');
+select ok(position('PRIVACY_REQUEST_TRANSITION_INVALID' in pg_get_functiondef('private.admin_update_privacy_rights_request(uuid,public.privacy_rights_request_status,text)'::regprocedure)) > 0, 'admin update controls transitions');
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('create_my_privacy_rights_request','get_my_privacy_rights_requests','cancel_my_privacy_rights_request','admin_get_privacy_rights_requests','admin_update_privacy_rights_request') and p.prosecdef), 0, 'public privacy wrappers are invoker');
+select is((select count(*)::integer from information_schema.role_routine_grants where specific_schema='public' and routine_name in ('create_my_privacy_rights_request','get_my_privacy_rights_requests','cancel_my_privacy_rights_request','admin_get_privacy_rights_requests','admin_update_privacy_rights_request') and grantee='anon'), 0, 'anonymous cannot execute privacy RPCs');
+select is((select count(*)::integer from information_schema.role_routine_grants where specific_schema='public' and routine_name in ('create_my_privacy_rights_request','get_my_privacy_rights_requests','cancel_my_privacy_rights_request','admin_get_privacy_rights_requests','admin_update_privacy_rights_request') and grantee='authenticated'), 5, 'authenticated can execute guarded privacy RPCs');
+
+select * from finish();
+rollback;
