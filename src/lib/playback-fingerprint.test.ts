@@ -40,10 +40,7 @@ const installEnvironment = (options: EnvironmentOptions = {}) => {
     subtle: { digest },
   });
   vi.spyOn(Intl, "DateTimeFormat").mockImplementation(
-    (
-      _locales?: Intl.LocalesArgument,
-      _options?: Intl.DateTimeFormatOptions,
-    ) =>
+    () =>
       ({
         resolvedOptions: () => ({ timeZone: "America/Sao_Paulo" }),
       }) as Intl.DateTimeFormat,
