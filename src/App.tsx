@@ -16,6 +16,7 @@ import { RoleLandingRedirect } from "@/routing/RoleLandingRedirect";
 import { RouteErrorBoundary } from "@/routing/RouteErrorBoundary";
 import { RouteLoadingFallback } from "@/routing/RouteLoadingFallback";
 import {
+  AdminDashboard,
   AffiliatesAdmin,
   ContactsAdmin,
   CourseCurriculum,
@@ -155,6 +156,7 @@ const App = () => (
                   <Route path="/dashboard" element={<StudentRoute><Navigate to="/aluno" replace /></StudentRoute>} />
                   <Route path="/aula/:lessonId" element={<RequireAuth><RequireRole allowedRoles={["aluno", "administrador_proprietario"]}><Lesson /></RequireRole></RequireAuth>} />
 
+                  <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                   <Route path="/admin/cursos" element={<AdminRoute><CoursesAdmin /></AdminRoute>} />
                   <Route path="/admin/cursos/novo" element={<AdminRoute><CourseEditor /></AdminRoute>} />
                   <Route path="/admin/cursos/:courseId/editar" element={<AdminRoute><CourseEditor /></AdminRoute>} />
