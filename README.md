@@ -63,7 +63,7 @@ npm run check
 
 Ele executa lint, contratos, TypeScript, audit de dependências, build e validação dos chunks. No CI, a validação inclui reconstrução local do Supabase, pgTAP, sincronização de tipos e artefatos de supply chain.
 
-Cada execução do CI cria uma issue de evidência. Evidências integralmente verdes são encerradas automaticamente como `completed`; evidências com falha, cancelamento ou etapas ignoradas permanecem abertas. O passivo histórico de evidências verdes foi reconciliado na fase B50, mantendo intactos os registros não verdes.
+Cada execução do CI cria uma issue de evidência. Evidências integralmente verdes são encerradas automaticamente como `completed`. Evidências que registram ao menos uma etapa em `failure` permanecem abertas e acionáveis. Execuções sem `failure`, mas interrompidas com etapas `cancelled` ou `skipped`, são encerradas como `not_planned`, preservando o histórico sem misturá-las com falhas técnicas. O passivo histórico de evidências verdes foi reconciliado na fase B50.
 
 Comandos individuais:
 
