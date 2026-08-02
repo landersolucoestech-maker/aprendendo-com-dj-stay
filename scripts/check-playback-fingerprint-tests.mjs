@@ -49,6 +49,8 @@ if (failures.length === 0) {
     'resolves.toBe("000f10ff")',
     "EXPECTED_SOURCE",
     "const digestSources: string[] = []",
+    "if (!(data instanceof Uint8Array))",
+    "A fonte do fingerprint deve ser codificada como Uint8Array.",
     "digestSources.push(new TextDecoder().decode(bytes))",
     "expect(environment.digestSources).toEqual([EXPECTED_SOURCE])",
     'toHaveBeenCalledWith(SESSION_NONCE_KEY, GENERATED_NONCE)',
@@ -63,6 +65,12 @@ if (failures.length === 0) {
   if (test.includes("ReturnType<typeof vi.fn>")) {
     failures.push(
       `${testPath}: widening genérico de vi.fn não pode ser usado para ler argumentos do digest`,
+    );
+  }
+
+  if (test.includes("new Uint8Array(data.buffer")) {
+    failures.push(
+      `${testPath}: BufferSource não pode ser reconstruído a partir de ArrayBufferLike`,
     );
   }
 
@@ -91,5 +99,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B57 aprovado: fingerprint preserva SHA-256, tolera falhas de sessionStorage e captura a fonte do digest sem widening do mock.",
+  "Contrato B57 aprovado: fingerprint preserva SHA-256, tolera falhas de sessionStorage e estreita BufferSource para Uint8Array sem widening.",
 );
