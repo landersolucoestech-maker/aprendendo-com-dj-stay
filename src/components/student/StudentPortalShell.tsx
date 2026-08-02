@@ -15,6 +15,7 @@ import {
   ReceiptText,
   Settings2,
   ShieldCheck,
+  ShoppingCart,
   UserRound,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils";
 const studentNavigation = [
   { to: "/aluno", label: "Início", icon: LayoutDashboard, end: true },
   { to: "/aluno/cursos", label: "Meus cursos", icon: BookOpen, end: false },
+  { to: "/cursos", label: "Comprar cursos", icon: ShoppingCart, end: true },
   { to: "/aluno/certificados", label: "Certificados", icon: Award, end: false },
   { to: "/aluno/biblioteca", label: "Biblioteca", icon: Library, end: false },
   { to: "/aluno/produtos", label: "Meus produtos", icon: PackageCheck, end: false },
