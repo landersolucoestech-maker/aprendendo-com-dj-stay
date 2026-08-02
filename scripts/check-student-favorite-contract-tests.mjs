@@ -27,6 +27,8 @@ const packageJson = existsSync(paths.package)
   : { scripts: {} };
 
 for (const fragment of [
+  'from "@/contracts/checkout"',
+  "studentFavoriteSubjectTypeSchema = checkoutSubjectTypeSchema",
   "datetime({ offset: true })",
   'value.startsWith("/")',
   '!value.startsWith("//")',
@@ -41,6 +43,13 @@ for (const fragment of [
   expect(contracts.includes(fragment), `Contrato de favoritos ausente: ${fragment}`);
 }
 
+expect(
+  !contracts.includes(
+    'studentFavoriteSubjectTypeSchema = z.enum(["course", "digital_product"])',
+  ),
+  "Favoritos não podem manter enum duplicado do tipo de checkout.",
+);
+
 for (const fragment of [
   "student_favorite_subject_type",
   "'course'",
@@ -52,6 +61,8 @@ for (const fragment of [
 }
 
 for (const fragment of [
+  "checkoutSubjectTypeSchema",
+  "toBe(checkoutSubjectTypeSchema)",
   "FAVORITE",
   '"product"',
   'title: "  Curso favorito  "',
@@ -75,7 +86,7 @@ for (const fragment of [
 
 expect(
   tests.includes("studentFavoriteSubjectTypeSchema"),
-  "Suíte B65 deve cobrir o enum de tipos de favorito.",
+  "Suíte B65 deve cobrir o tipo canônico de favorito.",
 );
 expect(
   documentation.includes("Fase B65") &&
@@ -100,5 +111,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B65 aprovado: favoritos, listas, toggles e status possuem validação estrita, caminhos internos e cobertura unitária.",
+  "Contrato B65 aprovado: favoritos reutilizam o tipo canônico, rejeitam caminhos inseguros e possuem cobertura unitária estrita.",
 );
