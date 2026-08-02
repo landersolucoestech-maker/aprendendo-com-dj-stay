@@ -12,6 +12,7 @@ const paths = {
   app: "src/App.tsx",
   b10: "scripts/check-course-access-contract.mjs",
   parent: "scripts/check-public-course-catalog.mjs",
+  child: "scripts/check-checkout-expiration.mjs",
   documentation: "docs/refactor/FASE-B90-EXACT-CHECKOUT-RETURN.md",
   status: "docs/STATUS.md",
 };
@@ -91,9 +92,9 @@ if (failures.length === 0) {
     "reports success only for active controlling entitlement",
     "reports revoked access instead of success",
   ]);
-  requireFragments(hook, "Hook B90", [
-    'supabase.rpc("get_my_checkout_return"',
-    '"retorno financeiro do checkout"',
+  requireFragments(hook, "Hook B90/B91", [
+    '"reconcile_my_checkout_return"',
+    '"retorno financeiro reconciliado do checkout"',
     "shouldPollCheckoutReturn(current) ? 3_000 : false",
   ]);
   requireFragments(page, "Página B90", [
@@ -141,3 +142,4 @@ if (failures.length > 0) {
 }
 
 console.log("Contrato B90 aprovado: o retorno financeiro usa somente o checkout_intent pertencente à conta autenticada.");
+await import("./check-checkout-expiration.mjs");
