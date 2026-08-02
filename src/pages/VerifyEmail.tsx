@@ -13,19 +13,32 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import {
+  getSafeInternalPath,
+  toSafeReturnLocation,
+} from "@/routing/route-state";
 
-function readEmailFromState(state: unknown): string {
-  if (!state || typeof state !== "object" || !("email" in state)) {
-    return "";
+function readRegistrationState(state: unknown): {
+  readonly email: string;
+  readonly returnPath: string;
+} {
+  if (!state || typeof state !== "object") {
+    return { email: "", returnPath: "/portal" };
   }
 
-  const email = state.email;
-  return typeof email === "string" ? email.trim() : "";
+  const email = Reflect.get(state, "email");
+  const returnPath = Reflect.get(state, "returnPath");
+
+  return {
+    email: typeof email === "string" ? email.trim() : "",
+    returnPath: getSafeInternalPath(returnPath),
+  };
 }
 
 const VerifyEmail = () => {
   const location = useLocation();
-  const email = readEmailFromState(location.state);
+  const registration = readRegistrationState(location.state);
+  const returnLocation = toSafeReturnLocation(registration.returnPath);
   const [isResending, setIsResending] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "error" | "success";
@@ -36,7 +49,7 @@ const VerifyEmail = () => {
   const handleResendEmail = async () => {
     setFeedback(null);
 
-    if (!email) {
+    if (!registration.email) {
       const message = "Volte ao cadastro e informe seu email novamente.";
       setFeedback({ type: "error", message });
       toast({
@@ -48,7 +61,10 @@ const VerifyEmail = () => {
     }
 
     setIsResending(true);
-    const { error } = await resendSignupConfirmation(email);
+    const { error } = await resendSignupConfirmation(
+      registration.email,
+      registration.returnPath,
+    );
     setIsResending(false);
 
     if (error) {
@@ -79,7 +95,8 @@ const VerifyEmail = () => {
           </div>
           <CardTitle className="text-2xl">Verifique seu email</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Enviamos um link de confirmação{email ? ` para ${email}` : ""}.
+            Enviamos um link de confirmação
+            {registration.email ? ` para ${registration.email}` : ""}.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -89,8 +106,8 @@ const VerifyEmail = () => {
               Próximos passos
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Abra o link recebido. Depois da confirmação, você será direcionado
-              novamente para a plataforma.
+              Abra o link recebido. Depois da confirmação, você poderá continuar
+              do ponto em que iniciou o cadastro.
             </p>
           </div>
 
@@ -111,7 +128,7 @@ const VerifyEmail = () => {
           <Button
             type="button"
             onClick={handleResendEmail}
-            disabled={isResending || !email}
+            disabled={isResending || !registration.email}
             variant="brand"
             className="w-full"
           >
@@ -124,7 +141,9 @@ const VerifyEmail = () => {
           </Button>
 
           <Button asChild variant="outline" className="w-full">
-            <Link to="/login">Ir para o login</Link>
+            <Link to="/login" state={{ from: returnLocation }}>
+              Ir para o login
+            </Link>
           </Button>
 
           <Button asChild variant="secondary" className="w-full">
