@@ -26,6 +26,7 @@ Os seguintes domínios possuem implementação, persistência, autorização e c
 | Portal do aluno | matrículas, biblioteca, player, retomada e progresso monotônico |
 | Marketplace digital | produtos, licenças, entregáveis, acessos e biblioteca do comprador |
 | Pagamentos | checkout, ordens, tentativas, eventos do provider e concessão/revogação de acesso |
+| Retorno financeiro exato | consulta autenticada pelo `checkout_intent` retornado pelo provider, com pedido, tentativa e entitlement da compra correspondente, sem fallback por outra matrícula ou acesso |
 | Afiliados | perfis, links, atribuições, comissões, ajustes e pagamentos |
 | Certificados | emissão, revogação, consulta do aluno e validação pública |
 | Contatos | submissão idempotente, protocolo e tratamento administrativo |
@@ -37,6 +38,8 @@ Os seguintes domínios possuem implementação, persistência, autorização e c
 A home pública não apresenta números de alunos, avaliações, streams, rankings, depoimentos, parcerias, preços ou entregáveis sem uma fonte persistida e contratada. O catálogo é calculado a partir do CMS publicado; estados vazios ou indisponíveis não recebem dados substitutos.
 
 O UUID utilizado para iniciar a compra de curso não participa do catálogo anônimo. Ele é resolvido somente após autenticação, com validação de papel, disponibilidade, preço e matrícula ativa. A compra reutiliza a preparação idempotente e a Edge Function do checkout hospedado.
+
+O retorno do checkout usa exclusivamente o parâmetro `checkout_intent` pertencente à conta autenticada. A interface representa estados pendentes, confirmação, liberação de acesso, cancelamento, expiração, falha, reembolso, chargeback, suspensão e revogação sem inferir sucesso por outra matrícula ou produto existente.
 
 O gate técnico executa instalação limpa, lint, reconstrução local do Supabase, pgTAP, sincronização de tipos, contratos estáticos, TypeScript, audit de dependências, build e validação de chunks.
 
