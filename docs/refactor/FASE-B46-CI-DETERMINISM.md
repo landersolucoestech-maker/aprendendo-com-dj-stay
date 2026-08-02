@@ -15,13 +15,15 @@ Versões adotadas:
 - npm: controlado por `packageManager` e engines do `package.json`;
 - `actions/checkout@v6`;
 - `actions/setup-node@v6`;
-- Supabase CLI `2.101.0`, executada por `npx --yes supabase@2.101.0`;
+- Supabase CLI `2.111.0`, executada por `npx --yes supabase@2.111.0`;
 - `actions/upload-artifact@v7`;
 - `actions/github-script@v9`.
 
 A action `supabase/setup-cli@v1` foi removida porque ainda dependia do runtime Node.js 20. A CLI passa a ser obtida pelo pacote oficial em versão exata, e todas as chamadas usam a mesma variável `SUPABASE_CLI_VERSION`.
 
-A Supabase CLI foi fixada numa versão específica porque migrations, imagens locais e tipos gerados podem mudar mesmo dentro do mesmo major. Atualizações futuras devem ser deliberadas, com reconstrução integral do banco e execução de todos os testes pgTAP.
+A primeira tentativa pinada em `2.101.0` reproduziu uma queda do PostgreSQL local durante o teste de tentativas de avaliação, usando a imagem `supabase/postgres:17.6.1.106`. A versão foi atualizada deliberadamente para `2.111.0`, mantendo o pin exato e a reconstrução integral do banco como critério de aceitação.
+
+A Supabase CLI permanece fixada porque migrations, imagens locais e tipos gerados podem mudar mesmo dentro do mesmo major. Atualizações futuras devem ser deliberadas, com reconstrução integral do banco e execução de todos os testes pgTAP.
 
 ## Comportamento preservado
 
@@ -42,7 +44,7 @@ A Supabase CLI foi fixada numa versão específica porque migrations, imagens lo
 
 `scripts/check-ci-determinism.mjs` exige:
 
-- Supabase CLI `2.101.0` pinada;
+- Supabase CLI `2.111.0` pinada;
 - ausência de `version: latest`;
 - ausência de `supabase/setup-cli`;
 - `actions/checkout@v6`;
