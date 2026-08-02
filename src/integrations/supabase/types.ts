@@ -4738,6 +4738,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      expire_due_checkout_intents: {
+        Args: { p_limit?: number }
+        Returns: number
+      }
       fail_asset_upload: {
         Args: {
           p_asset_id: string
@@ -5342,6 +5346,10 @@ export type Database = {
       }
       purge_frontend_error_events: {
         Args: { p_limit?: number; p_retention_days?: number }
+        Returns: Json
+      }
+      reconcile_my_checkout_return: {
+        Args: { p_checkout_intent_id: string }
         Returns: Json
       }
       record_affiliate_click: {
