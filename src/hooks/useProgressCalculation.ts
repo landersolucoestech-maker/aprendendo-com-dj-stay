@@ -1,16 +1,16 @@
 import { useMemo } from "react";
 
-import type { LearningModule, ModuleLesson } from "./useModules";
+import {
+  calculateModulesProgress,
+  type LearningModule,
+  type ModuleWithProgress,
+} from "@/lib/course-progress";
 import { useUserProgress } from "./useUserProgress";
 
-export interface ModuleLessonWithProgress extends ModuleLesson {
-  completed: boolean;
-}
-
-export interface ModuleWithProgress extends Omit<LearningModule, "lessons"> {
-  progress: number;
-  lessons: ModuleLessonWithProgress[];
-}
+export type {
+  ModuleLessonWithProgress,
+  ModuleWithProgress,
+} from "@/lib/course-progress";
 
 export interface ProgressCalculationResult {
   data: ModuleWithProgress[] | undefined;
@@ -28,23 +28,7 @@ export const useProgressCalculation = (
       return undefined;
     }
 
-    const progressByLesson = new Map(
-      progressQuery.data.map((progress) => [progress.aula_id, progress]),
-    );
-
-    return modules.map((module) => {
-      const lessons = module.lessons.map((lesson) => ({
-        ...lesson,
-        completed: progressByLesson.get(lesson.id)?.completada === true,
-      }));
-      const completedLessons = lessons.filter((lesson) => lesson.completed).length;
-
-      return {
-        ...module,
-        progress: lessons.length === 0 ? 0 : Math.round((completedLessons / lessons.length) * 100),
-        lessons,
-      };
-    });
+    return calculateModulesProgress(modules, progressQuery.data);
   }, [modules, progressQuery.data]);
 
   return {
