@@ -1,0 +1,64 @@
+name: Patch B82 Student Portal
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - .github/workflows/patch-b82-student-portal.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Aplicar alteração B82
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("src/pages/student/StudentPortal.tsx")
+          source = path.read_text(encoding="utf-8")
+
+          import_marker = 'import { formatAppDateTime } from "@/lib/date-time";'
+          import_line = 'import { calculateOverallCourseProgress } from "@/lib/course-progress";'
+          if import_line not in source:
+              if import_marker not in source:
+                  raise SystemExit("Marcador de importação não encontrado")
+              source = source.replace(import_marker, f'{import_line}\n{import_marker}', 1)
+
+          old_formula = '''  const modules = progressCalculation.data;
+          const overallProgress =
+            modules.length === 0
+              ? 0
+              : Math.round(
+                  modules.reduce((total, module) => total + module.progress, 0) /
+                    modules.length,
+                );'''
+          new_formula = '''  const modules = progressCalculation.data;
+          const overallProgress = calculateOverallCourseProgress(modules);'''
+
+          if new_formula not in source:
+              if old_formula not in source:
+                  raise SystemExit("Fórmula antiga de progresso geral não encontrada")
+              source = source.replace(old_formula, new_formula, 1)
+
+          path.write_text(source, encoding="utf-8")
+
+      - name: Remover workflow temporário
+        run: rm .github/workflows/patch-b82-student-portal.yml
+
+      - name: Publicar alteração
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/student/StudentPortal.tsx .github/workflows/patch-b82-student-portal.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(b82): ponderar progresso geral no portal do aluno"
+          git push origin HEAD:dev
