@@ -13,7 +13,7 @@ select has_function('private', 'toggle_my_student_favorite', array['public.stude
 select ok((select prosecdef from pg_proc where oid='private.toggle_my_student_favorite(public.student_favorite_subject_type,uuid)'::regprocedure), 'favorite toggle is security definer');
 select ok(position('AUTH_REQUIRED' in pg_get_functiondef('private.toggle_my_student_favorite(public.student_favorite_subject_type,uuid)'::regprocedure)) > 0, 'favorite toggle requires authentication');
 select ok(position('FAVORITE_SUBJECT_NOT_AVAILABLE' in pg_get_functiondef('private.toggle_my_student_favorite(public.student_favorite_subject_type,uuid)'::regprocedure)) > 0, 'favorite toggle rejects unavailable items');
-select ok(position("status = 'published'" in lower(pg_get_functiondef('private.toggle_my_student_favorite(public.student_favorite_subject_type,uuid)'::regprocedure))) > 0, 'favorite toggle requires published items');
+select ok(position('status = ''published''' in lower(pg_get_functiondef('private.toggle_my_student_favorite(public.student_favorite_subject_type,uuid)'::regprocedure))) > 0, 'favorite toggle requires published items');
 select ok(position('deleted_at is null' in lower(pg_get_functiondef('private.toggle_my_student_favorite(public.student_favorite_subject_type,uuid)'::regprocedure))) > 0, 'favorite toggle rejects deleted items');
 select ok(position('user_id = v_user_id' in pg_get_functiondef('private.toggle_my_student_favorite(public.student_favorite_subject_type,uuid)'::regprocedure)) > 0, 'favorite toggle binds auth user');
 select has_function('private', 'get_my_student_favorites', array['integer','integer'], 'private favorites list exists');
@@ -25,7 +25,7 @@ select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=
 select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('toggle_my_student_favorite','get_my_student_favorites','is_my_student_favorite') and p.prosecdef), 0, 'public favorite wrappers are invoker');
 select is((select count(*)::integer from information_schema.role_routine_grants where specific_schema='public' and routine_name in ('toggle_my_student_favorite','get_my_student_favorites','is_my_student_favorite') and grantee='anon'), 0, 'anonymous cannot execute favorite RPCs');
 select is((select count(*)::integer from information_schema.role_routine_grants where specific_schema='public' and routine_name in ('toggle_my_student_favorite','get_my_student_favorites','is_my_student_favorite') and grantee='authenticated'), 3, 'authenticated can execute guarded favorite RPCs');
-select ok(position("'/aluno/cursos/'" in pg_get_functiondef('private.get_my_student_favorites(integer,integer)'::regprocedure)) > 0, 'course favorites return a course action path');
+select ok(position('''/aluno/cursos/''' in pg_get_functiondef('private.get_my_student_favorites(integer,integer)'::regprocedure)) > 0, 'course favorites return a course action path');
 
 select * from finish();
 rollback;
