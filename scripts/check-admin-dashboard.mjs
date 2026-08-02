@@ -9,6 +9,7 @@ const requiredFiles = [
   "src/routing/RoleLandingRedirect.tsx",
   "src/App.tsx",
   "scripts/check-admin-navigation.mjs",
+  "scripts/check-course-cms-contract.mjs",
   "docs/refactor/FASE-B87-ADMIN-OVERVIEW-DASHBOARD.md",
   "docs/STATUS.md",
   "package.json",
@@ -28,9 +29,10 @@ if (failures.length === 0) {
   const redirect = readFileSync(requiredFiles[5], "utf8");
   const app = readFileSync(requiredFiles[6], "utf8");
   const adminNavigationCheck = readFileSync(requiredFiles[7], "utf8");
-  const documentation = readFileSync(requiredFiles[8], "utf8");
-  const status = readFileSync(requiredFiles[9], "utf8");
-  const packageJson = readFileSync(requiredFiles[10], "utf8");
+  const courseCmsCheck = readFileSync(requiredFiles[8], "utf8");
+  const documentation = readFileSync(requiredFiles[9], "utf8");
+  const status = readFileSync(requiredFiles[10], "utf8");
+  const packageJson = readFileSync(requiredFiles[11], "utf8");
 
   for (const hook of [
     "usePaymentAdminDashboard",
@@ -88,6 +90,12 @@ if (failures.length === 0) {
   if (!app.includes('path="/admin"')) failures.push("Rota protegida /admin ausente.");
   if (!app.includes("<AdminRoute><AdminDashboard /></AdminRoute>")) failures.push("Dashboard B87 não está sob o guard administrativo.");
   if (!adminNavigationCheck.includes('"/admin",')) failures.push("Contrato B45 não cobre a rota B87.");
+  if (!courseCmsCheck.includes('navigation.includes(\'{ to: "/admin/cursos", label: "Cursos"\')')) {
+    failures.push("Contrato B11 não preserva o acesso ao CMS após a B87.");
+  }
+  if (courseCmsCheck.includes('<Navigate to="/admin/cursos"')) {
+    failures.push("Contrato B11 ainda exige entrada direta no CMS.");
+  }
 
   for (const fragment of [
     "seis read models reais",
