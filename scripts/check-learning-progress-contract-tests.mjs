@@ -117,6 +117,12 @@ for (const fragment of [
 ]) {
   expect(userProgress.includes(fragment), `Consumidor de progresso B74 ausente: ${fragment}`);
 }
+const progressValidationCount =
+  userProgress.match(/parseDataContract\(/g)?.length ?? 0;
+expect(
+  progressValidationCount >= 3,
+  `Entrada, listagem e retorno do progresso devem permanecer validados; encontrados ${progressValidationCount}.`,
+);
 expect(
   tracker.includes("Math.min(positionSeconds, durationSeconds + 30)"),
   "Tracker deve limitar posição à duração mais 30 segundos.",
