@@ -148,7 +148,7 @@ const App = () => (
                   <Route path="/aluno/notificacoes" element={<StudentRoute><StudentNotifications /></StudentRoute>} />
                   <Route path="/aluno/suporte" element={<StudentRoute><StudentSupport /></StudentRoute>} />
                   <Route path="/aluno/perfil" element={<StudentRoute><StudentPortal section="profile" /></StudentRoute>} />
-                  <Route path="/aluno/perfil/editar" element={<StudentRoute><EditProfile /></StudentRoute>} />
+                  <Route path="/aluno/perfil/editar" element={<StudentRoute><EditProfile studentPortal /></StudentRoute>} />
                   <Route path="/aluno/preferencias" element={<StudentRoute><StudentCommunicationPreferences /></StudentRoute>} />
                   <Route path="/aluno/privacidade" element={<StudentRoute><StudentPrivacyRights /></StudentRoute>} />
                   <Route path="/aluno/historico" element={<StudentRoute><StudentPortal section="history" /></StudentRoute>} />

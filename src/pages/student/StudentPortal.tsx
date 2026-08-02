@@ -742,7 +742,7 @@ const ProfileSection = () => {
             </p>
           </div>
           <Button asChild variant="context" className="w-full sm:w-auto">
-            <Link to="/editar-perfil">Editar perfil</Link>
+            <Link to="/aluno/perfil/editar">Editar perfil</Link>
           </Button>
         </CardContent>
       </Card>
