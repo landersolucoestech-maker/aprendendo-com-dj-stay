@@ -138,6 +138,11 @@ for (const fragment of [
   expect(hooks.includes(fragment), `Consumidor B71 ausente: ${fragment}`);
 }
 
+const responseValidationCount = hooks.match(/parseDataContract\(/g)?.length ?? 0;
+expect(
+  responseValidationCount >= 10,
+  `Todas as 10 respostas RPC do hook devem ser validadas; encontradas ${responseValidationCount}.`,
+);
 expect(
   !hooks.includes("if (error) throw error;\n      return data;"),
   "Mutações B71 não podem devolver data bruto após RPC.",
