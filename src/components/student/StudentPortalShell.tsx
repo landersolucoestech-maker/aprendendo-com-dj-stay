@@ -1,4 +1,5 @@
 import {
+  Award,
   Bell,
   BookOpen,
   CreditCard,
@@ -10,6 +11,7 @@ import {
   LifeBuoy,
   Loader2,
   LogOut,
+  PackageCheck,
   ReceiptText,
   Settings2,
   ShieldCheck,
@@ -25,7 +27,9 @@ import { cn } from "@/lib/utils";
 const studentNavigation = [
   { to: "/aluno", label: "Início", icon: LayoutDashboard, end: true },
   { to: "/aluno/cursos", label: "Meus cursos", icon: BookOpen, end: false },
+  { to: "/aluno/certificados", label: "Certificados", icon: Award, end: false },
   { to: "/aluno/biblioteca", label: "Biblioteca", icon: Library, end: false },
+  { to: "/aluno/produtos", label: "Meus produtos", icon: PackageCheck, end: false },
   { to: "/aluno/favoritos", label: "Favoritos", icon: Heart, end: false },
   { to: "/aluno/pedidos", label: "Pedidos", icon: ReceiptText, end: false },
   { to: "/aluno/pagamentos", label: "Pagamentos", icon: CreditCard, end: false },
