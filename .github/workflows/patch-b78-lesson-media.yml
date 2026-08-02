@@ -1,0 +1,261 @@
+name: Aplicar contratos B78
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/patch-b78-lesson-media.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: patch-b78-lesson-media
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Endurecer contratos e consumidores
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          contract_path = Path("src/contracts/curriculum-cms.ts")
+          contract = contract_path.read_text(encoding="utf-8")
+
+          provider_block = '''export const lessonMediaProviderSchema = z.enum([
+            "private_asset",
+            "youtube",
+            "vimeo",
+          ]);
+          '''
+          provider_replacement = '''export const lessonMediaProviderSchema = z.enum([
+            "private_asset",
+            "youtube",
+            "vimeo",
+          ]);
+          export const youtubeVideoIdSchema = z
+            .string()
+            .trim()
+            .regex(/^[A-Za-z0-9_-]{11}$/);
+          export const vimeoVideoIdSchema = z
+            .string()
+            .trim()
+            .regex(/^[0-9]{6,12}$/);
+
+          const externalMediaSourceUrlSchema = z.string().trim().min(1).max(1000).url();
+          const youtubeSourceUrlPatterns = [
+            /^https:\/\/(?:www\.|m\.)?youtube\.com\/watch\?(?:[^#]*&)?v=[A-Za-z0-9_-]{11}(?:[&#].*)?$/i,
+            /^https:\/\/youtu\.be\/[A-Za-z0-9_-]{11}(?:[/?#].*)?$/i,
+            /^https:\/\/(?:www\.)?youtube(?:-nocookie)?\.com\/(?:embed|shorts)\/[A-Za-z0-9_-]{11}(?:[/?#].*)?$/i,
+          ] as const;
+          const vimeoSourceUrlPatterns = [
+            /^https:\/\/(?:www\.)?vimeo\.com\/[0-9]{6,12}(?:[/?#].*)?$/i,
+            /^https:\/\/player\.vimeo\.com\/video\/[0-9]{6,12}(?:[/?#].*)?$/i,
+          ] as const;
+
+          const youtubeSourceUrlSchema = externalMediaSourceUrlSchema.refine(
+            (value) => youtubeSourceUrlPatterns.some((pattern) => pattern.test(value)),
+            "Informe uma URL válida do YouTube.",
+          );
+          const vimeoSourceUrlSchema = externalMediaSourceUrlSchema.refine(
+            (value) => vimeoSourceUrlPatterns.some((pattern) => pattern.test(value)),
+            "Informe uma URL válida do Vimeo.",
+          );
+
+          export const externalLessonMediaInputSchema = z.discriminatedUnion("provider", [
+            z
+              .object({
+                lessonId: uuidSchema,
+                provider: z.literal("youtube"),
+                sourceUrl: youtubeSourceUrlSchema,
+                watermarkEnabled: z.boolean(),
+              })
+              .strict(),
+            z
+              .object({
+                lessonId: uuidSchema,
+                provider: z.literal("vimeo"),
+                sourceUrl: vimeoSourceUrlSchema,
+                watermarkEnabled: z.boolean(),
+              })
+              .strict(),
+          ]);
+
+          export const privateLessonMediaInputSchema = z
+            .object({
+              lessonId: uuidSchema,
+              assetId: uuidSchema,
+              watermarkEnabled: z.boolean(),
+            })
+            .strict();
+
+          export const disableLessonMediaInputSchema = z
+            .object({ lessonId: uuidSchema })
+            .strict();
+          '''
+          if provider_block not in contract:
+              raise SystemExit("Bloco de providers não encontrado.")
+          contract = contract.replace(provider_block, provider_replacement, 1)
+
+          media_tail = '''    if (!isPrivate && (hasAsset || !hasExternalId)) {
+              context.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["provider"],
+                message: "Mídia externa exige identificador e não aceita asset privado.",
+              });
+            }
+          });
+          '''
+          media_replacement = '''    if (!isPrivate && (hasAsset || !hasExternalId)) {
+              context.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["provider"],
+                message: "Mídia externa exige identificador e não aceita asset privado.",
+              });
+            }
+
+            if (
+              value.provider === "youtube" &&
+              value.external_video_id !== null &&
+              !youtubeVideoIdSchema.safeParse(value.external_video_id).success
+            ) {
+              context.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["external_video_id"],
+                message: "Identificador persistido do YouTube inválido.",
+              });
+            }
+
+            if (
+              value.provider === "vimeo" &&
+              value.external_video_id !== null &&
+              !vimeoVideoIdSchema.safeParse(value.external_video_id).success
+            ) {
+              context.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["external_video_id"],
+                message: "Identificador persistido do Vimeo inválido.",
+              });
+            }
+          });
+          '''
+          if media_tail not in contract:
+              raise SystemExit("Refinamento de mídia não encontrado.")
+          contract = contract.replace(media_tail, media_replacement, 1)
+          contract_path.write_text(contract, encoding="utf-8")
+
+          hook_path = Path("src/hooks/useCurriculumCms.ts")
+          hook = hook_path.read_text(encoding="utf-8")
+          import_anchor = '''  curriculumModuleRowsSchema,
+            lessonFormToPayload,
+            lessonMediaRowSchema,
+          '''
+          import_replacement = '''  curriculumModuleRowsSchema,
+            disableLessonMediaInputSchema,
+            externalLessonMediaInputSchema,
+            lessonFormToPayload,
+            lessonMediaRowSchema,
+          '''
+          if import_anchor not in hook:
+              raise SystemExit("Âncora de imports de mídia não encontrada.")
+          hook = hook.replace(import_anchor, import_replacement, 1)
+
+          second_import_anchor = '''  moduleFormToPayload,
+            modulePrerequisiteRowsSchema,
+          '''
+          second_import_replacement = '''  moduleFormToPayload,
+            modulePrerequisiteRowsSchema,
+            privateLessonMediaInputSchema,
+          '''
+          if second_import_anchor not in hook:
+              raise SystemExit("Segunda âncora de imports não encontrada.")
+          hook = hook.replace(second_import_anchor, second_import_replacement, 1)
+
+          external_anchor = '''    }): Promise<LessonMediaRow> => {
+                const { data, error } = await supabase.rpc("upsert_external_lesson_media", {
+                  p_lesson_id: lessonId,
+                  p_provider: provider,
+                  p_source_url: sourceUrl,
+                  p_watermark_enabled: watermarkEnabled,
+                });
+          '''
+          external_replacement = '''    }): Promise<LessonMediaRow> => {
+                const input = parseDataContract(
+                  externalLessonMediaInputSchema,
+                  { lessonId, provider, sourceUrl, watermarkEnabled },
+                  "entrada da mídia externa da aula",
+                );
+                const { data, error } = await supabase.rpc("upsert_external_lesson_media", {
+                  p_lesson_id: input.lessonId,
+                  p_provider: input.provider,
+                  p_source_url: input.sourceUrl,
+                  p_watermark_enabled: input.watermarkEnabled,
+                });
+          '''
+          if external_anchor not in hook:
+              raise SystemExit("Mutação externa não encontrada.")
+          hook = hook.replace(external_anchor, external_replacement, 1)
+
+          private_anchor = '''    }): Promise<LessonMediaRow> => {
+                const { data, error } = await supabase.rpc("upsert_private_lesson_media", {
+                  p_lesson_id: lessonId,
+                  p_asset_id: assetId,
+                  p_watermark_enabled: watermarkEnabled,
+                });
+          '''
+          private_replacement = '''    }): Promise<LessonMediaRow> => {
+                const input = parseDataContract(
+                  privateLessonMediaInputSchema,
+                  { lessonId, assetId, watermarkEnabled },
+                  "entrada da mídia privada da aula",
+                );
+                const { data, error } = await supabase.rpc("upsert_private_lesson_media", {
+                  p_lesson_id: input.lessonId,
+                  p_asset_id: input.assetId,
+                  p_watermark_enabled: input.watermarkEnabled,
+                });
+          '''
+          if private_anchor not in hook:
+              raise SystemExit("Mutação privada não encontrada.")
+          hook = hook.replace(private_anchor, private_replacement, 1)
+
+          disable_anchor = '''  const disableMedia = useMutation({
+              mutationFn: async (lessonId: string): Promise<boolean> => {
+                const { data, error } = await supabase.rpc("disable_lesson_media", { p_lesson_id: lessonId });
+          '''
+          disable_replacement = '''  const disableMedia = useMutation({
+              mutationFn: async (lessonId: string): Promise<boolean> => {
+                const input = parseDataContract(
+                  disableLessonMediaInputSchema,
+                  { lessonId },
+                  "entrada da desativação da mídia da aula",
+                );
+                const { data, error } = await supabase.rpc("disable_lesson_media", {
+                  p_lesson_id: input.lessonId,
+                });
+          '''
+          if disable_anchor not in hook:
+              raise SystemExit("Mutação de desativação não encontrada.")
+          hook = hook.replace(disable_anchor, disable_replacement, 1)
+          hook_path.write_text(hook, encoding="utf-8")
+          PY
+
+      - name: Publicar alteração e remover workflow temporário
+        run: |
+          rm .github/workflows/patch-b78-lesson-media.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            src/contracts/curriculum-cms.ts \
+            src/hooks/useCurriculumCms.ts \
+            .github/workflows/patch-b78-lesson-media.yml
+          git commit -m "feat(b78): validar mídia administrativa das aulas"
+          git push origin HEAD:dev
