@@ -1,17 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-interface PlaybackResolution {
-  granted: boolean;
-  reason: string | null;
-  provider: "private_asset" | "youtube" | "vimeo" | null;
-  bucket_id: string | null;
-  object_path: string | null;
-  embed_url: string | null;
-  mime_type: string | null;
-  watermark_text: string | null;
-  expires_at: string | null;
-}
+import { parsePlaybackResolution } from "../_shared/playback-contract.ts";
 
 const TOKEN_PATTERN = /^[a-f0-9]{48}$/;
 const FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/;
@@ -170,8 +160,13 @@ Deno.serve(async (request: Request) => {
       return jsonResponse({ error: "PLAYBACK_RESOLUTION_FAILED" }, 502, requestOrigin);
     }
 
-    const resolution = (Array.isArray(data) ? data[0] : data) as PlaybackResolution | undefined;
-    if (!resolution?.granted || !resolution.provider || !resolution.expires_at) {
+    const resolution = parsePlaybackResolution(Array.isArray(data) ? data[0] : data);
+    if (!resolution) {
+      console.error("Playback resolver returned an invalid contract");
+      return jsonResponse({ error: "PLAYBACK_RESOLUTION_FAILED" }, 502, requestOrigin);
+    }
+
+    if (!resolution.granted || !resolution.provider || !resolution.expires_at) {
       return jsonResponse(
         { error: resolution?.reason ?? "PLAYBACK_DENIED" },
         403,
