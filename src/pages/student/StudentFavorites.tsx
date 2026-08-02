@@ -18,7 +18,7 @@ const typeLabel = {
 
 const StudentFavorites = () => {
   const favoritesQuery = useStudentFavorites();
-  const favorites = favoritesQuery.data ?? [];
+  const favorites = favoritesQuery.data?.favorites ?? [];
 
   return (
     <StudentPortalPageFrame>
@@ -67,15 +67,15 @@ const StudentFavorites = () => {
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <Badge variant="outline">{typeLabel[favorite.item_type]}</Badge>
+                      <Badge variant="outline">{typeLabel[favorite.subject_type]}</Badge>
                       <CardTitle className="mt-3">{favorite.title}</CardTitle>
                       <CardDescription className="mt-2">
-                        {favorite.description ?? "Item salvo na sua lista de favoritos."}
+                        Item salvo na sua lista de favoritos.
                       </CardDescription>
                     </div>
                     <FavoriteToggleButton
-                      subjectType={favorite.item_type}
-                      subjectId={favorite.item_id}
+                      subjectType={favorite.subject_type}
+                      subjectId={favorite.subject_id}
                       compact
                     />
                   </div>
