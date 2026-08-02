@@ -47,8 +47,8 @@ describe("getUserMetadataProfile", () => {
     (userMetadata, email, expected) => {
       const profile = getUserMetadataProfile(
         createUser({
-          email,
           user_metadata: userMetadata,
+          ...(email === undefined ? {} : { email }),
         }),
       );
 
