@@ -8,10 +8,11 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: patch-b78-package
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   patch:
@@ -23,28 +24,53 @@ jobs:
           fetch-depth: 0
 
       - name: Integrar verificador B78
+        id: patch
+        continue-on-error: true
         run: |
-          python - <<'PY'
-          from pathlib import Path
+          set +e
+          node <<'NODE' > /tmp/b78-package.log 2>&1
+          const fs = require("node:fs");
+          const path = "package.json";
+          const packageJson = JSON.parse(fs.readFileSync(path, "utf8"));
+          const scripts = packageJson.scripts ?? {};
 
-          path = Path("package.json")
-          content = path.read_text(encoding="utf-8")
+          scripts["check:lesson-media-contract-tests"] =
+            "node scripts/check-lesson-media-contract-tests.mjs";
 
-          old_chain = "npm run check:curriculum-cms-tests && npm run check:affiliate-contract-tests"
-          new_chain = "npm run check:curriculum-cms-tests && npm run check:lesson-media-contract-tests && npm run check:affiliate-contract-tests"
-          if old_chain not in content:
-              raise SystemExit("Encadeamento do typecheck não encontrado.")
-          content = content.replace(old_chain, new_chain, 1)
+          const marker = "npm run check:curriculum-cms-tests";
+          const command = "npm run check:lesson-media-contract-tests";
+          if (typeof scripts.typecheck !== "string" || !scripts.typecheck.includes(marker)) {
+            throw new Error("Marcador curriculum-cms não encontrado no typecheck.");
+          }
+          if (!scripts.typecheck.includes(command)) {
+            scripts.typecheck = scripts.typecheck.replace(marker, `${marker} && ${command}`);
+          }
 
-          old_script = '    "check:curriculum-cms-tests": "node scripts/check-curriculum-cms-tests.mjs",\n    "check:affiliate-contract-tests":'
-          new_script = '    "check:curriculum-cms-tests": "node scripts/check-curriculum-cms-tests.mjs",\n    "check:lesson-media-contract-tests": "node scripts/check-lesson-media-contract-tests.mjs",\n    "check:affiliate-contract-tests":'
-          if old_script not in content:
-              raise SystemExit("Bloco de scripts não encontrado.")
-          content = content.replace(old_script, new_script, 1)
-          path.write_text(content, encoding="utf-8")
-          PY
+          packageJson.scripts = scripts;
+          fs.writeFileSync(path, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
+          NODE
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit $status
+
+      - name: Publicar diagnóstico
+        if: steps.patch.outcome == 'failure'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require("node:fs");
+            const log = fs.existsSync("/tmp/b78-package.log")
+              ? fs.readFileSync("/tmp/b78-package.log", "utf8")
+              : "Log não produzido.";
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Diagnóstico package B78 — ${context.sha.slice(0, 12)}`,
+              body: `Commit: \`${context.sha}\`\n\n\`\`\`text\n${log.slice(-10000)}\n\`\`\``,
+            });
 
       - name: Publicar integração e remover workflow temporário
+        if: steps.patch.outcome == 'success'
         run: |
           rm .github/workflows/patch-b78-package.yml
           git config user.name github-actions[bot]
@@ -52,3 +78,7 @@ jobs:
           git add package.json .github/workflows/patch-b78-package.yml
           git commit -m "test(b78): integrar contratos de mídia ao typecheck"
           git push origin HEAD:dev
+
+      - name: Falhar após diagnóstico
+        if: steps.patch.outcome == 'failure'
+        run: exit 1
