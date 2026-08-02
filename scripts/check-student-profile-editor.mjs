@@ -43,6 +43,7 @@ for (const fragment of [
   "readonly studentPortal?: boolean",
   "studentPortal = false",
   'const returnPath = studentPortal ? "/aluno/perfil" : "/portal"',
+  "const editorForm = (",
   "if (studentPortal)",
   "<StudentPortalPageFrame>",
   "<StudentSectionHeader",
@@ -74,6 +75,12 @@ for (const fragment of [
 expect(
   (editPage.match(/<StudentPortalPageFrame>/g) ?? []).length >= 3,
   "Carregamento, erro e formulário do modo aluno devem permanecer no frame.",
+);
+expect(
+  (editPage.match(/const editorForm = \(/g) ?? []).length === 1 &&
+    (editPage.match(/supabase\.auth\.updateUser\(\{/g) ?? []).length === 1 &&
+    (editPage.match(/profileMetadataInputSchema/g) ?? []).length >= 2,
+  "Os modos aluno e genérico devem compartilhar um único formulário, validação e fluxo de gravação.",
 );
 expect(
   !editPage.includes('const returnPath = "/portal"') &&
@@ -191,5 +198,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B85 aprovado: edição de perfil do aluno preserva o shell e a rota genérica continua disponível aos demais papéis.",
+  "Contrato B85 aprovado: edição de perfil do aluno preserva o shell, compartilha formulário e gravação únicos e mantém a rota genérica dos demais papéis.",
 );
