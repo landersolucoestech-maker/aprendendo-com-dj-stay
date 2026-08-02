@@ -43,8 +43,14 @@ expect(
   "Landing do aluno deve apontar para /aluno.",
 );
 expect(
-  paymentSuccess.includes("/aluno/cursos/${activeEnrollment.course_id}"),
-  "Confirmação de acesso deve abrir o curso real do aluno.",
+  paymentSuccess.includes("useCheckoutReturn") &&
+    paymentSuccess.includes('to: `/aluno/cursos/${checkout.subject_id}`'),
+  "Confirmação de acesso deve abrir somente o curso ligado ao checkout exato.",
+);
+expect(
+  !paymentSuccess.includes("activeEnrollments[0]") &&
+    !paymentSuccess.includes("getActiveEnrollments"),
+  "Confirmação de acesso não pode usar matrícula não relacionada como fallback.",
 );
 
 expect(
