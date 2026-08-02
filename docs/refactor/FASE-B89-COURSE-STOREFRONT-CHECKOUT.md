@@ -80,7 +80,7 @@ O backend continua sendo a autoridade final para preço, disponibilidade, idempo
 - `58_course_checkout_resolution.test.sql` cobre grants, sessão, papel, disponibilidade e matrícula ativa;
 - `course-checkout.test.ts` cobre os estados estritos de resolução e resultado;
 - `check-course-storefront.mjs` vincula migration, hook, serviço compartilhado, rota, CTA e documentação;
-- `check:course-storefront` participa do `typecheck` bloqueante.
+- o checker B89 é importado por `check-public-course-catalog.mjs`, que já participa do `typecheck` bloqueante.
 
 ## Ambiente
 
