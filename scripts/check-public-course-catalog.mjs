@@ -13,6 +13,7 @@ const requiredFiles = [
   "src/components/OperationalTrustSection.tsx",
   "src/components/Navigation.tsx",
   "src/pages/Index.tsx",
+  "scripts/check-course-storefront.mjs",
   "docs/refactor/FASE-B88-PUBLIC-COURSE-CATALOG.md",
   "docs/STATUS.md",
   "package.json",
@@ -24,6 +25,13 @@ const removedFiles = [
 ];
 
 const failures = [];
+const read = (file) => readFileSync(file, "utf8");
+const requireFragments = (source, label, fragments) => {
+  for (const fragment of fragments) {
+    if (!source.includes(fragment)) failures.push(`${label}: conteúdo obrigatório ausente: ${fragment}`);
+  }
+};
+
 for (const file of requiredFiles) {
   if (!existsSync(file)) failures.push(`Arquivo B88 ausente: ${file}`);
 }
@@ -32,7 +40,6 @@ for (const file of removedFiles) {
 }
 
 if (failures.length === 0) {
-  const read = (file) => readFileSync(file, "utf8");
   const migration = read(requiredFiles[0]);
   const databaseTest = read(requiredFiles[1]);
   const contract = read(requiredFiles[2]);
@@ -45,11 +52,11 @@ if (failures.length === 0) {
   const trust = read(requiredFiles[9]);
   const navigation = read(requiredFiles[10]);
   const index = read(requiredFiles[11]);
-  const documentation = read(requiredFiles[12]);
-  const status = read(requiredFiles[13]);
-  const packageJson = read(requiredFiles[14]);
+  const documentation = read(requiredFiles[13]);
+  const status = read(requiredFiles[14]);
+  const packageJson = read(requiredFiles[15]);
 
-  for (const fragment of [
+  requireFragments(migration, "Migration B88", [
     "create or replace function private.get_public_course_catalog()",
     "security definer",
     "create or replace function public.get_public_course_catalog()",
@@ -59,69 +66,49 @@ if (failures.length === 0) {
     "module_record.status = 'published'",
     "lesson_record.status = 'published'",
     "grant execute on function public.get_public_course_catalog() to anon, authenticated",
-  ]) {
-    if (!migration.includes(fragment)) failures.push(`Migration B88 incompleta: ${fragment}`);
-  }
+  ]);
   for (const forbidden of ["'cover_asset_id'", "'thumbnail_asset_id'", "'version'", "'created_by_user_id'"]) {
     if (migration.includes(forbidden)) failures.push(`Payload B88 expõe campo privado: ${forbidden}`);
   }
 
-  for (const fragment of [
+  requireFragments(databaseTest, "pgTAP B88", [
     "set local role anon",
     "catalog exposes only currently visible published courses",
     "draft modules are excluded",
     "draft lessons are excluded",
     "catalog does not expose private asset identifiers",
-  ]) {
-    if (!databaseTest.includes(fragment)) failures.push(`pgTAP B88 incompleto: ${fragment}`);
-  }
-
-  for (const fragment of [
+  ]);
+  requireFragments(contract, "Contrato B88", [
     "publicCourseCatalogSchema",
     "publicCourseModuleSchema",
     ".strict()",
     "Total público diverge dos módulos persistidos",
     "Sem promoção ativa",
-  ]) {
-    if (!contract.includes(fragment)) failures.push(`Contrato B88 incompleto: ${fragment}`);
-  }
-  for (const fragment of [
+  ]);
+  requireFragments(contractTest, "Teste unitário B88", [
     'describe("publicCourseCatalogSchema"',
     "rejects totals that diverge",
     "rejects private or administrative fields",
-  ]) {
-    if (!contractTest.includes(fragment)) failures.push(`Teste unitário B88 ausente: ${fragment}`);
-  }
-
-  for (const fragment of [
+  ]);
+  requireFragments(hook, "Hook B88", [
     'supabase.rpc("get_public_course_catalog")',
     "parseDataContract",
     '"catálogo público de cursos"',
-  ]) {
-    if (!hook.includes(fragment)) failures.push(`Hook B88 incompleto: ${fragment}`);
-  }
+  ]);
   if (hook.includes('.from("courses")')) failures.push("Hook público não pode consultar courses diretamente.");
 
   for (const source of [hero, courses]) {
-    if (!source.includes("usePublicCourseCatalog")) {
-      failures.push("Hero e catálogo devem consumir o read model público.");
-    }
+    if (!source.includes("usePublicCourseCatalog")) failures.push("Hero e catálogo devem consumir o read model público.");
   }
-  if (!hero.includes("featuredCourse.module_count")) failures.push("Hero não apresenta módulos persistidos.");
-  if (!courses.includes("course.modules.map")) failures.push("Catálogo não apresenta módulos publicados.");
-  if (!courses.includes("course.effective_price_amount")) failures.push("Catálogo não apresenta preço efetivo persistido.");
-
-  if (!index.includes("OperationalTrustSection")) failures.push("Home não usa a seção de transparência operacional.");
-  if (!navigation.includes('{ label: "Transparência", sectionId: "transparencia" }')) {
-    failures.push("Navegação pública não aponta para transparência.");
-  }
-  for (const fragment of [
+  requireFragments(hero, "Hero B88", ["featuredCourse.module_count"]);
+  requireFragments(courses, "Catálogo B88", ["course.modules.map", "course.effective_price_amount"]);
+  requireFragments(index, "Home B88", ["OperationalTrustSection"]);
+  requireFragments(navigation, "Navegação B88", ['{ label: "Transparência", sectionId: "transparencia" }']);
+  requireFragments(trust, "Transparência B88", [
     "Esta página não publica números de alunos",
     "Progresso persistido",
     "Certificados verificáveis",
-  ]) {
-    if (!trust.includes(fragment)) failures.push(`Transparência B88 incompleta: ${fragment}`);
-  }
+  ]);
 
   const publicSurface = [hero, courses, benefits, instructor, trust, navigation, index].join("\n");
   for (const forbidden of [
@@ -143,17 +130,17 @@ if (failures.length === 0) {
     if (publicSurface.includes(forbidden)) failures.push(`Alegação pública não comprovada: ${forbidden}`);
   }
 
-  for (const fragment of [
+  requireFragments(documentation, "Documentação B88", [
     "read model público",
     "depoimentos",
     "identificadores privados",
     "branch `dev`",
-  ]) {
-    if (!documentation.includes(fragment)) failures.push(`Documentação B88 incompleta: ${fragment}`);
-  }
+  ]);
   if (!status.includes("Catálogo público")) failures.push("STATUS não registra o catálogo público B88.");
-  if (!packageJson.includes('"check:public-course-catalog"')) failures.push("Script B88 ausente no package.json.");
-  if (!packageJson.includes("npm run check:public-course-catalog")) failures.push("B88 não participa do typecheck.");
+  requireFragments(packageJson, "package.json B88", [
+    '"check:public-course-catalog"',
+    "npm run check:public-course-catalog",
+  ]);
 }
 
 if (failures.length > 0) {
@@ -164,3 +151,5 @@ if (failures.length > 0) {
 console.log(
   "Contrato B88 aprovado: catálogo público deriva do CMS e a home não contém alegações comerciais fictícias.",
 );
+
+await import("./check-course-storefront.mjs");
