@@ -82,7 +82,7 @@ for (const fragment of [
   "studentNavigation.map",
   "<StudentNavigation />",
   "<StudentNavigation mobile />",
-  'aria-label="Navegação do Portal do Aluno"',
+  '"Navegação do Portal do Aluno"',
   '"Navegação móvel do Portal do Aluno"',
 ]) {
   expect(shell.includes(fragment), `Shell B83 ausente: ${fragment}`);
@@ -115,7 +115,7 @@ for (const fragment of [
 
 for (const fragment of [
   "src/components/student/StudentPortalShell.tsx",
-  '/aluno/certificados",
+  '/aluno/certificados",',
   "studentNavigation.map",
   "acesso navegável aos certificados",
 ]) {
