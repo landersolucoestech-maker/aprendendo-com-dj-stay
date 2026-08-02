@@ -8,13 +8,13 @@ Endurecer os contratos Zod dos favoritos do aluno e adicionar cobertura unitári
 
 Os modelos de favoritos aceitavam timestamps arbitrários, títulos vazios, caminhos externos ou ambíguos e campos extras não retornados pelas RPCs.
 
-Essa permissividade permitia que alterações acidentais no payload fossem aceitas silenciosamente pelo frontend.
+O tipo de item também era definido por um enum próprio, duplicando a primitiva canônica já usada pelo checkout e pelos modelos financeiros.
 
 ## Implementação
 
 `src/contracts/student-favorites.ts` passa a exigir:
 
-- tipos canônicos `course` e `digital_product`;
+- reutilização exata de `checkoutSubjectTypeSchema`, preservando o export público `studentFavoriteSubjectTypeSchema`;
 - UUID válido para favorito e item referenciado;
 - título não vazio após trim;
 - caminho de ação interno iniciado por uma barra simples;
@@ -28,6 +28,7 @@ Essa permissividade permitia que alterações acidentais no payload fossem aceit
 
 `src/contracts/student-favorites.test.ts` cobre:
 
+- identidade com a definição canônica do checkout;
 - tipos canônicos e tipos inválidos;
 - favoritos de curso e produto digital;
 - normalização e rejeição de título vazio;
@@ -43,6 +44,8 @@ Essa permissividade permitia que alterações acidentais no payload fossem aceit
 
 `scripts/check-student-favorite-contract-tests.mjs` verifica:
 
+- importação e identidade da primitiva canônica;
+- ausência de enum duplicado;
 - schemas estritos e primitivas obrigatórias;
 - alinhamento com os tipos e campos retornados pela migration B41;
 - cobertura dos cenários negativos de segurança;
