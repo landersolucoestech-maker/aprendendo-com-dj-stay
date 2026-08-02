@@ -8,10 +8,11 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: patch-b78-lesson-media
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   patch:
@@ -23,8 +24,11 @@ jobs:
           fetch-depth: 0
 
       - name: Endurecer contratos e consumidores
+        id: patch
+        continue-on-error: true
         run: |
-          python - <<'PY'
+          set +e
+          python - <<'PY' > /tmp/b78-patch.log 2>&1
           from pathlib import Path
 
           contract_path = Path("src/contracts/curriculum-cms.ts")
@@ -101,11 +105,12 @@ jobs:
             .object({ lessonId: uuidSchema })
             .strict();
           '''
-          if provider_block not in contract:
-              raise SystemExit("Bloco de providers não encontrado.")
-          contract = contract.replace(provider_block, provider_replacement, 1)
+          if "youtubeVideoIdSchema" not in contract:
+              if provider_block not in contract:
+                  raise RuntimeError("Bloco de providers não encontrado")
+              contract = contract.replace(provider_block, provider_replacement, 1)
 
-          media_tail = '''    if (!isPrivate && (hasAsset || !hasExternalId)) {
+          media_anchor = '''    if (!isPrivate && (hasAsset || !hasExternalId)) {
               context.addIssue({
                 code: z.ZodIssueCode.custom,
                 path: ["provider"],
@@ -147,39 +152,29 @@ jobs:
             }
           });
           '''
-          if media_tail not in contract:
-              raise SystemExit("Refinamento de mídia não encontrado.")
-          contract = contract.replace(media_tail, media_replacement, 1)
+          if "Identificador persistido do YouTube inválido." not in contract:
+              if media_anchor not in contract:
+                  raise RuntimeError("Refinamento de mídia não encontrado")
+              contract = contract.replace(media_anchor, media_replacement, 1)
           contract_path.write_text(contract, encoding="utf-8")
 
           hook_path = Path("src/hooks/useCurriculumCms.ts")
           hook = hook_path.read_text(encoding="utf-8")
-          import_anchor = '''  curriculumModuleRowsSchema,
-            lessonFormToPayload,
-            lessonMediaRowSchema,
-          '''
-          import_replacement = '''  curriculumModuleRowsSchema,
-            disableLessonMediaInputSchema,
-            externalLessonMediaInputSchema,
-            lessonFormToPayload,
-            lessonMediaRowSchema,
-          '''
-          if import_anchor not in hook:
-              raise SystemExit("Âncora de imports de mídia não encontrada.")
-          hook = hook.replace(import_anchor, import_replacement, 1)
 
-          second_import_anchor = '''  moduleFormToPayload,
-            modulePrerequisiteRowsSchema,
-          '''
-          second_import_replacement = '''  moduleFormToPayload,
-            modulePrerequisiteRowsSchema,
-            privateLessonMediaInputSchema,
-          '''
-          if second_import_anchor not in hook:
-              raise SystemExit("Segunda âncora de imports não encontrada.")
-          hook = hook.replace(second_import_anchor, second_import_replacement, 1)
+          if "disableLessonMediaInputSchema" not in hook:
+              hook = hook.replace(
+                  "  curriculumModuleRowsSchema,\n",
+                  "  curriculumModuleRowsSchema,\n  disableLessonMediaInputSchema,\n  externalLessonMediaInputSchema,\n",
+                  1,
+              )
+          if "privateLessonMediaInputSchema" not in hook:
+              hook = hook.replace(
+                  "  modulePrerequisiteRowsSchema,\n",
+                  "  modulePrerequisiteRowsSchema,\n  privateLessonMediaInputSchema,\n",
+                  1,
+              )
 
-          external_anchor = '''    }): Promise<LessonMediaRow> => {
+          external_old = '''    }): Promise<LessonMediaRow> => {
                 const { data, error } = await supabase.rpc("upsert_external_lesson_media", {
                   p_lesson_id: lessonId,
                   p_provider: provider,
@@ -187,7 +182,7 @@ jobs:
                   p_watermark_enabled: watermarkEnabled,
                 });
           '''
-          external_replacement = '''    }): Promise<LessonMediaRow> => {
+          external_new = '''    }): Promise<LessonMediaRow> => {
                 const input = parseDataContract(
                   externalLessonMediaInputSchema,
                   { lessonId, provider, sourceUrl, watermarkEnabled },
@@ -200,18 +195,19 @@ jobs:
                   p_watermark_enabled: input.watermarkEnabled,
                 });
           '''
-          if external_anchor not in hook:
-              raise SystemExit("Mutação externa não encontrada.")
-          hook = hook.replace(external_anchor, external_replacement, 1)
+          if "entrada da mídia externa da aula" not in hook:
+              if external_old not in hook:
+                  raise RuntimeError("Mutação externa não encontrada")
+              hook = hook.replace(external_old, external_new, 1)
 
-          private_anchor = '''    }): Promise<LessonMediaRow> => {
+          private_old = '''    }): Promise<LessonMediaRow> => {
                 const { data, error } = await supabase.rpc("upsert_private_lesson_media", {
                   p_lesson_id: lessonId,
                   p_asset_id: assetId,
                   p_watermark_enabled: watermarkEnabled,
                 });
           '''
-          private_replacement = '''    }): Promise<LessonMediaRow> => {
+          private_new = '''    }): Promise<LessonMediaRow> => {
                 const input = parseDataContract(
                   privateLessonMediaInputSchema,
                   { lessonId, assetId, watermarkEnabled },
@@ -223,15 +219,16 @@ jobs:
                   p_watermark_enabled: input.watermarkEnabled,
                 });
           '''
-          if private_anchor not in hook:
-              raise SystemExit("Mutação privada não encontrada.")
-          hook = hook.replace(private_anchor, private_replacement, 1)
+          if "entrada da mídia privada da aula" not in hook:
+              if private_old not in hook:
+                  raise RuntimeError("Mutação privada não encontrada")
+              hook = hook.replace(private_old, private_new, 1)
 
-          disable_anchor = '''  const disableMedia = useMutation({
+          disable_old = '''  const disableMedia = useMutation({
               mutationFn: async (lessonId: string): Promise<boolean> => {
                 const { data, error } = await supabase.rpc("disable_lesson_media", { p_lesson_id: lessonId });
           '''
-          disable_replacement = '''  const disableMedia = useMutation({
+          disable_new = '''  const disableMedia = useMutation({
               mutationFn: async (lessonId: string): Promise<boolean> => {
                 const input = parseDataContract(
                   disableLessonMediaInputSchema,
@@ -242,13 +239,47 @@ jobs:
                   p_lesson_id: input.lessonId,
                 });
           '''
-          if disable_anchor not in hook:
-              raise SystemExit("Mutação de desativação não encontrada.")
-          hook = hook.replace(disable_anchor, disable_replacement, 1)
+          if "entrada da desativação da mídia da aula" not in hook:
+              if disable_old not in hook:
+                  raise RuntimeError("Mutação de desativação não encontrada")
+              hook = hook.replace(disable_old, disable_new, 1)
+
+          required = [
+              "disableLessonMediaInputSchema",
+              "externalLessonMediaInputSchema",
+              "privateLessonMediaInputSchema",
+              "entrada da mídia externa da aula",
+              "entrada da mídia privada da aula",
+              "entrada da desativação da mídia da aula",
+          ]
+          missing = [fragment for fragment in required if fragment not in hook]
+          if missing:
+              raise RuntimeError(f"Fragmentos ausentes no hook: {missing}")
+
           hook_path.write_text(hook, encoding="utf-8")
           PY
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit $status
+
+      - name: Publicar diagnóstico
+        if: steps.patch.outcome == 'failure'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require("node:fs");
+            const log = fs.existsSync("/tmp/b78-patch.log")
+              ? fs.readFileSync("/tmp/b78-patch.log", "utf8")
+              : "Log não produzido.";
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Diagnóstico patch B78 — ${context.sha.slice(0, 12)}`,
+              body: `Commit: \`${context.sha}\`\n\n\`\`\`text\n${log.slice(-10000)}\n\`\`\``,
+            });
 
       - name: Publicar alteração e remover workflow temporário
+        if: steps.patch.outcome == 'success'
         run: |
           rm .github/workflows/patch-b78-lesson-media.yml
           git config user.name github-actions[bot]
@@ -259,3 +290,7 @@ jobs:
             .github/workflows/patch-b78-lesson-media.yml
           git commit -m "feat(b78): validar mídia administrativa das aulas"
           git push origin HEAD:dev
+
+      - name: Falhar após diagnóstico
+        if: steps.patch.outcome == 'failure'
+        run: exit 1
