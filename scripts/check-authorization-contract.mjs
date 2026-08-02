@@ -53,3 +53,5 @@ if (failures.length > 0) {
 }
 
 console.log("Contrato estático de autorização validado.");
+
+await import("./check-authorization-tests.mjs");
