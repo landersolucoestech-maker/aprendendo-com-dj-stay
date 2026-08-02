@@ -22,8 +22,7 @@ const COURSE_ID = "9b2c4d6e-8f10-4a12-b345-6789abcdef01";
 const TIMESTAMP = "2026-08-02T07:00:00-03:00";
 const CERTIFICATE_CODE = "DJSTAY-0123456789ABCDEF0123";
 
-const ISSUED_CERTIFICATE = {
-  id: CERTIFICATE_ID,
+const PUBLIC_ISSUED_CERTIFICATE = {
   code: CERTIFICATE_CODE,
   status: "issued",
   student_name: "Aluno Exemplo",
@@ -34,11 +33,21 @@ const ISSUED_CERTIFICATE = {
   revocation_reason: null,
 } as const;
 
-const REVOKED_CERTIFICATE = {
-  ...ISSUED_CERTIFICATE,
+const PUBLIC_REVOKED_CERTIFICATE = {
+  ...PUBLIC_ISSUED_CERTIFICATE,
   status: "revoked",
   revoked_at: TIMESTAMP,
   revocation_reason: "Revogação administrativa justificada.",
+} as const;
+
+const ISSUED_CERTIFICATE = {
+  id: CERTIFICATE_ID,
+  ...PUBLIC_ISSUED_CERTIFICATE,
+} as const;
+
+const REVOKED_CERTIFICATE = {
+  id: CERTIFICATE_ID,
+  ...PUBLIC_REVOKED_CERTIFICATE,
 } as const;
 
 const COMPLETION = {
@@ -123,13 +132,10 @@ describe("enums de certificados e matrículas", () => {
 });
 
 describe("certificateSummarySchema", () => {
-  it("aceita certificado emitido sem dados de revogação", () => {
+  it("aceita certificados emitido e revogado coerentes", () => {
     expect(certificateSummarySchema.parse(ISSUED_CERTIFICATE)).toEqual(
       ISSUED_CERTIFICATE,
     );
-  });
-
-  it("aceita certificado revogado com horário e motivo", () => {
     expect(certificateSummarySchema.parse(REVOKED_CERTIFICATE)).toEqual(
       REVOKED_CERTIFICATE,
     );
@@ -188,7 +194,13 @@ describe("certificateSummarySchema", () => {
     ).toBe(false);
   });
 
-  it("rejeita código, snapshots, percentual e timestamp inválidos", () => {
+  it("rejeita identidade, snapshots, percentual e timestamp inválidos", () => {
+    expect(
+      certificateSummarySchema.safeParse({
+        ...ISSUED_CERTIFICATE,
+        id: "certificado-invalido",
+      }).success,
+    ).toBe(false);
     expect(
       certificateSummarySchema.safeParse({
         ...ISSUED_CERTIFICATE,
@@ -221,16 +233,13 @@ describe("certificateSummarySchema", () => {
     ).toBe(false);
   });
 
-  it("rejeita campos extras", () => {
+  it("rejeita campos extras e itens divergentes na coleção", () => {
     expect(
       certificateSummarySchema.safeParse({
         ...ISSUED_CERTIFICATE,
         issued_by_user_id: USER_ID,
       }).success,
     ).toBe(false);
-  });
-
-  it("aceita coleção de certificados e rejeita item divergente", () => {
     expect(myCertificatesSchema.parse([ISSUED_CERTIFICATE])).toEqual([
       ISSUED_CERTIFICATE,
     ]);
@@ -260,34 +269,43 @@ describe("certificateValidationSchema", () => {
   });
 
   it("aceita certificado público válido e revogado inválido", () => {
+    const issuedResult = {
+      ...PUBLIC_ISSUED_CERTIFICATE,
+      found: true,
+      valid: true,
+    } as const;
+    const revokedResult = {
+      ...PUBLIC_REVOKED_CERTIFICATE,
+      found: true,
+      valid: false,
+    } as const;
+
+    expect(certificateValidationSchema.parse(issuedResult)).toEqual(issuedResult);
+    expect(certificateValidationSchema.parse(revokedResult)).toEqual(revokedResult);
+  });
+
+  it("rejeita campo interno na validação pública", () => {
     expect(
-      certificateValidationSchema.parse({
-        ...ISSUED_CERTIFICATE,
+      certificateValidationSchema.safeParse({
+        ...PUBLIC_ISSUED_CERTIFICATE,
         found: true,
         valid: true,
-      }),
-    ).toEqual({ ...ISSUED_CERTIFICATE, found: true, valid: true });
-
-    expect(
-      certificateValidationSchema.parse({
-        ...REVOKED_CERTIFICATE,
-        found: true,
-        valid: false,
-      }),
-    ).toEqual({ ...REVOKED_CERTIFICATE, found: true, valid: false });
+        id: CERTIFICATE_ID,
+      }).success,
+    ).toBe(false);
   });
 
   it("rejeita validade divergente do status", () => {
     expect(
       certificateValidationSchema.safeParse({
-        ...ISSUED_CERTIFICATE,
+        ...PUBLIC_ISSUED_CERTIFICATE,
         found: true,
         valid: false,
       }).success,
     ).toBe(false);
     expect(
       certificateValidationSchema.safeParse({
-        ...REVOKED_CERTIFICATE,
+        ...PUBLIC_REVOKED_CERTIFICATE,
         found: true,
         valid: true,
       }).success,
@@ -391,20 +409,19 @@ describe("modelos administrativos", () => {
     ).toBe(false);
   });
 
-  it("aceita matrícula administrativa coerente", () => {
+  it("aceita matrícula administrativa coerente e sem certificado ativo", () => {
     expect(adminEnrollmentSchema.parse(ADMIN_ENROLLMENT)).toEqual(
       ADMIN_ENROLLMENT,
     );
-  });
 
-  it("aceita matrícula sem certificado ativo", () => {
-    const value = {
+    const withoutCertificate = {
       ...ADMIN_ENROLLMENT,
       active_certificate_id: null,
       active_certificate_code: null,
     } as const;
-
-    expect(adminEnrollmentSchema.parse(value)).toEqual(value);
+    expect(adminEnrollmentSchema.parse(withoutCertificate)).toEqual(
+      withoutCertificate,
+    );
   });
 
   it("rejeita par incompleto de certificado ativo", () => {
@@ -430,6 +447,20 @@ describe("modelos administrativos", () => {
           ...COMPLETION,
           enrollment_id: CERTIFICATE_ID,
         },
+      }).success,
+    ).toBe(false);
+  });
+
+  it.each([
+    { user_id: CERTIFICATE_ID },
+    { course_id: CERTIFICATE_ID },
+    { enrollment_status: "suspended" },
+    { course_title: "Outro curso" },
+  ] as const)("rejeita conclusão administrativa divergente %#", (change) => {
+    expect(
+      adminEnrollmentSchema.safeParse({
+        ...ADMIN_ENROLLMENT,
+        completion: { ...COMPLETION, ...change },
       }).success,
     ).toBe(false);
   });
