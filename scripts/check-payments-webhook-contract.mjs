@@ -146,8 +146,16 @@ expect(
   "Marketplace deve encaminhar somente para a URL hospedada validada.",
 );
 expect(
-  paymentReturn.includes("Esta página não libera conteúdo por conta própria"),
-  "Página de retorno não pode confirmar pagamento ou liberar conteúdo.",
+  paymentReturn.includes("useCheckoutReturn") &&
+    paymentReturn.includes('searchParams.get("checkout_intent")') &&
+    paymentReturn.includes("classifyCheckoutReturn") &&
+    paymentReturn.includes("Nenhum acesso foi alterado por esta página."),
+  "Página de retorno deve consultar a compra exata sem confirmar ou liberar acesso pelo navegador.",
+);
+expect(
+  !paymentReturn.includes("activeEnrollments[0]") &&
+    !paymentReturn.includes("getActiveEnrollments"),
+  "Página de retorno não pode inferir sucesso por outra matrícula ativa.",
 );
 
 expect(
