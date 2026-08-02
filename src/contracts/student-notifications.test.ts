@@ -100,6 +100,8 @@ describe("studentNotificationSchema", () => {
     "//example.com/path",
     "aluno/suporte",
     "mailto:suporte@example.com",
+    "/\\example.com",
+    "/aluno\\suporte",
   ])("rejeita caminho de ação externo ou relativo %j", (action_path) => {
     expect(
       studentNotificationSchema.safeParse({ ...NOTIFICATION, action_path })
