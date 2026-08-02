@@ -14,6 +14,7 @@ const requiredFiles = [
   "src/pages/student/Certificates.tsx",
   "src/pages/admin/StudentsAdmin.tsx",
   "src/pages/CertificateValidation.tsx",
+  "src/components/student/StudentPortalShell.tsx",
   "src/App.tsx",
 ];
 
@@ -70,6 +71,13 @@ requireText("src/App.tsx", [
   'path="/admin/alunos"',
   "<StudentRoute>",
   "<AdminRoute>",
+]);
+
+requireText("src/components/student/StudentPortalShell.tsx", [
+  '{ to: "/aluno/certificados", label: "Certificados", icon: Award, end: false }',
+  "studentNavigation.map",
+  "<StudentNavigation />",
+  "<StudentNavigation mobile />",
 ]);
 
 requireText("src/pages/CertificateValidation.tsx", [
@@ -134,4 +142,4 @@ for (const sourceFile of await collectSourceFiles(path.join(root, "src"))) {
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log("Contrato estático da FASE B21 aprovado.");
+console.log("Contrato estático da FASE B21 aprovado com acesso navegável aos certificados.");
