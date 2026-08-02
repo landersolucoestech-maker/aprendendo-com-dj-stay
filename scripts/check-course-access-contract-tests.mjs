@@ -42,6 +42,7 @@ for (const fragment of [
   "O lifecycle da matrícula está incoerente.",
   "enrollmentEventSchema",
   "getActiveEnrollments",
+  "now = Date.now()",
   'enrollment.status === "active"',
   'enrollment.courses.status === "published"',
   "startsAt <= now",
@@ -92,11 +93,20 @@ for (const fragment of [
   "aceita evento canônico e coleção",
   "retorna apenas matrícula ativa, publicada e dentro da janela",
   "considera o início inclusivo e a expiração exclusiva",
+  "getActiveEnrollments",
   "vi.setSystemTime",
   "safeParse",
 ]) {
   expect(tests.includes(fragment), `Cobertura B76 ausente: ${fragment}`);
 }
+expect(
+  !tests.includes('@/hooks/useCourseAccess'),
+  "A suíte B76 não pode importar o hook que inicializa o cliente Supabase.",
+);
+expect(
+  tests.includes('@/contracts/course-access'),
+  "A suíte B76 deve importar o filtro puro diretamente dos contratos.",
+);
 
 for (const fragment of [
   "enrollmentsWithCourseSchema",
@@ -107,6 +117,10 @@ for (const fragment of [
 ]) {
   expect(hook.includes(fragment), `Consumidor B76 ausente: ${fragment}`);
 }
+expect(
+  !hook.includes("const isCurrentlyActive"),
+  "O hook não pode duplicar a regra temporal pura de acesso ativo.",
+);
 
 expect(
   documentation.includes("Fase B76") &&
@@ -132,5 +146,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B76 aprovado: matrícula, origem, pagamento, janela e acesso ativo possuem validação estrita alinhada ao PostgreSQL e ao consumidor real.",
+  "Contrato B76 aprovado: matrícula, origem, pagamento, janela e acesso ativo possuem validação estrita e suíte independente do cliente Supabase.",
 );
