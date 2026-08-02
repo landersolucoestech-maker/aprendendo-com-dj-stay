@@ -17,6 +17,7 @@ import {
   marketplaceAttachDeliverableInputSchema,
   marketplaceCreateLicenseInputSchema,
   marketplaceCreateProductInputSchema,
+  marketplaceLicenseLifecycleInputSchema,
   marketplaceProductLifecycleInputSchema,
   marketplaceUpdateProductInputSchema,
   type DigitalProduct,
@@ -394,10 +395,15 @@ export const usePublishDigitalProductLicense = () => {
     mutationFn: async (
       licenseId: string,
     ): Promise<DigitalProductLicense> => {
+      const value = parseDataContract(
+        marketplaceLicenseLifecycleInputSchema,
+        { licenseId },
+        "publicação da licença digital",
+      );
       const { data, error } = await supabase.rpc(
         "publish_digital_product_license",
         {
-          p_license_id: licenseId,
+          p_license_id: value.licenseId,
         },
       );
       if (error) throw error;
