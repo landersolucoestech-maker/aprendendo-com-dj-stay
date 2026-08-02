@@ -28,6 +28,7 @@ Os seguintes domínios possuem implementação, persistência, autorização e c
 | Certificados | emissão, revogação, consulta do aluno e validação pública |
 | Contatos | submissão idempotente, protocolo e tratamento administrativo |
 | Observabilidade | captura sanitizada de erros do frontend e fila administrativa |
+| Administração do proprietário | dashboard administrativo do proprietário com indicadores reais de financeiro, acadêmico, catálogo, suporte e contatos |
 | Supply chain | audit de dependências, lockfile validado, SBOM e manifesto de fontes |
 | Frontend | lazy loading, Error Boundary, datas canônicas, acessibilidade e grafo de chunks acíclico |
 
