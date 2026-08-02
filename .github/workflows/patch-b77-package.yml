@@ -1,0 +1,55 @@
+name: Integrar gate B77
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/patch-b77-package.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: patch-b77-package
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Integrar verificador B77
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("package.json")
+          content = path.read_text(encoding="utf-8")
+
+          old_chain = "npm run check:playback-fingerprint-tests && npm run check:checkout-tests"
+          new_chain = "npm run check:playback-fingerprint-tests && npm run check:playback-contract-tests && npm run check:checkout-tests"
+          if old_chain not in content:
+              raise SystemExit("Encadeamento do typecheck não encontrado.")
+          content = content.replace(old_chain, new_chain, 1)
+
+          old_script = '    "check:playback-fingerprint-tests": "node scripts/check-playback-fingerprint-tests.mjs",\n    "check:checkout-tests":'
+          new_script = '    "check:playback-fingerprint-tests": "node scripts/check-playback-fingerprint-tests.mjs",\n    "check:playback-contract-tests": "node scripts/check-playback-contract-tests.mjs",\n    "check:checkout-tests":'
+          if old_script not in content:
+              raise SystemExit("Bloco de scripts não encontrado.")
+          content = content.replace(old_script, new_script, 1)
+
+          path.write_text(content, encoding="utf-8")
+          PY
+
+      - name: Publicar integração e remover workflow temporário
+        run: |
+          rm .github/workflows/patch-b77-package.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add package.json .github/workflows/patch-b77-package.yml
+          git commit -m "test(b77): integrar contratos de playback ao typecheck"
+          git push origin HEAD:dev
