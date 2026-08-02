@@ -7,6 +7,7 @@ const paths = {
   component: "src/components/RecentActivities.tsx",
   learning: "src/contracts/learning.ts",
   dateTime: "src/lib/date-time.ts",
+  dateTimeContract: "scripts/check-datetime-analytics-contract.mjs",
   documentation: "docs/refactor/FASE-B80-RECENT-ACTIVITIES-TESTS.md",
   package: "package.json",
 };
@@ -27,6 +28,7 @@ const hook = read(paths.hook);
 const component = read(paths.component);
 const learning = read(paths.learning);
 const dateTime = read(paths.dateTime);
+const dateTimeContract = read(paths.dateTimeContract);
 const documentation = read(paths.documentation);
 const packageJson = existsSync(paths.package)
   ? JSON.parse(read(paths.package))
@@ -131,6 +133,21 @@ for (const fragment of [
   expect(dateTime.includes(fragment), `Infraestrutura temporal B80 ausente: ${fragment}`);
 }
 
+for (const fragment of [
+  '"src/lib/recent-activities.ts"',
+  'const recentActivitiesHookPath = "src/hooks/useRecentActivities.ts"',
+  'recentActivitiesHook.includes(\'from "@/lib/recent-activities"\')',
+  '!recentActivitiesHook.includes(\'from "@/lib/date-time"\')',
+  '!recentActivitiesHook.includes("formatAppRelativeTime(")',
+  "com delegação B80 verificada",
+]) {
+  expect(dateTimeContract.includes(fragment), `Ponte B26/B80 ausente: ${fragment}`);
+}
+expect(
+  !dateTimeContract.includes('"src/hooks/useRecentActivities.ts",\n  "src/pages/CertificateValidation.tsx"'),
+  "O gate B26 não pode voltar a exigir importação temporal direta no hook B80.",
+);
+
 expect(
   documentation.includes("Fase B80") &&
     documentation.includes("Nenhuma migration") &&
@@ -163,5 +180,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B80 aprovado: limite finito, imutabilidade e transformação determinística das atividades recentes permanecem isolados da consulta Supabase.",
+  "Contrato B80 aprovado: limite finito, imutabilidade, transformação determinística e ponte temporal B26 permanecem isolados da consulta Supabase.",
 );
