@@ -5,6 +5,7 @@ const paths = {
   databaseTest: "supabase/tests/62_checkout_expiration_cron_health.test.sql",
   contract: "src/contracts/checkout-cron-health.ts",
   contractTest: "src/contracts/checkout-cron-health.test.ts",
+  generatedTypes: "src/integrations/supabase/types.ts",
   rpc: "src/integrations/supabase/checkout-cron-health-rpc.ts",
   hook: "src/hooks/useCheckoutCronHealth.ts",
   component: "src/components/admin/CheckoutCronHealthCard.tsx",
@@ -33,6 +34,7 @@ if (failures.length === 0) {
   const databaseTest = read(paths.databaseTest);
   const contract = read(paths.contract);
   const contractTest = read(paths.contractTest);
+  const generatedTypes = read(paths.generatedTypes);
   const rpc = read(paths.rpc);
   const hook = read(paths.hook);
   const component = read(paths.component);
@@ -89,6 +91,11 @@ if (failures.length === 0) {
     "accepts a sanitized persisted health snapshot",
     "rejects internal pg_cron metadata",
     "rejects incoherent missing and inactive states",
+  ]);
+  requireFragments(generatedTypes, "Tipos gerados B93", [
+    "get_checkout_expiration_cron_health:",
+    "Args: { p_run_limit?: number }",
+    "Returns: Json",
   ]);
   requireFragments(rpc, "Cliente RPC B93", [
     'functionName: "get_checkout_expiration_cron_health"',
