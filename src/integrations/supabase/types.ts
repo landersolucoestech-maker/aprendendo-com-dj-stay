@@ -4905,7 +4905,15 @@ export type Database = {
       }
       get_public_course_catalog: { Args: never; Returns: Json }
       get_students_admin_dashboard: {
-        Args: { p_limit?: number; p_offset?: number; p_search?: string }
+        Args: {
+          p_certificate_limit?: number
+          p_certificate_offset?: number
+          p_enrollment_limit?: number
+          p_enrollment_offset?: number
+          p_search?: string
+          p_student_limit?: number
+          p_student_offset?: number
+        }
         Returns: Json
       }
       get_support_admin_dashboard: {
