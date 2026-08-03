@@ -4827,6 +4827,10 @@ export type Database = {
         Args: { p_attempt_id: string }
         Returns: Json
       }
+      get_checkout_expiration_cron_health: {
+        Args: { p_run_limit?: number }
+        Returns: Json
+      }
       get_contact_messages_admin: {
         Args: {
           p_limit?: number
