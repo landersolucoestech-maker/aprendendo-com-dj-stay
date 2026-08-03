@@ -126,12 +126,26 @@ describe("studentFavoriteListSchema", () => {
     ).toEqual({ total: 0, favorites: [] });
   });
 
+  it("aceita uma página menor que o total persistido", () => {
+    const page = { total: 50, favorites: [FAVORITE] };
+    expect(studentFavoriteListSchema.parse(page)).toEqual(page);
+  });
+
   it("rejeita total negativo ou fracionário", () => {
     expect(
       studentFavoriteListSchema.safeParse({ total: -1, favorites: [] }).success,
     ).toBe(false);
     expect(
       studentFavoriteListSchema.safeParse({ total: 0.5, favorites: [] }).success,
+    ).toBe(false);
+  });
+
+  it("rejeita página maior que o total persistido", () => {
+    expect(
+      studentFavoriteListSchema.safeParse({
+        total: 0,
+        favorites: [FAVORITE],
+      }).success,
     ).toBe(false);
   });
 
