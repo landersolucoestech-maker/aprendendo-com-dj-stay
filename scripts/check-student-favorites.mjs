@@ -80,4 +80,6 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
+await import("./check-student-favorites-pagination.mjs");
+
 console.log("Contrato B41 aprovado: favoritos estão isolados e integrados.");
