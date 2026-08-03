@@ -168,6 +168,12 @@ begin
           jsonb_build_object(
             'id', enrollment_record.id,
             'user_id', enrollment_record.user_id,
+            'student_name', coalesce(
+              nullif(btrim(user_record.raw_user_meta_data ->> 'full_name'), ''),
+              nullif(btrim(user_record.raw_user_meta_data ->> 'name'), ''),
+              split_part(user_record.email, '@', 1)
+            ),
+            'student_email', user_record.email,
             'course_id', enrollment_record.course_id,
             'course_title', course_record.title,
             'status', enrollment_record.status,
