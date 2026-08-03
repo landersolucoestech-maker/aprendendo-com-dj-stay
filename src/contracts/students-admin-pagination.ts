@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import { studentsAdminDashboardSchema } from "@/contracts/certificates";
+import {
+  adminEnrollmentSchema,
+  studentsAdminDashboardSchema,
+} from "@/contracts/certificates";
 
 export const studentsAdminTotalsSchema = z
   .object({
@@ -20,9 +23,17 @@ export const studentsAdminTotalsSchema = z
     }
   });
 
+export const paginatedAdminEnrollmentSchema = adminEnrollmentSchema
+  .extend({
+    student_name: z.string().min(1),
+    student_email: z.string().email().nullable(),
+  })
+  .strict();
+
 export const paginatedStudentsAdminDashboardSchema = studentsAdminDashboardSchema
   .extend({
     totals: studentsAdminTotalsSchema,
+    enrollments: z.array(paginatedAdminEnrollmentSchema),
   })
   .strict()
   .superRefine((value, context) => {
