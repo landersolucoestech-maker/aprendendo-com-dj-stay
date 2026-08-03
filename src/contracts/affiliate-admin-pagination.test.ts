@@ -67,6 +67,15 @@ describe("paginatedAffiliateAdminDashboardSchema", () => {
     ).toBe(false);
   });
 
+  it("rejeita payload sem totais persistidos", () => {
+    const payload: Record<string, unknown> = { ...EMPTY_DASHBOARD };
+    delete payload.totals;
+
+    expect(paginatedAffiliateAdminDashboardSchema.safeParse(payload).success).toBe(
+      false,
+    );
+  });
+
   it("rejeita totais negativos e campos extras", () => {
     expect(
       paginatedAffiliateAdminDashboardSchema.safeParse({
