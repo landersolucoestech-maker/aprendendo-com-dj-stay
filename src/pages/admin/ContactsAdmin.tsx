@@ -1,4 +1,13 @@
-import { CheckCircle2, Inbox, Loader2, RotateCcw, Search, ShieldAlert } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Inbox,
+  Loader2,
+  RotateCcw,
+  Search,
+  ShieldAlert,
+} from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -10,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatAppDateTime } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
+const pageSize = 25;
 const fieldClass =
   "w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white outline-none transition focus:border-white/40";
 
@@ -28,9 +38,17 @@ const ContactsAdmin = () => {
   const [status, setStatus] = useState<ContactMessageStatus | null>(null);
   const [search, setSearch] = useState("");
   const [note, setNote] = useState("");
-  const dashboardQuery = useContactMessagesAdmin(status, search);
+  const [page, setPage] = useState(0);
+  const dashboardQuery = useContactMessagesAdmin({
+    status,
+    search,
+    limit: pageSize,
+    offset: page * pageSize,
+  });
   const updateStatus = useUpdateContactMessageStatus();
   const data = dashboardQuery.data;
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const changeStatus = async (
     contactMessageId: string,
@@ -92,7 +110,15 @@ const ContactsAdmin = () => {
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {(["new", "in_progress", "resolved", "spam"] as const).map((item) => (
-            <button key={item} type="button" onClick={() => setStatus(status === item ? null : item)} className="text-left">
+            <button
+              key={item}
+              type="button"
+              onClick={() => {
+                setStatus(status === item ? null : item);
+                setPage(0);
+              }}
+              className="text-left"
+            >
               <Card className={`border-white/10 bg-white/5 transition ${status === item ? "ring-2 ring-violet-400" : "hover:bg-white/10"}`}>
                 <CardContent className="p-5">
                   <p className="text-sm text-gray-400">{statusLabel[item]}</p>
@@ -110,7 +136,10 @@ const ContactsAdmin = () => {
               <input
                 className={`${fieldClass} pl-10`}
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(0);
+                }}
                 placeholder="Buscar protocolo, nome, e-mail ou assunto"
               />
             </label>
@@ -194,6 +223,39 @@ const ContactsAdmin = () => {
             ))}
           </section>
         )}
+
+        {total > 0 ? (
+          <nav
+            className="flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between"
+            aria-label="Paginação das solicitações de contato"
+          >
+            <p className="text-sm text-gray-500" aria-live="polite">
+              Página {page + 1} de {totalPages} · {total} resultado(s)
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="border-white/20 bg-transparent"
+                disabled={page === 0 || dashboardQuery.isFetching}
+                onClick={() => setPage((current) => Math.max(0, current - 1))}
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Anterior
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-white/20 bg-transparent"
+                disabled={page + 1 >= totalPages || dashboardQuery.isFetching}
+                onClick={() => setPage((current) => current + 1)}
+              >
+                Próxima
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </nav>
+        ) : null}
       </div>
     </main>
   );
