@@ -185,7 +185,7 @@ export const adminCourseSchema = z
   })
   .strict();
 
-export const adminEnrollmentSchema = z
+export const adminEnrollmentObjectSchema = z
   .object({
     id: z.string().uuid(),
     user_id: z.string().uuid(),
@@ -200,36 +200,46 @@ export const adminEnrollmentSchema = z
     active_certificate_id: z.string().uuid().nullable(),
     active_certificate_code: certificateCodeSchema.nullable(),
   })
-  .strict()
-  .superRefine((value, context) => {
-    const hasCertificateId = value.active_certificate_id !== null;
-    const hasCertificateCode = value.active_certificate_code !== null;
+  .strict();
 
-    if (hasCertificateId !== hasCertificateCode) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: hasCertificateId
-          ? ["active_certificate_code"]
-          : ["active_certificate_id"],
-        message: "Identificador e código do certificado ativo devem existir em conjunto.",
-      });
-    }
+export type AdminEnrollmentValue = z.infer<typeof adminEnrollmentObjectSchema>;
 
-    const completionMatchesEnrollment =
-      value.completion.enrollment_id === value.id &&
-      value.completion.user_id === value.user_id &&
-      value.completion.course_id === value.course_id &&
-      value.completion.enrollment_status === value.status &&
-      value.completion.course_title === value.course_title;
+export const validateAdminEnrollmentState = (
+  value: AdminEnrollmentValue,
+  context: z.RefinementCtx,
+): void => {
+  const hasCertificateId = value.active_certificate_id !== null;
+  const hasCertificateCode = value.active_certificate_code !== null;
 
-    if (!completionMatchesEnrollment) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["completion"],
-        message: "Conclusão calculada não corresponde à matrícula administrativa.",
-      });
-    }
-  });
+  if (hasCertificateId !== hasCertificateCode) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: hasCertificateId
+        ? ["active_certificate_code"]
+        : ["active_certificate_id"],
+      message: "Identificador e código do certificado ativo devem existir em conjunto.",
+    });
+  }
+
+  const completionMatchesEnrollment =
+    value.completion.enrollment_id === value.id &&
+    value.completion.user_id === value.user_id &&
+    value.completion.course_id === value.course_id &&
+    value.completion.enrollment_status === value.status &&
+    value.completion.course_title === value.course_title;
+
+  if (!completionMatchesEnrollment) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["completion"],
+      message: "Conclusão calculada não corresponde à matrícula administrativa.",
+    });
+  }
+};
+
+export const adminEnrollmentSchema = adminEnrollmentObjectSchema.superRefine(
+  validateAdminEnrollmentState,
+);
 
 export const adminCertificateSchema = z
   .object({
