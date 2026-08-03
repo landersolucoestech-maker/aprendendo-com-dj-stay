@@ -76,7 +76,12 @@ const AdminDashboard = () => {
   const coursesQuery = useAdminCourses();
   const productsQuery = useMarketplaceAdminProducts();
   const supportQuery = useSupportAdminDashboard({ limit: 5, offset: 0 });
-  const contactsQuery = useContactMessagesAdmin(null, "");
+  const contactsQuery = useContactMessagesAdmin({
+    status: null,
+    search: "",
+    limit: 5,
+    offset: 0,
+  });
 
   const isLoading =
     paymentsQuery.isLoading ||
