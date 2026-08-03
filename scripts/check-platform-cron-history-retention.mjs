@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 
 const paths = {
+  dependencyMigration: "supabase/migrations/20260803003000_checkout_expiration_cron.sql",
   migration: "supabase/migrations/20260803013000_platform_cron_history_retention.sql",
   databaseTest: "supabase/tests/63_platform_cron_history_retention.test.sql",
   parent: "scripts/check-checkout-cron-health.mjs",
@@ -23,11 +24,19 @@ for (const path of Object.values(paths)) {
 }
 
 if (failures.length === 0) {
+  const dependencyMigration = read(paths.dependencyMigration);
   const migration = read(paths.migration);
   const databaseTest = read(paths.databaseTest);
   const parent = read(paths.parent);
   const documentation = read(paths.documentation).toLowerCase();
   const status = read(paths.status).toLowerCase();
+
+  requireFragments(dependencyMigration, "Dependência B92", [
+    "create extension if not exists pg_cron with schema pg_catalog",
+    "revoke all on schema cron from public, anon, authenticated, service_role",
+    "grant usage on schema cron to postgres",
+    "grant all privileges on all tables in schema cron to postgres",
+  ]);
 
   requireFragments(migration, "Migration B94", [
     "A extensão e os privilégios do pg_cron são instalados pela FASE B92.",
