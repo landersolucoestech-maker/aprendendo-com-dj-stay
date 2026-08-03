@@ -291,7 +291,8 @@ const StudentsAdmin = () => {
                     <CardContent className="space-y-5 p-5">
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div>
-                          <h3 className="text-lg font-semibold">{student?.name ?? enrollment.user_id}</h3>
+                          <h3 className="text-lg font-semibold">{enrollment.student_name}</h3>
+                          <p className="mt-1 text-xs text-gray-500">{enrollment.student_email ?? student?.email ?? enrollment.user_id}</p>
                           <p className="mt-1 text-sm text-gray-400">{enrollment.course_title} · {enrollmentStatusLabel[enrollment.status] ?? enrollment.status}</p>
                           <p className="mt-1 text-xs text-gray-500">Início: {formatDateTime(enrollment.starts_at)} · Expiração: {formatDateTime(enrollment.expires_at)}</p>
                         </div>
