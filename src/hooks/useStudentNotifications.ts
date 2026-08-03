@@ -13,18 +13,28 @@ const notificationKeys = {
     [...notificationKeys.all, "list", limit, offset] as const,
 };
 
-export const useStudentNotifications = (limit = 30, offset = 0) =>
-  useQuery({
-    queryKey: notificationKeys.list(limit, offset),
+const normalizeNotificationLimit = (value: number): number =>
+  Math.min(100, Math.max(1, Math.trunc(value)));
+
+const normalizeNotificationOffset = (value: number): number =>
+  Math.max(0, Math.trunc(value));
+
+export const useStudentNotifications = (limit = 30, offset = 0) => {
+  const normalizedLimit = normalizeNotificationLimit(limit);
+  const normalizedOffset = normalizeNotificationOffset(offset);
+
+  return useQuery({
+    queryKey: notificationKeys.list(normalizedLimit, normalizedOffset),
     queryFn: async () => {
       const { data, error } = await studentNotificationRpcClient.rpc(
         "get_my_student_notifications",
-        { p_limit: limit, p_offset: offset },
+        { p_limit: normalizedLimit, p_offset: normalizedOffset },
       );
       if (error) throw error;
       return studentNotificationListSchema.parse(data);
     },
   });
+};
 
 export const useMarkStudentNotificationRead = () => {
   const queryClient = useQueryClient();
