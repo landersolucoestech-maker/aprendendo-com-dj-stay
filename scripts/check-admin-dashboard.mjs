@@ -48,9 +48,12 @@ if (failures.length === 0) {
   for (const fragment of [
     "buildAdminOverview",
     "Valor confirmado",
-    "Matrículas ativas",
+    "Certificados válidos",
     "Fila operacional",
     "valor desta página é estimado ou preenchido com dados de exemplo",
+    "studentLimit: 1",
+    "enrollmentLimit: 1",
+    "certificateLimit: 1",
     'to="/admin/pagamentos"',
     'to="/admin/alunos"',
     'to="/admin/suporte"',
@@ -59,12 +62,23 @@ if (failures.length === 0) {
     if (!page.includes(fragment)) failures.push(`Dashboard B87 incompleto: ${fragment}`);
   }
 
-  for (const forbidden of ["const mock", "mockData", "Math.random", "sampleData"]) {
+  for (const forbidden of [
+    "const mock",
+    "mockData",
+    "Math.random",
+    "sampleData",
+    "activeEnrollments",
+    "suspendedEnrollments",
+    "averageCompletionPercent",
+  ]) {
     if (page.includes(forbidden)) failures.push(`Dashboard B87 contém dado não operacional: ${forbidden}`);
   }
 
   for (const fragment of [
-    "averageCompletionPercent",
+    "input.students.totals.students",
+    "input.students.totals.enrollments",
+    "input.students.totals.certificates",
+    "input.students.totals.valid_certificates",
     "confirmedAmountCents",
     "publishedCourses",
     "publishedProducts",
@@ -77,7 +91,7 @@ if (failures.length === 0) {
   for (const fragment of [
     'describe("buildAdminOverview"',
     "returns a zeroed overview",
-    "aggregates only persisted statuses",
+    "uses persisted academic totals instead of page lengths",
     "operationalQueue).toBe(12)",
   ]) {
     if (!test.includes(fragment)) failures.push(`Cobertura unitária B87 ausente: ${fragment}`);
