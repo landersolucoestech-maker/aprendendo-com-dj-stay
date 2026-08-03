@@ -1,4 +1,12 @@
-import { Headphones, Loader2, Search, Send, ShieldAlert } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Headphones,
+  Loader2,
+  Search,
+  Send,
+  ShieldAlert,
+} from "lucide-react";
 import { useState } from "react";
 
 import { AppPageShell } from "@/components/layout/AppPageShell";
@@ -27,6 +35,8 @@ import { useToast } from "@/hooks/use-toast";
 import { formatAppDateTime } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
+const pageSize = 25;
+
 const statusLabels: Record<SupportTicketStatus, string> = {
   open: "Aberto",
   awaiting_support: "Aguardando suporte",
@@ -47,6 +57,7 @@ const SupportAdmin = () => {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<SupportTicketStatus | null>(null);
   const [priority, setPriority] = useState<SupportTicketPriority | null>(null);
+  const [page, setPage] = useState(0);
   const [replyByTicket, setReplyByTicket] = useState<Record<string, string>>({});
   const [nextStatusByTicket, setNextStatusByTicket] = useState<
     Record<string, SupportTicketStatus>
@@ -55,6 +66,8 @@ const SupportAdmin = () => {
     search,
     status,
     priority,
+    limit: pageSize,
+    offset: page * pageSize,
   });
   const replyMutation = useAdminReplySupportTicket();
 
@@ -79,7 +92,10 @@ const SupportAdmin = () => {
     }
   };
 
-  const summary = dashboardQuery.data?.summary;
+  const data = dashboardQuery.data;
+  const summary = data?.summary;
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <AppPageShell
@@ -104,14 +120,20 @@ const SupportAdmin = () => {
                 className="pl-9"
                 placeholder="Buscar por referência, assunto ou email"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(0);
+                }}
               />
             </div>
             <select
               aria-label="Filtrar por status"
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={status ?? ""}
-              onChange={(event) => setStatus((event.target.value || null) as SupportTicketStatus | null)}
+              onChange={(event) => {
+                setStatus((event.target.value || null) as SupportTicketStatus | null);
+                setPage(0);
+              }}
             >
               <option value="">Todos os status</option>
               {Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
@@ -120,7 +142,10 @@ const SupportAdmin = () => {
               aria-label="Filtrar por prioridade"
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={priority ?? ""}
-              onChange={(event) => setPriority((event.target.value || null) as SupportTicketPriority | null)}
+              onChange={(event) => {
+                setPriority((event.target.value || null) as SupportTicketPriority | null);
+                setPage(0);
+              }}
             >
               <option value="">Todas as prioridades</option>
               {Object.entries(priorityLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
@@ -136,7 +161,7 @@ const SupportAdmin = () => {
             title="Suporte indisponível"
             description={getErrorMessage(dashboardQuery.error, "Não foi possível carregar o suporte.")}
           />
-        ) : (dashboardQuery.data?.tickets.length ?? 0) === 0 ? (
+        ) : (data?.tickets.length ?? 0) === 0 ? (
           <PageState
             variant="empty"
             icon={Headphones}
@@ -145,7 +170,7 @@ const SupportAdmin = () => {
           />
         ) : (
           <section className="space-y-5" aria-label="Tickets administrativos">
-            {dashboardQuery.data?.tickets.map((ticket) => (
+            {data?.tickets.map((ticket) => (
               <Card key={ticket.id}>
                 <CardHeader>
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -213,6 +238,37 @@ const SupportAdmin = () => {
             ))}
           </section>
         )}
+
+        {total > 0 ? (
+          <nav
+            className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between"
+            aria-label="Paginação dos tickets administrativos"
+          >
+            <p className="text-sm text-muted-foreground" aria-live="polite">
+              Página {page + 1} de {totalPages} · {total} resultado(s)
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={page === 0 || dashboardQuery.isFetching}
+                onClick={() => setPage((current) => Math.max(0, current - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                Anterior
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={page + 1 >= totalPages || dashboardQuery.isFetching}
+                onClick={() => setPage((current) => current + 1)}
+              >
+                Próxima
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </div>
+          </nav>
+        ) : null}
 
         <Card>
           <CardContent className="flex gap-3 p-4 text-sm text-muted-foreground">
