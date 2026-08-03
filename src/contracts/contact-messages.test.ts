@@ -245,20 +245,29 @@ describe("contactAdminDashboardSchema", () => {
       resolved: 1,
       spam: 0,
     },
+    total: 2,
     messages: [NEW_MESSAGE, RESOLVED_MESSAGE],
   } as const;
 
-  it("aceita dashboard estrito", () => {
+  it("aceita dashboard estrito com total filtrado", () => {
     expect(contactAdminDashboardSchema.parse(dashboard)).toEqual(dashboard);
   });
 
-  it("rejeita contagem negativa e campos extras em qualquer nível", () => {
+  it("rejeita contagem negativa, total ausente e campos extras", () => {
     expect(
       contactAdminDashboardSchema.safeParse({
         ...dashboard,
         summary: { ...dashboard.summary, new: -1 },
       }).success,
     ).toBe(false);
+    expect(
+      contactAdminDashboardSchema.safeParse({
+        ...dashboard,
+        total: -1,
+      }).success,
+    ).toBe(false);
+    const { total: _total, ...withoutTotal } = dashboard;
+    expect(contactAdminDashboardSchema.safeParse(withoutTotal).success).toBe(false);
     expect(
       contactAdminDashboardSchema.safeParse({
         ...dashboard,
