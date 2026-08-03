@@ -1,5 +1,8 @@
 import { lazy } from "react";
 
+export const AcademicAnalyticsAdmin = lazy(
+  () => import("@/pages/admin/AcademicAnalyticsAdmin"),
+);
 export const AdminDashboard = lazy(
   () => import("@/pages/admin/AdminDashboard"),
 );
