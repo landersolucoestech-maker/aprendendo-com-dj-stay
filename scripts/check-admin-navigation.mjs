@@ -21,6 +21,7 @@ const requiredRoutes = [
   "/admin/pagamentos",
   "/admin/afiliados",
   "/admin/alunos",
+  "/admin/academico",
   "/admin/contatos",
   "/admin/suporte",
   "/admin/privacidade",
