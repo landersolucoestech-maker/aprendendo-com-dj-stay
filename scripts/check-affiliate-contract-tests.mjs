@@ -4,6 +4,7 @@ const paths = {
   contracts: "src/contracts/affiliate.ts",
   tests: "src/contracts/affiliate.test.ts",
   hooks: "src/hooks/useAffiliateProgram.ts",
+  portalHook: "src/hooks/useAffiliatePortalPagination.ts",
   redirect: "src/pages/AffiliateRedirect.tsx",
   schema: "supabase/migrations/20260731060600_affiliate_program_schema.sql",
   profileRequest: "supabase/migrations/20260731060701_affiliate_profile_request_rpc.sql",
@@ -31,6 +32,7 @@ const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
 const contracts = read(paths.contracts);
 const tests = read(paths.tests);
 const hooks = read(paths.hooks);
+const portalHook = read(paths.portalHook);
 const redirect = read(paths.redirect);
 const migrations = [
   paths.schema,
@@ -138,14 +140,24 @@ for (const fragment of [
   expect(hooks.includes(fragment), `Consumidor B71 ausente: ${fragment}`);
 }
 
-const responseValidationCount = hooks.match(/parseDataContract\(/g)?.length ?? 0;
+for (const fragment of [
+  "paginatedAffiliatePortalSchema",
+  'supabase.rpc("get_affiliate_portal"',
+  "parseDataContract",
+]) {
+  expect(portalHook.includes(fragment), `Consumidor paginado B71/B104 ausente: ${fragment}`);
+}
+
+const affiliateResponseConsumers = `${hooks}\n${portalHook}`;
+const responseValidationCount =
+  affiliateResponseConsumers.match(/parseDataContract\(/g)?.length ?? 0;
 expect(
   responseValidationCount >= 10,
-  `Todas as 10 respostas RPC do hook devem ser validadas; encontradas ${responseValidationCount}.`,
+  `Todas as 10 respostas RPC dos hooks de afiliados devem ser validadas; encontradas ${responseValidationCount}.`,
 );
 expect(
-  !hooks.includes("if (error) throw error;\n      return data;"),
-  "Mutações B71 não podem devolver data bruto após RPC.",
+  !affiliateResponseConsumers.includes("if (error) throw error;\n      return data;"),
+  "Hooks B71/B104 não podem devolver data bruto após RPC.",
 );
 expect(
   redirect.includes("affiliateClickResultSchema") &&
