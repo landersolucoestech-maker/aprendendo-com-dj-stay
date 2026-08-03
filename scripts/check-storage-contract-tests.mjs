@@ -187,6 +187,8 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
+await import("./check-student-library-pagination.mjs");
+
 console.log(
   "Contrato B75 aprovado: assets, eventos, grants e consumidores de Storage reproduzem as regras persistidas com cobertura unitária estrita.",
 );
