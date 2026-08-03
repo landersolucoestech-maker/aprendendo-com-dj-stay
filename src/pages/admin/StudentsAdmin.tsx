@@ -1,4 +1,14 @@
-import { Award, BookOpenCheck, Loader2, Search, ShieldX, UserPlus, Users } from "lucide-react";
+import {
+  Award,
+  BookOpenCheck,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Search,
+  ShieldX,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -17,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatAppDateTime, toUtcIsoString } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
+const pageSize = 25;
 const fieldClass =
   "w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white outline-none transition focus:border-white/40";
 
@@ -32,10 +43,71 @@ const enrollmentStatusLabel: Record<string, string> = {
   revoked: "Revogada",
 };
 
+const PaginationControls = ({
+  page,
+  total,
+  disabled,
+  label,
+  onPageChange,
+}: {
+  readonly page: number;
+  readonly total: number;
+  readonly disabled: boolean;
+  readonly label: string;
+  readonly onPageChange: (page: number) => void;
+}) => {
+  if (total === 0) return null;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  return (
+    <nav
+      className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between"
+      aria-label={`Paginação de ${label}`}
+    >
+      <p className="text-sm text-gray-500" aria-live="polite">
+        Página {page + 1} de {totalPages} · {total} registro(s)
+      </p>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="border-white/20 bg-transparent"
+          disabled={page === 0 || disabled}
+          onClick={() => onPageChange(Math.max(0, page - 1))}
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          Anterior
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="border-white/20 bg-transparent"
+          disabled={page + 1 >= totalPages || disabled}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Próxima
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
+        </Button>
+      </div>
+    </nav>
+  );
+};
+
 const StudentsAdmin = () => {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
-  const dashboardQuery = useStudentsAdminDashboard(search);
+  const [studentPage, setStudentPage] = useState(0);
+  const [enrollmentPage, setEnrollmentPage] = useState(0);
+  const [certificatePage, setCertificatePage] = useState(0);
+  const dashboardQuery = useStudentsAdminDashboard({
+    search,
+    studentLimit: pageSize,
+    studentOffset: studentPage * pageSize,
+    enrollmentLimit: pageSize,
+    enrollmentOffset: enrollmentPage * pageSize,
+    certificateLimit: pageSize,
+    certificateOffset: certificatePage * pageSize,
+  });
   const grantEnrollment = useGrantCourseEnrollment();
   const renewEnrollment = useRenewCourseEnrollment();
   const suspendEnrollment = useSuspendCourseEnrollment();
@@ -56,6 +128,13 @@ const StudentsAdmin = () => {
     () => new Map((data?.students ?? []).map((student) => [student.user_id, student])),
     [data?.students],
   );
+
+  const resetPages = () => {
+    setStudentPage(0);
+    setEnrollmentPage(0);
+    setCertificatePage(0);
+    setStudentId("");
+  };
 
   const runAction = async (action: () => Promise<unknown>, successTitle: string) => {
     try {
@@ -128,7 +207,10 @@ const StudentsAdmin = () => {
               <input
                 className={`${fieldClass} pl-10`}
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  resetPages();
+                }}
                 placeholder="Buscar aluno por nome ou e-mail"
               />
             </label>
@@ -146,20 +228,20 @@ const StudentsAdmin = () => {
         ) : data ? (
           <>
             <section className="grid gap-4 md:grid-cols-3">
-              <Card className="border-white/10 bg-white/5"><CardContent className="p-5"><p className="text-sm text-gray-400">Alunos</p><p className="mt-1 text-3xl font-bold">{data.students.length}</p></CardContent></Card>
-              <Card className="border-white/10 bg-white/5"><CardContent className="p-5"><p className="text-sm text-gray-400">Matrículas</p><p className="mt-1 text-3xl font-bold">{data.enrollments.length}</p></CardContent></Card>
-              <Card className="border-white/10 bg-white/5"><CardContent className="p-5"><p className="text-sm text-gray-400">Certificados válidos</p><p className="mt-1 text-3xl font-bold">{data.certificates.filter((certificate) => certificate.status === "issued").length}</p></CardContent></Card>
+              <Card className="border-white/10 bg-white/5"><CardContent className="p-5"><p className="text-sm text-gray-400">Alunos</p><p className="mt-1 text-3xl font-bold">{data.totals.students}</p></CardContent></Card>
+              <Card className="border-white/10 bg-white/5"><CardContent className="p-5"><p className="text-sm text-gray-400">Matrículas</p><p className="mt-1 text-3xl font-bold">{data.totals.enrollments}</p></CardContent></Card>
+              <Card className="border-white/10 bg-white/5"><CardContent className="p-5"><p className="text-sm text-gray-400">Certificados válidos</p><p className="mt-1 text-3xl font-bold">{data.totals.valid_certificates}</p></CardContent></Card>
             </section>
 
             <Card className="border-white/10 bg-white/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white"><UserPlus className="h-5 w-5" />Conceder matrícula</CardTitle>
-                <CardDescription className="text-gray-400">A matrícula manual exige aluno, curso, início e motivo auditável.</CardDescription>
+                <CardDescription className="text-gray-400">A matrícula manual exige aluno, curso, início e motivo auditável. Use a busca e a paginação para localizar o titular.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-5">
                 <form className="grid gap-4 lg:grid-cols-3" onSubmit={(event) => void submitEnrollment(event)}>
                   <select className={fieldClass} value={studentId} onChange={(event) => setStudentId(event.target.value)} required>
-                    <option value="">Selecione o aluno</option>
+                    <option value="">Selecione o aluno desta página</option>
                     {data.students.map((student) => <option key={student.user_id} value={student.user_id}>{student.name} · {student.email}</option>)}
                   </select>
                   <select className={fieldClass} value={courseId} onChange={(event) => setCourseId(event.target.value)} required>
@@ -174,6 +256,16 @@ const StudentsAdmin = () => {
                     Conceder matrícula
                   </Button>
                 </form>
+                <PaginationControls
+                  page={studentPage}
+                  total={data.totals.students}
+                  disabled={dashboardQuery.isFetching}
+                  label="alunos"
+                  onPageChange={(nextPage) => {
+                    setStudentPage(nextPage);
+                    setStudentId("");
+                  }}
+                />
               </CardContent>
             </Card>
 
@@ -227,11 +319,20 @@ const StudentsAdmin = () => {
                   </Card>
                 );
               })}
+              <PaginationControls
+                page={enrollmentPage}
+                total={data.totals.enrollments}
+                disabled={dashboardQuery.isFetching}
+                label="matrículas"
+                onPageChange={setEnrollmentPage}
+              />
             </section>
 
             <section className="space-y-4">
               <div><h2 className="text-2xl font-bold">Histórico de certificados</h2><p className="mt-1 text-sm text-gray-400">Registros revogados não são apagados.</p></div>
-              {data.certificates.map((certificate) => (
+              {data.certificates.length === 0 ? (
+                <Card className="border-white/10 bg-white/5"><CardContent className="p-8 text-center text-gray-400">Nenhum certificado encontrado.</CardContent></Card>
+              ) : data.certificates.map((certificate) => (
                 <Card key={certificate.id} className="border-white/10 bg-white/5">
                   <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -248,6 +349,13 @@ const StudentsAdmin = () => {
                   </CardContent>
                 </Card>
               ))}
+              <PaginationControls
+                page={certificatePage}
+                total={data.totals.certificates}
+                disabled={dashboardQuery.isFetching}
+                label="certificados"
+                onPageChange={setCertificatePage}
+              />
             </section>
           </>
         ) : null}
