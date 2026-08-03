@@ -1,4 +1,11 @@
-import { FileArchive, Loader2, ShieldCheck, XCircle } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileArchive,
+  Loader2,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react";
 import { useState } from "react";
 
 import { StudentPortalPageFrame } from "@/components/student/StudentPortalPageFrame";
@@ -19,6 +26,8 @@ import { useToast } from "@/hooks/use-toast";
 import { formatAppDateTime } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
+const pageSize = 10;
+
 const typeLabels = {
   access_export: "Acesso e exportação",
   correction: "Correção de dados",
@@ -35,11 +44,14 @@ const statusLabels = {
 
 const StudentPrivacyRights = () => {
   const { toast } = useToast();
-  const requestsQuery = useMyPrivacyRightsRequests();
+  const [page, setPage] = useState(0);
+  const requestsQuery = useMyPrivacyRightsRequests(pageSize, page * pageSize);
   const createRequest = useCreatePrivacyRightsRequest();
   const cancelRequest = useCancelPrivacyRightsRequest();
   const [requestType, setRequestType] = useState<PrivacyRightsRequestType>("access_export");
   const [description, setDescription] = useState("");
+  const total = requestsQuery.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const handleSubmit = async () => {
     try {
@@ -48,6 +60,7 @@ const StudentPrivacyRights = () => {
         description,
       });
       setDescription("");
+      setPage(0);
       toast({
         title: "Solicitação registrada",
         description: "Você poderá acompanhar o andamento nesta página.",
@@ -202,6 +215,37 @@ const StudentPrivacyRights = () => {
             </div>
           )}
         </section>
+
+        {total > 0 ? (
+          <nav
+            className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between"
+            aria-label="Paginação das solicitações de privacidade"
+          >
+            <p className="text-sm text-muted-foreground" aria-live="polite">
+              Página {page + 1} de {totalPages} · {total} solicitação(ões)
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={page === 0 || requestsQuery.isFetching}
+                onClick={() => setPage((current) => Math.max(0, current - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                Anterior
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={page + 1 >= totalPages || requestsQuery.isFetching}
+                onClick={() => setPage((current) => current + 1)}
+              >
+                Próxima
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </div>
+          </nav>
+        ) : null}
       </div>
     </StudentPortalPageFrame>
   );
