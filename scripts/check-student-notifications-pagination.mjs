@@ -62,6 +62,7 @@ if (failures.length === 0) {
     "total remains independent from notification offset",
     "student sees only own notification total",
     "mark all updates unread notifications across all pages",
+    "select * from finish()",
   ]);
 
   requireFragments(contract, "Contrato B105", [
@@ -92,6 +93,8 @@ if (failures.length === 0) {
     "data.unread_count",
     'aria-label="Paginação de notificações"',
     "Página {page + 1} de {totalPages}",
+    "setPage((current) => Math.max(0, current - 1))",
+    "setPage((current) => current + 1)",
     "Anterior",
     "Próxima",
     "notificationsQuery.isFetching",
@@ -101,6 +104,9 @@ if (failures.length === 0) {
   }
   if (page.includes("data.notifications.length} notificação")) {
     failures.push("Página B105 não pode usar o tamanho da página como total do histórico.");
+  }
+  if (page.includes("favorites.slice(") || page.includes("notifications.slice(")) {
+    failures.push("Página B105 não pode simular paginação recortando uma lista carregada no cliente.");
   }
 
   if (!parent.includes('await import("./check-student-notifications-pagination.mjs")')) {
