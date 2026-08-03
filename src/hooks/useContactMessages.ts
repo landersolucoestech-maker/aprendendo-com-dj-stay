@@ -12,10 +12,17 @@ import {
 import { parseDataContract } from "@/contracts/contract-error";
 import { supabase } from "@/integrations/supabase/client";
 
+interface ContactAdminFilters {
+  status: ContactMessageStatus | null;
+  search: string;
+  limit: number;
+  offset: number;
+}
+
 const contactKeys = {
   all: ["contact-messages"] as const,
-  admin: (status: ContactMessageStatus | null, search: string) =>
-    ["contact-messages", "admin", status, search] as const,
+  admin: (filters: ContactAdminFilters) =>
+    ["contact-messages", "admin", filters] as const,
 };
 
 export const useSubmitContactMessage = () =>
@@ -42,19 +49,27 @@ export const useSubmitContactMessage = () =>
     },
   });
 
-export const useContactMessagesAdmin = (
-  status: ContactMessageStatus | null,
-  search: string,
-) =>
-  useQuery({
-    queryKey: contactKeys.admin(status, search),
+export const useContactMessagesAdmin = (input: {
+  status: ContactMessageStatus | null;
+  search: string;
+  limit?: number;
+  offset?: number;
+}) => {
+  const filters: ContactAdminFilters = {
+    status: input.status,
+    search: input.search.trim(),
+    limit: input.limit ?? 25,
+    offset: input.offset ?? 0,
+  };
+
+  return useQuery({
+    queryKey: contactKeys.admin(filters),
     queryFn: async () => {
-      const normalizedSearch = search.trim();
       const { data, error } = await supabase.rpc("get_contact_messages_admin", {
-        ...(status === null ? {} : { p_status: status }),
-        ...(normalizedSearch ? { p_search: normalizedSearch } : {}),
-        p_limit: 100,
-        p_offset: 0,
+        ...(filters.status === null ? {} : { p_status: filters.status }),
+        ...(filters.search ? { p_search: filters.search } : {}),
+        p_limit: filters.limit,
+        p_offset: filters.offset,
       });
       if (error) throw error;
       return parseDataContract(
@@ -64,6 +79,7 @@ export const useContactMessagesAdmin = (
       );
     },
   });
+};
 
 export const useUpdateContactMessageStatus = () => {
   const queryClient = useQueryClient();
