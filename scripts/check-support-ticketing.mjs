@@ -106,3 +106,4 @@ if (failures.length > 0) {
 }
 
 console.log("Contrato B39 aprovado: suporte autenticado e auditável está integrado.");
+await import("./check-support-pagination.mjs");
