@@ -2,7 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 
 const paths = {
   migration: "supabase/migrations/20260801210000_student_notifications.sql",
-  databaseTest: "supabase/tests/52_student_notifications.test.sql",
+  baseDatabaseTest: "supabase/tests/52_student_notifications.test.sql",
+  paginationDatabaseTest: "supabase/tests/70_student_notifications_pagination.test.sql",
   contract: "src/contracts/student-notifications.ts",
   contractTest: "src/contracts/student-notifications.test.ts",
   hook: "src/hooks/useStudentNotifications.ts",
@@ -27,7 +28,8 @@ for (const path of Object.values(paths)) {
 
 if (failures.length === 0) {
   const migration = read(paths.migration);
-  const databaseTest = read(paths.databaseTest);
+  const baseDatabaseTest = read(paths.baseDatabaseTest);
+  const paginationDatabaseTest = read(paths.paginationDatabaseTest);
   const contract = read(paths.contract);
   const contractTest = read(paths.contractTest);
   const hook = read(paths.hook);
@@ -44,11 +46,22 @@ if (failures.length === 0) {
     "limit v_limit offset v_offset",
     "user_id = v_user_id",
   ]);
-  requireFragments(databaseTest, "pgTAP B40/B105", [
+  requireFragments(baseDatabaseTest, "pgTAP base B40", [
     "select plan(24)",
+    "notification list is bounded",
+    "mark read enforces ownership",
+    "anonymous cannot execute notification RPCs",
+  ]);
+  requireFragments(paginationDatabaseTest, "pgTAP B105", [
+    "select plan(19)",
     "pagination total remains complete",
+    "unread total remains complete",
     "pagination returns one notification",
-    "student cannot mark another user's notification",
+    "notification offset returns second item",
+    "adjacent notification pages do not overlap",
+    "total remains independent from notification offset",
+    "student sees only own notification total",
+    "mark all updates unread notifications across all pages",
   ]);
 
   requireFragments(contract, "Contrato B105", [
@@ -95,6 +108,7 @@ if (failures.length === 0) {
   }
   requireFragments(documentation, "Documentação B105", [
     "20 registros por página",
+    "19 asserções",
     "p_limit",
     "p_offset",
     "total",
