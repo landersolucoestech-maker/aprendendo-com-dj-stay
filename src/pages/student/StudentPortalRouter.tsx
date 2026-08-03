@@ -1,3 +1,4 @@
+import StudentActivityHistory from "@/pages/student/StudentActivityHistory";
 import StudentFinancialPortal from "@/pages/student/StudentFinancialPortal";
 import StudentPortal, {
   type StudentPortalSection,
@@ -10,6 +11,10 @@ interface StudentPortalRouterProps {
 const StudentPortalRouter = ({ section }: StudentPortalRouterProps) => {
   if (section === "orders" || section === "payments") {
     return <StudentFinancialPortal section={section} />;
+  }
+
+  if (section === "history") {
+    return <StudentActivityHistory />;
   }
 
   return <StudentPortal section={section} />;
