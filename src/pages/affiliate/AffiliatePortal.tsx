@@ -1,4 +1,5 @@
 import {
+  Activity,
   BadgeDollarSign,
   Copy,
   ExternalLink,
@@ -15,6 +16,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 
+import { AffiliatePaginationControls } from "@/components/affiliate/AffiliatePaginationControls";
 import { AppPageShell } from "@/components/layout/AppPageShell";
 import { Badge } from "@/components/ui/badge";
 import type { BadgeProps } from "@/components/ui/badge";
@@ -29,22 +31,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { PageState } from "@/components/ui/page-state";
 import {
-  useAffiliatePortal,
   useCreateAffiliateLink,
   useDeactivateAffiliateLink,
   useRequestAffiliateProfile,
 } from "@/hooks/useAffiliateProgram";
+import { useAffiliatePortalPagination } from "@/hooks/useAffiliatePortalPagination";
 import { useToast } from "@/hooks/use-toast";
 import { formatAppDate } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
-const formatCurrency = (amountCents: number): string =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-    amountCents / 100,
-  );
+const pageSize = 10;
 
-const formatDate = (value: string | null): string =>
-  formatAppDate(value);
+const formatCurrency = (amountCents: number): string =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(amountCents / 100);
+
+const formatDate = (value: string | null): string => formatAppDate(value);
 
 const commissionStatusLabel: Readonly<Record<string, string>> = {
   pending: "Pendente",
@@ -54,7 +58,9 @@ const commissionStatusLabel: Readonly<Record<string, string>> = {
   reversed: "Revertida",
 };
 
-const commissionStatusVariant: Readonly<Record<string, BadgeProps["variant"]>> = {
+const commissionStatusVariant: Readonly<
+  Record<string, BadgeProps["variant"]>
+> = {
   pending: "warning",
   available: "success",
   held: "warning",
@@ -72,6 +78,26 @@ const payoutStatusVariant: Readonly<Record<string, BadgeProps["variant"]>> = {
   draft: "warning",
   paid: "success",
   cancelled: "destructive",
+};
+
+const eventTypeLabel: Readonly<Record<string, string>> = {
+  profile_created: "Perfil solicitado",
+  profile_activated: "Perfil ativado",
+  profile_suspended: "Perfil suspenso",
+  terms_configured: "Termos atualizados",
+  link_created: "Link criado",
+  link_deactivated: "Link desativado",
+  click_recorded: "Clique registrado",
+  attribution_created: "Atribuição criada",
+  attribution_replaced: "Atribuição substituída",
+  conversion_created: "Conversão registrada",
+  commission_held: "Comissão retida",
+  commission_available: "Comissão disponível",
+  commission_reversed: "Comissão revertida",
+  commission_restored: "Comissão restaurada",
+  payout_created: "Repasse criado",
+  payout_paid: "Repasse pago",
+  payout_cancelled: "Repasse cancelado",
 };
 
 const SummaryCard = ({
@@ -92,14 +118,32 @@ const SummaryCard = ({
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {label}
         </p>
-        <p className="mt-1 truncate text-2xl font-bold text-foreground">{value}</p>
+        <p className="mt-1 truncate text-2xl font-bold text-foreground">
+          {value}
+        </p>
       </div>
     </CardContent>
   </Card>
 );
 
 const AffiliatePortal = () => {
-  const portalQuery = useAffiliatePortal();
+  const [offerPage, setOfferPage] = useState(0);
+  const [linkPage, setLinkPage] = useState(0);
+  const [commissionPage, setCommissionPage] = useState(0);
+  const [payoutPage, setPayoutPage] = useState(0);
+  const [eventPage, setEventPage] = useState(0);
+  const portalQuery = useAffiliatePortalPagination({
+    offerLimit: pageSize,
+    offerOffset: offerPage * pageSize,
+    linkLimit: pageSize,
+    linkOffset: linkPage * pageSize,
+    commissionLimit: pageSize,
+    commissionOffset: commissionPage * pageSize,
+    payoutLimit: pageSize,
+    payoutOffset: payoutPage * pageSize,
+    eventLimit: pageSize,
+    eventOffset: eventPage * pageSize,
+  });
   const requestProfile = useRequestAffiliateProfile();
   const createLink = useCreateAffiliateLink();
   const deactivateLink = useDeactivateAffiliateLink();
@@ -120,18 +164,24 @@ const AffiliatePortal = () => {
     }
   };
 
-  const handleProfileRequest = async (event: FormEvent<HTMLFormElement>) => {
+  const handleProfileRequest = async (
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> => {
     event.preventDefault();
     try {
       await requestProfile.mutateAsync(displayName);
       toast({
         title: "Solicitação registrada",
-        description: "Seu perfil será liberado após a aprovação administrativa.",
+        description:
+          "Seu perfil será liberado após a aprovação administrativa.",
       });
     } catch (error: unknown) {
       toast({
         title: "Não foi possível solicitar o perfil",
-        description: getErrorMessage(error, "Revise os dados e tente novamente."),
+        description: getErrorMessage(
+          error,
+          "Revise os dados e tente novamente.",
+        ),
         variant: "destructive",
       });
     }
@@ -145,8 +195,12 @@ const AffiliatePortal = () => {
       await createLink.mutateAsync({
         subjectType,
         subjectId,
-        destinationPath: subjectType === "digital_product" ? "/marketplace" : "/",
+        destinationPath:
+          subjectType === "digital_product" ? "/marketplace" : "/",
       });
+      setOfferPage(0);
+      setLinkPage(0);
+      setEventPage(0);
       toast({
         title: "Link criado",
         description: "O link rastreável já está disponível.",
@@ -166,6 +220,9 @@ const AffiliatePortal = () => {
   const handleDeactivate = async (linkId: string): Promise<void> => {
     try {
       await deactivateLink.mutateAsync(linkId);
+      setOfferPage(0);
+      setLinkPage(0);
+      setEventPage(0);
       toast({
         title: "Link desativado",
         description: "Novos cliques não serão atribuídos.",
@@ -211,7 +268,11 @@ const AffiliatePortal = () => {
             "Não foi possível carregar seus dados.",
           )}
           action={
-            <Button type="button" variant="context" onClick={() => void portalQuery.refetch()}>
+            <Button
+              type="button"
+              variant="context"
+              onClick={() => void portalQuery.refetch()}
+            >
               <RefreshCw aria-hidden="true" />
               Tentar novamente
             </Button>
@@ -239,18 +300,27 @@ const AffiliatePortal = () => {
         <Card variant="affiliate" className="mx-auto max-w-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <UserRoundCheck className="h-6 w-6 text-affiliate" aria-hidden="true" />
+              <UserRoundCheck
+                className="h-6 w-6 text-affiliate"
+                aria-hidden="true"
+              />
               Dados da solicitação
             </CardTitle>
             <CardDescription>
-              A ativação é administrativa. Links e comissões permanecem indisponíveis
-              enquanto a solicitação estiver em análise.
+              A ativação é administrativa. Links e comissões permanecem
+              indisponíveis enquanto a solicitação estiver em análise.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4" onSubmit={(event) => void handleProfileRequest(event)}>
+            <form
+              className="space-y-4"
+              onSubmit={(event) => void handleProfileRequest(event)}
+            >
               <div className="space-y-2">
-                <label htmlFor="affiliate-display-name" className="text-sm font-medium">
+                <label
+                  htmlFor="affiliate-display-name"
+                  className="text-sm font-medium"
+                >
                   Nome de exibição
                 </label>
                 <Input
@@ -384,7 +454,7 @@ const AffiliatePortal = () => {
               atribuição.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {portal.offers.length === 0 ? (
               <PageState
                 variant="empty"
@@ -400,10 +470,12 @@ const AffiliatePortal = () => {
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h3 className="font-semibold text-foreground">{offer.title}</h3>
+                        <h3 className="font-semibold text-foreground">
+                          {offer.title}
+                        </h3>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {(offer.commission_bps / 100).toLocaleString("pt-BR")}% ·
-                          janela de {offer.attribution_window_days} dias
+                          {(offer.commission_bps / 100).toLocaleString("pt-BR")}%
+                          · janela de {offer.attribution_window_days} dias
                         </p>
                       </div>
                       <Badge variant="affiliate">
@@ -422,8 +494,17 @@ const AffiliatePortal = () => {
                             <Copy aria-hidden="true" />
                             Copiar link
                           </Button>
-                          <Button asChild type="button" size="sm" variant="outline">
-                            <a href={`/r/${offer.link_code}`} target="_blank" rel="noreferrer">
+                          <Button
+                            asChild
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                          >
+                            <a
+                              href={`/r/${offer.link_code}`}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
                               <ExternalLink aria-hidden="true" />
                               Abrir
                             </a>
@@ -436,7 +517,10 @@ const AffiliatePortal = () => {
                           variant="context"
                           disabled={createLink.isPending}
                           onClick={() =>
-                            void handleCreateLink(offer.subject_type, offer.subject_id)
+                            void handleCreateLink(
+                              offer.subject_type,
+                              offer.subject_id,
+                            )
                           }
                         >
                           Criar link
@@ -447,6 +531,14 @@ const AffiliatePortal = () => {
                 ))}
               </div>
             )}
+            <AffiliatePaginationControls
+              label="ofertas"
+              page={offerPage}
+              pageSize={pageSize}
+              total={portal.totals.offers}
+              isFetching={portalQuery.isFetching}
+              onPageChange={setOfferPage}
+            />
           </CardContent>
         </Card>
 
@@ -454,10 +546,11 @@ const AffiliatePortal = () => {
           <CardHeader>
             <CardTitle>Links rastreáveis</CardTitle>
             <CardDescription>
-              Links ativos recebem novos cliques; links inativos preservam o histórico.
+              Links ativos recebem novos cliques; links inativos preservam o
+              histórico.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {portal.links.length === 0 ? (
               <PageState variant="empty" compact title="Nenhum link criado" />
             ) : (
@@ -465,12 +558,24 @@ const AffiliatePortal = () => {
                 <table className="w-full min-w-[760px] text-left text-sm">
                   <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
                     <tr>
-                      <th scope="col" className="px-4 py-3">Código</th>
-                      <th scope="col" className="px-4 py-3">Status</th>
-                      <th scope="col" className="px-4 py-3">Cliques</th>
-                      <th scope="col" className="px-4 py-3">Conversões</th>
-                      <th scope="col" className="px-4 py-3">Comissão</th>
-                      <th scope="col" className="px-4 py-3 text-right">Ações</th>
+                      <th scope="col" className="px-4 py-3">
+                        Código
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Status
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Cliques
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Conversões
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Comissão
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-right">
+                        Ações
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -480,7 +585,11 @@ const AffiliatePortal = () => {
                           {item.code}
                         </td>
                         <td className="px-4 py-4">
-                          <Badge variant={item.status === "active" ? "success" : "outline"}>
+                          <Badge
+                            variant={
+                              item.status === "active" ? "success" : "outline"
+                            }
+                          >
                             {item.status === "active" ? "Ativo" : "Inativo"}
                           </Badge>
                         </td>
@@ -520,6 +629,14 @@ const AffiliatePortal = () => {
                 </table>
               </div>
             )}
+            <AffiliatePaginationControls
+              label="links"
+              page={linkPage}
+              pageSize={pageSize}
+              total={portal.totals.links}
+              isFetching={portalQuery.isFetching}
+              onPageChange={setLinkPage}
+            />
           </CardContent>
         </Card>
 
@@ -545,7 +662,10 @@ const AffiliatePortal = () => {
                         </h3>
                         <p className="mt-1 text-xs text-muted-foreground">
                           {formatDate(commission.created_at)} ·{" "}
-                          {(commission.commission_bps / 100).toLocaleString("pt-BR")}%
+                          {(commission.commission_bps / 100).toLocaleString(
+                            "pt-BR",
+                          )}
+                          %
                         </p>
                       </div>
                       <span className="text-sm font-semibold text-affiliate">
@@ -554,13 +674,24 @@ const AffiliatePortal = () => {
                     </div>
                     <Badge
                       className="mt-3"
-                      variant={commissionStatusVariant[commission.status] ?? "outline"}
+                      variant={
+                        commissionStatusVariant[commission.status] ?? "outline"
+                      }
                     >
-                      {commissionStatusLabel[commission.status] ?? commission.status}
+                      {commissionStatusLabel[commission.status] ??
+                        commission.status}
                     </Badge>
                   </article>
                 ))
               )}
+              <AffiliatePaginationControls
+                label="comissões"
+                page={commissionPage}
+                pageSize={pageSize}
+                total={portal.totals.commissions}
+                isFetching={portalQuery.isFetching}
+                onPageChange={setCommissionPage}
+              />
             </CardContent>
           </Card>
 
@@ -580,7 +711,11 @@ const AffiliatePortal = () => {
                   <article key={payout.id} className="surface-muted p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <Badge variant={payoutStatusVariant[payout.status] ?? "outline"}>
+                        <Badge
+                          variant={
+                            payoutStatusVariant[payout.status] ?? "outline"
+                          }
+                        >
                           {payoutStatusLabel[payout.status] ?? payout.status}
                         </Badge>
                         <p className="mt-2 text-xs text-muted-foreground">
@@ -599,9 +734,67 @@ const AffiliatePortal = () => {
                   </article>
                 ))
               )}
+              <AffiliatePaginationControls
+                label="repasses"
+                page={payoutPage}
+                pageSize={pageSize}
+                total={portal.totals.payouts}
+                isFetching={portalQuery.isFetching}
+                onPageChange={setPayoutPage}
+              />
             </CardContent>
           </Card>
         </div>
+
+        <Card variant="affiliate">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-affiliate" aria-hidden="true" />
+              Atividades recentes
+            </CardTitle>
+            <CardDescription>
+              Histórico auditado de alterações e eventos do seu programa de
+              afiliados.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {portal.events.length === 0 ? (
+              <PageState
+                variant="empty"
+                compact
+                title="Nenhuma atividade registrada"
+              />
+            ) : (
+              portal.events.map((event) => (
+                <article
+                  key={event.id}
+                  className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted/20 p-4"
+                >
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {eventTypeLabel[event.event_type] ?? event.event_type}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {formatDate(event.created_at)}
+                    </p>
+                  </div>
+                  <Activity
+                    className="h-4 w-4 shrink-0 text-affiliate"
+                    aria-hidden="true"
+                  />
+                </article>
+              ))
+            )}
+            <AffiliatePaginationControls
+              label="atividades"
+              page={eventPage}
+              pageSize={pageSize}
+              total={portal.totals.events}
+              isFetching={portalQuery.isFetching}
+              onPageChange={setEventPage}
+            />
+          </CardContent>
+        </Card>
       </div>
     </AppPageShell>
   );
