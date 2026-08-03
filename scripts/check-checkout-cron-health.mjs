@@ -11,6 +11,7 @@ const paths = {
   component: "src/components/admin/CheckoutCronHealthCard.tsx",
   page: "src/pages/admin/AdminDashboard.tsx",
   parent: "scripts/check-checkout-expiration-cron.mjs",
+  child: "scripts/check-platform-cron-history-retention.mjs",
   documentation: "docs/refactor/FASE-B93-CHECKOUT-CRON-HEALTH.md",
   status: "docs/STATUS.md",
 };
@@ -145,3 +146,4 @@ if (failures.length > 0) {
 console.log(
   "Contrato B93 aprovado: o proprietário enxerga a saúde sanitizada do cron sem acesso ao schema ou aos metadados internos.",
 );
+await import("./check-platform-cron-history-retention.mjs");
