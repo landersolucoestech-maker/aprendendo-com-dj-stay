@@ -107,6 +107,6 @@ end;
 $$;
 
 revoke all on function private.reconcile_checkout_intent_expiration(uuid, uuid)
-  from public, anon, authenticated;
+  from public, anon;
 grant execute on function private.reconcile_checkout_intent_expiration(uuid, uuid)
-  to service_role;
+  to authenticated, service_role;
