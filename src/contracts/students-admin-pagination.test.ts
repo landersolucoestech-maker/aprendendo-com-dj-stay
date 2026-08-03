@@ -73,6 +73,25 @@ describe("paginatedAdminEnrollmentSchema", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("preserva as validações de vínculo da matrícula base", () => {
+    expect(
+      paginatedAdminEnrollmentSchema.safeParse({
+        ...PAGINATED_ENROLLMENT,
+        completion: {
+          ...PAGINATED_ENROLLMENT.completion,
+          enrollment_id: "550e8400-e29b-41d4-a716-446655440099",
+        },
+      }).success,
+    ).toBe(false);
+    expect(
+      paginatedAdminEnrollmentSchema.safeParse({
+        ...PAGINATED_ENROLLMENT,
+        active_certificate_id: "550e8400-e29b-41d4-a716-446655440088",
+        active_certificate_code: null,
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe("paginatedStudentsAdminDashboardSchema", () => {
