@@ -4843,7 +4843,21 @@ export type Database = {
         }
         Returns: Json
       }
-      get_affiliate_portal: { Args: never; Returns: Json }
+      get_affiliate_portal: {
+        Args: {
+          p_commission_limit?: number
+          p_commission_offset?: number
+          p_event_limit?: number
+          p_event_offset?: number
+          p_link_limit?: number
+          p_link_offset?: number
+          p_offer_limit?: number
+          p_offer_offset?: number
+          p_payout_limit?: number
+          p_payout_offset?: number
+        }
+        Returns: Json
+      }
       get_assessment_attempt_result: {
         Args: { p_attempt_id: string }
         Returns: Json
