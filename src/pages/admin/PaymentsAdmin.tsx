@@ -11,6 +11,7 @@ import {
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
+import { PaymentAnalyticsCard } from "@/components/admin/PaymentAnalyticsCard";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -104,7 +105,11 @@ const PaymentsAdmin = () => {
           </div>
         </header>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section aria-label="Analytics financeiro por período">
+          <PaymentAnalyticsCard />
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo financeiro vitalício">
           <Card className="border-white/10 bg-white/5">
             <CardContent className="p-5">
               <p className="text-sm text-gray-400">Pedidos</p>
