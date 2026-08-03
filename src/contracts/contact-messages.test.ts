@@ -266,7 +266,8 @@ describe("contactAdminDashboardSchema", () => {
         total: -1,
       }).success,
     ).toBe(false);
-    const { total: _total, ...withoutTotal } = dashboard;
+    const { total: omittedTotal, ...withoutTotal } = dashboard;
+    expect(omittedTotal).toBe(2);
     expect(contactAdminDashboardSchema.safeParse(withoutTotal).success).toBe(false);
     expect(
       contactAdminDashboardSchema.safeParse({
