@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(33);
+select plan(34);
 
 select has_function(
   'private',
