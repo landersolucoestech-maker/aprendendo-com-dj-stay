@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(35);
+select plan(34);
 
 create temporary table b101_fixture (
   admin_id uuid not null,
