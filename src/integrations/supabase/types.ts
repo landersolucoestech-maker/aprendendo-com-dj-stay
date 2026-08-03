@@ -4821,6 +4821,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_academic_admin_analytics: {
+        Args: {
+          p_course_id?: string
+          p_end_at?: string
+          p_inactive_days?: number
+          p_start_at?: string
+        }
+        Returns: Json
+      }
       get_affiliate_admin_dashboard: { Args: never; Returns: Json }
       get_affiliate_portal: { Args: never; Returns: Json }
       get_assessment_attempt_result: {
