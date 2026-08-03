@@ -26,6 +26,8 @@ import { useCourseCheckout } from "@/hooks/useCourseCheckout";
 import { usePublicCourseCatalog } from "@/hooks/usePublicCourseCatalog";
 import { getErrorMessage } from "@/lib/error-message";
 
+const EMPTY_PUBLIC_COURSES: PublicCourse[] = [];
+
 const levelLabel: Record<PublicCourse["level"], string> = {
   beginner: "Iniciante",
   intermediate: "Intermediário",
@@ -208,7 +210,7 @@ const CourseStorefront = () => {
   const [searchParams] = useSearchParams();
   const requestedSlug = searchParams.get("curso");
   const catalogQuery = usePublicCourseCatalog();
-  const courses = catalogQuery.data?.courses ?? [];
+  const courses = catalogQuery.data?.courses ?? EMPTY_PUBLIC_COURSES;
   const orderedCourses = useMemo(() => {
     if (!requestedSlug) return courses;
 
