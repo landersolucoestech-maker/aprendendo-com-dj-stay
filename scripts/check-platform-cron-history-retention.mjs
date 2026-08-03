@@ -30,6 +30,7 @@ if (failures.length === 0) {
   const status = read(paths.status).toLowerCase();
 
   requireFragments(migration, "Migration B94", [
+    "A extensão e os privilégios do pg_cron são instalados pela FASE B92.",
     "private.prune_platform_cron_run_history",
     "session_user <> 'postgres'",
     "PLATFORM_CRON_EXECUTOR_REQUIRED",
@@ -47,6 +48,9 @@ if (failures.length === 0) {
   ]);
 
   for (const forbidden of [
+    "create extension if not exists pg_cron",
+    "grant usage on schema cron",
+    "grant all privileges on all tables in schema cron",
     "public.prune_platform_cron_run_history",
     "grant execute on function private.prune_platform_cron_run_history",
     "net.http_post",
