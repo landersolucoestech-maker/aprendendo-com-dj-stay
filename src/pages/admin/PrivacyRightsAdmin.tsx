@@ -1,4 +1,13 @@
-import { CheckCircle2, Clock3, FileArchive, Loader2, Search, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  FileArchive,
+  Loader2,
+  Search,
+  XCircle,
+} from "lucide-react";
 import { useState } from "react";
 
 import { AppPageShell } from "@/components/layout/AppPageShell";
@@ -20,6 +29,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { formatAppDateTime } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
+
+const pageSize = 25;
 
 const typeLabels = {
   access_export: "Acesso e exportação",
@@ -160,7 +171,15 @@ const AdminRequestCard = ({ request }: { readonly request: PrivacyRightsRequest 
 const PrivacyRightsAdmin = () => {
   const [status, setStatus] = useState<PrivacyRightsRequestStatus | null>(null);
   const [requestType, setRequestType] = useState<PrivacyRightsRequestType | null>(null);
-  const requestsQuery = useAdminPrivacyRightsRequests(status, requestType);
+  const [page, setPage] = useState(0);
+  const requestsQuery = useAdminPrivacyRightsRequests({
+    status,
+    requestType,
+    limit: pageSize,
+    offset: page * pageSize,
+  });
+  const total = requestsQuery.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <AppPageShell
@@ -171,7 +190,7 @@ const PrivacyRightsAdmin = () => {
       navigation={
         <span className="inline-flex items-center gap-2 text-sm font-medium">
           <FileArchive className="h-4 w-4" aria-hidden="true" />
-          {requestsQuery.data?.total ?? 0} solicitações
+          {total} solicitações
         </span>
       }
     >
@@ -183,9 +202,10 @@ const PrivacyRightsAdmin = () => {
               <select
                 id="privacy-admin-status"
                 value={status ?? ""}
-                onChange={(event) =>
-                  setStatus((event.target.value || null) as PrivacyRightsRequestStatus | null)
-                }
+                onChange={(event) => {
+                  setStatus((event.target.value || null) as PrivacyRightsRequestStatus | null);
+                  setPage(0);
+                }}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="">Todos</option>
@@ -201,9 +221,10 @@ const PrivacyRightsAdmin = () => {
               <select
                 id="privacy-admin-type"
                 value={requestType ?? ""}
-                onChange={(event) =>
-                  setRequestType((event.target.value || null) as PrivacyRightsRequestType | null)
-                }
+                onChange={(event) => {
+                  setRequestType((event.target.value || null) as PrivacyRightsRequestType | null);
+                  setPage(0);
+                }}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="">Todos</option>
@@ -237,6 +258,37 @@ const PrivacyRightsAdmin = () => {
             ))}
           </section>
         )}
+
+        {total > 0 ? (
+          <nav
+            className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between"
+            aria-label="Paginação administrativa das solicitações de privacidade"
+          >
+            <p className="text-sm text-muted-foreground" aria-live="polite">
+              Página {page + 1} de {totalPages} · {total} solicitação(ões)
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={page === 0 || requestsQuery.isFetching}
+                onClick={() => setPage((current) => Math.max(0, current - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                Anterior
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={page + 1 >= totalPages || requestsQuery.isFetching}
+                onClick={() => setPage((current) => current + 1)}
+              >
+                Próxima
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </div>
+          </nav>
+        ) : null}
       </div>
     </AppPageShell>
   );
