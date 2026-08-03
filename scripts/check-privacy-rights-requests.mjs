@@ -106,3 +106,4 @@ if (failures.length > 0) {
 console.log(
   "Contrato B44 aprovado: solicitações de privacidade estão isoladas, auditáveis e sem exclusão automática.",
 );
+await import("./check-privacy-rights-pagination.mjs");
