@@ -1,4 +1,5 @@
 -- FASE B94: retenção limitada do histórico nativo dos jobs PostgreSQL da plataforma.
+-- A extensão e os privilégios do pg_cron são instalados pela FASE B92.
 
 create or replace function private.prune_platform_cron_run_history(
   p_retention_days integer default 30,
@@ -61,14 +62,6 @@ $$;
 
 revoke all on function private.prune_platform_cron_run_history(integer, integer)
   from public, anon, authenticated, service_role;
-
-create extension if not exists pg_cron with schema pg_catalog;
-
-revoke all on schema cron from public, anon, authenticated, service_role;
-grant usage on schema cron to postgres;
-grant all privileges on all tables in schema cron to postgres;
-grant all privileges on all sequences in schema cron to postgres;
-grant execute on all functions in schema cron to postgres;
 
 -- Reaplicar a migration não pode duplicar o job.
 do $$
