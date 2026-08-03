@@ -3,17 +3,30 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   certificateValidationSchema,
   myCertificatesSchema,
-  studentsAdminDashboardSchema,
   type CertificateValidation,
-  type StudentsAdminDashboard,
 } from "@/contracts/certificates";
 import { parseDataContract } from "@/contracts/contract-error";
+import {
+  paginatedStudentsAdminDashboardSchema,
+  type PaginatedStudentsAdminDashboard,
+} from "@/contracts/students-admin-pagination";
 import { supabase } from "@/integrations/supabase/client";
+
+interface StudentsAdminFilters {
+  search: string;
+  studentLimit: number;
+  studentOffset: number;
+  enrollmentLimit: number;
+  enrollmentOffset: number;
+  certificateLimit: number;
+  certificateOffset: number;
+}
 
 const certificateKeys = {
   mine: ["certificates", "mine"] as const,
   validation: (code: string) => ["certificates", "validation", code] as const,
-  admin: (search: string) => ["certificates", "admin", search] as const,
+  admin: (filters: StudentsAdminFilters) =>
+    ["certificates", "admin", filters] as const,
 };
 
 const invalidateCertificateData = async (
@@ -53,24 +66,46 @@ export const useCertificateValidation = (code: string) =>
     },
   });
 
-export const useStudentsAdminDashboard = (search: string) =>
-  useQuery<StudentsAdminDashboard>({
-    queryKey: certificateKeys.admin(search),
+export const useStudentsAdminDashboard = (input: {
+  search: string;
+  studentLimit?: number;
+  studentOffset?: number;
+  enrollmentLimit?: number;
+  enrollmentOffset?: number;
+  certificateLimit?: number;
+  certificateOffset?: number;
+}) => {
+  const filters: StudentsAdminFilters = {
+    search: input.search.trim(),
+    studentLimit: input.studentLimit ?? 25,
+    studentOffset: input.studentOffset ?? 0,
+    enrollmentLimit: input.enrollmentLimit ?? 25,
+    enrollmentOffset: input.enrollmentOffset ?? 0,
+    certificateLimit: input.certificateLimit ?? 25,
+    certificateOffset: input.certificateOffset ?? 0,
+  };
+
+  return useQuery<PaginatedStudentsAdminDashboard>({
+    queryKey: certificateKeys.admin(filters),
     queryFn: async () => {
-      const normalizedSearch = search.trim();
       const { data, error } = await supabase.rpc("get_students_admin_dashboard", {
-        ...(normalizedSearch ? { p_search: normalizedSearch } : {}),
-        p_limit: 100,
-        p_offset: 0,
+        ...(filters.search ? { p_search: filters.search } : {}),
+        p_student_limit: filters.studentLimit,
+        p_student_offset: filters.studentOffset,
+        p_enrollment_limit: filters.enrollmentLimit,
+        p_enrollment_offset: filters.enrollmentOffset,
+        p_certificate_limit: filters.certificateLimit,
+        p_certificate_offset: filters.certificateOffset,
       });
       if (error) throw error;
       return parseDataContract(
-        studentsAdminDashboardSchema,
+        paginatedStudentsAdminDashboardSchema,
         data,
-        "administração de alunos e certificados",
+        "administração paginada de alunos e certificados",
       );
     },
   });
+};
 
 export const useGrantCourseEnrollment = () => {
   const queryClient = useQueryClient();
