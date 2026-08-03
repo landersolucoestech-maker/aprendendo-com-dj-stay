@@ -66,8 +66,10 @@ from b101_fixture;
 insert into public.enrollments(
   id,user_id,course_id,status,source,granted_by_user_id,created_at,updated_at
 )
-select alpha_enrollment_id,alpha_id,course_id,'active','manual_grant',admin_id,
-  '2026-08-01T12:00:00Z'::timestamptz,'2026-08-01T12:00:00Z'::timestamptz
+select alpha_enrollment_id,alpha_id,course_id,
+  'active'::public.enrollment_status,
+  'manual_grant'::public.enrollment_source,
+  admin_id,'2026-08-01T12:00:00Z'::timestamptz,'2026-08-01T12:00:00Z'::timestamptz
 from b101_fixture
 union all
 select beta_enrollment_id,beta_id,course_id,'active','manual_grant',admin_id,
@@ -84,9 +86,11 @@ insert into public.certificates(
   issued_at,revoked_at,revoked_by_user_id,revocation_reason
 )
 select
-  'b1010000-0000-4000-8000-000000000202','DJSTAY-00000000000000000001',
+  'b1010000-0000-4000-8000-000000000202'::uuid,
+  'DJSTAY-00000000000000000001',
   alpha_enrollment_id,alpha_id,course_id,'Aluno Alpha','Curso Acadêmico B101',0,
-  'issued',admin_id,'2026-08-01T15:00:00Z'::timestamptz,null,null,null
+  'issued'::public.certificate_status,
+  admin_id,'2026-08-01T15:00:00Z'::timestamptz,null,null,null
 from b101_fixture
 union all
 select
