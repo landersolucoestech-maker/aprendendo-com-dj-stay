@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { CheckoutCronHealthCard } from "@/components/admin/CheckoutCronHealthCard";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -205,6 +206,10 @@ const AdminDashboard = () => {
             detail="Pagamentos pendentes, suporte aguardando e novos contatos"
             icon={ReceiptText}
           />
+        </section>
+
+        <section aria-label="Saúde da automação de checkout">
+          <CheckoutCronHealthCard />
         </section>
 
         <section className="grid gap-6 xl:grid-cols-3" aria-label="Resumo por domínio">
