@@ -157,6 +157,8 @@ if (failures.length === 0) {
     "sem atividade recente",
     "não significa abandono",
     "366 dias",
+    "38 asserções",
+    "somente leitura",
     "branch `dev`",
   ]);
 }
