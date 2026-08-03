@@ -16,6 +16,7 @@ import { RoleLandingRedirect } from "@/routing/RoleLandingRedirect";
 import { RouteErrorBoundary } from "@/routing/RouteErrorBoundary";
 import { RouteLoadingFallback } from "@/routing/RouteLoadingFallback";
 import {
+  AcademicAnalyticsAdmin,
   AdminDashboard,
   AffiliatesAdmin,
   ContactsAdmin,
@@ -174,6 +175,7 @@ const App = () => (
                   <Route path="/admin/pagamentos" element={<AdminRoute><PaymentsAdmin /></AdminRoute>} />
                   <Route path="/admin/afiliados" element={<AdminRoute><AffiliatesAdmin /></AdminRoute>} />
                   <Route path="/admin/alunos" element={<AdminRoute><StudentsAdmin /></AdminRoute>} />
+                  <Route path="/admin/academico" element={<AdminRoute><AcademicAnalyticsAdmin /></AdminRoute>} />
                   <Route path="/admin/contatos" element={<AdminRoute><ContactsAdmin /></AdminRoute>} />
                   <Route path="/admin/suporte" element={<AdminRoute><SupportAdmin /></AdminRoute>} />
                   <Route path="/admin/privacidade" element={<AdminRoute><PrivacyRightsAdmin /></AdminRoute>} />
