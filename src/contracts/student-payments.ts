@@ -62,7 +62,24 @@ export const studentPaymentHistorySchema = z
     total: z.number().int().nonnegative(),
     orders: z.array(studentPaymentOrderSchema),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (value.summary.total_orders !== value.total) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["summary", "total_orders"],
+        message: "O total do resumo deve corresponder ao total paginado.",
+      });
+    }
+
+    if (value.orders.length > value.total) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["orders"],
+        message: "A página não pode conter mais pedidos que o total.",
+      });
+    }
+  });
 
 export type StudentPaymentHistory = z.infer<typeof studentPaymentHistorySchema>;
 export type StudentPaymentOrder = z.infer<typeof studentPaymentOrderSchema>;
