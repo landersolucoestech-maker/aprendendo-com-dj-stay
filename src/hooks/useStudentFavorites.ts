@@ -16,18 +16,28 @@ const favoriteKeys = {
     [...favoriteKeys.all, "status", subjectType, subjectId] as const,
 };
 
-export const useStudentFavorites = (limit = 30, offset = 0) =>
-  useQuery({
-    queryKey: favoriteKeys.list(limit, offset),
+const normalizeFavoriteLimit = (value: number): number =>
+  Math.min(100, Math.max(1, Math.trunc(value)));
+
+const normalizeFavoriteOffset = (value: number): number =>
+  Math.max(0, Math.trunc(value));
+
+export const useStudentFavorites = (limit = 30, offset = 0) => {
+  const normalizedLimit = normalizeFavoriteLimit(limit);
+  const normalizedOffset = normalizeFavoriteOffset(offset);
+
+  return useQuery({
+    queryKey: favoriteKeys.list(normalizedLimit, normalizedOffset),
     queryFn: async () => {
       const { data, error } = await studentFavoriteRpcClient.rpc(
         "get_my_student_favorites",
-        { p_limit: limit, p_offset: offset },
+        { p_limit: normalizedLimit, p_offset: normalizedOffset },
       );
       if (error) throw error;
       return studentFavoriteListSchema.parse(data);
     },
   });
+};
 
 export const useStudentFavoriteStatus = (
   subjectType: StudentFavoriteSubjectType,
