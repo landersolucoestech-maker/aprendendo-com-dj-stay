@@ -168,6 +168,7 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
+await import("./check-affiliate-portal-canonical-hook.mjs");
 console.log(
   "Contrato B103 aprovado: ofertas, links, comissões, repasses e eventos possuem páginas independentes e totais persistidos.",
 );
