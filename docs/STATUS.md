@@ -26,6 +26,7 @@ Os seguintes domínios possuem implementação, persistência, autorização e c
 | Portal do aluno | matrículas, biblioteca, player, retomada e progresso monotônico |
 | Marketplace digital | produtos, licenças, entregáveis, acessos e biblioteca do comprador |
 | Pagamentos | checkout, ordens, tentativas, eventos do provider e concessão/revogação de acesso |
+| Analytics financeiro | filtros de 7 a 365 dias, receita bruta, receita após reversões, ticket médio, clientes únicos, receita por tipo, ranking e série diária |
 | Retorno financeiro exato | consulta autenticada pelo `checkout_intent` retornado pelo provider, com pedido, tentativa e entitlement da compra correspondente, sem fallback por outra matrícula ou acesso |
 | Expiração de checkout | reconciliação pelo horário do servidor, sincronização de intent/pedido/tentativa e bloqueio de reabertura de pedidos financeiramente terminais |
 | Cron de expiração | job PostgreSQL a cada cinco minutos, executado como `postgres`, com batch limitado, idempotente e sem segredo HTTP |
@@ -44,6 +45,8 @@ A home pública não apresenta números de alunos, avaliações, streams, rankin
 O UUID utilizado para iniciar a compra de curso não participa do catálogo anônimo. Ele é resolvido somente após autenticação, com validação de papel, disponibilidade, preço e matrícula ativa. A compra reutiliza a preparação idempotente e a Edge Function do checkout hospedado.
 
 O retorno do checkout usa exclusivamente o parâmetro `checkout_intent` pertencente à conta autenticada. A interface representa estados pendentes, confirmação, liberação de acesso, cancelamento, expiração, falha, reembolso, chargeback, suspensão e revogação sem inferir sucesso por outra matrícula ou produto existente.
+
+O analytics financeiro considera somente pedidos com `payment_confirmed_at` persistido no intervalo escolhido. A receita após reversões desconta reembolsos concluídos e chargebacks perdidos. Tarifas do provider, impostos, custos e comissões não são tratados como receita líquida enquanto não houver um ledger consolidado que sustente esse cálculo.
 
 Checkouts vencidos são reconciliados por `expires_at` e pelo relógio do PostgreSQL. Somente intents ainda não pagos podem expirar; pedidos pagos, em reembolso ou em chargeback não são reabertos pelo claim do provedor. A chave idempotente local só é removida quando o estado persistido confirma expiração ou cancelamento.
 
