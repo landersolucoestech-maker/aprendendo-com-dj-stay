@@ -1,4 +1,11 @@
-import { LifeBuoy, Loader2, MessageSquarePlus, Send } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  LifeBuoy,
+  Loader2,
+  MessageSquarePlus,
+  Send,
+} from "lucide-react";
 import { useState } from "react";
 
 import { StudentPortalPageFrame } from "@/components/student/StudentPortalPageFrame";
@@ -26,6 +33,8 @@ import { useToast } from "@/hooks/use-toast";
 import { formatAppDateTime } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
+const pageSize = 10;
+
 const statusLabels = {
   open: "Aberto",
   awaiting_support: "Aguardando suporte",
@@ -48,9 +57,12 @@ const StudentSupport = () => {
   const [priority, setPriority] = useState<SupportTicketPriority>("normal");
   const [message, setMessage] = useState("");
   const [replyByTicket, setReplyByTicket] = useState<Record<string, string>>({});
-  const ticketsQuery = useMySupportTickets();
+  const [page, setPage] = useState(0);
+  const ticketsQuery = useMySupportTickets(pageSize, page * pageSize);
   const createMutation = useCreateSupportTicket();
   const replyMutation = useAddMySupportMessage();
+  const total = ticketsQuery.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -65,6 +77,7 @@ const StudentSupport = () => {
       setSubject("");
       setMessage("");
       setPriority("normal");
+      setPage(0);
       toast({
         title: "Ticket criado",
         description: result.reference_code ?? "Sua solicitação foi registrada.",
@@ -269,6 +282,37 @@ const StudentSupport = () => {
             ))}
           </section>
         )}
+
+        {total > 0 ? (
+          <nav
+            className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between"
+            aria-label="Paginação dos tickets de suporte"
+          >
+            <p className="text-sm text-muted-foreground" aria-live="polite">
+              Página {page + 1} de {totalPages} · {total} ticket(s)
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={page === 0 || ticketsQuery.isFetching}
+                onClick={() => setPage((current) => Math.max(0, current - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                Anterior
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={page + 1 >= totalPages || ticketsQuery.isFetching}
+                onClick={() => setPage((current) => current + 1)}
+              >
+                Próxima
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </div>
+          </nav>
+        ) : null}
       </div>
     </StudentPortalPageFrame>
   );
