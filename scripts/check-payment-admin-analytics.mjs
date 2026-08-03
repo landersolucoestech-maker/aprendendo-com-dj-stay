@@ -129,10 +129,28 @@ if (failures.length === 0) {
     "Últimos dias do período",
     "não tarifas do provider, impostos ou comissões",
   ]);
+  for (const ambiguousClaim of [
+    "Lucro líquido",
+    "Receita líquida fiscal",
+    "Receita líquida contábil",
+  ]) {
+    if (component.includes(ambiguousClaim)) {
+      failures.push(`Componente B96 contém alegação financeira ambígua: ${ambiguousClaim}`);
+    }
+  }
   requireFragments(page, "Página financeira B96", [
     "PaymentAnalyticsCard",
     'aria-label="Analytics financeiro por período"',
     'aria-label="Resumo financeiro vitalício"',
+    "usePaymentAdminDashboard",
+    "setSearch(event.target.value)",
+    "setStatus(",
+    "setSubjectType(",
+    "setPage((current) => Math.max(0, current - 1))",
+    "setPage((current) => current + 1)",
+    'placeholder="Buscar por pedido, título ou e-mail"',
+    'aria-label="Filtrar por status do pedido"',
+    'aria-label="Filtrar por tipo do item"',
   ]);
   if (!parent.includes('await import("./check-payment-admin-analytics.mjs")')) {
     failures.push("B96 não está encadeada no gate bloqueante B37.");
