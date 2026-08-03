@@ -32,7 +32,16 @@ export const studentFavoriteListSchema = z
     total: z.number().int().nonnegative(),
     favorites: z.array(studentFavoriteSchema),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (value.favorites.length > value.total) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["favorites"],
+        message: "A página não pode conter mais favoritos que o total.",
+      });
+    }
+  });
 
 export const studentFavoriteToggleResultSchema = z
   .object({
