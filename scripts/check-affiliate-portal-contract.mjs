@@ -190,4 +190,5 @@ if (
 }
 
 if (process.exitCode) process.exit(process.exitCode);
+await import("./check-affiliate-admin-pagination.mjs");
 console.log("Contrato estático da FASE B20 aprovado.");
