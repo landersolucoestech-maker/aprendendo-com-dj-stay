@@ -155,6 +155,11 @@ describe("studentNotificationListSchema", () => {
     expect(studentNotificationListSchema.parse(list)).toEqual(list);
   });
 
+  it("aceita uma página menor que o total persistido", () => {
+    const page = { total: 75, unread_count: 12, notifications: [NOTIFICATION] };
+    expect(studentNotificationListSchema.parse(page)).toEqual(page);
+  });
+
   it("rejeita contagens negativas ou fracionárias", () => {
     expect(
       studentNotificationListSchema.safeParse({
@@ -168,6 +173,23 @@ describe("studentNotificationListSchema", () => {
         total: 1,
         unread_count: 0.5,
         notifications: [],
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejeita contagens ou página maiores que o total", () => {
+    expect(
+      studentNotificationListSchema.safeParse({
+        total: 0,
+        unread_count: 1,
+        notifications: [],
+      }).success,
+    ).toBe(false);
+    expect(
+      studentNotificationListSchema.safeParse({
+        total: 0,
+        unread_count: 0,
+        notifications: [NOTIFICATION],
       }).success,
     ).toBe(false);
   });
