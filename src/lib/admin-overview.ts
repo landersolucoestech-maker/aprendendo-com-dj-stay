@@ -1,6 +1,4 @@
 export type AdminLifecycleStatus = "draft" | "published" | "archived";
-export type AdminEnrollmentStatus = "pending" | "active" | "suspended" | "revoked";
-export type AdminCertificateStatus = "issued" | "revoked";
 
 export interface AdminOverviewInput {
   payments: {
@@ -14,12 +12,12 @@ export interface AdminOverviewInput {
     };
   };
   students: {
-    students: readonly unknown[];
-    enrollments: readonly {
-      status: AdminEnrollmentStatus;
-      completion: { completion_percent: number };
-    }[];
-    certificates: readonly { status: AdminCertificateStatus }[];
+    totals: {
+      students: number;
+      enrollments: number;
+      certificates: number;
+      valid_certificates: number;
+    };
   };
   courses: readonly { status: AdminLifecycleStatus }[];
   products: readonly { status: AdminLifecycleStatus }[];
@@ -46,15 +44,6 @@ const countByStatus = <T extends string>(
 ): number => values.filter((value) => value.status === status).length;
 
 export const buildAdminOverview = (input: AdminOverviewInput) => {
-  const completionTotal = input.students.enrollments.reduce(
-    (total, enrollment) => total + enrollment.completion.completion_percent,
-    0,
-  );
-  const averageCompletionPercent =
-    input.students.enrollments.length === 0
-      ? 0
-      : Math.round(completionTotal / input.students.enrollments.length);
-
   const awaitingSupport = input.support.summary.awaiting_support;
   const newContacts = input.contacts.summary.new;
   const pendingOrders = input.payments.summary.pending_orders;
@@ -70,15 +59,10 @@ export const buildAdminOverview = (input: AdminOverviewInput) => {
         input.payments.summary.chargeback_lost_amount_cents,
     },
     academic: {
-      totalStudents: input.students.students.length,
-      totalEnrollments: input.students.enrollments.length,
-      activeEnrollments: countByStatus(input.students.enrollments, "active"),
-      suspendedEnrollments: countByStatus(
-        input.students.enrollments,
-        "suspended",
-      ),
-      validCertificates: countByStatus(input.students.certificates, "issued"),
-      averageCompletionPercent,
+      totalStudents: input.students.totals.students,
+      totalEnrollments: input.students.totals.enrollments,
+      totalCertificates: input.students.totals.certificates,
+      validCertificates: input.students.totals.valid_certificates,
     },
     catalogue: {
       totalCourses: input.courses.length,
