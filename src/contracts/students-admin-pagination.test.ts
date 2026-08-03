@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { paginatedStudentsAdminDashboardSchema } from "@/contracts/students-admin-pagination";
+import {
+  paginatedAdminEnrollmentSchema,
+  paginatedStudentsAdminDashboardSchema,
+} from "@/contracts/students-admin-pagination";
 
 const EMPTY_DASHBOARD = {
   totals: {
@@ -14,6 +17,63 @@ const EMPTY_DASHBOARD = {
   enrollments: [],
   certificates: [],
 } as const;
+
+const ENROLLMENT_ID = "550e8400-e29b-41d4-a716-446655440001";
+const USER_ID = "550e8400-e29b-41d4-a716-446655440002";
+const COURSE_ID = "550e8400-e29b-41d4-a716-446655440003";
+
+const PAGINATED_ENROLLMENT = {
+  id: ENROLLMENT_ID,
+  user_id: USER_ID,
+  student_name: "Aluno Exemplo",
+  student_email: "aluno@example.com",
+  course_id: COURSE_ID,
+  course_title: "Curso Exemplo",
+  status: "active",
+  source: "manual_grant",
+  starts_at: "2026-08-03T00:00:00-03:00",
+  expires_at: null,
+  status_reason: null,
+  completion: {
+    enrollment_id: ENROLLMENT_ID,
+    user_id: USER_ID,
+    course_id: COURSE_ID,
+    course_title: "Curso Exemplo",
+    enrollment_status: "active",
+    completion_mode: "manual",
+    certificate_enabled: true,
+    minimum_percent: 100,
+    total_lessons: 0,
+    completed_lessons: 0,
+    completion_percent: 0,
+    eligible: true,
+  },
+  active_certificate_id: null,
+  active_certificate_code: null,
+} as const;
+
+describe("paginatedAdminEnrollmentSchema", () => {
+  it("aceita identidade do titular junto da matrícula paginada", () => {
+    expect(paginatedAdminEnrollmentSchema.parse(PAGINATED_ENROLLMENT)).toEqual(
+      PAGINATED_ENROLLMENT,
+    );
+  });
+
+  it("rejeita matrícula paginada sem nome ou com e-mail inválido", () => {
+    expect(
+      paginatedAdminEnrollmentSchema.safeParse({
+        ...PAGINATED_ENROLLMENT,
+        student_name: "",
+      }).success,
+    ).toBe(false);
+    expect(
+      paginatedAdminEnrollmentSchema.safeParse({
+        ...PAGINATED_ENROLLMENT,
+        student_email: "email-invalido",
+      }).success,
+    ).toBe(false);
+  });
+});
 
 describe("paginatedStudentsAdminDashboardSchema", () => {
   it("aceita snapshot paginado vazio e coerente", () => {
