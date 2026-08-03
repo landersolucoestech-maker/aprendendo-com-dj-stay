@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { paginatedAffiliateAdminDashboardSchema } from "@/contracts/affiliate-admin-pagination";
 import {
-  affiliateAdminDashboardSchema,
   affiliateCancelPayoutInputSchema,
   affiliateCreateLinkInputSchema,
   affiliateCreatePayoutInputSchema,
@@ -22,6 +22,36 @@ import { supabase } from "@/integrations/supabase/client";
 
 const affiliatePortalKey = ["affiliate", "portal"] as const;
 const affiliateAdminKey = ["affiliate", "admin"] as const;
+
+export interface AffiliateAdminPaginationInput {
+  readonly profileLimit?: number;
+  readonly profileOffset?: number;
+  readonly offerLimit?: number;
+  readonly offerOffset?: number;
+  readonly commissionLimit?: number;
+  readonly commissionOffset?: number;
+  readonly payoutLimit?: number;
+  readonly payoutOffset?: number;
+}
+
+const normalizeLimit = (value: number | undefined): number =>
+  Math.min(100, Math.max(1, Math.trunc(value ?? 25)));
+
+const normalizeOffset = (value: number | undefined): number =>
+  Math.max(0, Math.trunc(value ?? 0));
+
+const normalizeAffiliateAdminPagination = (
+  input: AffiliateAdminPaginationInput,
+) => ({
+  profileLimit: normalizeLimit(input.profileLimit),
+  profileOffset: normalizeOffset(input.profileOffset),
+  offerLimit: normalizeLimit(input.offerLimit),
+  offerOffset: normalizeOffset(input.offerOffset),
+  commissionLimit: normalizeLimit(input.commissionLimit),
+  commissionOffset: normalizeOffset(input.commissionOffset),
+  payoutLimit: normalizeLimit(input.payoutLimit),
+  payoutOffset: normalizeOffset(input.payoutOffset),
+});
 
 export const useAffiliatePortal = () =>
   useQuery({
@@ -102,19 +132,33 @@ export const useDeactivateAffiliateLink = () => {
   });
 };
 
-export const useAffiliateAdminDashboard = () =>
-  useQuery({
-    queryKey: affiliateAdminKey,
+export const useAffiliateAdminDashboard = (
+  input: AffiliateAdminPaginationInput = {},
+) => {
+  const filters = normalizeAffiliateAdminPagination(input);
+
+  return useQuery({
+    queryKey: [...affiliateAdminKey, filters],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_affiliate_admin_dashboard");
+      const { data, error } = await supabase.rpc("get_affiliate_admin_dashboard", {
+        p_profile_limit: filters.profileLimit,
+        p_profile_offset: filters.profileOffset,
+        p_offer_limit: filters.offerLimit,
+        p_offer_offset: filters.offerOffset,
+        p_commission_limit: filters.commissionLimit,
+        p_commission_offset: filters.commissionOffset,
+        p_payout_limit: filters.payoutLimit,
+        p_payout_offset: filters.payoutOffset,
+      });
       if (error) throw error;
       return parseDataContract(
-        affiliateAdminDashboardSchema,
+        paginatedAffiliateAdminDashboardSchema,
         data,
-        "administração de afiliados",
+        "administração paginada de afiliados",
       );
     },
   });
+};
 
 const useInvalidateAffiliateAdmin = () => {
   const queryClient = useQueryClient();
