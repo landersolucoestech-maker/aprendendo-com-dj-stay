@@ -179,6 +179,8 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
+await import("./check-student-activity-history-pagination.mjs");
+
 console.log(
   "Contrato B80 aprovado: limite finito, imutabilidade, transformação determinística e ponte temporal B26 permanecem isolados da consulta Supabase.",
 );
