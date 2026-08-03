@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import {
   Banknote,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   CreditCard,
   Loader2,
   PackageCheck,
@@ -13,6 +16,7 @@ import {
   StudentStatCard,
 } from "@/components/student/StudentPortalPrimitives";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -45,15 +49,28 @@ const formatMoney = (amountCents: number, currencyCode: string) =>
     currency: currencyCode,
   }).format(amountCents / 100);
 
+const pageSize = 20;
+
 interface StudentFinancialPortalProps {
   readonly section: "orders" | "payments";
 }
 
 const StudentFinancialPortal = ({ section }: StudentFinancialPortalProps) => {
-  const historyQuery = useStudentPaymentHistory();
+  const [page, setPage] = useState(0);
+  const historyQuery = useStudentPaymentHistory(page, pageSize);
   const orders = historyQuery.data?.orders ?? [];
   const summary = historyQuery.data?.summary;
+  const total = historyQuery.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const canGoBack = page > 0;
+  const canGoForward = (page + 1) * pageSize < total;
   const title = section === "orders" ? "Pedidos" : "Pagamentos";
+
+  useEffect(() => {
+    if (historyQuery.data && page > 0 && page * pageSize >= historyQuery.data.total) {
+      setPage(Math.max(0, Math.ceil(historyQuery.data.total / pageSize) - 1));
+    }
+  }, [historyQuery.data, page]);
 
   return (
     <StudentPortalPageFrame>
@@ -111,7 +128,7 @@ const StudentFinancialPortal = ({ section }: StudentFinancialPortalProps) => {
               />
             </section>
 
-            {orders.length === 0 ? (
+            {total === 0 ? (
               <PageState
                 variant="empty"
                 icon={section === "orders" ? PackageCheck : CreditCard}
@@ -120,79 +137,127 @@ const StudentFinancialPortal = ({ section }: StudentFinancialPortalProps) => {
               />
             ) : (
               <section className="space-y-4" aria-label={title}>
-                {orders.map((order) => (
-                  <Card key={order.id} variant="course">
-                    <CardHeader>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <CardTitle>{order.title}</CardTitle>
-                          <CardDescription className="mt-2">
-                            Pedido {order.id} · {order.subject_type === "course" ? "Curso" : "Produto digital"}
-                          </CardDescription>
-                        </div>
-                        <div className="sm:text-right">
-                          <p className="font-semibold text-foreground">
-                            {formatMoney(order.amount_cents, order.currency_code)}
-                          </p>
-                          <Badge className="mt-2" variant={order.status === "paid" ? "success" : "outline"}>
-                            {statusLabels[order.status]}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <dl className="surface-muted grid gap-3 p-4 text-sm md:grid-cols-3">
-                        <div>
-                          <dt className="text-muted-foreground">Criado</dt>
-                          <dd className="mt-1 text-foreground">
-                            {formatAppDateTime(order.created_at)}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-muted-foreground">Confirmado</dt>
-                          <dd className="mt-1 text-foreground">
-                            {formatAppDateTime(order.payment_confirmed_at, {
-                              fallback: "Ainda não confirmado",
-                            })}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-muted-foreground">Cobrança</dt>
-                          <dd className="mt-1 text-foreground">
-                            {order.latest_attempt?.billing_type ?? "Não criada"}
-                          </dd>
-                        </div>
-                      </dl>
+                <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+                  <span>{total} pedido{total === 1 ? "" : "s"} no histórico</span>
+                  <span>
+                    Página {page + 1} de {totalPages}
+                  </span>
+                </div>
 
-                      {section === "payments" ? (
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <div className="surface-muted p-4 text-sm">
-                            <p className="flex items-center gap-2 font-medium text-foreground">
-                              <CreditCard className="h-4 w-4" aria-hidden="true" />
-                              Última cobrança
-                            </p>
-                            <p className="mt-2 text-muted-foreground">
-                              {order.latest_attempt
-                                ? `${order.latest_attempt.provider} · ${order.latest_attempt.provider_status ?? order.latest_attempt.status}`
-                                : "Nenhuma tentativa registrada."}
-                            </p>
+                {orders.length === 0 ? (
+                  <PageState
+                    variant="empty"
+                    icon={section === "orders" ? PackageCheck : CreditCard}
+                    title="Nenhum registro nesta página"
+                    description="A página será ajustada automaticamente após a atualização do histórico."
+                  />
+                ) : (
+                  orders.map((order) => (
+                    <Card key={order.id} variant="course">
+                      <CardHeader>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <CardTitle>{order.title}</CardTitle>
+                            <CardDescription className="mt-2">
+                              Pedido {order.id} ·{" "}
+                              {order.subject_type === "course"
+                                ? "Curso"
+                                : "Produto digital"}
+                            </CardDescription>
                           </div>
-                          <div className="surface-muted p-4 text-sm">
-                            <p className="flex items-center gap-2 font-medium text-foreground">
-                              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-                              Situação do acesso
+                          <div className="sm:text-right">
+                            <p className="font-semibold text-foreground">
+                              {formatMoney(order.amount_cents, order.currency_code)}
                             </p>
-                            <p className="mt-2 text-muted-foreground">
-                              {order.entitlement
-                                ? `${order.entitlement.status} · ${order.entitlement.controls_access ? "controla o acesso" : "registro informativo"}`
-                                : "Nenhum acesso financeiro vinculado."}
-                            </p>
+                            <Badge
+                              className="mt-2"
+                              variant={order.status === "paid" ? "success" : "outline"}
+                            >
+                              {statusLabels[order.status]}
+                            </Badge>
                           </div>
                         </div>
-                      ) : null}
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <dl className="surface-muted grid gap-3 p-4 text-sm md:grid-cols-3">
+                          <div>
+                            <dt className="text-muted-foreground">Criado</dt>
+                            <dd className="mt-1 text-foreground">
+                              {formatAppDateTime(order.created_at)}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-muted-foreground">Confirmado</dt>
+                            <dd className="mt-1 text-foreground">
+                              {formatAppDateTime(order.payment_confirmed_at, {
+                                fallback: "Ainda não confirmado",
+                              })}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-muted-foreground">Cobrança</dt>
+                            <dd className="mt-1 text-foreground">
+                              {order.latest_attempt?.billing_type ?? "Não criada"}
+                            </dd>
+                          </div>
+                        </dl>
+
+                        {section === "payments" ? (
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div className="surface-muted p-4 text-sm">
+                              <p className="flex items-center gap-2 font-medium text-foreground">
+                                <CreditCard className="h-4 w-4" aria-hidden="true" />
+                                Última cobrança
+                              </p>
+                              <p className="mt-2 text-muted-foreground">
+                                {order.latest_attempt
+                                  ? `${order.latest_attempt.provider} · ${order.latest_attempt.provider_status ?? order.latest_attempt.status}`
+                                  : "Nenhuma tentativa registrada."}
+                              </p>
+                            </div>
+                            <div className="surface-muted p-4 text-sm">
+                              <p className="flex items-center gap-2 font-medium text-foreground">
+                                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                                Situação do acesso
+                              </p>
+                              <p className="mt-2 text-muted-foreground">
+                                {order.entitlement
+                                  ? `${order.entitlement.status} · ${order.entitlement.controls_access ? "controla o acesso" : "registro informativo"}`
+                                  : "Nenhum acesso financeiro vinculado."}
+                              </p>
+                            </div>
+                          </div>
+                        ) : null}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+
+                <nav
+                  className="flex flex-wrap items-center justify-end gap-2 border-t border-border/70 pt-4"
+                  aria-label={`Paginação de ${title.toLowerCase()}`}
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={!canGoBack || historyQuery.isFetching}
+                    onClick={() => setPage((current) => Math.max(0, current - 1))}
+                  >
+                    <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                    Anterior
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={!canGoForward || historyQuery.isFetching}
+                    onClick={() => setPage((current) => current + 1)}
+                  >
+                    Próxima
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </nav>
               </section>
             )}
           </>
