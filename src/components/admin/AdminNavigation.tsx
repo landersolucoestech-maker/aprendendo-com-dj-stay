@@ -1,5 +1,6 @@
 import {
   Banknote,
+  BarChart3,
   BookOpen,
   Boxes,
   Bug,
@@ -22,6 +23,7 @@ const adminNavigation = [
   { to: "/admin/pagamentos", label: "Pagamentos", icon: Banknote },
   { to: "/admin/afiliados", label: "Afiliados", icon: HandCoins },
   { to: "/admin/alunos", label: "Alunos", icon: GraduationCap },
+  { to: "/admin/academico", label: "Acadêmico", icon: BarChart3 },
   { to: "/admin/contatos", label: "Contatos", icon: MessagesSquare },
   { to: "/admin/suporte", label: "Suporte", icon: LifeBuoy },
   { to: "/admin/privacidade", label: "Privacidade", icon: ShieldCheck },
