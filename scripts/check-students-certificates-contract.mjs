@@ -18,6 +18,7 @@ const requiredFiles = [
   "src/components/student/StudentPortalPageFrame.tsx",
   "src/App.tsx",
   "scripts/check-academic-admin-analytics.mjs",
+  "scripts/check-students-admin-pagination.mjs",
 ];
 
 const contents = new Map(
@@ -166,3 +167,4 @@ for (const sourceFile of await collectSourceFiles(path.join(root, "src"))) {
 if (process.exitCode) process.exit(process.exitCode);
 console.log("Contrato estático da FASE B21/B84 aprovado com certificados no shell persistente.");
 await import("./check-academic-admin-analytics.mjs");
+await import("./check-students-admin-pagination.mjs");
