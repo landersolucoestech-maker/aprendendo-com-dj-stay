@@ -29,6 +29,22 @@ import { downloadPrivateAsset } from "@/lib/private-assets";
 
 const pageSize = 20;
 
+const purposeLabels: Record<AssetRow["purpose"], string> = {
+  avatar: "Avatar",
+  video: "Vídeo",
+  audio: "Áudio",
+  image: "Imagem",
+  document: "Documento",
+  sample: "Sample",
+  preset: "Preset",
+  stem: "Stem",
+  project: "Projeto",
+  archive: "Arquivo compactado",
+  template: "Template",
+  support_file: "Arquivo de suporte",
+  digital_product: "Produto digital",
+};
+
 const formatFileSize = (sizeBytes: number): string => {
   if (sizeBytes < 1024) return `${sizeBytes} B`;
   if (sizeBytes < 1024 * 1024) return `${Math.ceil(sizeBytes / 1024)} KB`;
@@ -109,8 +125,9 @@ const StudentLibraryPage = () => {
           <section className="space-y-5" aria-label="Materiais da biblioteca">
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
               <span>
-                {total} material{total === 1 ? "" : "is"} disponível
-                {total === 1 ? "" : "eis"}
+                {total === 1
+                  ? "1 material disponível"
+                  : `${total} materiais disponíveis`}
               </span>
               <span>
                 Página {page + 1} de {totalPages}
@@ -134,7 +151,7 @@ const StudentLibraryPage = () => {
                           <FileText className="h-5 w-5" aria-hidden="true" />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <Badge variant="outline">{asset.purpose}</Badge>
+                          <Badge variant="outline">{purposeLabels[asset.purpose]}</Badge>
                           <CardTitle className="mt-3 break-words">
                             {asset.original_name}
                           </CardTitle>
