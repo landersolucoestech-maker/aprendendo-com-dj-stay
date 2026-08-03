@@ -12,16 +12,28 @@ import {
 } from "@/contracts/privacy-rights-requests";
 import { privacyRightsRpcClient } from "@/integrations/supabase/privacy-rights-rpc";
 
-const studentKey = ["privacy-rights-requests", "student"] as const;
-const adminKey = ["privacy-rights-requests", "admin"] as const;
+interface AdminPrivacyRightsFilters {
+  status: PrivacyRightsRequestStatus | null;
+  requestType: PrivacyRightsRequestType | null;
+  limit: number;
+  offset: number;
+}
 
-export const useMyPrivacyRightsRequests = () =>
+const privacyRightsKeys = {
+  all: ["privacy-rights-requests"] as const,
+  student: (limit: number, offset: number) =>
+    ["privacy-rights-requests", "student", limit, offset] as const,
+  admin: (filters: AdminPrivacyRightsFilters) =>
+    ["privacy-rights-requests", "admin", filters] as const,
+};
+
+export const useMyPrivacyRightsRequests = (limit = 10, offset = 0) =>
   useQuery({
-    queryKey: studentKey,
+    queryKey: privacyRightsKeys.student(limit, offset),
     queryFn: async () => {
       const { data, error } = await privacyRightsRpcClient.rpc(
         "get_my_privacy_rights_requests",
-        { p_limit: 100, p_offset: 0 },
+        { p_limit: limit, p_offset: offset },
       );
       if (error) throw error;
       return privacyRightsRequestListSchema.parse(data);
@@ -43,7 +55,8 @@ export const useCreatePrivacyRightsRequest = () => {
       if (error) throw error;
       return privacyRightsRequestSchema.parse(data);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: studentKey }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: privacyRightsKeys.all }),
   });
 };
 
@@ -58,30 +71,41 @@ export const useCancelPrivacyRightsRequest = () => {
       if (error) throw error;
       return privacyRightsRequestSchema.parse(data);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: studentKey }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: privacyRightsKeys.all }),
   });
 };
 
-export const useAdminPrivacyRightsRequests = (
-  status: PrivacyRightsRequestStatus | null,
-  requestType: PrivacyRightsRequestType | null,
-) =>
-  useQuery({
-    queryKey: [...adminKey, status, requestType],
+export const useAdminPrivacyRightsRequests = (input: {
+  status: PrivacyRightsRequestStatus | null;
+  requestType: PrivacyRightsRequestType | null;
+  limit?: number;
+  offset?: number;
+}) => {
+  const filters: AdminPrivacyRightsFilters = {
+    status: input.status,
+    requestType: input.requestType,
+    limit: input.limit ?? 25,
+    offset: input.offset ?? 0,
+  };
+
+  return useQuery({
+    queryKey: privacyRightsKeys.admin(filters),
     queryFn: async () => {
       const { data, error } = await privacyRightsRpcClient.rpc(
         "admin_get_privacy_rights_requests",
         {
-          p_status: status,
-          p_request_type: requestType,
-          p_limit: 200,
-          p_offset: 0,
+          p_status: filters.status,
+          p_request_type: filters.requestType,
+          p_limit: filters.limit,
+          p_offset: filters.offset,
         },
       );
       if (error) throw error;
       return privacyRightsRequestListSchema.parse(data);
     },
   });
+};
 
 export const useAdminUpdatePrivacyRightsRequest = () => {
   const queryClient = useQueryClient();
@@ -99,6 +123,7 @@ export const useAdminUpdatePrivacyRightsRequest = () => {
       if (error) throw error;
       return privacyRightsRequestSchema.parse(data);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminKey }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: privacyRightsKeys.all }),
   });
 };
