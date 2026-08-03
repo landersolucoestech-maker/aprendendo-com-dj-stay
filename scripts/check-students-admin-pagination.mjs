@@ -55,6 +55,8 @@ if (failures.length === 0) {
     "admin_required",
     "'totals'",
     "'valid_certificates'",
+    "'student_name'",
+    "'student_email'",
     "limit v_student_limit offset v_student_offset",
     "limit v_enrollment_limit offset v_enrollment_offset",
     "limit v_certificate_limit offset v_certificate_offset",
@@ -92,12 +94,18 @@ if (failures.length === 0) {
 
   requireFragments(contract, "Contrato B101", [
     "studentsAdminTotalsSchema",
+    "paginatedAdminEnrollmentSchema",
+    "student_name: z.string().min(1)",
+    "student_email: z.string().email().nullable()",
     "paginatedStudentsAdminDashboardSchema",
     "valid_certificates: z.number().int().nonnegative()",
     "Certificados válidos não podem exceder o total de certificados.",
     "A página não pode conter mais registros que o total filtrado.",
   ]);
   requireFragments(contractTest, "Teste unitário B101", [
+    'describe("paginatedAdminEnrollmentSchema"',
+    "aceita identidade do titular junto da matrícula paginada",
+    "rejeita matrícula paginada sem nome ou com e-mail inválido",
     'describe("paginatedStudentsAdminDashboardSchema"',
     "aceita totais maiores que as páginas carregadas",
     "rejeita certificados válidos acima do total",
@@ -134,6 +142,8 @@ if (failures.length === 0) {
     "data.totals.students",
     "data.totals.enrollments",
     "data.totals.valid_certificates",
+    "enrollment.student_name",
+    "enrollment.student_email",
     'label="alunos"',
     'label="matrículas"',
     'label="certificados"',
