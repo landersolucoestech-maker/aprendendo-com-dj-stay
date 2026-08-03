@@ -85,4 +85,6 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
+await import("./check-student-notifications-pagination.mjs");
+
 console.log("Contrato B40 aprovado: notificações transacionais estão isoladas por auth.uid().");
