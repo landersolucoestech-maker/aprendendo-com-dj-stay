@@ -123,6 +123,7 @@ export const contactAdminDashboardSchema = z
         spam: z.number().int().nonnegative(),
       })
       .strict(),
+    total: z.number().int().nonnegative(),
     messages: z.array(contactAdminMessageSchema),
   })
   .strict();
