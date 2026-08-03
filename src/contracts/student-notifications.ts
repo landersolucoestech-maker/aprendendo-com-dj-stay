@@ -40,7 +40,24 @@ export const studentNotificationListSchema = z
     unread_count: z.number().int().nonnegative(),
     notifications: z.array(studentNotificationSchema),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (value.unread_count > value.total) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["unread_count"],
+        message: "Notificações não lidas não podem exceder o total.",
+      });
+    }
+
+    if (value.notifications.length > value.total) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["notifications"],
+        message: "A página não pode conter mais notificações que o total.",
+      });
+    }
+  });
 
 export const studentNotificationReadResultSchema = z
   .object({
