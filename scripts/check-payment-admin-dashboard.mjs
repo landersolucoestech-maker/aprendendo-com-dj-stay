@@ -11,6 +11,7 @@ const requiredFiles = [
   "src/App.tsx",
   "docs/refactor/FASE-B37-PAYMENT-ADMIN-DASHBOARD.md",
   "package.json",
+  "scripts/check-payment-admin-analytics.mjs",
 ];
 const failures = [];
 
@@ -73,3 +74,4 @@ if (failures.length > 0) {
 }
 
 console.log("Contrato B37 aprovado: painel administrativo financeiro somente leitura está integrado.");
+await import("./check-payment-admin-analytics.mjs");
