@@ -9,7 +9,6 @@ import {
   affiliateLinkRowSchema,
   affiliateMarkPayoutPaidInputSchema,
   affiliatePayoutRowSchema,
-  affiliatePortalSchema,
   affiliateProfileSchema,
   affiliateProfileStatusInputSchema,
   affiliateSubjectTermsRowSchema,
@@ -18,6 +17,7 @@ import {
 } from "@/contracts/affiliate";
 import { parseDataContract } from "@/contracts/contract-error";
 import { uuidSchema } from "@/contracts/learning";
+import { useAffiliatePortalPagination } from "@/hooks/useAffiliatePortalPagination";
 import { supabase } from "@/integrations/supabase/client";
 
 const affiliatePortalKey = ["affiliate", "portal"] as const;
@@ -53,15 +53,7 @@ const normalizeAffiliateAdminPagination = (
   payoutOffset: normalizeOffset(input.payoutOffset),
 });
 
-export const useAffiliatePortal = () =>
-  useQuery({
-    queryKey: affiliatePortalKey,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_affiliate_portal");
-      if (error) throw error;
-      return parseDataContract(affiliatePortalSchema, data, "portal do afiliado");
-    },
-  });
+export const useAffiliatePortal = useAffiliatePortalPagination;
 
 export const useRequestAffiliateProfile = () => {
   const queryClient = useQueryClient();
