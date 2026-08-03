@@ -4880,6 +4880,10 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
       }
+      get_payment_admin_analytics: {
+        Args: { p_end_at?: string; p_start_at?: string; p_top_limit?: number }
+        Returns: Json
+      }
       get_payment_admin_dashboard: {
         Args: {
           p_limit?: number
