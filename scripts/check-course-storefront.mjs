@@ -128,8 +128,13 @@ if (failures.length === 0) {
     "Você já possui acesso ativo",
     "window.location.assign(result.checkoutUrl)",
     'to="/aluno/cursos"',
+    "const EMPTY_PUBLIC_COURSES: PublicCourse[] = [];",
+    "catalogQuery.data?.courses ?? EMPTY_PUBLIC_COURSES",
   ]) {
-    if (!storefront.includes(fragment)) failures.push(`Vitrine de cursos B89 incompleta: ${fragment}`);
+    if (!storefront.includes(fragment)) failures.push(`Vitrine de cursos B89/B95 incompleta: ${fragment}`);
+  }
+  if (storefront.includes("catalogQuery.data?.courses ?? []")) {
+    failures.push("B95: fallback vazio inline recria a dependência do useMemo a cada render.");
   }
   if (!lazyPages.includes("CourseStorefront")) failures.push("Lazy route da vitrine de cursos ausente.");
 
@@ -218,10 +223,10 @@ if (failures.length === 0) {
 }
 
 if (failures.length > 0) {
-  console.error("Contrato B89 inválido:\n- " + failures.join("\n- "));
+  console.error("Contrato B89/B95 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Contrato B89 aprovado: cursos publicados possuem compra autenticada sem expor o subject id ao catálogo anônimo.",
+  "Contrato B89/B95 aprovado: checkout autenticado e dependências estáveis da vitrine permanecem preservados.",
 );
