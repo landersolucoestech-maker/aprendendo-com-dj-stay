@@ -76,8 +76,8 @@ select set_config('request.jwt.claims', jsonb_build_object('sub',(select student
 select is(jsonb_array_length(public.get_my_certificates()),1,'student sees own certificate');
 
 select set_config('request.jwt.claims', jsonb_build_object('sub',(select admin_id from b21_fixture),'role','authenticated')::text, true);
-select is(jsonb_array_length(public.get_students_admin_dashboard(null,100,0)->'students'),1,'admin dashboard lists student');
-select is(jsonb_array_length(public.get_students_admin_dashboard(null,100,0)->'enrollments'),1,'admin dashboard lists enrollment');
+select is(jsonb_array_length(public.get_students_admin_dashboard(null,100,0,100,0,100,0)->'students'),1,'admin dashboard lists student');
+select is(jsonb_array_length(public.get_students_admin_dashboard(null,100,0,100,0,100,0)->'enrollments'),1,'admin dashboard lists enrollment');
 select throws_ok(
   format('select public.issue_enrollment_certificate(%L::uuid)',(select enrollment_id from b21_fixture)),
   '23505',null,'duplicate issued certificate is rejected'
