@@ -4,6 +4,7 @@ const paths = {
   migration: "supabase/migrations/20260803003000_checkout_expiration_cron.sql",
   databaseTest: "supabase/tests/61_checkout_expiration_cron.test.sql",
   parent: "scripts/check-checkout-expiration.mjs",
+  child: "scripts/check-checkout-cron-health.mjs",
   documentation: "docs/refactor/FASE-B92-CHECKOUT-EXPIRATION-CRON.md",
   status: "docs/STATUS.md",
 };
@@ -96,3 +97,4 @@ if (failures.length > 0) {
 console.log(
   "Contrato B92 aprovado: a expiração de checkout possui job PostgreSQL único, limitado e inacessível à Data API.",
 );
+await import("./check-checkout-cron-health.mjs");
