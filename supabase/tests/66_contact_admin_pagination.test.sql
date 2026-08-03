@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(22);
 
 insert into auth.users(id, email) values
   ('b9900000-0000-4000-8000-000000000001', 'b99-admin@example.test'),
@@ -69,7 +69,7 @@ select ok(
   'public contact inbox remains security invoker'
 );
 select ok(
-  position("'total'" in pg_get_functiondef('private.get_contact_messages_admin(public.contact_message_status,text,integer,integer)'::regprocedure)) > 0,
+  position($marker$'total'$marker$ in pg_get_functiondef('private.get_contact_messages_admin(public.contact_message_status,text,integer,integer)'::regprocedure)) > 0,
   'contact inbox exposes filtered total'
 );
 select ok(
