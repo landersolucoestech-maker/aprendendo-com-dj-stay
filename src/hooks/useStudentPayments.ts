@@ -31,5 +31,6 @@ export const useStudentPaymentHistory = (page = 0, pageSize = 50) => {
         "histórico de pedidos e pagamentos do aluno",
       );
     },
+    placeholderData: (previousData) => previousData,
   });
 };
