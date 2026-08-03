@@ -7,6 +7,28 @@ import {
 
 const moneyCentsSchema = z.number().int().nonnegative();
 
+type NetBreakdownValue = {
+  readonly gross_revenue_cents: number;
+  readonly reversed_amount_cents: number;
+  readonly net_after_reversals_cents: number;
+};
+
+const validateNetBreakdown = (
+  value: NetBreakdownValue,
+  context: z.RefinementCtx,
+): void => {
+  if (
+    value.net_after_reversals_cents !==
+    value.gross_revenue_cents - value.reversed_amount_cents
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["net_after_reversals_cents"],
+      message: "Resultado financeiro diverge das reversões persistidas.",
+    });
+  }
+};
+
 const paymentAnalyticsSummarySchema = z
   .object({
     confirmed_orders: z.number().int().nonnegative(),
@@ -56,7 +78,7 @@ const statusBreakdownSchema = z
   })
   .strict();
 
-const subjectBreakdownSchema = z
+const subjectBreakdownBaseSchema = z
   .object({
     subject_type: checkoutSubjectTypeSchema,
     order_count: z.number().int().nonnegative(),
@@ -64,28 +86,18 @@ const subjectBreakdownSchema = z
     reversed_amount_cents: moneyCentsSchema,
     net_after_reversals_cents: moneyCentsSchema,
   })
-  .strict()
-  .superRefine((value, context) => {
-    if (
-      value.net_after_reversals_cents !==
-      value.gross_revenue_cents - value.reversed_amount_cents
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["net_after_reversals_cents"],
-        message: "Resultado por tipo diverge das reversões persistidas.",
-      });
-    }
-  });
+  .strict();
 
-const topOfferSchema = subjectBreakdownSchema
-  .omit({ subject_type: true })
+const subjectBreakdownSchema =
+  subjectBreakdownBaseSchema.superRefine(validateNetBreakdown);
+
+const topOfferSchema = subjectBreakdownBaseSchema
   .extend({
-    subject_type: checkoutSubjectTypeSchema,
     subject_id: z.string().uuid(),
     title: z.string().min(1).max(200),
   })
-  .strict();
+  .strict()
+  .superRefine(validateNetBreakdown);
 
 const dailyPaymentAnalyticsSchema = z
   .object({
@@ -96,18 +108,7 @@ const dailyPaymentAnalyticsSchema = z
     net_after_reversals_cents: moneyCentsSchema,
   })
   .strict()
-  .superRefine((value, context) => {
-    if (
-      value.net_after_reversals_cents !==
-      value.gross_revenue_cents - value.reversed_amount_cents
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["net_after_reversals_cents"],
-        message: "Resultado diário diverge das reversões persistidas.",
-      });
-    }
-  });
+  .superRefine(validateNetBreakdown);
 
 export const paymentAdminAnalyticsSchema = z
   .object({
