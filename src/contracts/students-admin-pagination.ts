@@ -1,8 +1,9 @@
 import { z } from "zod";
 
 import {
-  adminEnrollmentSchema,
+  adminEnrollmentObjectSchema,
   studentsAdminDashboardSchema,
+  validateAdminEnrollmentState,
 } from "@/contracts/certificates";
 
 export const studentsAdminTotalsSchema = z
@@ -23,12 +24,13 @@ export const studentsAdminTotalsSchema = z
     }
   });
 
-export const paginatedAdminEnrollmentSchema = adminEnrollmentSchema
+export const paginatedAdminEnrollmentSchema = adminEnrollmentObjectSchema
   .extend({
     student_name: z.string().min(1),
     student_email: z.string().email().nullable(),
   })
-  .strict();
+  .strict()
+  .superRefine(validateAdminEnrollmentState);
 
 export const paginatedStudentsAdminDashboardSchema = studentsAdminDashboardSchema
   .extend({
