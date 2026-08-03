@@ -71,4 +71,7 @@ if (failures.length > 0) {
   console.error("Contrato B38 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
+
+await import("./check-student-payment-history-pagination.mjs");
+
 console.log("Contrato B38 aprovado: pedidos e pagamentos reais do aluno estão isolados por auth.uid().");
