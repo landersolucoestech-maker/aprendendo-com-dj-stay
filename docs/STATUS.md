@@ -30,6 +30,7 @@ Os seguintes domínios possuem implementação, persistência, autorização e c
 | Expiração de checkout | reconciliação pelo horário do servidor, sincronização de intent/pedido/tentativa e bloqueio de reabertura de pedidos financeiramente terminais |
 | Cron de expiração | job PostgreSQL a cada cinco minutos, executado como `postgres`, com batch limitado, idempotente e sem segredo HTTP |
 | Saúde do cron | read model exclusivo do proprietário com estado do job, última execução, último sucesso, falhas em 24 horas e histórico recente sanitizado |
+| Retenção do cron | job diário `prune-platform-cron-run-history`, com retenção padrão de 30 dias, lote limitado e preservação de execuções recentes, ativas e externas |
 | Afiliados | perfis, links, atribuições, comissões, ajustes e pagamentos |
 | Certificados | emissão, revogação, consulta do aluno e validação pública |
 | Contatos | submissão idempotente, protocolo e tratamento administrativo |
@@ -50,6 +51,8 @@ O job `expire-due-checkout-intents` executa `private.expire_due_checkout_intents
 
 O dashboard do proprietário consulta a saúde desse job por uma RPC sanitizada. A interface informa configuração, atividade, agenda, última execução, último sucesso, falhas nas últimas 24 horas e até oito execuções recentes, sem expor comando SQL, usuário do banco, banco de destino, PID ou identificadores internos do `pg_cron`.
 
+O job `prune-platform-cron-run-history` executa diariamente a limpeza limitada do histórico nativo. A configuração padrão mantém 30 dias e remove no máximo 5.000 execuções concluídas por lote, exclusivamente dos jobs reconhecidos da plataforma. Execuções em andamento, registros recentes e jobs externos são preservados.
+
 O gate técnico executa instalação limpa, lint, reconstrução local do Supabase, pgTAP, sincronização de tipos, contratos estáticos, TypeScript, audit de dependências, build e validação de chunks.
 
 ## Integrações implantadas em `dev`
@@ -62,7 +65,7 @@ As Edge Functions abaixo fazem parte da implementação de desenvolvimento:
 
 A presença da função e a aprovação do gate não equivalem a uma transação financeira homologada pelo provider.
 
-O módulo PostgreSQL `pg_cron`, o job de expiração e o read model administrativo de saúde fazem parte das migrations versionadas em `dev`, mas ainda não foram promovidos ao Supabase remoto ou à produção.
+O módulo PostgreSQL `pg_cron`, os jobs de expiração e retenção e o read model administrativo de saúde fazem parte das migrations versionadas em `dev`, mas ainda não foram promovidos ao Supabase remoto ou à produção.
 
 ## Dependências de homologação externa
 
@@ -71,8 +74,7 @@ Ainda exigem validação fora do repositório:
 - credenciais válidas do sandbox Asaas;
 - configuração do webhook no painel do provider;
 - execução de compra, confirmação, reembolso e chargeback no sandbox;
-- observação do job e de `cron.job_run_details` após a aplicação das migrations no ambiente remoto;
-- definição e validação de uma política auditável de retenção para `cron.job_run_details` antes da produção;
+- observação dos jobs, da saúde administrativa e de `cron.job_run_details` após a aplicação das migrations no ambiente remoto;
 - validação dos e-mails transacionais, caso um provider de e-mail seja configurado;
 - testes de carga e observação de índices com tráfego representativo;
 - pentest independente antes da promoção para produção.
