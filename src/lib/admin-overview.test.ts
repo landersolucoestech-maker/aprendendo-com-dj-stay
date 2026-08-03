@@ -14,9 +14,12 @@ const emptyInput: AdminOverviewInput = {
     },
   },
   students: {
-    students: [],
-    enrollments: [],
-    certificates: [],
+    totals: {
+      students: 0,
+      enrollments: 0,
+      certificates: 0,
+      valid_certificates: 0,
+    },
   },
   courses: [],
   products: [],
@@ -42,12 +45,12 @@ describe("buildAdminOverview", () => {
     const overview = buildAdminOverview(emptyInput);
 
     expect(overview.finance.confirmedAmountCents).toBe(0);
-    expect(overview.academic.averageCompletionPercent).toBe(0);
+    expect(overview.academic.totalCertificates).toBe(0);
     expect(overview.catalogue.totalCourses).toBe(0);
     expect(overview.operations.operationalQueue).toBe(0);
   });
 
-  it("aggregates only persisted statuses and read-model totals", () => {
+  it("uses persisted academic totals instead of page lengths", () => {
     const overview = buildAdminOverview({
       payments: {
         summary: {
@@ -60,13 +63,12 @@ describe("buildAdminOverview", () => {
         },
       },
       students: {
-        students: [{}, {}, {}],
-        enrollments: [
-          { status: "active", completion: { completion_percent: 80 } },
-          { status: "active", completion: { completion_percent: 40 } },
-          { status: "suspended", completion: { completion_percent: 30 } },
-        ],
-        certificates: [{ status: "issued" }, { status: "revoked" }],
+        totals: {
+          students: 350,
+          enrollments: 420,
+          certificates: 180,
+          valid_certificates: 165,
+        },
       },
       courses: [
         { status: "published" },
@@ -101,13 +103,11 @@ describe("buildAdminOverview", () => {
       paidOrders: 7,
       confirmedAmountCents: 450_000,
     });
-    expect(overview.academic).toMatchObject({
-      totalStudents: 3,
-      totalEnrollments: 3,
-      activeEnrollments: 2,
-      suspendedEnrollments: 1,
-      validCertificates: 1,
-      averageCompletionPercent: 50,
+    expect(overview.academic).toEqual({
+      totalStudents: 350,
+      totalEnrollments: 420,
+      totalCertificates: 180,
+      validCertificates: 165,
     });
     expect(overview.catalogue).toMatchObject({
       totalCourses: 3,
