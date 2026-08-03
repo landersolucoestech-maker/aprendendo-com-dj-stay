@@ -72,7 +72,15 @@ const AdminDashboard = () => {
     page: 0,
     pageSize: 5,
   });
-  const studentsQuery = useStudentsAdminDashboard("");
+  const studentsQuery = useStudentsAdminDashboard({
+    search: "",
+    studentLimit: 1,
+    studentOffset: 0,
+    enrollmentLimit: 1,
+    enrollmentOffset: 0,
+    certificateLimit: 1,
+    certificateOffset: 0,
+  });
   const coursesQuery = useAdminCourses();
   const productsQuery = useMarketplaceAdminProducts();
   const supportQuery = useSupportAdminDashboard({ limit: 5, offset: 0 });
@@ -196,13 +204,13 @@ const AdminDashboard = () => {
           <MetricCard
             title="Alunos"
             value={overview.academic.totalStudents}
-            detail={`${overview.academic.totalEnrollments} matrícula(s) no read model`}
+            detail={`${overview.academic.totalEnrollments} matrícula(s) persistida(s)`}
             icon={GraduationCap}
           />
           <MetricCard
-            title="Matrículas ativas"
-            value={overview.academic.activeEnrollments}
-            detail={`Conclusão média registrada: ${overview.academic.averageCompletionPercent}%`}
+            title="Certificados válidos"
+            value={overview.academic.validCertificates}
+            detail={`${overview.academic.totalCertificates} certificado(s) no histórico`}
             icon={ShieldCheck}
           />
           <MetricCard
@@ -244,13 +252,13 @@ const AdminDashboard = () => {
                 <BookOpen className="h-5 w-5" aria-hidden="true" /> Acadêmico
               </CardTitle>
               <CardDescription className="text-gray-400">
-                Matrículas, progresso e certificados do portal do aluno.
+                Totais persistidos de alunos, matrículas e certificados.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
+              <div className="flex justify-between gap-4"><span className="text-gray-400">Alunos</span><strong>{overview.academic.totalStudents}</strong></div>
               <div className="flex justify-between gap-4"><span className="text-gray-400">Matrículas</span><strong>{overview.academic.totalEnrollments}</strong></div>
-              <div className="flex justify-between gap-4"><span className="text-gray-400">Ativas</span><strong>{overview.academic.activeEnrollments}</strong></div>
-              <div className="flex justify-between gap-4"><span className="text-gray-400">Suspensas</span><strong>{overview.academic.suspendedEnrollments}</strong></div>
+              <div className="flex justify-between gap-4"><span className="text-gray-400">Certificados no histórico</span><strong>{overview.academic.totalCertificates}</strong></div>
               <div className="flex justify-between gap-4"><span className="text-gray-400">Certificados válidos</span><strong>{overview.academic.validCertificates}</strong></div>
               <Button asChild variant="outline" className="w-full border-white/20 bg-transparent">
                 <Link to="/admin/alunos">Ver alunos e matrículas</Link>
