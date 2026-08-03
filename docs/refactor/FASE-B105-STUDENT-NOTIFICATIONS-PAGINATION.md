@@ -25,6 +25,17 @@ O contrato rejeita:
 
 Uma página menor que o total é válida e representa paginação real no servidor.
 
+## Evidência automatizada
+
+A suíte pgTAP B105 possui 19 asserções e comprova:
+
+- total e quantidade de não lidas independentes do tamanho da página;
+- ordenação do item mais recente para o mais antigo;
+- offsets adjacentes sem sobreposição;
+- limites e offsets inválidos normalizados pelo banco;
+- isolamento do histórico por aluno;
+- atualização de todas as notificações não lidas, inclusive fora da página atual.
+
 ## Segurança
 
 A fase não altera autorização. As notificações continuam isoladas por `auth.uid()` e as RPCs públicas não aceitam `user_id` arbitrário.
