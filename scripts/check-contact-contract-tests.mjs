@@ -134,3 +134,4 @@ if (failures.length > 0) {
 console.log(
   "Contrato B73 aprovado: submissão, dashboard, tratamento e eventos de contato possuem validação estrita alinhada ao PostgreSQL e às RPCs.",
 );
+await import("./check-contact-admin-pagination.mjs");
