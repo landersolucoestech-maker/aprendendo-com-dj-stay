@@ -6,7 +6,7 @@ O read model administrativo do programa de afiliados serializava todos os perfis
 
 ## Implementação
 
-A função `get_affiliate_admin_dashboard` passou a receber limites e offsets independentes para quatro coleções:
+A paginação independente foi aplicada à função `get_affiliate_admin_dashboard`, que passou a receber limites e offsets próprios para quatro coleções:
 
 - perfis de afiliados;
 - ofertas e termos;
