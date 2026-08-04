@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const read = (path) => readFileSync(path, "utf8");
 const failures = [];
@@ -8,14 +8,18 @@ const expect = (condition, message) => {
 
 const app = read("src/App.tsx");
 const landing = read("src/routing/RoleLandingRedirect.tsx");
-const portal = read("src/pages/student/StudentPortal.tsx");
-const courseAccess = read("src/hooks/useCourseAccess.ts");
+const router = read("src/pages/student/StudentPortalRouter.tsx");
+const coursePage = read("src/pages/student/StudentCoursePage.tsx");
+const courseDetailAccess = read("src/hooks/useStudentCourseDetailAccess.ts");
 const modules = read("src/hooks/useModules.ts");
 const history = read("src/hooks/useRecentActivities.ts");
-const library = read("src/hooks/useStudentLibrary.ts");
+const libraryPage = read("src/pages/student/StudentLibraryPage.tsx");
+const library = read("src/hooks/useStudentLibraryPage.ts");
+const financialPortal = read("src/pages/student/StudentFinancialPortal.tsx");
 const privateAssets = read("src/lib/private-assets.ts");
 const dateTime = read("src/lib/date-time.ts");
 const paymentSuccess = read("src/pages/PaymentSuccess.tsx");
+const legacyPortalPath = "src/pages/student/StudentPortal.tsx";
 
 for (const route of [
   "/aluno",
@@ -54,12 +58,42 @@ expect(
 );
 
 expect(
-  courseAccess.includes('.from("enrollments")'),
-  "Cursos devem derivar de matrículas reais.",
+  router.includes('case "dashboard":') &&
+    router.includes('case "courses":') &&
+    router.includes('case "course":') &&
+    router.includes('case "library":') &&
+    router.includes('case "orders":') &&
+    router.includes('case "payments":') &&
+    router.includes('case "profile":') &&
+    router.includes('case "history":'),
+  "Roteador do aluno deve cobrir explicitamente todas as seções públicas.",
 );
 expect(
-  courseAccess.includes('.eq("user_id", user.id)'),
-  "Consulta de matrículas deve restringir o usuário autenticado.",
+  router.includes("const exhaustiveSection: never = section"),
+  "Roteador do aluno deve manter verificação exaustiva em TypeScript.",
+);
+expect(
+  !existsSync(legacyPortalPath) &&
+    !router.includes('from "@/pages/student/StudentPortal"'),
+  "Portal não pode restaurar o monólito legado removido.",
+);
+
+expect(
+  coursePage.includes("useStudentCourseDetailAccess(courseId)"),
+  "Detalhe do curso deve usar acesso direcionado ao curso solicitado.",
+);
+expect(
+  courseDetailAccess.includes('"get_student_course_detail_access"') &&
+    courseDetailAccess.includes("p_course_id: normalizedCourseId"),
+  "Acesso ao detalhe deve usar a RPC direcionada e UUID validado.",
+);
+expect(
+  !courseDetailAccess.includes('.from("enrollments")') &&
+    !coursePage.includes("useCourseAccess") &&
+    !coursePage.includes("getActiveEnrollments") &&
+    !coursePage.includes("Date.now()") &&
+    !coursePage.includes("new Date("),
+  "Detalhe do curso não pode carregar todas as matrículas nem recalcular acesso no navegador.",
 );
 expect(
   modules.includes('.eq("course_id", courseId)'),
@@ -73,20 +107,21 @@ expect(
   history.includes('.eq("user_id", user.id)'),
   "Histórico deve restringir o usuário autenticado.",
 );
+
 expect(
-  library.includes('.from("assets")'),
-  "Biblioteca deve usar assets persistidos.",
+  libraryPage.includes("useStudentLibraryPage(page, pageSize)"),
+  "Biblioteca deve consumir o read model paginado atual.",
 );
 expect(
-  library.includes('.eq("state", "published")'),
-  "Biblioteca deve exibir somente assets publicados.",
+  library.includes('.from("assets")') &&
+    library.includes('.eq("state", "published")') &&
+    library.includes('.is("deleted_at", null)') &&
+    library.includes('{ count: "exact" }') &&
+    library.includes(".range(offset, offset + normalizedPageSize - 1)"),
+  "Biblioteca deve usar assets publicados, não removidos e paginação persistida.",
 );
 expect(
-  library.includes('.is("deleted_at", null)'),
-  "Biblioteca deve excluir assets removidos.",
-);
-expect(
-  portal.includes("downloadPrivateAsset"),
+  libraryPage.includes("downloadPrivateAsset"),
   "Downloads devem usar o helper privado existente.",
 );
 expect(
@@ -95,29 +130,31 @@ expect(
 );
 
 expect(
-  portal.includes('type: "orders" | "payments"'),
-  "Pedidos e pagamentos devem possuir estados próprios.",
+  financialPortal.includes('readonly section: "orders" | "payments"') &&
+    financialPortal.includes("useStudentPaymentHistory(page, pageSize)"),
+  "Pedidos e pagamentos devem possuir estados próprios e histórico persistido.",
 );
 expect(
-  portal.includes("Esta área não cria pedidos simulados"),
+  financialPortal.includes("Pedidos reais criados pelo checkout da plataforma."),
   "Pedidos não podem simular registros antes do checkout real.",
 );
 expect(
-  portal.includes("Esta área não presume pagamento por redirecionamento"),
-  "Pagamentos não podem ser confirmados pelo redirect.",
+  financialPortal.includes(
+    "Os registros aparecerão aqui depois que um checkout real for criado para esta conta.",
+  ),
+  "Pagamentos não podem ser presumidos por redirecionamento.",
 );
 expect(
-  !portal.includes("mockOrders") && !portal.includes("mockPayments"),
-  "Portal não pode conter pedidos ou pagamentos mockados.",
+  !financialPortal.includes("mockOrders") &&
+    !financialPortal.includes("mockPayments") &&
+    !financialPortal.includes("Math.random("),
+  "Portal não pode conter registros ou métricas financeiras fabricados.",
 );
 expect(
-  !portal.includes("Math.random("),
-  "Portal não pode fabricar métricas aleatórias.",
-);
-expect(
-  portal.includes('from "@/lib/date-time"') &&
-    portal.includes("formatAppDateTime"),
-  "Portal deve usar a camada temporal canônica.",
+  financialPortal.includes('from "@/lib/date-time"') &&
+    financialPortal.includes("formatAppDateTime") &&
+    libraryPage.includes("formatAppDateTime"),
+  "Páginas do portal devem usar a camada temporal canônica.",
 );
 expect(
   dateTime.includes('APP_TIME_ZONE = "America/Sao_Paulo"'),
