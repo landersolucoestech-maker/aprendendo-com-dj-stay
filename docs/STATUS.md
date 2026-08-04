@@ -24,7 +24,7 @@ O marketplace distribui somente cursos e produtos digitais do proprietário. Nã
 | Portal do aluno | matrículas, biblioteca, player, retomada e progresso monotônico |
 | Marketplace digital | produtos, licenças, entregáveis, acessos e biblioteca do comprador |
 | Pagamentos | checkout, ordens, tentativas, eventos do provider e concessão ou revogação de acesso |
-| Analytics financeiro | filtros temporais, receita confirmada, reversões, ticket médio, clientes, ranking e série diária |
+| Analytics financeiro | filtros temporais, receita confirmada, reversões, ticket médio, clientes únicos, receita por tipo, ranking e série diária |
 | Automação financeira | expiração idempotente de checkout, cron PostgreSQL, saúde administrativa e retenção limitada do histórico |
 | Afiliados e certificados | perfis, links, atribuições, comissões, pagamentos, emissão, revogação e validação pública |
 | Contatos e observabilidade | submissão idempotente, protocolo, tratamento administrativo e captura sanitizada de erros |
