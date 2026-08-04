@@ -32,6 +32,7 @@ if (failures.length === 0) {
   const courseCmsCheck = readFileSync(requiredFiles[8], "utf8");
   const documentation = readFileSync(requiredFiles[9], "utf8");
   const status = readFileSync(requiredFiles[10], "utf8");
+  const statusNormalized = status.normalize("NFC").toLocaleLowerCase("pt-BR");
   const packageJson = readFileSync(requiredFiles[11], "utf8");
 
   for (const hook of [
@@ -121,7 +122,22 @@ if (failures.length === 0) {
     if (!documentation.includes(fragment)) failures.push(`Documentação B87 incompleta: ${fragment}`);
   }
 
-  if (!status.includes("dashboard administrativo do proprietário")) failures.push("STATUS não registra a B87.");
+  for (const fragment of [
+    "dashboard administrativo do proprietário",
+    "seis read models reais",
+    "sem estimativas ou dados de exemplo",
+    "financeiro",
+    "acadêmico",
+    "catálogo",
+    "suporte",
+    "contatos",
+    "fila operacional",
+  ]) {
+    if (!statusNormalized.includes(fragment)) {
+      failures.push(`STATUS B87 incompleto: ${fragment}`);
+    }
+  }
+
   if (!packageJson.includes('"check:admin-dashboard"')) failures.push("Script B87 ausente no package.json.");
   if (!packageJson.includes("npm run check:admin-dashboard")) failures.push("B87 não está integrada ao typecheck.");
 }
@@ -132,5 +148,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B87 aprovado: o proprietário possui dashboard real, protegido e sem métricas fictícias.",
+  "Contrato B87 aprovado: o proprietário possui dashboard real, protegido, documentado por seis read models e sem métricas fictícias.",
 );
