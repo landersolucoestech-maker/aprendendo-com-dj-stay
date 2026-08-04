@@ -25,7 +25,7 @@ import { PageState } from "@/components/ui/page-state";
 import { getActiveEnrollments, useCourseAccess } from "@/hooks/useCourseAccess";
 import { useRecentActivities } from "@/hooks/useRecentActivities";
 import { useStudentLibrarySummary } from "@/hooks/useStudentLibrarySummary";
-import { useUserProgress } from "@/hooks/useUserProgress";
+import { useStudentProgressSummary } from "@/hooks/useStudentProgressSummary";
 import { formatAppDateTime } from "@/lib/date-time";
 import { getErrorMessage } from "@/lib/error-message";
 
@@ -34,13 +34,13 @@ const formatAccessDate = (value: string | null): string =>
 
 const StudentDashboardPage = () => {
   const accessQuery = useCourseAccess();
-  const progressQuery = useUserProgress();
+  const progressSummaryQuery = useStudentProgressSummary();
   const activitiesQuery = useRecentActivities(5);
   const librarySummaryQuery = useStudentLibrarySummary();
 
   if (
     accessQuery.isLoading ||
-    progressQuery.isLoading ||
+    progressSummaryQuery.isLoading ||
     activitiesQuery.isLoading ||
     librarySummaryQuery.isLoading
   ) {
@@ -49,7 +49,7 @@ const StudentDashboardPage = () => {
         <PageState
           variant="loading"
           title="Carregando portal"
-          description="Consultando matrículas, progresso, atividades e o total de materiais liberados."
+          description="Consultando matrículas, resumos acadêmicos, atividades e materiais liberados."
         />
       </StudentPortalPageFrame>
     );
@@ -57,7 +57,7 @@ const StudentDashboardPage = () => {
 
   const error =
     accessQuery.error ??
-    progressQuery.error ??
+    progressSummaryQuery.error ??
     activitiesQuery.error ??
     librarySummaryQuery.error;
 
@@ -77,18 +77,12 @@ const StudentDashboardPage = () => {
   }
 
   const activeEnrollments = getActiveEnrollments(accessQuery.data ?? []);
-  const progressRows = progressQuery.data ?? [];
   const activities = activitiesQuery.data ?? [];
-  const averageProgress =
-    progressRows.length === 0
-      ? 0
-      : Math.round(
-          progressRows.reduce(
-            (total, row) => total + row.progresso_percentual,
-            0,
-          ) / progressRows.length,
-        );
-  const completedLessons = progressRows.filter((row) => row.completada).length;
+  const progressSummary = progressSummaryQuery.data ?? {
+    started_lessons: 0,
+    completed_lessons: 0,
+    average_progress_percent: 0,
+  };
   const libraryTotal = librarySummaryQuery.data?.total ?? 0;
 
   return (
@@ -112,14 +106,14 @@ const StudentDashboardPage = () => {
           />
           <StudentStatCard
             label="Progresso médio"
-            value={`${averageProgress}%`}
-            description="Média das aulas iniciadas"
+            value={`${progressSummary.average_progress_percent}%`}
+            description={`Média de ${progressSummary.started_lessons} aulas iniciadas`}
             icon={PlayCircle}
           />
           <StudentStatCard
             label="Aulas concluídas"
-            value={String(completedLessons)}
-            description="Conclusões persistidas no banco"
+            value={String(progressSummary.completed_lessons)}
+            description="Conclusões agregadas no banco"
             icon={CheckCircle2}
           />
           <StudentStatCard
