@@ -133,7 +133,14 @@ if (failures.length === 0) {
     "polling",
     "branch `dev`",
   ]);
-  if (!status.includes("Retorno financeiro exato")) failures.push("STATUS não registra a B90.");
+  requireFragments(status, "STATUS B90", [
+    "Retorno financeiro exato",
+    "`checkout_intent` pertencente à conta autenticada",
+    "sem fallback por matrícula ou acesso não relacionado",
+    "reembolso",
+    "chargeback",
+    "revogação",
+  ]);
 }
 
 if (failures.length > 0) {
