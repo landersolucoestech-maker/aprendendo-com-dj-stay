@@ -13,6 +13,7 @@ type RouteAccessibilityProps = {
 };
 
 const focusTargetId = "main-content";
+const focusDeferredAttribute = "data-route-focus-deferred";
 
 export const RouteAccessibility = ({ children }: RouteAccessibilityProps) => {
   const location = useLocation();
@@ -71,7 +72,15 @@ export const RouteAccessibility = ({ children }: RouteAccessibilityProps) => {
         const target = preparePrimaryContent();
         if (!target) return;
 
-        if (previousPathRef.current !== location.pathname) {
+        const routeChanged = previousPathRef.current !== location.pathname;
+        const focusIsDeferred =
+          target.getAttribute(focusDeferredAttribute) === "true";
+
+        if (routeChanged && focusIsDeferred) {
+          return;
+        }
+
+        if (routeChanged) {
           target.focus({ preventScroll: true });
           setAnnouncement("Navegação concluída. Conteúdo principal atualizado.");
         }
