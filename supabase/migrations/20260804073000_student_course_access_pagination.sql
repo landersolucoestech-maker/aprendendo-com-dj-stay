@@ -78,7 +78,10 @@ begin
     ), '[]'::jsonb),
     'enrollments', coalesce((
       select jsonb_agg(
-        (to_jsonb(page_record) - 'created_at')
+        jsonb_build_object(
+          'enrollment', to_jsonb(page_record) - 'created_at' - 'access_active',
+          'access_active', page_record.access_active
+        )
         order by page_record.created_at desc, page_record.id desc
       )
       from (
@@ -94,6 +97,15 @@ begin
           enrollment_record.expires_at,
           enrollment_record.status_reason,
           enrollment_record.created_at,
+          (
+            enrollment_record.status = 'active'::public.enrollment_status
+            and course_record.status = 'published'::public.course_status
+            and enrollment_record.starts_at <= current_timestamp
+            and (
+              enrollment_record.expires_at is null
+              or enrollment_record.expires_at > current_timestamp
+            )
+          ) as access_active,
           jsonb_build_object(
             'id', course_record.id,
             'title', course_record.title,
