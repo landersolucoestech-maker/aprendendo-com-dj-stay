@@ -171,6 +171,51 @@ jobs:
                 state_reason: "completed",
                 headers: githubApiHeaders
               });
+
+              const openGateEvidence = [];
+              let reachedLastPage = false;
+              for (let page = 1; page <= 100; page += 1) {
+                const response = await github.request("GET /repos/{owner}/{repo}/issues", {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  state: "open",
+                  per_page: 100,
+                  page,
+                  headers: githubApiHeaders
+                });
+                openGateEvidence.push(
+                  ...response.data.filter((issue) => issue.pull_request === undefined)
+                );
+                if (response.data.length < 100) {
+                  reachedLastPage = true;
+                  break;
+                }
+              }
+
+              if (!reachedLastPage) {
+                throw new Error(
+                  "A reconciliação B117 atingiu o limite de 100 páginas sem concluir a listagem."
+                );
+              }
+
+              const supersededGateEvidence = openGateEvidence.filter(
+                (issue) =>
+                  issue.number < evidence.data.number &&
+                  issue.title.startsWith("Gate técnico — ") &&
+                  issue.user?.login === "github-actions[bot]" &&
+                  issue.body?.includes("Commit validado:")
+              );
+
+              for (const issue of supersededGateEvidence) {
+                await github.request("PATCH /repos/{owner}/{repo}/issues/{issue_number}", {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: "closed",
+                  state_reason: "not_planned",
+                  headers: githubApiHeaders
+                });
+              }
             } else if (gateSuperseded) {
               await github.request("PATCH /repos/{owner}/{repo}/issues/{issue_number}", {
                 owner: context.repo.owner,
