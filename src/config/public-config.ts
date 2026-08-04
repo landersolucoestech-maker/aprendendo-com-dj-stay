@@ -4,6 +4,7 @@ interface RawPublicEnvironment {
   readonly appEnvironment: string | undefined;
   readonly supabaseUrl: string | undefined;
   readonly supabasePublishableKey: string | undefined;
+  readonly ciRuntimeSmoke: string | undefined;
   readonly viteMode: string;
   readonly isDevelopmentBuild: boolean;
   readonly isProductionBuild: boolean;
@@ -20,6 +21,9 @@ const EXPECTED_PROJECT_REFS: Readonly<Record<AppEnvironment, string>> = {
   development: "jmtyurketfclaneqxohu",
   production: "tduvfrxagujryfnqpdmc",
 };
+
+const CI_RUNTIME_SMOKE_PUBLISHABLE_KEY =
+  "sb_publishable_ci_runtime_smoke_only_not_for_deployment";
 
 function requireValue(value: string | undefined, variableName: string): string {
   const normalizedValue = value?.trim();
@@ -41,6 +45,20 @@ function parseAppEnvironment(value: string | undefined): AppEnvironment {
   }
 
   return environment;
+}
+
+function parseCiRuntimeSmoke(value: string | undefined): boolean {
+  const normalizedValue = value?.trim();
+
+  if (!normalizedValue) return false;
+
+  if (normalizedValue !== "true") {
+    throw new Error(
+      "VITE_CI_RUNTIME_SMOKE deve ser exatamente 'true' quando definido.",
+    );
+  }
+
+  return true;
 }
 
 function validateBuildMode(
@@ -133,8 +151,33 @@ function decodeJwtPayload(key: string): Record<string, unknown> | null {
 function validatePublishableKey(
   value: string | undefined,
   expectedProjectRef: string,
+  appEnvironment: AppEnvironment,
+  ciRuntimeSmoke: boolean,
 ): string {
   const key = requireValue(value, "VITE_SUPABASE_PUBLISHABLE_KEY");
+  const isCiRuntimeSmokeKey = key === CI_RUNTIME_SMOKE_PUBLISHABLE_KEY;
+
+  if (isCiRuntimeSmokeKey) {
+    if (!ciRuntimeSmoke) {
+      throw new Error(
+        "A chave sintética do smoke somente pode ser usada com VITE_CI_RUNTIME_SMOKE=true.",
+      );
+    }
+
+    if (appEnvironment !== "development") {
+      throw new Error(
+        "A configuração sintética do smoke é proibida fora do ambiente development.",
+      );
+    }
+
+    return key;
+  }
+
+  if (ciRuntimeSmoke) {
+    throw new Error(
+      "VITE_CI_RUNTIME_SMOKE=true exige a chave sintética canônica do smoke.",
+    );
+  }
 
   if (key.startsWith("sb_secret_") || key.includes("service_role")) {
     throw new Error("Uma chave privilegiada do Supabase não pode ser usada no frontend.");
@@ -171,6 +214,7 @@ export function createPublicConfig(
   rawEnvironment: RawPublicEnvironment,
 ): PublicConfig {
   const appEnvironment = parseAppEnvironment(rawEnvironment.appEnvironment);
+  const ciRuntimeSmoke = parseCiRuntimeSmoke(rawEnvironment.ciRuntimeSmoke);
   validateBuildMode(appEnvironment, rawEnvironment);
 
   const expectedProjectRef = EXPECTED_PROJECT_REFS[appEnvironment];
@@ -185,6 +229,8 @@ export function createPublicConfig(
   const supabasePublishableKey = validatePublishableKey(
     rawEnvironment.supabasePublishableKey,
     expectedProjectRef,
+    appEnvironment,
+    ciRuntimeSmoke,
   );
 
   return Object.freeze({
@@ -199,6 +245,7 @@ export const publicConfig = createPublicConfig({
   appEnvironment: import.meta.env.VITE_APP_ENV,
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
   supabasePublishableKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  ciRuntimeSmoke: import.meta.env.VITE_CI_RUNTIME_SMOKE,
   viteMode: import.meta.env.MODE,
   isDevelopmentBuild: import.meta.env.DEV,
   isProductionBuild: import.meta.env.PROD,
