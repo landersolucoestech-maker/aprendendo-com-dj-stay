@@ -136,10 +136,11 @@ for (const fragment of [
 for (const fragment of [
   '"src/lib/recent-activities.ts"',
   'const recentActivitiesHookPath = "src/hooks/useRecentActivities.ts"',
+  "if (existsSync(recentActivitiesHookPath)) {",
+  "const recentActivitiesHook = read(recentActivitiesHookPath);",
   'recentActivitiesHook.includes(\'from "@/lib/recent-activities"\')',
   '!recentActivitiesHook.includes(\'from "@/lib/date-time"\')',
   '!recentActivitiesHook.includes("formatAppRelativeTime(")',
-  "com delegação B80 verificada",
 ]) {
   expect(dateTimeContract.includes(fragment), `Ponte B26/B80 ausente: ${fragment}`);
 }
