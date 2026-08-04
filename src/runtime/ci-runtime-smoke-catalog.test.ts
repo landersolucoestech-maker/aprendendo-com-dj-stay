@@ -20,7 +20,10 @@ describe("ci runtime smoke catalog", () => {
   });
 
   it("é explicitamente sintético e não representa oferta persistida", () => {
-    const course = ciRuntimeSmokeCatalog.courses[0];
+    const course = ciRuntimeSmokeCatalog.courses.at(0);
+    if (!course) {
+      throw new Error("A fixture sintética deve possuir exatamente um curso.");
+    }
 
     expect(course.slug).toBe("curso-validacao-runtime");
     expect(course.description).toContain("nunca é usado fora do smoke sintético");
