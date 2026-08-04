@@ -90,3 +90,4 @@ await import("./check-route-accessibility-observer.mjs");
 await import("./check-route-focus-handoff.mjs");
 await import("./check-browser-runtime-smoke-contract.mjs");
 await import("./check-ci-runtime-catalog-isolation.mjs");
+await import("./check-public-runtime-network-isolation.mjs");
