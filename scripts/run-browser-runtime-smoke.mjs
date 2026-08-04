@@ -250,7 +250,12 @@ const routes = [
   {
     name: "home",
     pathname: "/",
-    required: ["Conteúdo publicado pelo instrutor", "Ver catálogo publicado"],
+    required: [
+      "Conteúdo publicado pelo instrutor",
+      "Ver catálogo publicado",
+      "Curso de validação do runtime",
+      "Investimento atual",
+    ],
   },
   {
     name: "login",
@@ -294,6 +299,9 @@ const forbiddenContent = [
   "Lovable Generated Project",
   "cdn.gpteng.co",
   "gptengineer.js",
+  "Carregando catálogo",
+  "Carregando conteúdo publicado",
+  "Catálogo temporariamente indisponível",
 ];
 
 const valueFromRemoteObject = (remoteObject) => {
@@ -388,8 +396,17 @@ const waitForRouteReady = async (client, sessionId, route) => {
   return lastState;
 };
 
+const isSupabaseUrl = (value) => {
+  try {
+    return new URL(value).hostname.endsWith(".supabase.co");
+  } catch {
+    return false;
+  }
+};
+
 const runRoute = async (client, route) => {
   const diagnostics = [];
+  const network = [];
   let targetId = null;
   let sessionId = null;
   let removeEventListener = () => {};
@@ -430,6 +447,22 @@ const runRoute = async (client, route) => {
           text: entry.text,
           ...(entry.url ? { url: entry.url } : {}),
         });
+      } else if (packet.method === "Network.requestWillBeSent") {
+        network.push({
+          kind: "request",
+          requestId: packet.params.requestId,
+          method: packet.params.request.method,
+          url: packet.params.request.url,
+          resourceType: packet.params.type,
+        });
+      } else if (packet.method === "Network.responseReceived") {
+        network.push({
+          kind: "response",
+          requestId: packet.params.requestId,
+          status: packet.params.response.status,
+          url: packet.params.response.url,
+          resourceType: packet.params.type,
+        });
       }
     });
 
@@ -437,6 +470,7 @@ const runRoute = async (client, route) => {
       client.request("Page.enable", {}, sessionId),
       client.request("Runtime.enable", {}, sessionId),
       client.request("Log.enable", {}, sessionId),
+      client.request("Network.enable", {}, sessionId),
     ]);
     await client.request(
       "Emulation.setDeviceMetricsOverride",
@@ -472,6 +506,11 @@ const runRoute = async (client, route) => {
     writeFileSync(
       path.join(paths.artifacts, `${route.name}.runtime.json`),
       `${JSON.stringify(diagnostics, null, 2)}\n`,
+      "utf8",
+    );
+    writeFileSync(
+      path.join(paths.artifacts, `${route.name}.network.json`),
+      `${JSON.stringify(network, null, 2)}\n`,
       "utf8",
     );
 
@@ -533,6 +572,24 @@ const runRoute = async (client, route) => {
     for (const exception of runtimeExceptions) {
       failures.push(`${route.pathname}: exceção JavaScript não tratada: ${exception.text}`);
     }
+
+    const supabaseRequests = network.filter(
+      (entry) => entry.kind === "request" && isSupabaseUrl(entry.url),
+    );
+    for (const request of supabaseRequests) {
+      failures.push(
+        `${route.pathname}: build sintético realizou chamada proibida ao Supabase: ${request.method} ${request.url}`,
+      );
+    }
+
+    const failedResponses = network.filter(
+      (entry) => entry.kind === "response" && Number(entry.status) >= 400,
+    );
+    for (const response of failedResponses) {
+      failures.push(
+        `${route.pathname}: resposta HTTP inesperada ${response.status} em ${response.url}`,
+      );
+    }
   } finally {
     removeEventListener();
     if (targetId !== null) {
@@ -579,10 +636,10 @@ try {
 }
 
 if (failures.length > 0) {
-  console.error("Smoke B118/B122/B123 inválido:\n- " + failures.join("\n- "));
+  console.error("Smoke B118/B122/B123/B127 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  `Smoke B118/B122/B123 aprovado em ${browserExecutable}: CDP aguardou conteúdo e prontidão acessível em oito rotas públicas sem exceções não tratadas.`,
+  `Smoke B118/B122/B123/B127 aprovado em ${browserExecutable}: CDP aguardou conteúdo final e prontidão acessível em oito rotas sem exceções, respostas HTTP falhas ou chamadas ao Supabase remoto.`,
 );
