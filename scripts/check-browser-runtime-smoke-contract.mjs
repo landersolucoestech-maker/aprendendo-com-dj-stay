@@ -60,6 +60,10 @@ for (const forbidden of [
 }
 
 for (const fragment of [
+  "- name: Build",
+  "VITE_APP_ENV: development",
+  'VITE_CI_RUNTIME_SMOKE: "true"',
+  "VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_runtime_smoke_only_not_for_deployment",
   "- name: Smoke no navegador",
   "id: browser",
   "if: steps.build.outcome == 'success'",
@@ -71,8 +75,12 @@ for (const fragment of [
   "navegador: **${process.env.BROWSER}**",
   'test "$BROWSER" = success',
 ]) {
-  expect(workflow.includes(fragment), `Workflow B118 perdeu a garantia: ${fragment}`);
+  expect(workflow.includes(fragment), `Workflow B118/B119 perdeu a garantia: ${fragment}`);
 }
+expect(
+  !workflow.includes("secrets.SUPABASE_DEV_PUBLISHABLE_KEY"),
+  "O smoke B118 não pode voltar a depender de uma chave ausente no CI.",
+);
 
 expect(
   parent.includes('await import("./check-browser-runtime-smoke-contract.mjs")'),
@@ -94,10 +102,10 @@ for (const fragment of [
 }
 
 if (failures.length > 0) {
-  console.error("Contrato B118 inválido:\n- " + failures.join("\n- "));
+  console.error("Contrato B118/B119 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Contrato B118 aprovado: Chrome headless, rotas públicas, hidratação React, evidências e resultado bloqueante permanecem integrados ao CI.",
+  "Contrato B118/B119 aprovado: Chrome headless executa um build development hidratável com configuração sintética isolada e resultado bloqueante no CI.",
 );
