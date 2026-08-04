@@ -58,7 +58,8 @@ jobs:
         continue-on-error: true
         run: |
           npx --yes "supabase@${SUPABASE_CLI_VERSION}" stop --no-backup || true
-          npx --yes "supabase@${SUPABASE_CLI_VERSION}" start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+          set -o pipefail
+          npx --yes "supabase@${SUPABASE_CLI_VERSION}" start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor 2>&1 | node scripts/redact-supabase-cli-output.mjs
           npx --yes "supabase@${SUPABASE_CLI_VERSION}" db reset --local --no-seed
           npx --yes "supabase@${SUPABASE_CLI_VERSION}" test db
 
