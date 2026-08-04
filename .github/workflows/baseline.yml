@@ -108,6 +108,7 @@ jobs:
         continue-on-error: true
         run: |
           node scripts/run-browser-runtime-smoke.mjs
+          node scripts/check-browser-network-isolation.mjs
           node scripts/run-browser-client-navigation-smoke.mjs
 
       - name: Exportar tipos gerados
