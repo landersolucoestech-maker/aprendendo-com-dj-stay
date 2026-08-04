@@ -101,6 +101,8 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
+await import("./check-student-course-access.mjs");
+
 console.log(
   "Contrato B111 aprovado: o dashboard usa agregados persistidos sem carregar todas as linhas de progresso.",
 );
