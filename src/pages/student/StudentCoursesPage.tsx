@@ -47,9 +47,6 @@ const StudentCoursesPage = () => {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const canGoBack = page > 0;
   const canGoForward = (page + 1) * pageSize < total;
-  const activeIds = new Set(
-    (data?.active_enrollments ?? []).map((enrollment) => enrollment.id),
-  );
 
   useEffect(() => {
     if (data && page > 0 && page * pageSize >= data.total) {
@@ -99,82 +96,79 @@ const StudentCoursesPage = () => {
             </div>
 
             <div className="grid gap-5 lg:grid-cols-2">
-              {enrollments.map((enrollment) => {
-                const active = activeIds.has(enrollment.id);
-                return (
-                  <Card key={enrollment.id} variant="course">
-                    <CardHeader>
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <CardTitle>{enrollment.courses.title}</CardTitle>
-                          <CardDescription className="mt-2">
-                            Matrícula {statusLabels[enrollment.status] ?? enrollment.status}
-                          </CardDescription>
-                        </div>
-                        <Badge
-                          variant={
-                            active
-                              ? "success"
-                              : statusVariants[enrollment.status] ?? "outline"
-                          }
-                        >
-                          {active ? "Acesso ativo" : "Sem acesso atual"}
-                        </Badge>
+              {enrollments.map(({ enrollment, access_active: active }) => (
+                <Card key={enrollment.id} variant="course">
+                  <CardHeader>
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <CardTitle>{enrollment.courses.title}</CardTitle>
+                        <CardDescription className="mt-2">
+                          Matrícula {statusLabels[enrollment.status] ?? enrollment.status}
+                        </CardDescription>
                       </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <dl className="surface-muted grid gap-3 p-4 text-sm sm:grid-cols-2">
-                        <div>
-                          <dt className="text-muted-foreground">Início</dt>
-                          <dd className="mt-1 text-foreground">
-                            {formatDate(enrollment.starts_at)}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-muted-foreground">Validade</dt>
-                          <dd className="mt-1 text-foreground">
-                            {formatDate(enrollment.expires_at)}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-muted-foreground">Origem</dt>
-                          <dd className="mt-1 text-foreground">
-                            {enrollment.source === "purchase"
-                              ? "Compra"
-                              : "Concessão manual"}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-muted-foreground">
-                            Pagamento confirmado
-                          </dt>
-                          <dd className="mt-1 text-foreground">
-                            {formatDate(enrollment.payment_confirmed_at)}
-                          </dd>
-                        </div>
-                      </dl>
+                      <Badge
+                        variant={
+                          active
+                            ? "success"
+                            : statusVariants[enrollment.status] ?? "outline"
+                        }
+                      >
+                        {active ? "Acesso ativo" : "Sem acesso atual"}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <dl className="surface-muted grid gap-3 p-4 text-sm sm:grid-cols-2">
+                      <div>
+                        <dt className="text-muted-foreground">Início</dt>
+                        <dd className="mt-1 text-foreground">
+                          {formatDate(enrollment.starts_at)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Validade</dt>
+                        <dd className="mt-1 text-foreground">
+                          {formatDate(enrollment.expires_at)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Origem</dt>
+                        <dd className="mt-1 text-foreground">
+                          {enrollment.source === "purchase"
+                            ? "Compra"
+                            : "Concessão manual"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">
+                          Pagamento confirmado
+                        </dt>
+                        <dd className="mt-1 text-foreground">
+                          {formatDate(enrollment.payment_confirmed_at)}
+                        </dd>
+                      </div>
+                    </dl>
 
-                      {enrollment.status_reason ? (
-                        <div className="surface-muted p-3 text-sm text-muted-foreground">
-                          {enrollment.status_reason}
-                        </div>
-                      ) : null}
+                    {enrollment.status_reason ? (
+                      <div className="surface-muted p-3 text-sm text-muted-foreground">
+                        {enrollment.status_reason}
+                      </div>
+                    ) : null}
 
-                      {active ? (
-                        <Button asChild variant="context" className="w-full">
-                          <Link to={`/aluno/cursos/${enrollment.course_id}`}>
-                            Acessar conteúdo
-                          </Link>
-                        </Button>
-                      ) : (
-                        <Button className="w-full" disabled>
-                          Conteúdo indisponível
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                    {active ? (
+                      <Button asChild variant="context" className="w-full">
+                        <Link to={`/aluno/cursos/${enrollment.course_id}`}>
+                          Acessar conteúdo
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button className="w-full" disabled>
+                        Conteúdo indisponível
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
 
             <nav
