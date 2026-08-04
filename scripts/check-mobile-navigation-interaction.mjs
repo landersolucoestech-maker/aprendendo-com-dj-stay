@@ -50,6 +50,8 @@ for (const fragment of [
   'state.menuExpanded === "true"',
   'state.menuLabel === "Fechar menu"',
   "document.elementFromPoint(x, y)?.closest(selector)",
+  'document.addEventListener("click", (event) => {',
+  "}, true);",
   '"Input.dispatchMouseEvent"',
   'type: "mousePressed"',
   'type: "mouseReleased"',
@@ -67,6 +69,13 @@ for (const fragment of [
 ]) {
   expect(runtime.includes(fragment), `Smoke B136 ausente: ${fragment}`);
 }
+
+expect(
+  /document\.addEventListener\("click", \(event\) => \{[\s\S]*?window\.__b136InteractionProbe\.push\([\s\S]*?\}, true\);/.test(
+    runtime,
+  ),
+  "A sonda B136 deve capturar o clique antes que React substitua o alvo do botão.",
+);
 
 for (const forbidden of [
   ".click()",
@@ -100,6 +109,11 @@ for (const fragment of [
   "viewport móvel de 390 × 844",
   "`aria-expanded=\"false\"`",
   "`aria-expanded=\"true\"`",
+  "sonda instalada na fase bubble não registrou o clique do botão",
+  "desconectando o alvo original",
+  "fase capture",
+  "antes das mutações React do DOM",
+  "`document.addEventListener(\"click\", ..., true)`",
   "`document.elementFromPoint`",
   "`Input.dispatchMouseEvent`",
   "evento confiável",
@@ -127,5 +141,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B136 aprovado: menu e login móveis são exercitados por cliques confiáveis, com estado ARIA, foco, documento e rede bloqueantes.",
+  "Contrato B136 aprovado: cliques móveis são capturados antes da mutação React e permanecem confiáveis, com estado ARIA, foco, documento e rede bloqueantes.",
 );
