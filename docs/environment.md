@@ -54,6 +54,10 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_ci_runtime_smoke_only_not_for_deplo
 
 O valor sintético não é uma credencial, não autentica no Supabase e existe somente para permitir que a inicialização do cliente atravesse o bootstrap durante o smoke público. A aplicação o aceita apenas em build Vite `development`, com a flag exatamente igual a `true`.
 
+O catálogo público do smoke sintético é fornecido por uma fixture canônica em memória, validada pelo mesmo schema Zod usado na resposta real da RPC. Nesse modo, o carregador retorna a fixture antes de executar `get_public_course_catalog`; nenhuma chamada ao Supabase remoto é permitida.
+
+O Chrome aguarda o título e o preço finais dessa fixture, rejeita estados de carregamento ou indisponibilidade, registra um artefato de rede por rota e bloqueia qualquer requisição para `*.supabase.co` ou resposta HTTP com status igual ou superior a 400.
+
 A flag é proibida em produção, em hospedagem, em builds de entrega e em desenvolvimento local normal. Qualquer build implantável continua exigindo uma chave publishable ativa fornecida pelo ambiente.
 
 ## Proveniência de release
@@ -124,7 +128,7 @@ npm run build
 
 `check:environment` verifica arquivos versionados, referências legadas no runtime, hardcode no cliente e vínculo do Supabase CLI ao ambiente `dev`.
 
-O build valida também a correspondência entre revisão esperada, runtime compilado e `dist/release.json`. No workflow técnico, o smoke B118 executa o bundle com a configuração sintética B119 e bloqueia qualquer raiz React não hidratada.
+O build valida também a correspondência entre revisão esperada, runtime compilado e `dist/release.json`. No workflow técnico, o smoke B118/B127 executa o bundle com a configuração sintética B119, aguarda o catálogo final validado e bloqueia raiz React não hidratada, rede Supabase remota ou respostas HTTP falhas.
 
 ## Produção
 
