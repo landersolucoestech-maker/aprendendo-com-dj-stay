@@ -262,7 +262,7 @@ for (const fragment of [
 
 for (const fragment of [
   "FASE B123",
-  "login e certificado",
+  "login, certificado, contato, cadastro, recuperação, acesso negado e 404",
   "requestAnimationFrame",
   "exatamente um elemento com `id=\"main-content\"`",
   "`tabindex=\"-1\"`",
