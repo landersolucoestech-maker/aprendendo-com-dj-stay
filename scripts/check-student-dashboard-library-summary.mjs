@@ -68,9 +68,15 @@ if (failures.length === 0) {
     'label="Materiais liberados"',
     "value={String(libraryTotal)}",
     "Total exato de arquivos privados acessíveis",
-    "activeEnrollments.slice(0, 3)",
+    "useStudentCourseAccess(0, 1, 3)",
+    "access.active_enrollments.map",
     "useRecentActivities(5)",
   ]);
+  if (page.includes("active_enrollments.slice(") || page.includes("activeEnrollments.slice(")) {
+    failures.push(
+      "Dashboard B110/B112 deve consumir a amostra limitada pelo servidor, sem recorte adicional no navegador.",
+    );
+  }
   if (page.includes("useStudentLibrary()") || page.includes("library.length")) {
     failures.push(
       "Dashboard B110 não pode usar a coleção completa ou o tamanho da resposta como total.",
