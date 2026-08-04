@@ -338,9 +338,6 @@ const runRoute = async (client, route) => {
   try {
     const target = await client.request("Target.createTarget", {
       url: "about:blank",
-      width: 1440,
-      height: 1000,
-      newWindow: false,
       background: false,
     });
     targetId = target.targetId;
@@ -382,6 +379,16 @@ const runRoute = async (client, route) => {
       client.request("Runtime.enable", {}, sessionId),
       client.request("Log.enable", {}, sessionId),
     ]);
+    await client.request(
+      "Emulation.setDeviceMetricsOverride",
+      {
+        width: 1440,
+        height: 1000,
+        deviceScaleFactor: 1,
+        mobile: false,
+      },
+      sessionId,
+    );
 
     const loaded = client.waitForEvent("Page.loadEventFired", sessionId, 20_000);
     const navigation = await client.request(
