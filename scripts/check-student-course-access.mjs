@@ -106,7 +106,7 @@ if (failures.length === 0) {
   }
   requireFragments(router, "Roteador B112", [
     'import StudentCoursesPage from "@/pages/student/StudentCoursesPage"',
-    'if (section === "courses")',
+    'case "courses":',
     "return <StudentCoursesPage />",
   ]);
   requireFragments(database, "Tipagem B112", [
@@ -136,6 +136,8 @@ if (failures.length > 0) {
   console.error("Contrato B112 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
+
+await import("./check-student-course-detail-access.mjs");
 
 console.log(
   "Contrato B112 aprovado: o portal pagina o histórico de matrículas e usa o estado de acesso calculado no servidor.",
