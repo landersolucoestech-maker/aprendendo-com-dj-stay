@@ -15,7 +15,6 @@ export interface PublicConfig {
   readonly supabaseUrl: string;
   readonly supabasePublishableKey: string;
   readonly supabaseProjectRef: string;
-  readonly ciRuntimeSmoke: boolean;
 }
 
 const EXPECTED_PROJECT_REFS: Readonly<Record<AppEnvironment, string>> = {
@@ -241,7 +240,6 @@ export function createPublicConfig(
     supabaseUrl: url,
     supabasePublishableKey,
     supabaseProjectRef: projectRef,
-    ciRuntimeSmoke,
   });
 }
 
@@ -254,3 +252,6 @@ export const publicConfig = createPublicConfig({
   isDevelopmentBuild: import.meta.env.DEV,
   isProductionBuild: import.meta.env.PROD,
 });
+
+export const ciRuntimeSmokeEnabled =
+  publicConfig.supabasePublishableKey === CI_RUNTIME_SMOKE_PUBLISHABLE_KEY;
