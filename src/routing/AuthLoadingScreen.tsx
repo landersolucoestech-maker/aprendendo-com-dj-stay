@@ -5,6 +5,7 @@ export function AuthLoadingScreen() {
     <main
       className="flex min-h-screen items-center justify-center bg-background text-foreground"
       aria-busy="true"
+      data-route-focus-deferred="true"
     >
       <div className="text-center" role="status" aria-live="polite">
         <Loader2
