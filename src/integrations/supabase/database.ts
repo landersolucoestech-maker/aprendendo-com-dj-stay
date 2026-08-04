@@ -13,6 +13,12 @@ type StudentReadModelFunctions = {
     };
     Returns: Json;
   };
+  get_student_course_detail_access: {
+    Args: {
+      p_course_id: string;
+    };
+    Returns: Json;
+  };
 };
 
 export type Database = Omit<GeneratedDatabase, "public"> & {
