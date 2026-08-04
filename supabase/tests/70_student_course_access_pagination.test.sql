@@ -59,25 +59,35 @@ values
 
 set local session_replication_role = replica;
 insert into public.courses(
-  id,title,slug,status,completion_mode,certificate_enabled,
+  id,title,slug,status,published_at,completion_mode,certificate_enabled,
   certificate_min_completion_percent,created_by_user_id,updated_by_user_id
 )
 values
 (
   'b1120000-0000-4000-8000-000000000101',
-  'Curso Ativo B112','curso-ativo-b112','published','manual',true,100,
+  'Curso Ativo B112','curso-ativo-b112','published',current_timestamp,
+  'manual',true,100,
   'b1120000-0000-4000-8000-000000000001',
   'b1120000-0000-4000-8000-000000000001'
 ),
 (
   'b1120000-0000-4000-8000-000000000102',
-  'Curso Expirado B112','curso-expirado-b112','published','manual',true,100,
+  'Curso Expirado B112','curso-expirado-b112','published',current_timestamp,
+  'manual',true,100,
   'b1120000-0000-4000-8000-000000000001',
   'b1120000-0000-4000-8000-000000000001'
 ),
 (
   'b1120000-0000-4000-8000-000000000103',
-  'Curso Arquivado B112','curso-arquivado-b112','archived','manual',true,100,
+  'Curso Arquivado B112','curso-arquivado-b112','archived',null,
+  'manual',true,100,
+  'b1120000-0000-4000-8000-000000000001',
+  'b1120000-0000-4000-8000-000000000001'
+),
+(
+  'b1120000-0000-4000-8000-000000000104',
+  'Curso Revogado B112','curso-revogado-b112','published',current_timestamp,
+  'manual',true,100,
   'b1120000-0000-4000-8000-000000000001',
   'b1120000-0000-4000-8000-000000000001'
 );
@@ -114,7 +124,7 @@ values
 (
   'b1120000-0000-4000-8000-000000000204',
   'b1120000-0000-4000-8000-000000000001',
-  'b1120000-0000-4000-8000-000000000101',
+  'b1120000-0000-4000-8000-000000000104',
   'revoked','manual_grant','b1120000-0000-4000-8000-000000000001',
   current_timestamp - interval '5 days',null,
   current_timestamp,current_timestamp
@@ -183,7 +193,10 @@ select is(
   'zero limit and negative offset are clamped'
 );
 select is(
-  jsonb_object_length(public.get_student_course_access(20,0,3)),
+  (
+    select count(*)::integer
+    from jsonb_object_keys(public.get_student_course_access(20,0,3))
+  ),
   4,
   'read model exposes only totals active sample and page'
 );
