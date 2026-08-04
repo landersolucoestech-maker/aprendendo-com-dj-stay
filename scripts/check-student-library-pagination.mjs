@@ -128,6 +128,8 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
+await import("./check-student-dashboard-library-summary.mjs");
+
 console.log(
   "Contrato B109 aprovado: o aluno acessa toda a biblioteca privada por paginação real no servidor.",
 );
