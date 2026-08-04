@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 const paths = {
   app: "src/App.tsx",
   editPage: "src/pages/EditProfile.tsx",
-  studentPortal: "src/pages/student/StudentPortal.tsx",
+  studentProfile: "src/pages/student/StudentProfilePage.tsx",
   affiliatePortal: "src/pages/affiliate/AffiliatePortal.tsx",
   pageFrame: "src/components/student/StudentPortalPageFrame.tsx",
   profileContract: "scripts/check-profile-contract-tests.mjs",
@@ -26,7 +26,7 @@ for (const path of Object.values(paths)) {
 
 const app = read(paths.app);
 const editPage = read(paths.editPage);
-const studentPortal = read(paths.studentPortal);
+const studentProfile = read(paths.studentProfile);
 const affiliatePortal = read(paths.affiliatePortal);
 const pageFrame = read(paths.pageFrame);
 const profileContract = read(paths.profileContract);
@@ -99,11 +99,11 @@ expect(
   "A rota genérica deve permanecer disponível aos papéis autorizados sem forçar o shell do aluno.",
 );
 expect(
-  studentPortal.includes('<Link to="/aluno/perfil/editar">Editar perfil</Link>'),
+  studentProfile.includes('<Link to="/aluno/perfil/editar">Editar perfil</Link>'),
   "A seção Perfil do aluno deve usar a rota específica.",
 );
 expect(
-  !studentPortal.includes('<Link to="/editar-perfil">Editar perfil</Link>'),
+  !studentProfile.includes('<Link to="/editar-perfil">Editar perfil</Link>'),
   "A seção Perfil não pode retirar o aluno do shell pela rota genérica.",
 );
 expect(
