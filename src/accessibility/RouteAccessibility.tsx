@@ -19,6 +19,8 @@ export const RouteAccessibility = ({ children }: RouteAccessibilityProps) => {
   const location = useLocation();
   const boundaryRef = useRef<HTMLDivElement>(null);
   const previousPathRef = useRef(location.pathname);
+  const focusedPathRef = useRef<string | null>(null);
+  const focusedTargetRef = useRef<HTMLElement | null>(null);
   const [announcement, setAnnouncement] = useState("");
 
   const preparePrimaryContent = useCallback((): HTMLElement | null => {
@@ -75,15 +77,27 @@ export const RouteAccessibility = ({ children }: RouteAccessibilityProps) => {
         const routeChanged = previousPathRef.current !== location.pathname;
         const focusIsDeferred =
           target.getAttribute(focusDeferredAttribute) === "true";
+        const focusedTargetWasReplaced =
+          focusedPathRef.current === location.pathname &&
+          focusedTargetRef.current !== null &&
+          !focusedTargetRef.current.isConnected;
 
         if (routeChanged && focusIsDeferred) {
           return;
         }
 
-        if (routeChanged) {
+        if (routeChanged || focusedTargetWasReplaced) {
           target.focus({ preventScroll: true });
-          setAnnouncement("Navegação concluída. Conteúdo principal atualizado.");
+          focusedPathRef.current = location.pathname;
+          focusedTargetRef.current = target;
+
+          if (routeChanged) {
+            setAnnouncement(
+              "Navegação concluída. Conteúdo principal atualizado.",
+            );
+          }
         }
+
         previousPathRef.current = location.pathname;
       });
     };
@@ -109,6 +123,8 @@ export const RouteAccessibility = ({ children }: RouteAccessibilityProps) => {
     if (!target) return;
 
     target.focus({ preventScroll: true });
+    focusedPathRef.current = location.pathname;
+    focusedTargetRef.current = target;
     target.scrollIntoView({ block: "start" });
   };
 
