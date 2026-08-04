@@ -115,7 +115,10 @@ select is(
   'summary rounds current student average progress'
 );
 select is(
-  jsonb_object_length(public.get_student_progress_summary()),
+  (
+    select count(*)::integer
+    from jsonb_object_keys(public.get_student_progress_summary())
+  ),
   3,
   'summary exposes only three aggregate fields'
 );
