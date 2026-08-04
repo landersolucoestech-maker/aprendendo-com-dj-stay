@@ -109,6 +109,8 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
+await import("./check-built-runtime-smoke.mjs");
+
 console.log(
   `Gate B34 aprovado: release ${releaseManifest.release} em ${releaseManifest.environment}, vinculada ao runtime e ao artefato determinístico.`,
 );
