@@ -204,7 +204,9 @@ for (const fragment of [
   "id: browser",
   "if: steps.build.outcome == 'success'",
   "continue-on-error: true",
-  "run: node scripts/run-browser-runtime-smoke.mjs",
+  "run: |",
+  "node scripts/run-browser-runtime-smoke.mjs",
+  "node scripts/run-browser-client-navigation-smoke.mjs",
   "- name: Exportar evidência do navegador",
   "artifacts/browser-smoke",
   "BROWSER: ${{ steps.browser.outcome }}",
@@ -213,7 +215,7 @@ for (const fragment of [
 ]) {
   expect(
     workflow.includes(fragment),
-    `Workflow B118/B119/B122/B123 perdeu a garantia: ${fragment}`,
+    `Workflow B118/B119/B122/B123/B125 perdeu a garantia: ${fragment}`,
   );
 }
 expect(
@@ -286,5 +288,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B118/B119/B122/B123 aprovado: Chrome headless valida oito rotas públicas com conteúdo final, landmark, skip link e live region prontos.",
+  "Contrato B118/B119/B122/B123 aprovado: Chrome headless valida oito rotas públicas com conteúdo final, landmark, skip link e live region prontos, seguido pelo smoke B125.",
 );
