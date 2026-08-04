@@ -246,6 +246,20 @@ const stopProcess = async (processHandle, exitPromise, hasExited) => {
   }
 };
 
+const removeBrowserProfileDirectory = async () => {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      rmSync(browserProfileDirectory, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      const code = error instanceof Error ? error.code : undefined;
+      const retryable = code === "ENOTEMPTY" || code === "EBUSY" || code === "EPERM";
+      if (!retryable || attempt === 5) throw error;
+      await delay(200 * (attempt + 1));
+    }
+  }
+};
+
 const routes = [
   {
     name: "home",
@@ -632,14 +646,20 @@ try {
 
   await stopProcess(browser, browserExit, () => browserExited);
   await stopProcess(preview, previewExit, () => previewExited);
-  rmSync(browserProfileDirectory, { recursive: true, force: true });
+  try {
+    await removeBrowserProfileDirectory();
+  } catch (error) {
+    failures.push(
+      `Limpeza do perfil temporário do Chrome falhou: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 if (failures.length > 0) {
-  console.error("Smoke B118/B122/B123/B127 inválido:\n- " + failures.join("\n- "));
+  console.error("Smoke B118/B122/B123/B127/B133 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  `Smoke B118/B122/B123/B127 aprovado em ${browserExecutable}: CDP aguardou conteúdo final e prontidão acessível em oito rotas sem exceções, respostas HTTP falhas ou chamadas ao Supabase remoto.`,
+  `Smoke B118/B122/B123/B127/B133 aprovado em ${browserExecutable}: CDP aguardou conteúdo final e prontidão acessível em oito rotas, sem exceções, respostas HTTP falhas, chamadas ao Supabase remoto ou corrida de limpeza do perfil temporário.`,
 );
