@@ -6,6 +6,7 @@ const requiredFiles = [
   "docs/environment.md",
   "docs/audit/README.md",
   "docs/refactor/README.md",
+  "docs/refactor/FASE-B118-HEADLESS-BROWSER-SMOKE.md",
   "supabase/config.toml",
 ];
 const failures = [];
@@ -23,6 +24,10 @@ if (failures.length === 0) {
   const environment = readFileSync("docs/environment.md", "utf8");
   const audit = readFileSync("docs/audit/README.md", "utf8");
   const refactor = readFileSync("docs/refactor/README.md", "utf8");
+  const browserSmoke = readFileSync(
+    "docs/refactor/FASE-B118-HEADLESS-BROWSER-SMOKE.md",
+    "utf8",
+  );
   const supabaseConfig = readFileSync("supabase/config.toml", "utf8");
 
   const staleClaims = [
@@ -58,6 +63,13 @@ if (failures.length === 0) {
     "create-asaas-checkout",
     "asaas-webhook",
     "media-playback",
+    "Shell público e proveniência",
+    "Entrega HTTP",
+    "Runtime público",
+    "smoke HTTP",
+    "smoke bloqueante em Chrome headless",
+    "chave sintética canônica",
+    "explicitamente **não implantável**",
     "A presença da função e a aprovação do gate não equivalem a uma transação financeira homologada",
     "A branch `main` e o projeto Supabase de produção não foram promovidos",
   ]) {
@@ -85,11 +97,30 @@ if (failures.length === 0) {
   if (!includesNormalized(audit, "npm run check") || !includesNormalized(audit, "não substitui")) {
     failures.push("Índice de auditoria deve explicar execução e limites.");
   }
-  if (
-    !includesNormalized(refactor, "uma causa observada por vez") ||
-    !includesNormalized(refactor, "não equivale a homologação externa")
-  ) {
-    failures.push("Índice de refatoração deve preservar execução sequencial e limites.");
+  for (const fragment of [
+    "uma causa observada por vez",
+    "não equivale a homologação externa",
+    "smoke HTTP do build servido",
+    "Chrome headless controlado pelo DevTools Protocol",
+    "conteúdo final de `/`, `/login` e `/certificado`",
+  ]) {
+    if (!includesNormalized(refactor, fragment)) {
+      failures.push(`Índice de refatoração incompleto: ${fragment}`);
+    }
+  }
+
+  for (const fragment of [
+    "FASE B118",
+    "fallbacks transitórios",
+    "todos os fragmentos finais contratados para a rota",
+    "rejeita fallbacks transitórios",
+    "f5e193a5e07a2ceca00b4b3f38034334fcb0db10",
+    "sem Playwright, Puppeteer, Selenium",
+    "A aprovação em `dev` não equivale a homologação externa",
+  ]) {
+    if (!includesNormalized(browserSmoke, fragment)) {
+      failures.push(`Documentação B118 incompleta: ${fragment}`);
+    }
   }
 
   const prohibitedProductionClaims = [
@@ -99,7 +130,13 @@ if (failures.length === 0) {
     "checkout está homologado",
     "pentest concluído",
   ];
-  const combinedDocumentation = [readme, status, audit, refactor].join("\n");
+  const combinedDocumentation = [
+    readme,
+    status,
+    audit,
+    refactor,
+    browserSmoke,
+  ].join("\n");
   for (const claim of prohibitedProductionClaims) {
     if (includesNormalized(combinedDocumentation, claim)) {
       failures.push(`Documentação contém alegação de produção sem evidência: ${claim}`);
@@ -108,10 +145,10 @@ if (failures.length === 0) {
 }
 
 if (failures.length > 0) {
-  console.error("Contrato B33 inválido:\n- " + failures.join("\n- "));
+  console.error("Contrato B33/B120 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Contrato B33 aprovado: implementação em dev, dependências externas e produção estão documentalmente separadas.",
+  "Contrato B33/B120 aprovado: implementação em dev, artefato público, dependências externas e produção estão documentalmente separados.",
 );
