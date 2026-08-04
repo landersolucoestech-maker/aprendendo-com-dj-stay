@@ -117,6 +117,11 @@ requireText("src/index.css", [
   ".interactive-surface",
   "@media (prefers-reduced-motion: reduce)",
 ]);
+forbidText("src/index.css", [
+  "fonts.googleapis.com",
+  "fonts.gstatic.com",
+  "@import url(",
+]);
 
 requireText("tailwind.config.ts", [
   'DEFAULT: "hsl(var(--success))"',
@@ -129,9 +134,22 @@ requireText("tailwind.config.ts", [
   'DEFAULT: "hsl(var(--admin-accent))"',
   'soft: "var(--shadow-soft)"',
   'raised: "var(--shadow-raised)"',
-  'sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"]',
+  'sans: [',
+  '"ui-sans-serif"',
+  '"system-ui"',
+  '"-apple-system"',
+  '"BlinkMacSystemFont"',
+  '"Segoe UI"',
+  '"sans-serif"',
 ]);
-forbidText("tailwind.config.ts", ["#38b6ff", "#0cc0df", "#004aad"]);
+forbidText("tailwind.config.ts", [
+  "#38b6ff",
+  "#0cc0df",
+  "#004aad",
+  '"Inter"',
+  "fonts.googleapis.com",
+  "fonts.gstatic.com",
+]);
 
 requireText("src/components/ui/button-variants.ts", [
   "brand:",
@@ -471,5 +489,5 @@ forbidText("src/pages/student/StudentPortalRouter.tsx", [
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log(
-  "Contrato estático do Portal do Aluno na FASE B23/B84/B85/B113 aprovado com contexto visual delegado pelo shell, páginas extraídas, roteamento exaustivo e modo aluno do editor.",
+  "Contrato estático do Portal do Aluno na FASE B23/B84/B85/B113 aprovado com contexto visual delegado pelo shell, páginas extraídas, roteamento exaustivo, modo aluno do editor e tipografia nativa sem dependência externa.",
 );
