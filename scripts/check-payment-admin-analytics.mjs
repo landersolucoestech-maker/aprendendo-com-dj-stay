@@ -166,8 +166,13 @@ if (failures.length === 0) {
   ]);
   requireFragments(status, "STATUS B96", [
     "analytics financeiro",
+    "receita confirmada",
+    "reversões",
     "ticket médio",
+    "clientes únicos",
     "receita por tipo",
+    "ranking",
+    "série diária",
   ]);
 }
 
@@ -177,5 +182,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B96 aprovado: o proprietário possui analytics financeiro real, filtrável e semanticamente delimitado.",
+  "Contrato B96 aprovado: o proprietário possui analytics financeiro real, filtrável, completo e semanticamente delimitado.",
 );
