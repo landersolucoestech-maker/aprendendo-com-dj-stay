@@ -98,6 +98,7 @@ let sessionId = null;
 let finalState = null;
 let menuTarget = null;
 let loginTarget = null;
+let networkSummary = null;
 let removeEventListener = () => {};
 
 const preview = spawn(
@@ -111,11 +112,7 @@ const preview = spawn(
     String(previewPort),
     "--strictPort",
   ],
-  {
-    cwd: root,
-    env: process.env,
-    stdio: ["ignore", "pipe", "pipe"],
-  },
+  { cwd: root, env: process.env, stdio: ["ignore", "pipe", "pipe"] },
 );
 preview.stdout.on("data", (chunk) => previewLogs.push(String(chunk)));
 preview.stderr.on("data", (chunk) => previewLogs.push(String(chunk)));
@@ -151,11 +148,7 @@ const browser = spawn(
     `--user-data-dir=${profileDirectory}`,
     "about:blank",
   ],
-  {
-    cwd: root,
-    env: process.env,
-    stdio: ["ignore", "pipe", "pipe"],
-  },
+  { cwd: root, env: process.env, stdio: ["ignore", "pipe", "pipe"] },
 );
 browser.stdout.on("data", (chunk) => browserLogs.push(String(chunk)));
 browser.stderr.on("data", (chunk) => browserLogs.push(String(chunk)));
@@ -196,9 +189,7 @@ const removeProfileDirectory = async () => {
 const waitForPreview = async () => {
   for (let attempt = 0; attempt < 40; attempt += 1) {
     if (previewSpawnError !== null) throw previewSpawnError;
-    if (previewExited) {
-      throw new Error(`Preview encerrou prematuramente.\n${previewLogs.join("")}`);
-    }
+    if (previewExited) throw new Error(`Preview encerrou.\n${previewLogs.join("")}`);
     try {
       const response = await fetch(`${baseUrl}/`, {
         redirect: "error",
@@ -216,9 +207,7 @@ const waitForPreview = async () => {
 const waitForBrowserDebugger = async () => {
   for (let attempt = 0; attempt < 60; attempt += 1) {
     if (browserSpawnError !== null) throw browserSpawnError;
-    if (browserExited) {
-      throw new Error(`Chrome encerrou prematuramente.\n${browserLogs.join("")}`);
-    }
+    if (browserExited) throw new Error(`Chrome encerrou.\n${browserLogs.join("")}`);
     try {
       const response = await fetch(`${browserDebugUrl}/json/version`, {
         redirect: "error",
@@ -238,11 +227,8 @@ const waitForBrowserDebugger = async () => {
   throw new Error(`CDP indisponível.\n${browserLogs.join("")}`);
 };
 
-const serializeRuntimeException = (details) => {
-  const description =
-    details.exception?.description ?? details.exception?.value ?? details.text;
-  return String(description);
-};
+const serializeRuntimeException = (details) =>
+  String(details.exception?.description ?? details.exception?.value ?? details.text);
 
 const evaluate = async (expression) => {
   const response = await client.request(
@@ -371,9 +357,7 @@ const validateNetwork = () => {
   let documentUrl = null;
 
   if (documents.length !== 1) {
-    failures.push(
-      `B136 esperava um único Document inicial, recebeu ${documents.length}.`,
-    );
+    failures.push(`B136 esperava um único Document inicial, recebeu ${documents.length}.`);
   } else {
     try {
       documentUrl = new URL(documents[0].url);
@@ -430,12 +414,9 @@ const validateNetwork = () => {
   };
 };
 
-let networkSummary = null;
-
 try {
   await waitForPreview();
-  const debuggerUrl = await waitForBrowserDebugger();
-  client = await CdpClient.connect(debuggerUrl);
+  client = await CdpClient.connect(await waitForBrowserDebugger());
 
   const target = await client.request("Target.createTarget", {
     url: "about:blank",
@@ -546,7 +527,7 @@ try {
             ? new URL(target.href).pathname
             : null,
       });
-    });
+    }, true);
   })()`);
 
   networkPhase = "mobile-menu-open";
@@ -670,7 +651,6 @@ try {
   )) {
     failures.push(`Exceção JavaScript B136: ${exception.text}`);
   }
-
   networkSummary = validateNetwork();
 } catch (error) {
   failures.push(
