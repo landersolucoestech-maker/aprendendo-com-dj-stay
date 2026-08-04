@@ -26,6 +26,7 @@ const requiredFragments = [
   "process.env.TYPES",
   "process.env.TYPECHECK",
   "process.env.BUILD",
+  "process.env.BROWSER",
   'const gateSucceeded = gateOutcomes.every((outcome) => outcome === "success");',
   'const gateFailed = gateOutcomes.some((outcome) => outcome === "failure");',
   "const gateIncomplete = gateOutcomes.some(",
@@ -33,6 +34,7 @@ const requiredFragments = [
   "const gateSuperseded = !gateFailed && gateIncomplete;",
   'const evidence = await github.request("POST /repos/{owner}/{repo}/issues"',
   "Supabase CLI:",
+  "navegador:",
   "if (gateSucceeded) {",
   "} else if (gateSuperseded) {",
   'await github.request("PATCH /repos/{owner}/{repo}/issues/{issue_number}"',
@@ -58,8 +60,10 @@ const requiredFragments = [
   "issue_number: issue.number",
   "UNIT: ${{ steps.unit.outcome }}",
   "CLI: ${{ steps.cli.outcome }}",
+  "BROWSER: ${{ steps.browser.outcome }}",
   'test "$UNIT" = success',
   'test "$CLI" = success',
+  'test "$BROWSER" = success',
 ];
 
 for (const fragment of requiredFragments) {
@@ -137,11 +141,11 @@ for (const documentationPath of [
 }
 
 if (failures.length > 0) {
-  console.error("Falhas nos contratos B49/B50/B51/B117:");
+  console.error("Falhas nos contratos B49/B50/B51/B117/B118:");
   for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
 
 console.log(
-  "Contratos B49/B50/B51/B117 aprovados: verdes são completed, falhas permanecem abertas até um verde posterior e evidências técnicas superadas são reconciliadas como not_planned.",
+  "Contratos B49/B50/B51/B117/B118 aprovados: evidências incluem navegador, verdes reconciliam falhas antigas e qualquer estágio bloqueante permanece rastreável.",
 );
