@@ -40,6 +40,7 @@ A sequência cobre, entre outros domínios:
 - proibição de um segundo `Document` durante a troca client-side;
 - limpeza limitada do perfil temporário dentro de cada smoke do Chrome;
 - proibição de reexecutar o smoke inteiro para contornar `ENOTEMPTY`;
+- verdade documental bloqueante para o commit, issue e run integrais mais recentes;
 - diagnósticos persistentes de TypeScript e navegador com `set -o pipefail`.
 
 Cada arquivo `FASE-B*.md` descreve uma entrega específica. O estado consolidado está em [`../STATUS.md`](../STATUS.md).
@@ -66,6 +67,7 @@ No GitHub Actions, o mesmo snapshot também precisa passar:
 - exatamente nove arquivos `*.network.json` antes da verificação consolidada;
 - limpeza do diretório temporário limitada ao perfil criado pela execução atual;
 - nenhuma repetição integral do smoke para tratar corrida de filesystem;
+- status operacional sincronizado com a evidência integral verde mais recente;
 - ausência de exceções JavaScript não tratadas e do Route Error Boundary.
 
 Os artifacts `browser-smoke-<commit>` e `gate-diagnostics-<commit>` preservam DOM, rede e mensagens dos gates aplicáveis. A captura de logs usa `set -o pipefail`, portanto não altera o resultado do comando original.
