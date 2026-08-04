@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const DEVELOPMENT_REF = "jmtyurketfclaneqxohu";
 const PRODUCTION_REF = "tduvfrxagujryfnqpdmc";
 const VALID_PUBLISHABLE_KEY = `sb_publishable_${"a".repeat(17)}`;
+const CI_RUNTIME_SMOKE_PUBLISHABLE_KEY =
+  "sb_publishable_ci_runtime_smoke_only_not_for_deployment";
 
 type PublicConfigModule = typeof import("./public-config");
 
@@ -10,6 +12,7 @@ interface RawConfigInput {
   readonly appEnvironment: string | undefined;
   readonly supabaseUrl: string | undefined;
   readonly supabasePublishableKey: string | undefined;
+  readonly ciRuntimeSmoke: string | undefined;
   readonly viteMode: string;
   readonly isDevelopmentBuild: boolean;
   readonly isProductionBuild: boolean;
@@ -21,6 +24,7 @@ const developmentInput = (
   appEnvironment: "development",
   supabaseUrl: `https://${DEVELOPMENT_REF}.supabase.co`,
   supabasePublishableKey: VALID_PUBLISHABLE_KEY,
+  ciRuntimeSmoke: undefined,
   viteMode: "development",
   isDevelopmentBuild: true,
   isProductionBuild: false,
@@ -33,6 +37,7 @@ const productionInput = (
   appEnvironment: "production",
   supabaseUrl: `https://${PRODUCTION_REF}.supabase.co`,
   supabasePublishableKey: VALID_PUBLISHABLE_KEY,
+  ciRuntimeSmoke: undefined,
   viteMode: "production",
   isDevelopmentBuild: false,
   isProductionBuild: true,
@@ -56,6 +61,7 @@ const loadPublicConfigModule = async (): Promise<PublicConfigModule> => {
     `https://${DEVELOPMENT_REF}.supabase.co`,
   );
   vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", VALID_PUBLISHABLE_KEY);
+  vi.stubEnv("VITE_CI_RUNTIME_SMOKE", "");
   vi.stubEnv("MODE", "development");
   vi.stubEnv("DEV", true);
   vi.stubEnv("PROD", false);
@@ -113,6 +119,24 @@ describe("public config", () => {
     });
   });
 
+  it("aceita a configuração sintética somente no smoke de development", async () => {
+    const { createPublicConfig } = await loadPublicConfigModule();
+
+    expect(
+      createPublicConfig(
+        developmentInput({
+          supabasePublishableKey: CI_RUNTIME_SMOKE_PUBLISHABLE_KEY,
+          ciRuntimeSmoke: "true",
+        }),
+      ),
+    ).toEqual({
+      appEnvironment: "development",
+      supabaseUrl: `https://${DEVELOPMENT_REF}.supabase.co`,
+      supabasePublishableKey: CI_RUNTIME_SMOKE_PUBLISHABLE_KEY,
+      supabaseProjectRef: DEVELOPMENT_REF,
+    });
+  });
+
   it.each([
     [
       developmentInput({ appEnvironment: undefined }),
@@ -121,6 +145,10 @@ describe("public config", () => {
     [
       developmentInput({ appEnvironment: "staging" }),
       "VITE_APP_ENV deve ser exatamente 'development' ou 'production'.",
+    ],
+    [
+      developmentInput({ ciRuntimeSmoke: "1" }),
+      "VITE_CI_RUNTIME_SMOKE deve ser exatamente 'true' quando definido.",
     ],
     [
       developmentInput({ viteMode: "production" }),
@@ -185,44 +213,73 @@ describe("public config", () => {
 
   it.each([
     [
-      undefined,
+      developmentInput({ supabasePublishableKey: undefined }),
       "Configuração pública ausente: VITE_SUPABASE_PUBLISHABLE_KEY.",
     ],
     [
-      `sb_secret_${"x".repeat(24)}`,
+      developmentInput({
+        supabasePublishableKey: CI_RUNTIME_SMOKE_PUBLISHABLE_KEY,
+      }),
+      "A chave sintética do smoke somente pode ser usada com VITE_CI_RUNTIME_SMOKE=true.",
+    ],
+    [
+      productionInput({
+        supabasePublishableKey: CI_RUNTIME_SMOKE_PUBLISHABLE_KEY,
+        ciRuntimeSmoke: "true",
+      }),
+      "A configuração sintética do smoke é proibida fora do ambiente development.",
+    ],
+    [
+      developmentInput({ ciRuntimeSmoke: "true" }),
+      "VITE_CI_RUNTIME_SMOKE=true exige a chave sintética canônica do smoke.",
+    ],
+    [
+      developmentInput({
+        supabasePublishableKey: `sb_secret_${"x".repeat(24)}`,
+      }),
       "Uma chave privilegiada do Supabase não pode ser usada no frontend.",
     ],
     [
-      "prefixo_service_role_segredo",
+      developmentInput({
+        supabasePublishableKey: "prefixo_service_role_segredo",
+      }),
       "Uma chave privilegiada do Supabase não pode ser usada no frontend.",
     ],
     [
-      "sb_publishable_curta",
+      developmentInput({ supabasePublishableKey: "sb_publishable_curta" }),
       "VITE_SUPABASE_PUBLISHABLE_KEY possui formato inválido.",
     ],
     [
-      "chave-invalida",
+      developmentInput({ supabasePublishableKey: "chave-invalida" }),
       "VITE_SUPABASE_PUBLISHABLE_KEY deve ser uma chave publishable ou anon válida.",
     ],
     [
-      createJwt(["anon", DEVELOPMENT_REF]),
+      developmentInput({
+        supabasePublishableKey: createJwt(["anon", DEVELOPMENT_REF]),
+      }),
       "VITE_SUPABASE_PUBLISHABLE_KEY deve ser uma chave publishable ou anon válida.",
     ],
     [
-      createJwt({ role: "authenticated", ref: DEVELOPMENT_REF }),
+      developmentInput({
+        supabasePublishableKey: createJwt({
+          role: "authenticated",
+          ref: DEVELOPMENT_REF,
+        }),
+      }),
       "O JWT público do frontend deve possuir role anon.",
     ],
     [
-      createJwt({ role: "anon", ref: PRODUCTION_REF }),
+      developmentInput({
+        supabasePublishableKey: createJwt({
+          role: "anon",
+          ref: PRODUCTION_REF,
+        }),
+      }),
       "A chave anon não pertence ao projeto Supabase esperado.",
     ],
-  ] as const)("rejeita chave pública inválida", async (key, message) => {
+  ] as const)("rejeita chave pública inválida", async (input, message) => {
     const { createPublicConfig } = await loadPublicConfigModule();
 
-    expect(() =>
-      createPublicConfig(
-        developmentInput({ supabasePublishableKey: key }),
-      ),
-    ).toThrowError(message);
+    expect(() => createPublicConfig(input)).toThrowError(message);
   });
 });
