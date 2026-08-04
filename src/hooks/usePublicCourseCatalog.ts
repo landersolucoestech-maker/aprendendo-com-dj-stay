@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { publicConfig } from "@/config/public-config";
+import { ciRuntimeSmokeEnabled } from "@/config/public-config";
 import { parseDataContract } from "@/contracts/contract-error";
 import {
   publicCourseCatalogSchema,
@@ -15,7 +15,7 @@ export const usePublicCourseCatalog = () =>
   useQuery({
     queryKey: publicCourseCatalogKey,
     queryFn: async (): Promise<PublicCourseCatalog> => {
-      if (publicConfig.ciRuntimeSmoke) {
+      if (ciRuntimeSmokeEnabled) {
         return parseDataContract(
           publicCourseCatalogSchema,
           ciRuntimeSmokeCatalog,
