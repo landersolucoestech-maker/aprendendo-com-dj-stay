@@ -262,6 +262,31 @@ const routes = [
     pathname: "/certificado",
     required: ["Validar certificado", "Formato: DJSTAY- seguido por 20 caracteres hexadecimais."],
   },
+  {
+    name: "contact",
+    pathname: "/contato",
+    required: ["Solicitação de contato", "Registrar solicitação"],
+  },
+  {
+    name: "register",
+    pathname: "/matricule-se",
+    required: ["Matricule-se", "Crie sua conta para acessar a plataforma."],
+  },
+  {
+    name: "forgot-password",
+    pathname: "/esqueceu-senha",
+    required: ["Recuperar senha", "Enviar instruções"],
+  },
+  {
+    name: "access-denied",
+    pathname: "/acesso-negado",
+    required: ["Acesso negado", "Sua sessão não possui acesso a esta página."],
+  },
+  {
+    name: "not-found",
+    pathname: "/rota-inexistente-b122",
+    required: ["Página não encontrada", "Voltar ao início"],
+  },
 ];
 
 const forbiddenContent = [
@@ -503,10 +528,10 @@ try {
 }
 
 if (failures.length > 0) {
-  console.error("Smoke B118 inválido:\n- " + failures.join("\n- "));
+  console.error("Smoke B118/B122 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  `Smoke B118 aprovado em ${browserExecutable}: CDP aguardou o conteúdo final de home, login e certificado sem exceções não tratadas.`,
+  `Smoke B118/B122 aprovado em ${browserExecutable}: CDP aguardou o conteúdo final de oito rotas públicas sem exceções não tratadas.`,
 );
