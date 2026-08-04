@@ -10,6 +10,8 @@ const paths = {
   documentation: "docs/refactor/FASE-B128-PUBLIC-RUNTIME-NETWORK-ISOLATION.md",
   navigationDocumentation:
     "docs/refactor/FASE-B132-CLIENT-NAVIGATION-NETWORK-ISOLATION.md",
+  cleanupDocumentation:
+    "docs/refactor/FASE-B133-RUNTIME-PROFILE-CLEANUP.md",
   parent: "scripts/check-ci-determinism.mjs",
 };
 
@@ -20,7 +22,7 @@ const expect = (condition, message) => {
 const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
 
 for (const path of Object.values(paths)) {
-  expect(existsSync(path), `Arquivo B128/B132 ausente: ${path}`);
+  expect(existsSync(path), `Arquivo B128/B132/B133 ausente: ${path}`);
 }
 
 const stylesheet = read(paths.stylesheet);
@@ -31,6 +33,7 @@ const runtimeCheck = read(paths.runtimeCheck);
 const workflow = read(paths.workflow);
 const documentation = read(paths.documentation);
 const navigationDocumentation = read(paths.navigationDocumentation);
+const cleanupDocumentation = read(paths.cleanupDocumentation);
 const parent = read(paths.parent);
 
 for (const forbidden of [
@@ -66,9 +69,28 @@ for (const fragment of [
   'packet.method === "Network.requestWillBeSent"',
   'packet.method === "Network.responseReceived"',
   '`${route.name}.network.json`',
+  "const removeBrowserProfileDirectory = async () =>",
+  "attempt < 6",
+  'code === "ENOTEMPTY"',
+  'code === "EBUSY"',
+  'code === "EPERM"',
+  "await delay(200 * (attempt + 1))",
+  "await removeBrowserProfileDirectory()",
+  "Limpeza do perfil temporário do Chrome falhou",
+  "Smoke B118/B122/B123/B127/B133 inválido",
 ]) {
-  expect(routeRuntime.includes(fragment), `Smoke de rotas B128 ausente: ${fragment}`);
+  expect(
+    routeRuntime.includes(fragment),
+    `Smoke de rotas B128/B133 ausente: ${fragment}`,
+  );
 }
+
+expect(
+  !routeRuntime.includes(
+    "rmSync(browserProfileDirectory, { recursive: true, force: true });\n}",
+  ),
+  "Smoke B133 não pode encerrar com remoção única e não tratada do perfil.",
+);
 
 for (const fragment of [
   "const networkRecords = []",
@@ -131,6 +153,28 @@ expect(
   "Workflow B132 deve gerar as nove evidências antes da verificação consolidada de rede.",
 );
 
+for (const forbidden of [
+  "run_runtime_smoke()",
+  "Retry B131",
+  "grep -Fq",
+  "rm -rf /tmp/djstay-browser-profile-*",
+  "tee -a artifacts/diagnostics/browser-runtime.log",
+]) {
+  expect(
+    !workflow.includes(forbidden),
+    `Workflow B133 preserva contorno proibido: ${forbidden}`,
+  );
+}
+
+for (const fragment of [
+  "set -o pipefail",
+  "node scripts/run-browser-runtime-smoke.mjs 2>&1 | tee artifacts/diagnostics/browser-runtime.log",
+  "node scripts/run-browser-client-navigation-smoke.mjs 2>&1 | tee artifacts/diagnostics/browser-navigation.log",
+  "node scripts/check-browser-network-isolation.mjs 2>&1 | tee artifacts/diagnostics/browser-network.log",
+]) {
+  expect(workflow.includes(fragment), `Workflow B133 ausente: ${fragment}`);
+}
+
 for (const fragment of [
   "FASE B128",
   "duas requisições externas em cada uma das oito rotas",
@@ -167,18 +211,38 @@ for (const fragment of [
   );
 }
 
+for (const fragment of [
+  "FASE B133",
+  "produzindo `ENOTEMPTY`",
+  "repetia navegação, coleta de artefatos e validações já concluídas",
+  "repete a remoção no máximo seis vezes",
+  "somente para `ENOTEMPTY`, `EBUSY` e `EPERM`",
+  "não possui mais a função `run_runtime_smoke`",
+  "não repete rotas",
+  "nunca dispara repetição",
+  "nenhum diretório temporário de outra execução é removido por glob",
+  "Supabase remoto não foi modificado",
+  "nenhuma migration, dependência ou lockfile foi alterado",
+]) {
+  expect(
+    cleanupDocumentation.includes(fragment),
+    `Documentação B133 ausente: ${fragment}`,
+  );
+}
+
 expect(
   parent.includes('await import("./check-public-runtime-network-isolation.mjs")'),
-  "Contrato B128/B132 deve permanecer encadeado ao gate de determinismo do CI.",
+  "Contrato B128/B132/B133 deve permanecer encadeado ao gate de determinismo do CI.",
 );
 
 if (failures.length > 0) {
   console.error(
-    "Contrato B128/B132 inválido:\n- " + [...new Set(failures)].join("\n- "),
+    "Contrato B128/B132/B133 inválido:\n- " +
+      [...new Set(failures)].join("\n- "),
   );
   process.exit(1);
 }
 
 console.log(
-  "Contrato B128/B132 aprovado: stack tipográfica nativa, oito rotas diretas e navegação client-side restritas à origem e porta do documento inicial.",
+  "Contrato B128/B132/B133 aprovado: rede pública isolada e limpeza dos perfis temporários tratada na causa sem repetição do smoke pelo workflow.",
 );
