@@ -236,7 +236,7 @@ if (failures.length === 0) {
     'data-route-focus-deferred="true"',
     "não move o foco, não anuncia conclusão e não atualiza `previousPathRef`",
     "target for posteriormente desconectado",
-    "mutações normais que preservam o mesmo nó não disparam refoco",
+    "atualizações normais que preservam o mesmo nó não disparam refoco",
     "document.activeElement.id === \"main-content\"",
     "fallback nunca focado",
     "Supabase remoto não foi modificado",
