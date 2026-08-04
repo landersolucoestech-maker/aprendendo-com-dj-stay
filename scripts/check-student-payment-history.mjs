@@ -56,8 +56,15 @@ if (failures.length === 0) {
   for (const fragment of ["Pedidos reais", "Última cobrança", "Situação do acesso"]) {
     if (!page.includes(fragment)) failures.push(`Página financeira B38 incompleta: ${fragment}`);
   }
-  if (!router.includes('section === "orders" || section === "payments"')) failures.push("Roteador B38 não intercepta seções financeiras.");
-  if (!router.includes("StudentFinancialPortal")) failures.push("Roteador B38 não renderiza o portal financeiro.");
+  for (const fragment of [
+    'case "orders":',
+    'case "payments":',
+    "return <StudentFinancialPortal section={section} />",
+  ]) {
+    if (!router.includes(fragment)) {
+      failures.push(`Roteador B38 incompleto: ${fragment}`);
+    }
+  }
   if (!lazyPages.includes("StudentPortalRouter")) failures.push("Lazy route B38 ainda aponta para o placeholder antigo.");
   for (const route of ['path="/aluno/pedidos"', 'path="/aluno/pagamentos"']) {
     if (!app.includes(route)) failures.push(`Rota financeira B38 ausente: ${route}`);
