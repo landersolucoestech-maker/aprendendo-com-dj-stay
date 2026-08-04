@@ -137,6 +137,7 @@ if (failures.length === 0) {
     'case "history":',
     "return <StudentCoursePage />",
     "return <StudentProfilePage />",
+    "const exhaustiveSection: never = section",
   ]);
   if (router.includes('from "@/pages/student/StudentPortal"')) {
     failures.push("Roteador B113 não pode depender do monólito removido.");
