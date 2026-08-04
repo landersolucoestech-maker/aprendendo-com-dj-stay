@@ -7,7 +7,8 @@ const paths = {
   progressHook: "src/hooks/useProgressCalculation.ts",
   userProgressHook: "src/hooks/useUserProgress.ts",
   dashboard: "src/pages/Dashboard.tsx",
-  studentPortal: "src/pages/student/StudentPortal.tsx",
+  studentCoursePage: "src/pages/student/StudentCoursePage.tsx",
+  studentDashboardPage: "src/pages/student/StudentDashboardPage.tsx",
   lessonGrid: "src/components/LessonGrid.tsx",
   lessonCard: "src/components/LessonCard.tsx",
   moduleProgress: "src/components/ModuleProgress.tsx",
@@ -23,6 +24,10 @@ const expect = (condition, message) => {
 for (const path of Object.values(paths)) {
   expect(existsSync(path), `${path} deve existir.`);
 }
+expect(
+  !existsSync("src/pages/student/StudentPortal.tsx"),
+  "O monólito StudentPortal.tsx não pode ser restaurado após a B113.",
+);
 
 const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
 const pureModule = read(paths.pureModule);
@@ -31,7 +36,8 @@ const modulesHook = read(paths.modulesHook);
 const progressHook = read(paths.progressHook);
 const userProgressHook = read(paths.userProgressHook);
 const dashboard = read(paths.dashboard);
-const studentPortal = read(paths.studentPortal);
+const studentCoursePage = read(paths.studentCoursePage);
+const studentDashboardPage = read(paths.studentDashboardPage);
 const lessonGrid = read(paths.lessonGrid);
 const lessonCard = read(paths.lessonCard);
 const moduleProgress = read(paths.moduleProgress);
@@ -164,17 +170,49 @@ expect(
 );
 
 for (const fragment of [
-  "calculateOverallCourseProgress",
+  "useStudentCourseDetailAccess(courseId)",
+  "useProgressCalculation(modulesQuery.data)",
   "calculateOverallCourseProgress(modules)",
+  "LessonGrid",
+  "ModuleProgress",
+]) {
+  expect(
+    studentCoursePage.includes(fragment),
+    `Página do curso B81/B82/B113 ausente: ${fragment}`,
+  );
+}
+for (const forbidden of [
+  "modules.reduce((total, module) => total + module.progress",
+  "module.progress, 0) /",
   "const averageProgress =",
   "row.progresso_percentual",
+  "useCourseAccess",
+  "getActiveEnrollments",
+  "Date.now()",
+  "new Date(",
 ]) {
-  expect(studentPortal.includes(fragment), `Portal do Aluno B81/B82 ausente: ${fragment}`);
+  expect(
+    !studentCoursePage.includes(forbidden),
+    `Página do curso não pode restaurar lógica obsoleta: ${forbidden}`,
+  );
+}
+
+for (const fragment of [
+  "useStudentProgressSummary()",
+  "progressSummary.average_progress_percent",
+  "progressSummary.completed_lessons",
+  "Conclusões agregadas no banco",
+]) {
+  expect(
+    studentDashboardPage.includes(fragment),
+    `Dashboard do aluno B111 ausente: ${fragment}`,
+  );
 }
 expect(
-  !studentPortal.includes("modules.reduce((total, module) => total + module.progress") &&
-    !studentPortal.includes("module.progress, 0) /"),
-  "Página do curso não pode restaurar média simples de percentuais dos módulos.",
+  !studentDashboardPage.includes("useUserProgress()") &&
+    !studentDashboardPage.includes("row.progresso_percentual") &&
+    !studentDashboardPage.includes("const averageProgress ="),
+  "Dashboard do aluno não pode restaurar agregação de linhas no navegador.",
 );
 
 for (const fragment of [
@@ -236,10 +274,10 @@ expect(
 );
 
 if (failures.length > 0) {
-  console.error("Falhas no contrato B81/B82:\n- " + failures.join("\n- "));
+  console.error("Falhas no contrato B81/B82/B111/B113:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Contrato B81/B82 aprovado: cálculo por módulo, progresso geral ponderado, limites defensivos e consumidores permanecem centralizados e determinísticos.",
+  "Contrato B81/B82/B111/B113 aprovado: cálculo por módulo, progresso geral ponderado e resumo agregado permanecem centralizados, persistidos e determinísticos.",
 );
