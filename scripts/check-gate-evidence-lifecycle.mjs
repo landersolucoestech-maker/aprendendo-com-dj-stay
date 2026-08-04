@@ -8,6 +8,8 @@ const reconciliationDocumentationPath =
   "docs/refactor/FASE-B50-HISTORICAL-GATE-EVIDENCE-RECONCILIATION.md";
 const classificationDocumentationPath =
   "docs/refactor/FASE-B51-GATE-EVIDENCE-CLASSIFICATION.md";
+const supersededCleanupDocumentationPath =
+  "docs/refactor/FASE-B117-SUPERSEDED-GATE-EVIDENCE-CLEANUP.md";
 const workflow = await readFile(workflowPath, "utf8");
 const failures = [];
 
@@ -18,6 +20,7 @@ const requiredFragments = [
   "const gateOutcomes = [",
   "process.env.INSTALL",
   "process.env.LINT",
+  "process.env.UNIT",
   "process.env.CLI",
   "process.env.DB",
   "process.env.TYPES",
@@ -37,7 +40,25 @@ const requiredFragments = [
   'state: "closed"',
   'state_reason: "completed"',
   'state_reason: "not_planned"',
+  "const openGateEvidence = [];",
+  "let reachedLastPage = false;",
+  "for (let page = 1; page <= 100; page += 1)",
+  'github.request("GET /repos/{owner}/{repo}/issues"',
+  'state: "open"',
+  "per_page: 100",
+  "openGateEvidence.push(",
+  "issue.pull_request === undefined",
+  "if (!reachedLastPage)",
+  "const supersededGateEvidence = openGateEvidence.filter(",
+  "issue.number < evidence.data.number",
+  'issue.title.startsWith("Gate técnico — ")',
+  'issue.user?.login === "github-actions[bot]"',
+  'issue.body?.includes("Commit validado:")',
+  "for (const issue of supersededGateEvidence)",
+  "issue_number: issue.number",
+  "UNIT: ${{ steps.unit.outcome }}",
   "CLI: ${{ steps.cli.outcome }}",
+  'test "$UNIT" = success',
   'test "$CLI" = success',
 ];
 
@@ -48,28 +69,52 @@ for (const fragment of requiredFragments) {
 }
 
 const headerUsages = workflow.match(/headers: githubApiHeaders/g) ?? [];
-if (headerUsages.length !== 3) {
+if (headerUsages.length !== 5) {
   failures.push(
-    `${workflowPath}: esperado reutilizar githubApiHeaders em três requisições, encontrados ${headerUsages.length}`,
+    `${workflowPath}: esperado reutilizar githubApiHeaders em cinco requisições, encontrados ${headerUsages.length}`,
   );
 }
 
-const completedClosePattern = /if \(gateSucceeded\) \{\s*await github\.request\("PATCH \/repos\/\{owner\}\/\{repo\}\/issues\/\{issue_number\}"[\s\S]*?state: "closed"[\s\S]*?state_reason: "completed"[\s\S]*?\}\);\s*\} else if \(gateSuperseded\) \{/;
-if (!completedClosePattern.test(workflow)) {
-  failures.push(
-    `${workflowPath}: o encerramento completed não está protegido exclusivamente pelo gateSucceeded`,
-  );
+const successStart = workflow.indexOf("if (gateSucceeded) {");
+const supersededStart = workflow.indexOf("} else if (gateSuperseded) {");
+const successBlock =
+  successStart >= 0 && supersededStart > successStart
+    ? workflow.slice(successStart, supersededStart)
+    : "";
+const supersededBlock =
+  supersededStart >= 0 ? workflow.slice(supersededStart) : "";
+
+for (const fragment of [
+  "issue_number: evidence.data.number",
+  'state_reason: "completed"',
+  "const openGateEvidence = [];",
+  'github.request("GET /repos/{owner}/{repo}/issues"',
+  "issue.number < evidence.data.number",
+  'issue.title.startsWith("Gate técnico — ")',
+  'issue.user?.login === "github-actions[bot]"',
+  'issue.body?.includes("Commit validado:")',
+  "issue_number: issue.number",
+  'state_reason: "not_planned"',
+]) {
+  if (!successBlock.includes(fragment)) {
+    failures.push(
+      `${workflowPath}: reconciliação B117 não está protegida pelo gateSucceeded: ${fragment}`,
+    );
+  }
 }
 
-const supersededClosePattern = /else if \(gateSuperseded\) \{\s*await github\.request\("PATCH \/repos\/\{owner\}\/\{repo\}\/issues\/\{issue_number\}"[\s\S]*?state: "closed"[\s\S]*?state_reason: "not_planned"[\s\S]*?\}\);\s*\}/;
-if (!supersededClosePattern.test(workflow)) {
-  failures.push(
-    `${workflowPath}: execução incompleta sem failure não é encerrada como not_planned`,
-  );
+for (const fragment of [
+  "issue_number: evidence.data.number",
+  'state_reason: "not_planned"',
+]) {
+  if (!supersededBlock.includes(fragment)) {
+    failures.push(
+      `${workflowPath}: execução incompleta não preserva a classificação not_planned: ${fragment}`,
+    );
+  }
 }
 
-const failureMustRemainOpenPattern = /const gateSuperseded = !gateFailed && gateIncomplete;/;
-if (!failureMustRemainOpenPattern.test(workflow)) {
+if (!workflow.includes("const gateSuperseded = !gateFailed && gateIncomplete;")) {
   failures.push(
     `${workflowPath}: gateSuperseded deve excluir explicitamente qualquer execução com failure`,
   );
@@ -84,6 +129,7 @@ if (existsSync(temporaryReconciliationWorkflowPath)) {
 for (const documentationPath of [
   reconciliationDocumentationPath,
   classificationDocumentationPath,
+  supersededCleanupDocumentationPath,
 ]) {
   if (!existsSync(documentationPath)) {
     failures.push(`${documentationPath}: documentação permanente ausente`);
@@ -91,11 +137,11 @@ for (const documentationPath of [
 }
 
 if (failures.length > 0) {
-  console.error("Falhas nos contratos B49/B50/B51:");
+  console.error("Falhas nos contratos B49/B50/B51/B117:");
   for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
 
 console.log(
-  "Contratos B49/B50/B51 aprovados: verdes são completed, falhas permanecem abertas, execuções incompletas sem failure são not_planned e o workflow temporário B50 está ausente.",
+  "Contratos B49/B50/B51/B117 aprovados: verdes são completed, falhas permanecem abertas até um verde posterior e evidências técnicas superadas são reconciliadas como not_planned.",
 );
