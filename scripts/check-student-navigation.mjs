@@ -7,7 +7,7 @@ const paths = {
   certificates: "src/pages/student/Certificates.tsx",
   products: "src/pages/student/MyDigitalProducts.tsx",
   editProfile: "src/pages/EditProfile.tsx",
-  studentPortal: "src/pages/student/StudentPortal.tsx",
+  studentProfile: "src/pages/student/StudentProfilePage.tsx",
   certificateContract: "scripts/check-students-certificates-contract.mjs",
   documentation: "docs/refactor/FASE-B83-STUDENT-NAVIGATION.md",
   package: "package.json",
@@ -29,7 +29,7 @@ const pageFrame = read(paths.pageFrame);
 const certificates = read(paths.certificates);
 const products = read(paths.products);
 const editProfile = read(paths.editProfile);
-const studentPortal = read(paths.studentPortal);
+const studentProfile = read(paths.studentProfile);
 const certificateContract = read(paths.certificateContract);
 const documentation = read(paths.documentation);
 const packageJson = existsSync(paths.package)
@@ -109,7 +109,7 @@ expect(
   "Rota específica de edição deve ativar o shell do aluno.",
 );
 expect(
-  studentPortal.includes('<Link to="/aluno/perfil/editar">Editar perfil</Link>'),
+  studentProfile.includes('<Link to="/aluno/perfil/editar">Editar perfil</Link>'),
   "A ação Editar perfil deve usar a rota específica do aluno.",
 );
 expect(
