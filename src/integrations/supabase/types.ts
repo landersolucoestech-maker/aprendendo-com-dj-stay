@@ -4930,6 +4930,11 @@ export type Database = {
         Returns: Json
       }
       get_public_course_catalog: { Args: never; Returns: Json }
+      get_student_course_access: {
+        Args: { p_active_limit?: number; p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
+      get_student_progress_summary: { Args: never; Returns: Json }
       get_students_admin_dashboard: {
         Args: {
           p_certificate_limit?: number
