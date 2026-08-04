@@ -38,6 +38,8 @@ A sequência cobre, entre outros domínios:
 - persistência da rede completa da navegação client-side home → `/login`;
 - exatamente nove artefatos de rede: oito rotas diretas e uma transição client-side;
 - proibição de um segundo `Document` durante a troca client-side;
+- limpeza limitada do perfil temporário dentro de cada smoke do Chrome;
+- proibição de reexecutar o smoke inteiro para contornar `ENOTEMPTY`;
 - diagnósticos persistentes de TypeScript e navegador com `set -o pipefail`.
 
 Cada arquivo `FASE-B*.md` descreve uma entrega específica. O estado consolidado está em [`../STATUS.md`](../STATUS.md).
@@ -62,6 +64,8 @@ No GitHub Actions, o mesmo snapshot também precisa passar:
 - exatamente um `Document` inicial na prova client-side e nenhum novo `Document` para `/login`;
 - todos os recursos HTTP ou HTTPS na mesma origem e porta do documento servido;
 - exatamente nove arquivos `*.network.json` antes da verificação consolidada;
+- limpeza do diretório temporário limitada ao perfil criado pela execução atual;
+- nenhuma repetição integral do smoke para tratar corrida de filesystem;
 - ausência de exceções JavaScript não tratadas e do Route Error Boundary.
 
 Os artifacts `browser-smoke-<commit>` e `gate-diagnostics-<commit>` preservam DOM, rede e mensagens dos gates aplicáveis. A captura de logs usa `set -o pipefail`, portanto não altera o resultado do comando original.
