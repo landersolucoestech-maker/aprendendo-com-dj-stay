@@ -36,6 +36,9 @@ for (const fragment of [
   "readonly ciRuntimeSmoke: string | undefined;",
   "function parseCiRuntimeSmoke(value: string | undefined): boolean",
   'normalizedValue !== "true"',
+  'rawEnvironment.viteMode !== appEnvironment',
+  "rawEnvironment.isDevelopmentBuild === rawEnvironment.isProductionBuild",
+  'appEnvironment === "production" && !rawEnvironment.isProductionBuild',
   'appEnvironment !== "development"',
   "key === CI_RUNTIME_SMOKE_PUBLISHABLE_KEY",
   "if (!ciRuntimeSmoke)",
@@ -44,12 +47,21 @@ for (const fragment of [
 ]) {
   expect(source.includes(fragment), `Configuração B119 ausente: ${fragment}`);
 }
+expect(
+  !source.includes("O ambiente development exige um build Vite de desenvolvimento."),
+  "B119 não pode voltar a confundir MODE=development com import.meta.env.DEV.",
+);
 
 for (const fragment of [
   `"${syntheticKey}"`,
   'ciRuntimeSmoke: "true"',
   'ciRuntimeSmoke: "1"',
+  "aceita artefato otimizado com MODE development",
   "aceita a configuração sintética somente no smoke de development",
+  "isDevelopmentBuild: false",
+  "isProductionBuild: true",
+  "As flags nativas do Vite DEV e PROD devem possuir valores complementares.",
+  "O ambiente production exige um build Vite de produção.",
   "A chave sintética do smoke somente pode ser usada com VITE_CI_RUNTIME_SMOKE=true.",
   "A configuração sintética do smoke é proibida fora do ambiente development.",
   "VITE_CI_RUNTIME_SMOKE=true exige a chave sintética canônica do smoke.",
@@ -91,6 +103,9 @@ for (const fragment of [
   "FASE B119",
   "`VITE_CI_RUNTIME_SMOKE=true`",
   "não é um artefato de implantação",
+  "Semântica de ambiente e comando",
+  "`MODE=development`, `DEV=false`, `PROD=true`",
+  "As flags `DEV` e `PROD` devem ser complementares",
   "Nenhuma migration",
   "Supabase remoto não foi modificado",
   "branch `main` não foi alterada",
@@ -124,5 +139,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B119 aprovado: o smoke usa marcador sintético restrito a development, sem chave ativa versionada nem artefato implantável falso.",
+  "Contrato B119 aprovado: MODE e flags de comando do Vite permanecem distintos, e o smoke usa marcador sintético sem chave ativa versionada nem artefato implantável falso.",
 );
