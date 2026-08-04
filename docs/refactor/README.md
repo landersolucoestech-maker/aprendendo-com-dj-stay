@@ -35,6 +35,9 @@ A sequência cobre, entre outros domínios:
 - bloqueio de respostas HTTP com status igual ou superior a 400;
 - remoção de Google Fonts e adoção de stack tipográfica nativa;
 - isolamento das oito rotas à origem e porta exatas do documento servido;
+- persistência da rede completa da navegação client-side home → `/login`;
+- exatamente nove artefatos de rede: oito rotas diretas e uma transição client-side;
+- proibição de um segundo `Document` durante a troca client-side;
 - diagnósticos persistentes de TypeScript e navegador com `set -o pipefail`.
 
 Cada arquivo `FASE-B*.md` descreve uma entrega específica. O estado consolidado está em [`../STATUS.md`](../STATUS.md).
@@ -55,8 +58,10 @@ No GitHub Actions, o mesmo snapshot também precisa passar:
 - foco final em `#main-content`, target conectado e anúncio de conclusão;
 - home sintética somente após `Curso de validação do runtime` e `Investimento atual`;
 - zero request para `*.supabase.co` e zero resposta HTTP com status igual ou superior a 400;
-- exatamente um request `Document` por rota;
+- exatamente um request `Document` em cada carregamento direto;
+- exatamente um `Document` inicial na prova client-side e nenhum novo `Document` para `/login`;
 - todos os recursos HTTP ou HTTPS na mesma origem e porta do documento servido;
+- exatamente nove arquivos `*.network.json` antes da verificação consolidada;
 - ausência de exceções JavaScript não tratadas e do Route Error Boundary.
 
 Os artifacts `browser-smoke-<commit>` e `gate-diagnostics-<commit>` preservam DOM, rede e mensagens dos gates aplicáveis. A captura de logs usa `set -o pipefail`, portanto não altera o resultado do comando original.
