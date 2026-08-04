@@ -93,3 +93,4 @@ await import("./check-ci-runtime-catalog-isolation.mjs");
 await import("./check-public-runtime-network-isolation.mjs");
 await import("./check-current-gate-documentation.mjs");
 await import("./check-real-navigation-interaction.mjs");
+await import("./check-mobile-navigation-interaction.mjs");
