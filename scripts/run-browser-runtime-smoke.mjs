@@ -321,11 +321,27 @@ const evaluatePageState = async (client, sessionId) => {
     {
       expression: `(() => {
         const root = document.getElementById("root");
+        const mainContent = document.getElementById("main-content");
+        const skipLinks = Array.from(
+          document.querySelectorAll('a[href="#main-content"]'),
+        );
         return {
           lang: document.documentElement.lang,
           title: document.title,
           rootExists: Boolean(root),
           rootHtml: root?.innerHTML ?? "",
+          mainContentCount: document.querySelectorAll("#main-content").length,
+          mainContentIsLandmark: Boolean(
+            mainContent?.matches('main, [role="main"]'),
+          ),
+          mainContentTabIndex: mainContent?.getAttribute("tabindex") ?? null,
+          skipLinkCount: skipLinks.length,
+          skipLinkText: skipLinks
+            .map((link) => link.textContent?.trim() ?? "")
+            .join(" "),
+          liveRegionCount: document.querySelectorAll(
+            '[aria-live="polite"][aria-atomic="true"]',
+          ).length,
           html: document.documentElement.outerHTML
         };
       })()`,
@@ -352,8 +368,21 @@ const waitForRouteReady = async (client, sessionId, route) => {
     const requiredContentReady = route.required.every((fragment) =>
       dom.includes(fragment),
     );
+    const accessibilityReady =
+      lastState?.mainContentCount === 1 &&
+      lastState.mainContentIsLandmark === true &&
+      lastState.mainContentTabIndex === "-1" &&
+      lastState.skipLinkCount === 1 &&
+      lastState.skipLinkText.includes("Pular para o conteúdo principal") &&
+      lastState.liveRegionCount >= 1;
 
-    if (lastState?.rootHtml?.trim() && requiredContentReady) return lastState;
+    if (
+      lastState?.rootHtml?.trim() &&
+      requiredContentReady &&
+      accessibilityReady
+    ) {
+      return lastState;
+    }
     await delay(250);
   }
   return lastState;
@@ -464,6 +493,28 @@ const runRoute = async (client, route) => {
     if (state?.title !== "Aprendendo com DJ Stay") {
       failures.push(`${route.pathname}: título operacional ausente no DOM renderizado.`);
     }
+    if (state?.mainContentCount !== 1) {
+      failures.push(
+        `${route.pathname}: esperado exatamente um #main-content, recebido ${String(state?.mainContentCount ?? 0)}.`,
+      );
+    }
+    if (state?.mainContentIsLandmark !== true) {
+      failures.push(`${route.pathname}: #main-content não é um landmark principal.`);
+    }
+    if (state?.mainContentTabIndex !== "-1") {
+      failures.push(`${route.pathname}: #main-content deve possuir tabindex="-1".`);
+    }
+    if (state?.skipLinkCount !== 1) {
+      failures.push(
+        `${route.pathname}: esperado exatamente um skip link, recebido ${String(state?.skipLinkCount ?? 0)}.`,
+      );
+    }
+    if (!state?.skipLinkText?.includes("Pular para o conteúdo principal")) {
+      failures.push(`${route.pathname}: texto operacional do skip link ausente.`);
+    }
+    if (!state?.liveRegionCount || state.liveRegionCount < 1) {
+      failures.push(`${route.pathname}: live region de navegação ausente.`);
+    }
 
     for (const fragment of route.required) {
       if (!dom.includes(fragment)) {
@@ -528,10 +579,10 @@ try {
 }
 
 if (failures.length > 0) {
-  console.error("Smoke B118/B122 inválido:\n- " + failures.join("\n- "));
+  console.error("Smoke B118/B122/B123 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  `Smoke B118/B122 aprovado em ${browserExecutable}: CDP aguardou o conteúdo final de oito rotas públicas sem exceções não tratadas.`,
+  `Smoke B118/B122/B123 aprovado em ${browserExecutable}: CDP aguardou conteúdo e prontidão acessível em oito rotas públicas sem exceções não tratadas.`,
 );
