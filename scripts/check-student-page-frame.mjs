@@ -7,7 +7,7 @@ const paths = {
   certificates: "src/pages/student/Certificates.tsx",
   products: "src/pages/student/MyDigitalProducts.tsx",
   editProfile: "src/pages/EditProfile.tsx",
-  studentPortal: "src/pages/student/StudentPortal.tsx",
+  studentProfile: "src/pages/student/StudentProfilePage.tsx",
   financialPortal: "src/pages/student/StudentFinancialPortal.tsx",
   marketplaceContract: "scripts/check-digital-marketplace-contract.mjs",
   certificateContract: "scripts/check-students-certificates-contract.mjs",
@@ -33,7 +33,7 @@ const frame = read(paths.frame);
 const certificates = read(paths.certificates);
 const products = read(paths.products);
 const editProfile = read(paths.editProfile);
-const studentPortal = read(paths.studentPortal);
+const studentProfile = read(paths.studentProfile);
 const financialPortal = read(paths.financialPortal);
 const marketplaceContract = read(paths.marketplaceContract);
 const certificateContract = read(paths.certificateContract);
@@ -118,7 +118,7 @@ expect(
   "Rota de edição do aluno deve ativar o frame.",
 );
 expect(
-  studentPortal.includes('<Link to="/aluno/perfil/editar">Editar perfil</Link>'),
+  studentProfile.includes('<Link to="/aluno/perfil/editar">Editar perfil</Link>'),
   "Perfil do aluno deve abrir o editor no shell.",
 );
 
