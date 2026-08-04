@@ -30,21 +30,37 @@ const parent = read(paths.parent);
 
 for (const fragment of [
   'const focusDeferredAttribute = "data-route-focus-deferred"',
+  "const focusedPathRef = useRef<string | null>(null)",
+  "const focusedTargetRef = useRef<HTMLElement | null>(null)",
   "const routeChanged = previousPathRef.current !== location.pathname",
   "const focusIsDeferred =",
   'target.getAttribute(focusDeferredAttribute) === "true"',
+  "const focusedTargetWasReplaced =",
+  "focusedPathRef.current === location.pathname",
+  "focusedTargetRef.current !== null",
+  "!focusedTargetRef.current.isConnected",
   "if (routeChanged && focusIsDeferred)",
+  "if (routeChanged || focusedTargetWasReplaced)",
   "target.focus({ preventScroll: true })",
-  'setAnnouncement("Navegação concluída. Conteúdo principal atualizado.")',
+  "focusedPathRef.current = location.pathname",
+  "focusedTargetRef.current = target",
+  'setAnnouncement(\n              "Navegação concluída. Conteúdo principal atualizado.",',
   "previousPathRef.current = location.pathname",
 ]) {
   expect(source.includes(fragment), `RouteAccessibility perdeu a garantia B125: ${fragment}`);
 }
+
 expect(
-  /const routeChanged =[\s\S]*?const focusIsDeferred =[\s\S]*?if \(routeChanged && focusIsDeferred\) \{\s*return;\s*\}[\s\S]*?if \(routeChanged\) \{[\s\S]*?target\.focus\([\s\S]*?setAnnouncement\([\s\S]*?\}[\s\S]*?previousPathRef\.current = location\.pathname/s.test(
+  /const routeChanged =[\s\S]*?const focusIsDeferred =[\s\S]*?const focusedTargetWasReplaced =[\s\S]*?if \(routeChanged && focusIsDeferred\) \{\s*return;\s*\}[\s\S]*?if \(routeChanged \|\| focusedTargetWasReplaced\) \{[\s\S]*?target\.focus\([\s\S]*?focusedPathRef\.current = location\.pathname[\s\S]*?focusedTargetRef\.current = target[\s\S]*?if \(routeChanged\) \{[\s\S]*?setAnnouncement\([\s\S]*?\}[\s\S]*?\}[\s\S]*?previousPathRef\.current = location\.pathname/s.test(
     source,
   ),
-  "B125 deve retornar durante o fallback antes de focar, anunciar ou concluir o pathname.",
+  "B125 deve adiar o fallback, focar o conteúdo final e recuperar somente um target focado que foi desconectado.",
+);
+expect(
+  /const handleSkipToContent =[\s\S]*?target\.focus\([\s\S]*?focusedPathRef\.current = location\.pathname[\s\S]*?focusedTargetRef\.current = target[\s\S]*?target\.scrollIntoView/s.test(
+    source,
+  ),
+  "O skip link B125 deve registrar o target focado para permitir recuperação após substituição.",
 );
 
 for (const [name, content] of [
@@ -100,11 +116,12 @@ expect(
 for (const fragment of [
   "FASE B125",
   'data-route-focus-deferred="true"',
-  "não move o foco",
-  "não atualiza `previousPathRef`",
+  "não move o foco, não anuncia conclusão e não atualiza `previousPathRef`",
   "navegação client-side para `/login`",
   "fallback nunca focado",
   "document.activeElement.id === \"main-content\"",
+  "target previamente focado for desconectado",
+  "não disparam refoco",
   "Nenhuma migration",
   "Supabase remoto não foi modificado",
   "Nenhuma dependência ou lockfile foi alterado",
@@ -125,5 +142,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B125 aprovado: fallbacks mantêm foco diferido e o Chrome comprova a transferência para o conteúdo final.",
+  "Contrato B125 aprovado: fallbacks mantêm foco diferido e targets finais substituídos recuperam foco sem interferir em mutações normais.",
 );
