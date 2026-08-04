@@ -142,10 +142,12 @@ for (const fragment of [
   "calculateOverallCourseProgress",
   "calculateOverallCourseProgress(modulesWithProgress)",
   "calculateOverallCourseProgress(modules)",
-  "Dashboard não pode restaurar média simples",
-  "Página do curso não pode restaurar média simples",
+  "studentCoursePage",
+  "studentDashboardPage",
   "StudentCoursePage.tsx",
   "StudentDashboardPage.tsx",
+  "!studentCoursePage.includes(forbidden)",
+  '!studentDashboardPage.includes("useUserProgress()")',
 ]) {
   expect(b81Contract.includes(fragment), `Ponte B81/B82/B113 ausente: ${fragment}`);
 }
