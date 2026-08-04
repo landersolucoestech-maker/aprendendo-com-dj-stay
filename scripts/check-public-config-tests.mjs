@@ -26,6 +26,10 @@ if (failures.length === 0) {
     'key.startsWith("sb_publishable_")',
     'jwtPayload.role !== "anon"',
     'jwtPayload.ref !== expectedProjectRef',
+    "CI_RUNTIME_SMOKE_PUBLISHABLE_KEY",
+    "parseCiRuntimeSmoke",
+    'appEnvironment !== "development"',
+    "ciRuntimeSmoke: import.meta.env.VITE_CI_RUNTIME_SMOKE",
     "return Object.freeze({",
   ]) {
     if (!source.includes(fragment)) {
@@ -36,12 +40,14 @@ if (failures.length === 0) {
   for (const fragment of [
     'from "vitest"',
     'vi.stubEnv("VITE_APP_ENV", "development")',
+    'vi.stubEnv("VITE_CI_RUNTIME_SMOKE", "")',
     'vi.stubEnv("DEV", true)',
     "vi.unstubAllEnvs()",
     "Object.isFrozen(publicConfig)",
     "Object.isFrozen(config)",
     'createJwt({ role: "anon", ref: PRODUCTION_REF })',
     'appEnvironment: "staging"',
+    'ciRuntimeSmoke: "1"',
     'isDevelopmentBuild: false',
     'isProductionBuild: false',
     '"url-invalida"',
@@ -56,6 +62,8 @@ if (failures.length === 0) {
     '"sb_publishable_curta"',
     'createJwt({ role: "authenticated", ref: DEVELOPMENT_REF })',
     'createJwt({ role: "anon", ref: PRODUCTION_REF })',
+    "aceita a configuração sintética somente no smoke de development",
+    "A configuração sintética do smoke é proibida fora do ambiente development.",
   ]) {
     if (!test.includes(fragment)) {
       failures.push(`${testPath}: cobertura obrigatória ausente: ${fragment}`);
@@ -77,11 +85,13 @@ if (failures.length === 0) {
 }
 
 if (failures.length > 0) {
-  console.error("Falhas no contrato B56:");
+  console.error("Falhas no contrato B56/B119:");
   for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
 
+await import("./check-ci-runtime-smoke-config.mjs");
+
 console.log(
-  "Contrato B56 aprovado: configuração pública possui cobertura de ambiente, origem Supabase, project ref e chaves frontend.",
+  "Contrato B56/B119 aprovado: configuração pública real e smoke sintético possuem cobertura isolada por ambiente, flag e formato.",
 );
