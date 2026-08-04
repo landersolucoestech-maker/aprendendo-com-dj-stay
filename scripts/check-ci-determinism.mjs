@@ -94,3 +94,4 @@ await import("./check-public-runtime-network-isolation.mjs");
 await import("./check-current-gate-documentation.mjs");
 await import("./check-real-navigation-interaction.mjs");
 await import("./check-mobile-navigation-interaction.mjs");
+await import("./check-skip-link-keyboard-interaction.mjs");
