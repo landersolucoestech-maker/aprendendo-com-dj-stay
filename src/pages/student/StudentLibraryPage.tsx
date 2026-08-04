@@ -144,7 +144,7 @@ const StudentLibraryPage = () => {
             ) : (
               <div className="grid gap-5 lg:grid-cols-2">
                 {assets.map((asset) => (
-                  <Card key={asset.id} variant="marketplace">
+                  <Card key={asset.id} variant="course">
                     <CardHeader>
                       <div className="flex items-start gap-3">
                         <span className="rounded-xl bg-library/10 p-3 text-library">
