@@ -112,25 +112,7 @@ jobs:
         run: |
           mkdir -p artifacts/diagnostics
           set -o pipefail
-
-          run_runtime_smoke() {
-            node scripts/run-browser-runtime-smoke.mjs 2>&1 | tee -a artifacts/diagnostics/browser-runtime.log
-            return "${PIPESTATUS[0]}"
-          }
-
-          if ! run_runtime_smoke; then
-            if grep -Fq "Error: ENOTEMPTY: directory not empty, rmdir '/tmp/djstay-browser-profile-" artifacts/diagnostics/browser-runtime.log \
-              && ! grep -Fq "Smoke B118/B122/B123/B127 inválido" artifacts/diagnostics/browser-runtime.log; then
-              echo "Retry B131: corrida de limpeza do perfil temporário do Chrome detectada." | tee -a artifacts/diagnostics/browser-runtime.log
-              rm -rf /tmp/djstay-browser-profile-* || true
-              if ! run_runtime_smoke; then
-                exit 1
-              fi
-            else
-              exit 1
-            fi
-          fi
-
+          node scripts/run-browser-runtime-smoke.mjs 2>&1 | tee artifacts/diagnostics/browser-runtime.log
           node scripts/run-browser-client-navigation-smoke.mjs 2>&1 | tee artifacts/diagnostics/browser-navigation.log
           node scripts/check-browser-network-isolation.mjs 2>&1 | tee artifacts/diagnostics/browser-network.log
 
