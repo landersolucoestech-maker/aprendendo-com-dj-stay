@@ -1,4 +1,5 @@
 import StudentActivityHistory from "@/pages/student/StudentActivityHistory";
+import StudentCoursesPage from "@/pages/student/StudentCoursesPage";
 import StudentDashboardPage from "@/pages/student/StudentDashboardPage";
 import StudentFinancialPortal from "@/pages/student/StudentFinancialPortal";
 import StudentLibraryPage from "@/pages/student/StudentLibraryPage";
@@ -13,6 +14,10 @@ interface StudentPortalRouterProps {
 const StudentPortalRouter = ({ section }: StudentPortalRouterProps) => {
   if (section === "dashboard") {
     return <StudentDashboardPage />;
+  }
+
+  if (section === "courses") {
+    return <StudentCoursesPage />;
   }
 
   if (section === "orders" || section === "payments") {
