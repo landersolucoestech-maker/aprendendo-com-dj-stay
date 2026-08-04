@@ -65,13 +65,18 @@ for (const fragment of [
   '"access-denied"',
   '"not-found"',
   'file.endsWith(".network.json")',
+  'entry.resourceType === "Document"',
+  "documentRequests.length !== 1",
+  'documentUrl.hostname === "127.0.0.1"',
+  'documentUrl.hostname === "localhost"',
+  'documentUrl.hostname === "[::1]"',
   'requestUrl.protocol !== "http:"',
   'requestUrl.protocol !== "https:"',
-  'requestUrl.hostname === "127.0.0.1"',
-  'requestUrl.hostname === "localhost"',
-  'requestUrl.hostname === "[::1]"',
+  "requestUrl.origin !== documentUrl.origin",
   '"external-network-summary.json"',
-  "origem HTTP externa proibida",
+  "routeOrigins",
+  "outOfOriginRequestCount",
+  "origem HTTP diferente do documento servido",
 ]) {
   expect(runtimeCheck.includes(fragment), `Verificador B128 ausente: ${fragment}`);
 }
@@ -89,8 +94,11 @@ for (const fragment of [
   "`fonts.googleapis.com`",
   "`fonts.gstatic.com`",
   "stack nativa",
+  "exatamente uma requisição principal do tipo `Document`",
+  "origem completa, incluindo a porta efêmera",
+  "mesma origem do documento principal",
   "`external-network-summary.json`",
-  "qualquer origem HTTP externa bloqueia",
+  "fora da origem e porta exatas do documento servido",
   "Nenhum arquivo de fonte foi versionado",
   "Supabase remoto não foi modificado",
   "Nenhuma dependência ou lockfile foi alterado",
@@ -109,5 +117,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B128 aprovado: o shell usa stack tipográfica nativa e as oito rotas públicas não podem acessar origens HTTP externas.",
+  "Contrato B128 aprovado: o shell usa stack tipográfica nativa e as oito rotas públicas ficam restritas à origem e porta do documento servido.",
 );
