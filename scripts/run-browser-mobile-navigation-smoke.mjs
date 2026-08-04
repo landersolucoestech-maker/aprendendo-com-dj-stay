@@ -52,7 +52,7 @@ if (browserExecutable === null) {
   failures.push("Chrome ou Chromium não foi encontrado no runner.");
 }
 if (failures.length > 0) {
-  console.error("Smoke B136 bloqueado:\n- " + failures.join("\n- "));
+  console.error("Smoke B136/B137 bloqueado:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
@@ -95,6 +95,8 @@ let browserSpawnError = null;
 let client = null;
 let targetId = null;
 let sessionId = null;
+let firstOpenState = null;
+let keyboardClosedState = null;
 let finalState = null;
 let menuTarget = null;
 let loginTarget = null;
@@ -245,7 +247,9 @@ const evaluate = async (expression) => {
 const readState = () =>
   evaluate(`(() => {
     const main = document.getElementById("main-content");
+    const menu = document.getElementById("mobile-navigation");
     const menuButton = document.querySelector(${JSON.stringify(menuButtonSelector)});
+    const active = document.activeElement;
     const liveRegions = Array.from(
       document.querySelectorAll('[aria-live="polite"][aria-atomic="true"]'),
     );
@@ -253,15 +257,21 @@ const readState = () =>
       pathname: window.location.pathname,
       html: document.documentElement.outerHTML,
       mainText: main?.textContent ?? "",
-      activeElementId: document.activeElement?.id ?? null,
-      activeElementConnected: document.activeElement?.isConnected ?? false,
-      menuExists: Boolean(document.getElementById("mobile-navigation")),
+      activeElementId: active?.id ?? null,
+      activeElementTagName: active?.tagName ?? null,
+      activeElementText: active?.textContent?.trim() ?? "",
+      activeElementConnected: active?.isConnected ?? false,
+      activeElementWithinMobileMenu: Boolean(menu && active && menu.contains(active)),
+      activeElementAriaControls:
+        active instanceof HTMLElement ? active.getAttribute("aria-controls") : null,
+      menuExists: Boolean(menu),
       menuExpanded: menuButton?.getAttribute("aria-expanded") ?? null,
       menuLabel: menuButton?.getAttribute("aria-label") ?? null,
       announcement: liveRegions
         .map((region) => region.textContent?.trim() ?? "")
         .find((text) => text.includes("Navegação concluída")) ?? "",
       interactions: window.__b136InteractionProbe ?? [],
+      keyboardEvents: window.__b137KeyboardProbe ?? [],
     };
   })()`);
 
@@ -350,6 +360,25 @@ const dispatchTrustedClick = async (target) => {
   );
 };
 
+const dispatchTrustedEscape = async () => {
+  const keyEvent = {
+    key: "Escape",
+    code: "Escape",
+    windowsVirtualKeyCode: 27,
+    nativeVirtualKeyCode: 27,
+  };
+  await client.request(
+    "Input.dispatchKeyEvent",
+    { type: "keyDown", ...keyEvent },
+    sessionId,
+  );
+  await client.request(
+    "Input.dispatchKeyEvent",
+    { type: "keyUp", ...keyEvent },
+    sessionId,
+  );
+};
+
 const validateNetwork = () => {
   const requests = networkRecords.filter((entry) => entry.kind === "request");
   const responses = networkRecords.filter((entry) => entry.kind === "response");
@@ -357,15 +386,17 @@ const validateNetwork = () => {
   let documentUrl = null;
 
   if (documents.length !== 1) {
-    failures.push(`B136 esperava um único Document inicial, recebeu ${documents.length}.`);
+    failures.push(
+      `B136/B137 esperava um único Document inicial, recebeu ${documents.length}.`,
+    );
   } else {
     try {
       documentUrl = new URL(documents[0].url);
       if (documentUrl.pathname !== "/") {
-        failures.push(`Document inicial B136 inesperado: ${documentUrl.pathname}`);
+        failures.push(`Document inicial B136/B137 inesperado: ${documentUrl.pathname}`);
       }
     } catch {
-      failures.push(`URL do Document B136 inválida: ${documents[0].url}`);
+      failures.push(`URL do Document B136/B137 inválida: ${documents[0].url}`);
     }
   }
 
@@ -373,7 +404,7 @@ const validateNetwork = () => {
     (entry) => entry.phase === "client-navigation",
   );
   if (navigationDocuments.length !== 0) {
-    failures.push("A navegação móvel B136 criou novo Document para /login.");
+    failures.push("A navegação móvel B136/B137 criou novo Document para /login.");
   }
 
   const outOfOrigin = [];
@@ -383,7 +414,7 @@ const validateNetwork = () => {
       try {
         requestUrl = new URL(request.url);
       } catch {
-        failures.push(`URL de request B136 inválida: ${request.url}`);
+        failures.push(`URL de request B136/B137 inválida: ${request.url}`);
         continue;
       }
       if (
@@ -395,12 +426,14 @@ const validateNetwork = () => {
     }
   }
   for (const url of outOfOrigin) {
-    failures.push(`Request móvel B136 saiu da origem do documento: ${url}`);
+    failures.push(`Request móvel B136/B137 saiu da origem do documento: ${url}`);
   }
 
   const failedResponses = responses.filter((entry) => Number(entry.status) >= 400);
   for (const response of failedResponses) {
-    failures.push(`Resposta HTTP móvel B136 ${response.status}: ${response.url}`);
+    failures.push(
+      `Resposta HTTP móvel B136/B137 ${response.status}: ${response.url}`,
+    );
   }
 
   return {
@@ -501,11 +534,12 @@ try {
       state.menuLabel === "Abrir menu",
   );
   if (homeState?.menuLabel !== "Abrir menu") {
-    throw new Error("A home móvel B136 não ficou pronta com menu fechado.");
+    throw new Error("A home móvel B136/B137 não ficou pronta com menu fechado.");
   }
 
   await evaluate(`(() => {
     window.__b136InteractionProbe = [];
+    window.__b137KeyboardProbe = [];
     const menuSelector = ${JSON.stringify(menuButtonSelector)};
     const loginSelector = ${JSON.stringify(mobileLoginSelector)};
     document.addEventListener("click", (event) => {
@@ -528,6 +562,19 @@ try {
             : null,
       });
     }, true);
+    window.addEventListener("keydown", (event) => {
+      window.__b137KeyboardProbe.push({
+        type: event.type,
+        key: event.key,
+        code: event.code,
+        isTrusted: event.isTrusted,
+        defaultPrevented: event.defaultPrevented,
+        targetText:
+          event.target instanceof HTMLElement
+            ? event.target.textContent?.trim() ?? ""
+            : "",
+      });
+    });
   })()`);
 
   networkPhase = "mobile-menu-open";
@@ -541,22 +588,109 @@ try {
 
   menuTarget = await prepareTarget(menuButtonSelector, "");
   if (menuTarget?.error || menuTarget?.ariaLabel !== "Abrir menu") {
-    throw new Error(`Alvo do menu B136 inválido: ${JSON.stringify(menuTarget)}`);
+    throw new Error(`Alvo do menu B136/B137 inválido: ${JSON.stringify(menuTarget)}`);
   }
   await dispatchTrustedClick(menuTarget);
 
-  const openState = await waitForState(
+  firstOpenState = await waitForState(
     (state) =>
       state?.menuExists === true &&
       state.menuExpanded === "true" &&
       state.menuLabel === "Fechar menu" &&
+      state.activeElementWithinMobileMenu === true &&
+      state.activeElementTagName === "BUTTON" &&
+      state.activeElementText === "Início" &&
       state.interactions.some(
         (interaction) =>
           interaction.kind === "menu-toggle" && interaction.isTrusted === true,
       ),
   );
-  if (openState?.menuExists !== true) {
-    throw new Error("O clique real B136 não abriu o menu móvel.");
+  if (
+    firstOpenState?.activeElementWithinMobileMenu !== true ||
+    firstOpenState?.activeElementText !== "Início"
+  ) {
+    throw new Error(
+      `O menu B137 não focou o primeiro controle: ${JSON.stringify({
+        tag: firstOpenState?.activeElementTagName,
+        text: firstOpenState?.activeElementText,
+        withinMenu: firstOpenState?.activeElementWithinMobileMenu,
+      })}`,
+    );
+  }
+
+  networkPhase = "mobile-menu-escape";
+  networkRecords.push({
+    kind: "phase",
+    phase: networkPhase,
+    pathname: "/",
+    interaction: "trusted-key",
+    key: "Escape",
+  });
+  await dispatchTrustedEscape();
+
+  keyboardClosedState = await waitForState(
+    (state) =>
+      state?.pathname === "/" &&
+      state.menuExists === false &&
+      state.menuExpanded === "false" &&
+      state.menuLabel === "Abrir menu" &&
+      state.activeElementAriaControls === "mobile-navigation" &&
+      state.activeElementConnected === true &&
+      state.keyboardEvents.some(
+        (event) =>
+          event.type === "keydown" &&
+          event.key === "Escape" &&
+          event.code === "Escape" &&
+          event.isTrusted === true &&
+          event.defaultPrevented === true,
+      ),
+  );
+  if (keyboardClosedState?.menuExists !== false) {
+    failures.push("O Escape B137 não fechou o menu móvel.");
+  }
+  if (keyboardClosedState?.activeElementAriaControls !== "mobile-navigation") {
+    failures.push("O Escape B137 não devolveu o foco ao botão do menu.");
+  }
+  const escapeEvent = keyboardClosedState?.keyboardEvents?.find(
+    (event) => event.type === "keydown" && event.key === "Escape",
+  );
+  if (escapeEvent?.isTrusted !== true) {
+    failures.push("O evento Escape B137 não foi confiável.");
+  }
+  if (escapeEvent?.defaultPrevented !== true) {
+    failures.push("O handler B137 não preveniu o comportamento padrão do Escape.");
+  }
+
+  networkPhase = "mobile-menu-reopen";
+  networkRecords.push({
+    kind: "phase",
+    phase: networkPhase,
+    pathname: "/",
+    interaction: "trusted-click",
+    selector: menuButtonSelector,
+  });
+  menuTarget = await prepareTarget(menuButtonSelector, "");
+  if (menuTarget?.error || menuTarget?.ariaLabel !== "Abrir menu") {
+    throw new Error(
+      `Alvo de reabertura B137 inválido: ${JSON.stringify(menuTarget)}`,
+    );
+  }
+  await dispatchTrustedClick(menuTarget);
+
+  const reopenedState = await waitForState(
+    (state) =>
+      state?.menuExists === true &&
+      state.menuExpanded === "true" &&
+      state.menuLabel === "Fechar menu" &&
+      state.activeElementWithinMobileMenu === true &&
+      state.activeElementText === "Início" &&
+      state.interactions.filter(
+        (interaction) =>
+          interaction.kind === "menu-toggle" && interaction.isTrusted === true,
+      ).length === 2,
+  );
+  if (reopenedState?.menuExists !== true) {
+    throw new Error("O segundo clique real B137 não reabriu o menu móvel.");
   }
 
   loginTarget = await prepareTarget(mobileLoginSelector, "Entrar");
@@ -565,7 +699,9 @@ try {
     loginTarget?.text !== "Entrar" ||
     loginTarget?.pathname !== "/login"
   ) {
-    throw new Error(`Alvo Entrar móvel B136 inválido: ${JSON.stringify(loginTarget)}`);
+    throw new Error(
+      `Alvo Entrar móvel B136/B137 inválido: ${JSON.stringify(loginTarget)}`,
+    );
   }
 
   await client.request(
@@ -601,6 +737,10 @@ try {
       state.announcement.includes(
         "Navegação concluída. Conteúdo principal atualizado.",
       ) &&
+      state.interactions.filter(
+        (interaction) =>
+          interaction.kind === "menu-toggle" && interaction.isTrusted === true,
+      ).length === 2 &&
       state.interactions.some(
         (interaction) =>
           interaction.kind === "login-link" &&
@@ -611,50 +751,53 @@ try {
   );
 
   if (finalState?.pathname !== "/login") {
-    failures.push("O link Entrar móvel B136 não navegou para /login.");
+    failures.push("O link Entrar móvel B136/B137 não navegou para /login.");
   }
   if (finalState?.menuExists !== false) {
-    failures.push("O menu móvel B136 permaneceu aberto após a navegação.");
+    failures.push("O menu móvel B136/B137 permaneceu aberto após a navegação.");
   }
   if (finalState?.activeElementId !== "main-content") {
-    failures.push("O foco final móvel B136 não está em #main-content.");
+    failures.push("O foco final móvel B136/B137 não está em #main-content.");
   }
   if (finalState?.activeElementConnected !== true) {
-    failures.push("O foco final móvel B136 não está conectado ao DOM.");
+    failures.push("O foco final móvel B136/B137 não está conectado ao DOM.");
   }
   if (
     !finalState?.announcement?.includes(
       "Navegação concluída. Conteúdo principal atualizado.",
     )
   ) {
-    failures.push("A navegação móvel B136 não foi anunciada.");
+    failures.push("A navegação móvel B136/B137 não foi anunciada.");
   }
 
-  const menuInteraction = finalState?.interactions?.find(
+  const menuInteractions = finalState?.interactions?.filter(
     (interaction) => interaction.kind === "menu-toggle",
   );
   const loginInteraction = finalState?.interactions?.find(
     (interaction) => interaction.kind === "login-link",
   );
-  if (menuInteraction?.isTrusted !== true) {
-    failures.push("O clique no botão do menu B136 não foi confiável.");
+  if (menuInteractions?.length !== 2) {
+    failures.push("B137 não registrou abertura e reabertura do menu móvel.");
+  }
+  if (menuInteractions?.some((interaction) => interaction.isTrusted !== true)) {
+    failures.push("Um clique no botão do menu B136/B137 não foi confiável.");
   }
   if (loginInteraction?.isTrusted !== true) {
-    failures.push("O clique no link Entrar móvel B136 não foi confiável.");
+    failures.push("O clique no link Entrar móvel B136/B137 não foi confiável.");
   }
   if (loginInteraction?.pathname !== "/login") {
-    failures.push("O link Entrar móvel B136 não apontava para /login.");
+    failures.push("O link Entrar móvel B136/B137 não apontava para /login.");
   }
 
   for (const exception of diagnostics.filter(
     (entry) => entry.level === "exception",
   )) {
-    failures.push(`Exceção JavaScript B136: ${exception.text}`);
+    failures.push(`Exceção JavaScript B136/B137: ${exception.text}`);
   }
   networkSummary = validateNetwork();
 } catch (error) {
   failures.push(
-    `Execução B136 falhou: ${error instanceof Error ? error.message : String(error)}`,
+    `Execução B136/B137 falhou: ${error instanceof Error ? error.message : String(error)}`,
   );
   networkSummary = validateNetwork();
 } finally {
@@ -684,7 +827,10 @@ try {
       {
         viewport: { width: 390, height: 844, mobile: true },
         targets: { menu: menuTarget, login: loginTarget },
+        firstOpenState,
+        keyboardClosedState,
         interactions: finalState?.interactions ?? [],
+        keyboardEvents: finalState?.keyboardEvents ?? [],
         finalState,
         networkSummary,
         networkRecords,
@@ -711,16 +857,16 @@ try {
     await removeProfileDirectory();
   } catch (error) {
     failures.push(
-      `Limpeza do perfil temporário B136 falhou: ${error instanceof Error ? error.message : String(error)}`,
+      `Limpeza do perfil temporário B136/B137 falhou: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }
 
 if (failures.length > 0) {
-  console.error("Smoke B136 inválido:\n- " + failures.join("\n- "));
+  console.error("Smoke B136/B137 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Smoke B136 aprovado: menu móvel e link Entrar foram acionados por cliques confiáveis, o menu fechou, o login recebeu foco e anúncio, e a navegação permaneceu no documento e origem iniciais.",
+  "Smoke B136/B137 aprovado: foco inicial móvel, Escape confiável com retorno ao botão, reabertura, login, anúncio e rede permaneceram corretos.",
 );
