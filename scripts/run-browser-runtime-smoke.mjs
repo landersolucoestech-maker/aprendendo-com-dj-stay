@@ -319,11 +319,16 @@ const evaluatePageState = async (client, sessionId) => {
   return response.result?.value ?? null;
 };
 
-const waitForRenderedRoot = async (client, sessionId) => {
+const waitForRouteReady = async (client, sessionId, route) => {
   let lastState = null;
-  for (let attempt = 0; attempt < 60; attempt += 1) {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
     lastState = await evaluatePageState(client, sessionId);
-    if (lastState?.rootHtml?.trim()) return lastState;
+    const dom = lastState?.html ?? "";
+    const requiredContentReady = route.required.every((fragment) =>
+      dom.includes(fragment),
+    );
+
+    if (lastState?.rootHtml?.trim() && requiredContentReady) return lastState;
     await delay(250);
   }
   return lastState;
@@ -402,7 +407,7 @@ const runRoute = async (client, route) => {
     }
     await loaded;
 
-    const state = await waitForRenderedRoot(client, sessionId);
+    const state = await waitForRouteReady(client, sessionId, route);
     const dom = state?.html ?? "";
 
     writeFileSync(
@@ -503,5 +508,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `Smoke B118 aprovado em ${browserExecutable}: CDP aguardou a renderização React de home, login e certificado sem exceções não tratadas.`,
+  `Smoke B118 aprovado em ${browserExecutable}: CDP aguardou o conteúdo final de home, login e certificado sem exceções não tratadas.`,
 );
