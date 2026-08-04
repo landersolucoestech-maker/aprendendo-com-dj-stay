@@ -89,11 +89,20 @@ if (failures.length === 0) {
     failures.push("Página B108 não pode usar o tamanho da página como total persistido.");
   }
 
-  requireFragments(router, "Roteador B108", [
+  requireFragments(router, "Roteador B108/B113", [
     'import StudentActivityHistory from "@/pages/student/StudentActivityHistory";',
-    'if (section === "history")',
+    'export type StudentPortalSection =',
+    '| "history";',
+    "switch (section)",
+    'case "history":',
     "return <StudentActivityHistory />;",
+    "const exhaustiveSection: never = section;",
   ]);
+  if (router.includes('if (section === "history")')) {
+    failures.push(
+      "Roteador B108/B113 não pode restaurar condicionais isoladas após adotar switch exaustivo.",
+    );
+  }
   requireFragments(existingHook, "Dashboard recente preservado", [
     "export const useRecentActivities = (limit = 10)",
     ".limit(normalizedLimit)",
@@ -114,10 +123,10 @@ if (failures.length === 0) {
 }
 
 if (failures.length > 0) {
-  console.error("Contrato B108 inválido:\n- " + failures.join("\n- "));
+  console.error("Contrato B108/B113 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Contrato B108 aprovado: o aluno acessa todo o histórico de atividades por paginação real no servidor.",
+  "Contrato B108/B113 aprovado: o histórico usa paginação real no servidor e permanece integrado ao roteador exaustivo do portal extraído.",
 );
