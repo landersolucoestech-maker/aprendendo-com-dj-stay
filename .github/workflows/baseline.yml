@@ -100,6 +100,12 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_DEV_PUBLISHABLE_KEY }}
         run: npm run build:dev
 
+      - name: Smoke no navegador
+        id: browser
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node scripts/run-browser-runtime-smoke.mjs
+
       - name: Exportar tipos gerados
         if: steps.types.outcome == 'success'
         uses: actions/upload-artifact@v7
@@ -107,6 +113,15 @@ jobs:
           name: database-types-${{ github.sha }}
           path: artifacts/database.types.ts
           retention-days: 1
+
+      - name: Exportar evidência do navegador
+        if: always() && steps.browser.outcome != 'skipped'
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-smoke-${{ github.sha }}
+          path: artifacts/browser-smoke
+          retention-days: 1
+          if-no-files-found: warn
 
       - name: Evidência
         if: always()
@@ -120,6 +135,7 @@ jobs:
           TYPES: ${{ steps.types.outcome }}
           TYPECHECK: ${{ steps.typecheck.outcome }}
           BUILD: ${{ steps.build.outcome }}
+          BROWSER: ${{ steps.browser.outcome }}
         with:
           script: |
             const githubApiHeaders = {
@@ -134,7 +150,8 @@ jobs:
               process.env.DB,
               process.env.TYPES,
               process.env.TYPECHECK,
-              process.env.BUILD
+              process.env.BUILD,
+              process.env.BROWSER
             ];
             const gateSucceeded = gateOutcomes.every((outcome) => outcome === "success");
             const gateFailed = gateOutcomes.some((outcome) => outcome === "failure");
@@ -149,7 +166,7 @@ jobs:
               title: `Gate técnico — ${context.sha.slice(0,12)}`,
               body: [
                 `Commit validado: \`${context.sha}\``,
-                `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.name}/actions/runs/${context.runId}`,
                 `npm ci: **${process.env.INSTALL}**`,
                 `lint: **${process.env.LINT}**`,
                 `testes unitários: **${process.env.UNIT}**`,
@@ -157,7 +174,8 @@ jobs:
                 `banco + pgTAP: **${process.env.DB}**`,
                 `tipos: **${process.env.TYPES}**`,
                 `TypeScript: **${process.env.TYPECHECK}**`,
-                `build: **${process.env.BUILD}**`
+                `build: **${process.env.BUILD}**`,
+                `navegador: **${process.env.BROWSER}**`
               ].join('\n'),
               headers: githubApiHeaders
             });
@@ -238,6 +256,7 @@ jobs:
           TYPES: ${{ steps.types.outcome }}
           TYPECHECK: ${{ steps.typecheck.outcome }}
           BUILD: ${{ steps.build.outcome }}
+          BROWSER: ${{ steps.browser.outcome }}
         run: |
           test "$INSTALL" = success
           test "$LINT" = success
@@ -247,3 +266,4 @@ jobs:
           test "$TYPES" = success
           test "$TYPECHECK" = success
           test "$BUILD" = success
+          test "$BROWSER" = success
