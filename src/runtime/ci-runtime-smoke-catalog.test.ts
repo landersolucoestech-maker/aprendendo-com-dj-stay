@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { publicCourseCatalogSchema } from "@/contracts/public-course-catalog";
 import {
   ciRuntimeSmokeCatalog,
   ciRuntimeSmokeCourseTitle,
 } from "@/runtime/ci-runtime-smoke-catalog";
+import { loadPublicCourseCatalog } from "@/runtime/load-public-course-catalog";
 
 describe("ci runtime smoke catalog", () => {
   it("satisfaz o contrato público com totais derivados coerentes", () => {
@@ -23,5 +24,29 @@ describe("ci runtime smoke catalog", () => {
 
     expect(course.slug).toBe("curso-validacao-runtime");
     expect(course.description).toContain("nunca é usado fora do smoke sintético");
+  });
+
+  it("não invoca a RPC no modo sintético", async () => {
+    const executeRpc = vi.fn(async () => ({
+      data: null,
+      error: new Error("A RPC não deveria ser chamada."),
+    }));
+
+    const catalog = await loadPublicCourseCatalog(true, executeRpc);
+
+    expect(executeRpc).not.toHaveBeenCalled();
+    expect(catalog.courses[0]?.title).toBe(ciRuntimeSmokeCourseTitle);
+  });
+
+  it("mantém a RPC real fora do modo sintético", async () => {
+    const executeRpc = vi.fn(async () => ({
+      data: ciRuntimeSmokeCatalog,
+      error: null,
+    }));
+
+    const catalog = await loadPublicCourseCatalog(false, executeRpc);
+
+    expect(executeRpc).toHaveBeenCalledTimes(1);
+    expect(catalog).toEqual(ciRuntimeSmokeCatalog);
   });
 });
