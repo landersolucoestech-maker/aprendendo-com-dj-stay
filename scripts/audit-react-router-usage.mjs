@@ -80,7 +80,7 @@ console.log(`Superfícies de navegação (${navigation.length}):`);
 for (const entry of navigation) console.log(`- ${entry}`);
 
 if (prohibited.length > 0) {
-  console.error("Arquitetura React Router incompatível com a exceção declarativa:");
+  console.error("Arquitetura React Router incompatível com o limite declarativo:");
   for (const entry of prohibited) console.error(`- ${entry}`);
   process.exit(1);
 }
