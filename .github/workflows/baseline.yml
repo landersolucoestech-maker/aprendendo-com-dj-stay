@@ -89,7 +89,10 @@ jobs:
         id: typecheck
         if: steps.install.outcome == 'success'
         continue-on-error: true
-        run: npm run typecheck
+        run: |
+          mkdir -p artifacts/diagnostics
+          set -o pipefail
+          npm run typecheck 2>&1 | tee artifacts/diagnostics/typecheck.log
 
       - name: Build
         id: build
@@ -107,9 +110,11 @@ jobs:
         if: steps.build.outcome == 'success'
         continue-on-error: true
         run: |
-          node scripts/run-browser-runtime-smoke.mjs
-          node scripts/check-browser-network-isolation.mjs
-          node scripts/run-browser-client-navigation-smoke.mjs
+          mkdir -p artifacts/diagnostics
+          set -o pipefail
+          node scripts/run-browser-runtime-smoke.mjs 2>&1 | tee artifacts/diagnostics/browser-runtime.log
+          node scripts/check-browser-network-isolation.mjs 2>&1 | tee artifacts/diagnostics/browser-network.log
+          node scripts/run-browser-client-navigation-smoke.mjs 2>&1 | tee artifacts/diagnostics/browser-navigation.log
 
       - name: Exportar tipos gerados
         if: steps.types.outcome == 'success'
@@ -118,6 +123,15 @@ jobs:
           name: database-types-${{ github.sha }}
           path: artifacts/database.types.ts
           retention-days: 1
+
+      - name: Exportar diagnósticos do gate
+        if: always() && (steps.typecheck.outcome != 'skipped' || steps.browser.outcome != 'skipped')
+        uses: actions/upload-artifact@v7
+        with:
+          name: gate-diagnostics-${{ github.sha }}
+          path: artifacts/diagnostics
+          retention-days: 1
+          if-no-files-found: warn
 
       - name: Exportar evidência do navegador
         if: always() && steps.browser.outcome != 'skipped'
