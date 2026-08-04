@@ -29,7 +29,13 @@ A sequência cobre, entre outros domínios:
 - reconciliação de landmark após substituições do `Suspense`;
 - prontidão de `#main-content`, `tabindex="-1"`, skip link e live region antes da coleta do DOM;
 - foco diferido nos fallbacks lazy e transferência para o conteúdo final;
-- recuperação de foco quando o target final previamente focado é substituído.
+- recuperação de foco quando o target final previamente focado é substituído;
+- catálogo sintético canônico validado pelo mesmo schema Zod da RPC real;
+- zero chamada à RPC e zero rede Supabase remota no build sintético;
+- bloqueio de respostas HTTP com status igual ou superior a 400;
+- remoção de Google Fonts e adoção de stack tipográfica nativa;
+- isolamento das oito rotas à origem e porta exatas do documento servido;
+- diagnósticos persistentes de TypeScript e navegador com `set -o pipefail`.
 
 Cada arquivo `FASE-B*.md` descreve uma entrega específica. O estado consolidado está em [`../STATUS.md`](../STATUS.md).
 
@@ -47,6 +53,12 @@ No GitHub Actions, o mesmo snapshot também precisa passar:
 - exatamente um link `Pular para o conteúdo principal` e uma live region de navegação;
 - navegação client-side home → `/login` com fallback observado e nunca focado;
 - foco final em `#main-content`, target conectado e anúncio de conclusão;
+- home sintética somente após `Curso de validação do runtime` e `Investimento atual`;
+- zero request para `*.supabase.co` e zero resposta HTTP com status igual ou superior a 400;
+- exatamente um request `Document` por rota;
+- todos os recursos HTTP ou HTTPS na mesma origem e porta do documento servido;
 - ausência de exceções JavaScript não tratadas e do Route Error Boundary.
+
+Os artifacts `browser-smoke-<commit>` e `gate-diagnostics-<commit>` preservam DOM, rede e mensagens dos gates aplicáveis. A captura de logs usa `set -o pipefail`, portanto não altera o resultado do comando original.
 
 Uma fase só é considerada concluída quando todas as validações aplicáveis ao seu escopo passam no mesmo snapshot. A aprovação do artefato público não equivale a homologação financeira, E2E autenticado, pentest ou promoção para produção.
