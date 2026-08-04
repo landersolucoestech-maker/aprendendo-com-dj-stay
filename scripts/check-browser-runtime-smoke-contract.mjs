@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 
 const paths = {
   runtime: "scripts/run-browser-runtime-smoke.mjs",
+  cdpClient: "scripts/lib/cdp-client.mjs",
   workflow: ".github/workflows/baseline.yml",
   parent: "scripts/check-ci-determinism.mjs",
   documentation: "docs/refactor/FASE-B118-HEADLESS-BROWSER-SMOKE.md",
@@ -18,11 +19,13 @@ for (const path of Object.values(paths)) {
 }
 
 const runtime = read(paths.runtime);
+const cdpClient = read(paths.cdpClient);
 const workflow = read(paths.workflow);
 const parent = read(paths.parent);
 const documentation = read(paths.documentation);
 
 for (const fragment of [
+  'import { CdpClient } from "./lib/cdp-client.mjs";',
   'path.join(root, "artifacts", "browser-smoke")',
   'process.env.BROWSER_EXECUTABLE',
   '"/usr/bin/google-chrome"',
@@ -30,8 +33,27 @@ for (const fragment of [
   '"--headless=new"',
   '"--no-sandbox"',
   '"--disable-dev-shm-usage"',
-  '"--virtual-time-budget=10000"',
-  '"--dump-dom"',
+  '"--remote-debugging-address=127.0.0.1"',
+  '`--remote-debugging-port=${browserDebugPort}`',
+  '"--remote-allow-origins=*"',
+  '`${browserDebugUrl}/json/version`',
+  'CdpClient.connect(webSocketDebuggerUrl)',
+  'client.request("Target.createTarget"',
+  'client.request("Target.attachToTarget"',
+  'client.request("Page.enable"',
+  'client.request("Runtime.enable"',
+  'client.request("Log.enable"',
+  'client.waitForEvent("Page.loadEventFired"',
+  'client.request("Page.navigate"',
+  '"Runtime.exceptionThrown"',
+  '"Runtime.consoleAPICalled"',
+  '"Log.entryAdded"',
+  '"Runtime.evaluate"',
+  'root?.innerHTML ?? ""',
+  'waitForRenderedRoot(client, sessionId)',
+  'client.request("Target.closeTarget"',
+  'cdpClient.close()',
+  'rmSync(browserProfileDirectory, { recursive: true, force: true })',
   'pathname: "/"',
   'pathname: "/login"',
   'pathname: "/certificado"',
@@ -39,11 +61,24 @@ for (const fragment of [
   '"Acesse sua conta para continuar aprendendo."',
   '"Validar certificado"',
   '"Esta página não pôde ser carregada"',
-  '/<div\\s+id="root"\\s*>\\s*<\\/div>/i',
-  'rmSync(profileDirectory, { recursive: true, force: true })',
-  'await stopPreview();',
+  '`${route.name}.runtime.json`',
+  '`${route.name}.html`',
+  '"chrome-process.log"',
+  '"preview-process.log"',
 ]) {
   expect(runtime.includes(fragment), `Runtime B118 perdeu a garantia: ${fragment}`);
+}
+
+for (const fragment of [
+  "export class CdpClient",
+  "static async connect(url",
+  "request(",
+  "addEventListener(listener)",
+  "waitForEvent(method, sessionId",
+  "Timeout na chamada CDP",
+  "close()",
+]) {
+  expect(cdpClient.includes(fragment), `Cliente CDP B118 perdeu a garantia: ${fragment}`);
 }
 
 for (const forbidden of [
@@ -51,10 +86,11 @@ for (const forbidden of [
   "puppeteer",
   "selenium",
   "webdriver",
-  "https://",
+  '"--dump-dom"',
+  '"--virtual-time-budget',
 ]) {
   expect(
-    !runtime.toLocaleLowerCase("pt-BR").includes(forbidden),
+    !runtime.toLocaleLowerCase("pt-BR").includes(forbidden.toLocaleLowerCase("pt-BR")),
     `Runtime B118 não pode depender de ${forbidden}.`,
   );
 }
@@ -89,10 +125,12 @@ expect(
 
 for (const fragment of [
   "FASE B118",
-  "Chrome headless",
+  "Chrome DevTools Protocol",
   "`/login`",
   "`/certificado`",
   "Route Error Boundary",
+  "aguarda o evento de carregamento",
+  "`#root` possuir conteúdo",
   "Nenhuma migration",
   "Supabase remoto não foi modificado",
   "branch `main` não foi alterada",
@@ -107,5 +145,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B118/B119 aprovado: Chrome headless executa um build development hidratável com configuração sintética isolada e resultado bloqueante no CI.",
+  "Contrato B118/B119 aprovado: Chrome headless usa CDP para aguardar o commit React, capturar exceções e validar um build development com configuração sintética isolada.",
 );
