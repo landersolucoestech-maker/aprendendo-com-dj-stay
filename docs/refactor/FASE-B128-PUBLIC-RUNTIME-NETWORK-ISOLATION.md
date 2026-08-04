@@ -19,19 +19,16 @@ ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-seri
 
 Nenhum arquivo de fonte foi adicionado ao repositório e nenhuma fonte foi baixada ou redistribuída.
 
-O script `check-browser-network-isolation.mjs` consome os oito artefatos `<rota>.network.json` produzidos pelo CDP. Ele exige a matriz completa e permite requisições HTTP ou HTTPS somente para loopback:
+O script `check-browser-network-isolation.mjs` consome os oito artefatos `<rota>.network.json` produzidos pelo CDP. Para cada rota, ele exige exatamente uma requisição principal do tipo `Document`, confirma que o documento foi servido por loopback e deriva sua origem completa, incluindo a porta efêmera do `vite preview`.
 
-- `127.0.0.1`;
-- `localhost`;
-- `[::1]`.
-
-Qualquer origem HTTP externa bloqueia o estágio de navegador. Protocolos internos do navegador que não representam tráfego HTTP, como `data:`, não são classificados como dependência externa.
+Toda requisição HTTP ou HTTPS da rota deve utilizar exatamente a mesma origem do documento principal. Portanto, o gate rejeita tanto serviços externos quanto outro serviço local executado em uma porta diferente. Protocolos internos do navegador que não representam tráfego HTTP, como `data:`, não são classificados como dependência externa.
 
 O resumo `external-network-summary.json` registra:
 
 - as oito rotas verificadas;
-- a quantidade de requisições externas;
-- os métodos e URLs encontrados, quando houver falha.
+- a origem permitida de cada documento;
+- a quantidade de requisições fora da origem;
+- os métodos, URLs e origens permitidas quando houver falha.
 
 ## Contrato permanente
 
@@ -43,7 +40,8 @@ O gate rejeita:
 - retorno da família Inter como primeira opção sem asset local contratado;
 - remoção do verificador pós-CDP do workflow;
 - matriz de rede incompleta;
-- qualquer requisição HTTP ou HTTPS fora da origem loopback do artefato servido.
+- ausência ou duplicidade do documento principal;
+- qualquer requisição HTTP ou HTTPS fora da origem e porta exatas do documento servido.
 
 ## Limites
 
