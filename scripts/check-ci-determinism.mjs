@@ -87,4 +87,5 @@ console.log(
 await import("./check-supabase-ci-cleanup.mjs");
 await import("./check-supabase-ci-log-redaction.mjs");
 await import("./check-route-accessibility-observer.mjs");
+await import("./check-route-focus-handoff.mjs");
 await import("./check-browser-runtime-smoke-contract.mjs");
