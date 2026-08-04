@@ -11,6 +11,8 @@ const requiredFiles = [
   "docs/refactor/FASE-B122-PUBLIC-ROUTE-MATRIX-SMOKE.md",
   "docs/refactor/FASE-B123-BROWSER-ACCESSIBILITY-READINESS.md",
   "docs/refactor/FASE-B124-PUBLIC-RUNTIME-TRUTH.md",
+  "docs/refactor/FASE-B125-LAZY-ROUTE-FOCUS-HANDOFF.md",
+  "docs/refactor/FASE-B126-LAZY-FOCUS-TRUTH.md",
   "supabase/config.toml",
 ];
 const failures = [];
@@ -46,6 +48,14 @@ if (failures.length === 0) {
   );
   const runtimeTruth = readFileSync(
     "docs/refactor/FASE-B124-PUBLIC-RUNTIME-TRUTH.md",
+    "utf8",
+  );
+  const focusHandoff = readFileSync(
+    "docs/refactor/FASE-B125-LAZY-ROUTE-FOCUS-HANDOFF.md",
+    "utf8",
+  );
+  const focusTruth = readFileSync(
+    "docs/refactor/FASE-B126-LAZY-FOCUS-TRUTH.md",
     "utf8",
   );
   const supabaseConfig = readFileSync("supabase/config.toml", "utf8");
@@ -96,12 +106,19 @@ if (failures.length === 0) {
     "`Pular para o conteúdo principal`",
     "live region de navegação",
     "reconciliação acessível após substituições do `Suspense`",
+    "foco diferido em fallbacks e handoff para o conteúdo final",
+    "`data-route-focus-deferred=\"true\"`",
+    "`document.activeElement.id === \"main-content\"`",
+    "target final previamente focado for substituído",
     "redação de credenciais locais do Supabase CLI",
     "smoke HTTP",
     "smoke bloqueante em Chrome headless com matriz pública e prontidão acessível",
     "chave sintética canônica",
     "explicitamente **não implantável**",
     "63ebdfd043fc4a3ba02642c7b0f470e97be0611d",
+    "03106954c5ed0d9238a55625f4c30cf7e83a4699",
+    "795 testes unitários",
+    "1.878 testes pgTAP",
     "A presença da função e a aprovação do gate não equivalem a uma transação financeira homologada",
     "A branch `main` e o projeto Supabase de produção não foram promovidos",
   ]) {
@@ -138,6 +155,8 @@ if (failures.length === 0) {
     "conteúdo final de `/`, `/login`, `/certificado`, `/contato`, `/matricule-se`, `/esqueceu-senha`, `/acesso-negado` e fallback 404",
     "landmark `#main-content` com `tabindex=\"-1\"`",
     "link `Pular para o conteúdo principal` e uma live region",
+    "navegação client-side home → `/login` com fallback observado e nunca focado",
+    "foco final em `#main-content`, target conectado e anúncio de conclusão",
   ]) {
     if (!includesNormalized(refactor, fragment)) {
       failures.push(`Índice de refatoração incompleto: ${fragment}`);
@@ -212,6 +231,37 @@ if (failures.length === 0) {
     }
   }
 
+  for (const fragment of [
+    "FASE B125",
+    'data-route-focus-deferred="true"',
+    "não move o foco, não anuncia conclusão e não atualiza `previousPathRef`",
+    "target for posteriormente desconectado",
+    "mutações normais que preservam o mesmo nó não disparam refoco",
+    "document.activeElement.id === \"main-content\"",
+    "fallback nunca focado",
+    "Supabase remoto não foi modificado",
+  ]) {
+    if (!includesNormalized(focusHandoff, fragment)) {
+      failures.push(`Documentação B125 incompleta: ${fragment}`);
+    }
+  }
+
+  for (const fragment of [
+    "FASE B126",
+    "Verdade consolidada da transferência de foco lazy",
+    "795 testes unitários",
+    "1.878 testes pgTAP",
+    "fallback nunca recebeu foco",
+    "`document.activeElement.id` terminou como `main-content`",
+    "elemento ativo permaneceu conectado ao DOM",
+    "03106954c5ed0d9238a55625f4c30cf7e83a4699",
+    "A prova representa uma transição lazy pública",
+  ]) {
+    if (!includesNormalized(focusTruth, fragment)) {
+      failures.push(`Documentação B126 incompleta: ${fragment}`);
+    }
+  }
+
   const prohibitedProductionClaims = [
     "produção está liberada",
     "produção está pronta",
@@ -229,6 +279,8 @@ if (failures.length === 0) {
     routeMatrix,
     accessibilityReadiness,
     runtimeTruth,
+    focusHandoff,
+    focusTruth,
   ].join("\n");
   for (const claim of prohibitedProductionClaims) {
     if (includesNormalized(combinedDocumentation, claim)) {
@@ -238,10 +290,12 @@ if (failures.length === 0) {
 }
 
 if (failures.length > 0) {
-  console.error("Contrato B33/B120/B124 inválido:\n- " + failures.join("\n- "));
+  console.error(
+    "Contrato B33/B120/B124/B126 inválido:\n- " + failures.join("\n- "),
+  );
   process.exit(1);
 }
 
 console.log(
-  "Contrato B33/B120/B124 aprovado: implementação, runtime público acessível, dependências externas e produção estão documentalmente separados.",
+  "Contrato B33/B120/B124/B126 aprovado: implementação, runtime acessível, handoff de foco, dependências externas e produção estão documentalmente separados.",
 );
