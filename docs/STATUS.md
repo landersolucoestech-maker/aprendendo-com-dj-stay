@@ -39,6 +39,8 @@ O marketplace distribui somente cursos e produtos digitais do proprietário. Nã
 | Runtime público | Chrome headless controlado por CDP valida conteúdo final em oito rotas anônimas, captura exceções, rejeita o Error Boundary e exige landmark, `#main-content`, `tabindex="-1"`, skip link e live region antes do snapshot |
 | Runtime sintético do catálogo | fixture canônica em memória validada pelo mesmo schema Zod da RPC, zero chamada a `get_public_course_catalog`, zero rede Supabase remota e home aprovada somente após conteúdo final |
 | Isolamento de rede público | stack tipográfica nativa, exatamente um `Document` por rota e toda requisição HTTP ou HTTPS restrita à origem e porta exatas do documento servido |
+| Rede da navegação client-side | exatamente nove artefatos `*.network.json`; a prova home → `/login` mantém um único `Document` inicial, não cria novo `Document` e permanece na mesma origem e porta |
+| Limpeza do perfil do Chrome | repetição limitada somente da exclusão do diretório criado pelo smoke para `ENOTEMPTY`, `EBUSY` ou `EPERM`; nenhuma reexecução integral do navegador e nenhum glob em `/tmp` |
 | Diagnósticos do gate | stdout e stderr de TypeScript e navegador persistidos em artifact com `set -o pipefail`, sem transformar falhas em sucesso |
 | Frontend acessível | lazy loading, Error Boundary, reconciliação acessível após substituições do `Suspense`, foco diferido em fallbacks e handoff para o conteúdo final |
 
@@ -59,11 +61,15 @@ Cada rota é considerada pronta somente quando o React renderizou o conteúdo fi
 
 A navegação client-side lazy da home para `/login` também é bloqueante. O Chrome precisa observar o fallback com `data-route-focus-deferred="true"`, comprovar que ele nunca recebeu foco e terminar com `document.activeElement.id === "main-content"`, elemento ativo conectado ao DOM e anúncio `Navegação concluída. Conteúdo principal atualizado.`. Se o target final previamente focado for substituído, o foco é restaurado apenas quando a referência anterior estiver desconectada; mutações que preservam o target não causam refoco.
 
+A mesma transição persiste `client-navigation.network.json`. A matriz consolidada exige exatamente nove artefatos de rede: oito carregamentos diretos e uma prova client-side. A prova começa com exatamente um `Document` para `/`, registra um marcador de fase para `/login`, proíbe novo `Document` durante a transição e restringe todos os requests HTTP ou HTTPS à origem e porta efêmera do documento inicial. Qualquer resposta HTTP com status igual ou superior a 400 bloqueia o gate.
+
 A home pública não apresenta números, avaliações, rankings, depoimentos, preços ou entregáveis sem fonte persistida e contratada. O catálogo real é calculado a partir do CMS publicado e estados vazios não recebem dados substitutos.
 
 No build sintético de qualidade, o catálogo é fornecido por uma fixture canônica em memória que satisfaz `PublicCourseCatalog` e passa pelo mesmo schema Zod da RPC real. O carregador retorna antes de executar `get_public_course_catalog`; os testes exigem zero chamadas à RPC e o Chrome exige `Curso de validação do runtime` e `Investimento atual` antes de considerar a home pronta. Estados `Carregando catálogo`, `Carregando conteúdo publicado` e `Catálogo temporariamente indisponível` são rejeitados.
 
-O domínio Network do CDP grava `<rota>.network.json`, bloqueia respostas HTTP com status igual ou superior a 400 e qualquer request para `*.supabase.co`. O verificador B128 exige exatamente um request principal `Document` por rota e restringe todos os recursos HTTP ou HTTPS à mesma origem e porta efêmera do documento servido. O shell usa stack tipográfica nativa e não depende de Google Fonts ou arquivo de fonte versionado.
+O domínio Network do CDP grava `<rota>.network.json`, bloqueia respostas HTTP com status igual ou superior a 400 e qualquer request para `*.supabase.co`. O verificador B128/B132 exige exatamente um request principal `Document` por carregamento direto, um único `Document` inicial na prova client-side e restringe todos os recursos HTTP ou HTTPS à mesma origem e porta efêmera do documento servido. O shell usa stack tipográfica nativa e não depende de Google Fonts ou arquivo de fonte versionado.
+
+A corrida de filesystem na remoção do perfil temporário do Chrome é tratada no ponto de origem. Cada smoke encerra seus processos e repete somente a exclusão do próprio diretório, no máximo seis vezes e apenas para `ENOTEMPTY`, `EBUSY` ou `EPERM`. O workflow não interpreta logs para reexecutar o smoke, não remove `/tmp/djstay-browser-profile-*` por glob e não repete rotas já aprovadas. Falhas funcionais de conteúdo, acessibilidade, JavaScript ou rede continuam bloqueando na primeira execução.
 
 Os comandos de TypeScript e dos três smokes do navegador persistem seus logs no artifact `gate-diagnostics-<commit>`. A captura usa `set -o pipefail`, portanto o exit code original permanece bloqueante.
 
@@ -75,11 +81,11 @@ O Cron de expiração `expire-due-checkout-intents` executa `private.expire_due_
 
 A Retenção do cron é executada pelo job `prune-platform-cron-run-history`. A política padrão mantém 30 dias e remove no máximo 5.000 execuções concluídas por lote somente dos jobs reconhecidos da plataforma; execuções em andamento, registros recentes e jobs externos são preservados.
 
-O gate técnico executa instalação limpa, lint, reconstrução local do Supabase, pgTAP, sincronização de tipos, contratos estáticos, TypeScript, audit de dependências, build, validação de chunks, smoke HTTP e smoke bloqueante em Chrome headless com matriz pública e prontidão acessível. O mesmo estágio executa a prova de transferência de foco por navegação client-side e o isolamento exato de rede.
+O gate técnico executa instalação limpa, lint, reconstrução local do Supabase, pgTAP, sincronização de tipos, contratos estáticos, TypeScript, audit de dependências, build, validação de chunks, smoke HTTP e smoke bloqueante em Chrome headless com matriz pública e prontidão acessível. O mesmo estágio executa uma única vez a prova de transferência de foco por navegação client-side e, depois que os nove artefatos existem, o isolamento exato de rede.
 
 O build de qualidade usado pelo CI utiliza uma chave sintética canônica e sem validade no Supabase. Esse artefato é explicitamente **não implantável**. Builds locais reais, homologação remota e produção continuam exigindo uma chave publishable ativa fornecida pelo ambiente e nunca versionada.
 
-A evidência B123 permanece registrada no commit `63ebdfd043fc4a3ba02642c7b0f470e97be0611d`. A evidência B125 registrou 795 testes unitários no commit `03106954c5ed0d9238a55625f4c30cf7e83a4699`. A evidência integral mais recente é o commit `92270adc7d949f0719e1fdb3673f2d47bedb6aaf`, aprovado no mesmo snapshot por instalação, lint, 799 testes unitários, reconstrução local do Supabase, 1.878 testes pgTAP, tipos, contratos, TypeScript, build, entrega HTTP, oito rotas públicas acessíveis, handoff de foco lazy, catálogo sintético final e isolamento exato de rede.
+A evidência B123 permanece registrada no commit `63ebdfd043fc4a3ba02642c7b0f470e97be0611d`. A evidência B125 registrou 795 testes unitários no commit `03106954c5ed0d9238a55625f4c30cf7e83a4699`. A evidência B127–B130 registrou 799 testes unitários no commit `92270adc7d949f0719e1fdb3673f2d47bedb6aaf`. A evidência integral B132/B133 mais recente é o commit `7f0b21f4f39dd80508f589619e89b987d903a5bc`, issue de evidência `#1055` e run `30952181505`, aprovado no mesmo snapshot por instalação, lint, 799 testes unitários, reconstrução local do Supabase, 1.878 testes pgTAP, tipos, contratos, TypeScript, build, oito rotas públicas acessíveis, handoff de foco lazy, exatamente nove artefatos de rede, ausência de novo `Document` na navegação home → `/login`, isolamento exato de origem e porta e uma única execução do smoke principal sem contorno no workflow.
 
 ## Integrações implantadas em `dev`
 
