@@ -131,8 +131,8 @@ jobs:
             fi
           fi
 
-          node scripts/check-browser-network-isolation.mjs 2>&1 | tee artifacts/diagnostics/browser-network.log
           node scripts/run-browser-client-navigation-smoke.mjs 2>&1 | tee artifacts/diagnostics/browser-navigation.log
+          node scripts/check-browser-network-isolation.mjs 2>&1 | tee artifacts/diagnostics/browser-network.log
 
       - name: Exportar tipos gerados
         if: steps.types.outcome == 'success'
