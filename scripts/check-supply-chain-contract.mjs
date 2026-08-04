@@ -191,6 +191,8 @@ const sbom = {
 mkdirSync("artifacts", { recursive: true });
 writeFileSync("artifacts/sbom.cdx.json", `${JSON.stringify(sbom, null, 2)}\n`);
 
+await import("./check-public-shell-provenance.mjs");
+
 console.log(
   `Contrato B28 aprovado: ${components.length} componentes verificados e SBOM CycloneDX gerado.`,
 );
