@@ -38,6 +38,9 @@ const StudentPortalRouter = ({ section }: StudentPortalRouterProps) => {
     case "history":
       return <StudentActivityHistory />;
   }
+
+  const exhaustiveSection: never = section;
+  return exhaustiveSection;
 };
 
 export default StudentPortalRouter;
