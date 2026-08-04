@@ -97,6 +97,8 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
+await import("./check-student-progress-summary.mjs");
+
 console.log(
   "Contrato B110 aprovado: o dashboard do aluno conta materiais com total exato sem transferir a biblioteca.",
 );
