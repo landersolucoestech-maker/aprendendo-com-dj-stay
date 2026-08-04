@@ -27,6 +27,8 @@ A média é calculada e arredondada no PostgreSQL. O dashboard consome o contrat
 
 A suíte pgTAP possui 13 asserções cobrindo metadados, privilégios, autenticação, agregação, arredondamento, isolamento entre contas e resposta vazia coerente.
 
-## Escopo
+## Supabase remoto
 
-A migration, o contrato, o hook e o dashboard foram alterados exclusivamente na branch `dev`. Supabase remoto, `main` e produção permanecem sem alterações.
+A migration B111 foi aplicada exclusivamente ao projeto preview da branch `dev` (`jmtyurketfclaneqxohu`). A função remota foi validada como estável, `SECURITY INVOKER`, sem permissão de execução para `anon` e com execução concedida a `authenticated`.
+
+A branch `main` do GitHub e o projeto Supabase principal permanecem sem alterações.
