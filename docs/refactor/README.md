@@ -6,7 +6,7 @@ As fases deste diretório registram decisões técnicas e garantias adicionadas 
 
 - uma causa observada por vez;
 - migrations e contratos versionados antes de declarar conclusão;
-- nenhum `--force`, bypass de lint ou desativação de segurança para obter gate verde;
+- nenhum bypass de lint ou desativação de segurança para obter gate verde;
 - Supabase de produção somente leitura até autorização explícita;
 - índices não são removidos com base em um banco de desenvolvimento sem tráfego;
 - implementação em `dev` não equivale a homologação externa ou produção.
@@ -22,27 +22,27 @@ A sequência cobre, entre outros domínios:
 - verdade operacional, design system e acessibilidade;
 - performance, datas, dependências e supply chain;
 - higiene do repositório, hardening do banco e integridade dos chunks;
-- proveniência do shell público e remoção de scripts externos herdados;
-- entrega HTTP do artefato, fallback SPA e manifesto de release;
-- execução do frontend em Chrome headless por CDP, com espera pelo conteúdo final das rotas públicas e captura de exceções.
+- proveniência e entrega HTTP do artefato público;
+- redação da saída local do Supabase CLI no CI;
+- execução do frontend em Chrome headless por CDP;
+- matriz de oito rotas públicas com conteúdo final;
+- reconciliação de landmark após substituições do `Suspense`;
+- prontidão de `#main-content`, `tabindex="-1"`, skip link e live region antes da coleta do DOM.
 
 Cada arquivo `FASE-B*.md` descreve uma entrega específica. O estado consolidado está em [`../STATUS.md`](../STATUS.md).
 
 ## Validação
 
-```bash
-npm run check
-```
-
-O comando local consolidado permanece bloqueante para instalação, lint, banco e pgTAP, tipos, contratos, TypeScript, audit, build e validações de artefatos.
+O comando local consolidado é `npm run check`. Ele permanece bloqueante para lint, testes, contratos, TypeScript, audit, build e validações de artefatos.
 
 No GitHub Actions, o mesmo snapshot também precisa passar:
 
-- smoke HTTP do build servido;
-- fallback das rotas SPA;
-- resolução dos assets locais;
+- reconstrução local do Supabase e pgTAP;
+- smoke HTTP do build servido e fallback SPA;
 - Chrome headless controlado pelo DevTools Protocol;
-- conteúdo final de `/`, `/login` e `/certificado`;
+- conteúdo final de `/`, `/login`, `/certificado`, `/contato`, `/matricule-se`, `/esqueceu-senha`, `/acesso-negado` e fallback 404;
+- exatamente um landmark `#main-content` com `tabindex="-1"` em cada rota;
+- exatamente um link `Pular para o conteúdo principal` e uma live region de navegação;
 - ausência de exceções JavaScript não tratadas e do Route Error Boundary.
 
-Uma fase só é considerada concluída quando todas as validações aplicáveis ao seu escopo passam no mesmo snapshot. A aprovação do artefato público não equivale a homologação financeira, teste E2E autenticado, pentest ou promoção para produção.
+Uma fase só é considerada concluída quando todas as validações aplicáveis ao seu escopo passam no mesmo snapshot. A aprovação do artefato público não equivale a homologação financeira, E2E autenticado, pentest ou promoção para produção.
