@@ -15,6 +15,7 @@ import { CdpClient } from "./lib/cdp-client.mjs";
 const root = process.cwd();
 const artifactsDirectory = path.join(root, "artifacts", "browser-smoke");
 const viteExecutable = path.join(root, "node_modules", "vite", "bin", "vite.js");
+const skipLinkSelector = 'a[href="#main-content"]';
 const loginLinkSelector =
   'nav[aria-label="Navegação principal"] a[href="/login"]';
 const delay = (milliseconds) =>
@@ -54,7 +55,9 @@ if (browserExecutable === null) {
   failures.push("Chrome ou Chromium não foi encontrado no runner.");
 }
 if (failures.length > 0) {
-  console.error("Smoke B125/B132/B135 bloqueado:\n- " + failures.join("\n- "));
+  console.error(
+    "Smoke B125/B132/B135/B138 bloqueado:\n- " + failures.join("\n- "),
+  );
   process.exit(1);
 }
 
@@ -97,6 +100,9 @@ let browserSpawnError = null;
 let client = null;
 let targetId = null;
 let sessionId = null;
+let skipLinkTarget = null;
+let skipLinkFocusState = null;
+let skipLinkActivationState = null;
 let finalState = null;
 let interactionTarget = null;
 let removeEventListener = () => {};
@@ -275,24 +281,46 @@ const readState = (session) =>
     session,
     `(() => {
       const main = document.getElementById("main-content");
+      const active = document.activeElement;
+      const activeRect =
+        active instanceof HTMLElement ? active.getBoundingClientRect() : null;
+      const activeStyle =
+        active instanceof HTMLElement ? getComputedStyle(active) : null;
       const liveRegions = Array.from(
         document.querySelectorAll('[aria-live="polite"][aria-atomic="true"]'),
       );
       return {
         pathname: window.location.pathname,
+        hash: window.location.hash,
         html: document.documentElement.outerHTML,
         mainCount: document.querySelectorAll("#main-content").length,
         mainText: main?.textContent ?? "",
         focusDeferredCount: document.querySelectorAll(
           '[data-route-focus-deferred="true"]',
         ).length,
-        activeElementId: document.activeElement?.id ?? null,
-        activeElementConnected: document.activeElement?.isConnected ?? false,
+        activeElementId: active?.id ?? null,
+        activeElementTagName: active?.tagName ?? null,
+        activeElementText: active?.textContent?.trim() ?? "",
+        activeElementHref:
+          active instanceof HTMLAnchorElement
+            ? active.getAttribute("href")
+            : null,
+        activeElementConnected: active?.isConnected ?? false,
+        activeElementVisible: Boolean(
+          activeRect &&
+            activeStyle &&
+            activeRect.width > 0 &&
+            activeRect.height > 0 &&
+            activeStyle.display !== "none" &&
+            activeStyle.visibility !== "hidden" &&
+            Number(activeStyle.opacity) > 0,
+        ),
         announcement: liveRegions
           .map((region) => region.textContent?.trim() ?? "")
           .find((text) => text.includes("Navegação concluída")) ?? "",
         probe: window.__b125RouteFocusProbe ?? null,
         interaction: window.__b135InteractionProbe ?? null,
+        skipLinkProbe: window.__b138SkipLinkProbe ?? null,
       };
     })()`,
   );
@@ -309,6 +337,62 @@ const waitForHome = async (session) => {
       return state;
     }
     await delay(250);
+  }
+  return state;
+};
+
+const waitForSkipLinkFocus = async (session) => {
+  let state = null;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    state = await readState(session);
+    if (
+      state?.pathname === "/" &&
+      state.hash === "" &&
+      state.activeElementTagName === "A" &&
+      state.activeElementHref === "#main-content" &&
+      state.activeElementText === "Pular para o conteúdo principal" &&
+      state.activeElementConnected === true &&
+      state.activeElementVisible === true &&
+      state.skipLinkProbe?.keyboard?.some(
+        (event) =>
+          event.type === "keydown" &&
+          event.key === "Tab" &&
+          event.code === "Tab" &&
+          event.isTrusted === true,
+      )
+    ) {
+      return state;
+    }
+    await delay(100);
+  }
+  return state;
+};
+
+const waitForSkipLinkActivation = async (session) => {
+  let state = null;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    state = await readState(session);
+    if (
+      state?.pathname === "/" &&
+      state.hash === "" &&
+      state.activeElementId === "main-content" &&
+      state.activeElementConnected === true &&
+      state.skipLinkProbe?.keyboard?.some(
+        (event) =>
+          event.type === "keydown" &&
+          event.key === "Enter" &&
+          event.code === "Enter" &&
+          event.isTrusted === true,
+      ) &&
+      state.skipLinkProbe?.click?.isTrusted === true &&
+      state.skipLinkProbe.click.defaultPrevented === true &&
+      state.skipLinkProbe.click.detail === 0 &&
+      state.skipLinkProbe.click.text === "Pular para o conteúdo principal" &&
+      state.skipLinkProbe.click.href === "#main-content"
+    ) {
+      return state;
+    }
+    await delay(100);
   }
   return state;
 };
@@ -340,6 +424,62 @@ const waitForFinalFocus = async (session) => {
   }
   return state;
 };
+
+const prepareSkipLinkProbe = (session) =>
+  evaluate(
+    session,
+    `(() => {
+      const selector = ${JSON.stringify(skipLinkSelector)};
+      const links = Array.from(document.querySelectorAll(selector));
+      if (links.length !== 1 || !(links[0] instanceof HTMLAnchorElement)) {
+        return {
+          error: "Esperado exatamente um skip link operacional.",
+          count: links.length,
+        };
+      }
+      const link = links[0];
+      window.__b138SkipLinkProbe = {
+        selector,
+        text: link.textContent?.trim() ?? "",
+        href: link.getAttribute("href"),
+        keyboard: [],
+        click: null,
+      };
+      const handleKeydown = (event) => {
+        if (event.key !== "Tab" && event.key !== "Enter") return;
+        window.__b138SkipLinkProbe.keyboard.push({
+          type: event.type,
+          key: event.key,
+          code: event.code,
+          isTrusted: event.isTrusted,
+          defaultPrevented: event.defaultPrevented,
+        });
+      };
+      const handleClick = (event) => {
+        const target =
+          event.target instanceof Element
+            ? event.target.closest(selector)
+            : null;
+        if (target !== link) return;
+        window.removeEventListener("click", handleClick);
+        window.__b138SkipLinkProbe.click = {
+          isTrusted: event.isTrusted,
+          defaultPrevented: event.defaultPrevented,
+          button: event.button,
+          detail: event.detail,
+          text: link.textContent?.trim() ?? "",
+          href: link.getAttribute("href"),
+        };
+      };
+      window.addEventListener("keydown", handleKeydown);
+      window.addEventListener("click", handleClick);
+      return {
+        selector,
+        text: link.textContent?.trim() ?? "",
+        href: link.getAttribute("href"),
+      };
+    })()`,
+  );
 
 const prepareTrustedLoginInteraction = (session) =>
   evaluate(
@@ -436,6 +576,28 @@ const dispatchTrustedClick = async (session, target) => {
   );
 };
 
+const dispatchTrustedKey = async (
+  session,
+  { key, code, virtualKeyCode },
+) => {
+  const keyEvent = {
+    key,
+    code,
+    windowsVirtualKeyCode: virtualKeyCode,
+    nativeVirtualKeyCode: virtualKeyCode,
+  };
+  await client.request(
+    "Input.dispatchKeyEvent",
+    { type: "keyDown", ...keyEvent },
+    session,
+  );
+  await client.request(
+    "Input.dispatchKeyEvent",
+    { type: "keyUp", ...keyEvent },
+    session,
+  );
+};
+
 try {
   await waitForPreview();
   const debuggerUrl = await waitForBrowserDebugger();
@@ -515,7 +677,78 @@ try {
 
   const homeState = await waitForHome(sessionId);
   if (!homeState?.mainText.includes("Conteúdo publicado pelo instrutor")) {
-    throw new Error("A home não ficou pronta antes da transição B125/B132/B135.");
+    throw new Error(
+      "A home não ficou pronta antes da sequência B125/B132/B135/B138.",
+    );
+  }
+
+  skipLinkTarget = await prepareSkipLinkProbe(sessionId);
+  if (
+    skipLinkTarget?.error ||
+    skipLinkTarget?.text !== "Pular para o conteúdo principal" ||
+    skipLinkTarget?.href !== "#main-content"
+  ) {
+    throw new Error(
+      `Skip link B138 inválido: ${JSON.stringify(skipLinkTarget)}`,
+    );
+  }
+
+  networkPhase = "skip-link-tab";
+  networkRecords.push({
+    kind: "phase",
+    phase: networkPhase,
+    pathname: "/",
+    interaction: "trusted-key",
+    key: "Tab",
+    selector: skipLinkSelector,
+  });
+  await dispatchTrustedKey(sessionId, {
+    key: "Tab",
+    code: "Tab",
+    virtualKeyCode: 9,
+  });
+
+  skipLinkFocusState = await waitForSkipLinkFocus(sessionId);
+  if (
+    skipLinkFocusState?.activeElementHref !== "#main-content" ||
+    skipLinkFocusState?.activeElementVisible !== true
+  ) {
+    failures.push("O primeiro Tab B138 não focou o skip link visível.");
+  }
+
+  networkPhase = "skip-link-enter";
+  networkRecords.push({
+    kind: "phase",
+    phase: networkPhase,
+    pathname: "/",
+    interaction: "trusted-key",
+    key: "Enter",
+    selector: skipLinkSelector,
+  });
+  await dispatchTrustedKey(sessionId, {
+    key: "Enter",
+    code: "Enter",
+    virtualKeyCode: 13,
+  });
+
+  skipLinkActivationState = await waitForSkipLinkActivation(sessionId);
+  if (skipLinkActivationState?.activeElementId !== "main-content") {
+    failures.push("O Enter B138 não transferiu o foco para #main-content.");
+  }
+  if (skipLinkActivationState?.activeElementConnected !== true) {
+    failures.push("O target principal B138 não permaneceu conectado ao DOM.");
+  }
+  if (skipLinkActivationState?.hash !== "") {
+    failures.push("O skip link B138 alterou o hash apesar de preventDefault.");
+  }
+  if (skipLinkActivationState?.skipLinkProbe?.click?.isTrusted !== true) {
+    failures.push("O clique gerado pelo teclado B138 não foi confiável.");
+  }
+  if (skipLinkActivationState?.skipLinkProbe?.click?.defaultPrevented !== true) {
+    failures.push("O handler do skip link B138 não preveniu a navegação padrão.");
+  }
+  if (skipLinkActivationState?.skipLinkProbe?.click?.detail !== 0) {
+    failures.push("A ativação B138 não possui semântica de clique por teclado.");
   }
 
   await evaluate(
@@ -629,18 +862,18 @@ try {
   for (const exception of diagnostics.filter(
     (entry) => entry.level === "exception",
   )) {
-    failures.push(`Exceção JavaScript B125/B132/B135: ${exception.text}`);
+    failures.push(`Exceção JavaScript B125/B132/B135/B138: ${exception.text}`);
   }
   for (const response of networkRecords.filter(
     (entry) => entry.kind === "response" && Number(entry.status) >= 400,
   )) {
     failures.push(
-      `Resposta HTTP B132/B135 inesperada ${response.status} em ${response.url}`,
+      `Resposta HTTP B132/B135/B138 inesperada ${response.status} em ${response.url}`,
     );
   }
 } catch (error) {
   failures.push(
-    `Execução B125/B132/B135 falhou: ${error instanceof Error ? error.message : String(error)}`,
+    `Execução B125/B132/B135/B138 falhou: ${error instanceof Error ? error.message : String(error)}`,
   );
 } finally {
   removeEventListener();
@@ -686,6 +919,19 @@ try {
     "utf8",
   );
   writeFileSync(
+    path.join(artifactsDirectory, "client-navigation.skip-link.json"),
+    `${JSON.stringify(
+      {
+        target: skipLinkTarget,
+        focusState: skipLinkFocusState,
+        activationState: skipLinkActivationState,
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+  writeFileSync(
     path.join(artifactsDirectory, "client-navigation.chrome.log"),
     browserLogs.join(""),
     "utf8",
@@ -702,18 +948,18 @@ try {
     await removeProfileDirectory();
   } catch (error) {
     failures.push(
-      `Limpeza do perfil temporário B132/B135 falhou: ${error instanceof Error ? error.message : String(error)}`,
+      `Limpeza do perfil temporário B132/B135/B138 falhou: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }
 
 if (failures.length > 0) {
   console.error(
-    "Smoke B125/B132/B135 inválido:\n- " + failures.join("\n- "),
+    "Smoke B125/B132/B135/B138 inválido:\n- " + failures.join("\n- "),
   );
   process.exit(1);
 }
 
 console.log(
-  "Smoke B125/B132/B135 aprovado: clique confiável no link Entrar acionou a navegação real, fallback lazy nunca recebeu foco, login final foi focado e anunciado, e a rede client-side foi persistida.",
+  "Smoke B125/B132/B135/B138 aprovado: skip link foi focado e ativado por teclado confiável, login real preservou o handoff lazy, e toda a rede client-side permaneceu isolada.",
 );
