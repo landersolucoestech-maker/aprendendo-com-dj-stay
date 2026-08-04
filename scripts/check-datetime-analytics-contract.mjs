@@ -49,7 +49,10 @@ const temporalConsumers = [
   "src/pages/affiliate/AffiliatePortal.tsx",
   "src/pages/student/Certificates.tsx",
   "src/pages/student/MyDigitalProducts.tsx",
-  "src/pages/student/StudentPortal.tsx",
+  "src/pages/student/StudentCoursesPage.tsx",
+  "src/pages/student/StudentLibraryPage.tsx",
+  "src/pages/student/StudentFinancialPortal.tsx",
+  "src/pages/student/StudentProfilePage.tsx",
 ];
 
 for (const path of temporalConsumers) {
@@ -114,21 +117,46 @@ for (const path of sourceFiles) {
   }
 }
 
-const studentPortal = read("src/pages/student/StudentPortal.tsx");
-for (const marker of [
-  "useCourseAccess",
-  "useUserProgress",
-  "useRecentActivities",
-  "useStudentLibrary",
-  "activeEnrollments.length",
-  "progressRows.reduce",
-  "library.length",
-]) {
-  expect(
-    studentPortal.includes(marker),
-    `Painel do aluno deve derivar métricas persistidas por ${marker}.`,
-  );
+const studentDashboardPath = "src/pages/student/StudentDashboardPage.tsx";
+expect(existsSync(studentDashboardPath), `${studentDashboardPath} deve existir.`);
+if (existsSync(studentDashboardPath)) {
+  const studentDashboard = read(studentDashboardPath);
+  for (const marker of [
+    "useStudentCourseAccess(0, 1, 3)",
+    "useStudentProgressSummary()",
+    "useStudentLibrarySummary()",
+    "useRecentActivities(5)",
+    "access.active_total",
+    "progressSummary.average_progress_percent",
+    "progressSummary.completed_lessons",
+    "librarySummaryQuery.data?.total ?? 0",
+  ]) {
+    expect(
+      studentDashboard.includes(marker),
+      `Painel do aluno deve usar o read model persistido por ${marker}.`,
+    );
+  }
+
+  for (const forbidden of [
+    "useCourseAccess",
+    "useUserProgress",
+    "useStudentLibrary()",
+    "activeEnrollments.length",
+    "progressRows.reduce",
+    "library.length",
+    "Math.random(",
+  ]) {
+    expect(
+      !studentDashboard.includes(forbidden),
+      `Painel do aluno não pode restaurar cálculo ou métrica local por ${forbidden}.`,
+    );
+  }
 }
+
+expect(
+  !existsSync("src/pages/student/StudentPortal.tsx"),
+  "O contrato temporal não pode depender do monólito do portal removido na B113.",
+);
 
 const affiliatePortal = read("src/pages/affiliate/AffiliatePortal.tsx");
 expect(
@@ -156,5 +184,5 @@ if (failures.length) {
 }
 
 console.log(
-  `Contrato estático da FASE B26 aprovado em ${sourceFiles.length} arquivos TypeScript e ${temporalConsumers.length} consumidores temporais, com delegação B80 verificada.`,
+  `Contrato estático da FASE B26 aprovado em ${sourceFiles.length} arquivos TypeScript e ${temporalConsumers.length} consumidores temporais, com delegação B80 e read models do aluno verificados.`,
 );
