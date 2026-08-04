@@ -27,5 +27,20 @@
   ],
   "maximumPackageVulnerabilities": 2,
   "reviewBy": "2026-08-16",
-  "upgradeBlocker": "A linha 7.18.2 está afetada por GHSA-qwww-vcr4-c8h2; a linha segura 8.3+ exige React 19, Vite 7 e Node 22.22+, fora de uma atualização compatível isolada."
+  "upgradeBoundary": {
+    "blockedRange": ">=7.12.0 <8.3.0",
+    "blockingAdvisory": "GHSA-qwww-vcr4-c8h2",
+    "scope": "Atinge exclusivamente APIs RSC instáveis, ausentes na arquitetura declarativa comprovada.",
+    "minimumSafeTarget": {
+      "react-router": "8.3.0",
+      "node": "22.22.0",
+      "react": "19.2.7",
+      "react-dom": "19.2.7"
+    },
+    "requiredPackageTransition": {
+      "remove": "react-router-dom",
+      "add": "react-router"
+    }
+  },
+  "upgradeBlocker": "A linha 7.12.0 até antes de 8.3.0 está abrangida por GHSA-qwww-vcr4-c8h2; a primeira linha corrigida exige migração coordenada de runtime, React e imports."
 }
