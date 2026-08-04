@@ -11,26 +11,43 @@ import { ciRuntimeSmokeCatalog } from "@/runtime/ci-runtime-smoke-catalog";
 
 export const publicCourseCatalogKey = ["public", "course-catalog"] as const;
 
+type CatalogRpcResult = {
+  readonly data: unknown;
+  readonly error: unknown;
+};
+
+type CatalogRpc = () => Promise<CatalogRpcResult>;
+
+const executePublicCourseCatalogRpc: CatalogRpc = async () => {
+  const { data, error } = await supabase.rpc("get_public_course_catalog");
+  return { data, error };
+};
+
+export const loadPublicCourseCatalog = async (
+  runtimeSmokeEnabled = ciRuntimeSmokeEnabled,
+  executeRpc: CatalogRpc = executePublicCourseCatalogRpc,
+): Promise<PublicCourseCatalog> => {
+  if (runtimeSmokeEnabled) {
+    return parseDataContract(
+      publicCourseCatalogSchema,
+      ciRuntimeSmokeCatalog,
+      "catálogo sintético do smoke de runtime",
+    );
+  }
+
+  const { data, error } = await executeRpc();
+  if (error) throw error;
+
+  return parseDataContract(
+    publicCourseCatalogSchema,
+    data,
+    "catálogo público de cursos",
+  );
+};
+
 export const usePublicCourseCatalog = () =>
   useQuery({
     queryKey: publicCourseCatalogKey,
-    queryFn: async (): Promise<PublicCourseCatalog> => {
-      if (ciRuntimeSmokeEnabled) {
-        return parseDataContract(
-          publicCourseCatalogSchema,
-          ciRuntimeSmokeCatalog,
-          "catálogo sintético do smoke de runtime",
-        );
-      }
-
-      const { data, error } = await supabase.rpc("get_public_course_catalog");
-      if (error) throw error;
-
-      return parseDataContract(
-        publicCourseCatalogSchema,
-        data,
-        "catálogo público de cursos",
-      );
-    },
+    queryFn: () => loadPublicCourseCatalog(),
     staleTime: 60_000,
   });
