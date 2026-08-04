@@ -6,6 +6,7 @@ const paths = {
   workflow: ".github/workflows/baseline.yml",
   parent: "scripts/check-ci-determinism.mjs",
   documentation: "docs/refactor/FASE-B118-HEADLESS-BROWSER-SMOKE.md",
+  matrixDocumentation: "docs/refactor/FASE-B122-PUBLIC-ROUTE-MATRIX-SMOKE.md",
 };
 
 const failures = [];
@@ -15,7 +16,7 @@ const expect = (condition, message) => {
 const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
 
 for (const path of Object.values(paths)) {
-  expect(existsSync(path), `Arquivo B118 ausente: ${path}`);
+  expect(existsSync(path), `Arquivo B118/B122 ausente: ${path}`);
 }
 
 const runtime = read(paths.runtime);
@@ -23,6 +24,7 @@ const cdpClient = read(paths.cdpClient);
 const workflow = read(paths.workflow);
 const parent = read(paths.parent);
 const documentation = read(paths.documentation);
+const matrixDocumentation = read(paths.matrixDocumentation);
 
 for (const fragment of [
   'import { CdpClient } from "./lib/cdp-client.mjs";',
@@ -59,27 +61,59 @@ for (const fragment of [
   'pathname: "/"',
   'pathname: "/login"',
   'pathname: "/certificado"',
+  'pathname: "/contato"',
+  'pathname: "/matricule-se"',
+  'pathname: "/esqueceu-senha"',
+  'pathname: "/acesso-negado"',
+  'pathname: "/rota-inexistente-b122"',
   '"Conteúdo publicado pelo instrutor"',
   '"Acesse sua conta para continuar aprendendo."',
   '"Validar certificado"',
+  '"Solicitação de contato"',
+  '"Matricule-se"',
+  '"Recuperar senha"',
+  '"Acesso negado"',
+  '"Página não encontrada"',
   '"Esta página não pôde ser carregada"',
   '`${route.name}.runtime.json`',
   '`${route.name}.html`',
   '"chrome-process.log"',
   '"preview-process.log"',
+  "oito rotas públicas",
 ]) {
-  expect(runtime.includes(fragment), `Runtime B118 perdeu a garantia: ${fragment}`);
+  expect(runtime.includes(fragment), `Runtime B118/B122 perdeu a garantia: ${fragment}`);
 }
+
+const routeNames = [
+  "home",
+  "login",
+  "certificate",
+  "contact",
+  "register",
+  "forgot-password",
+  "access-denied",
+  "not-found",
+];
+for (const routeName of routeNames) {
+  expect(
+    runtime.includes(`name: "${routeName}"`),
+    `Matriz B122 perdeu a rota nomeada ${routeName}.`,
+  );
+}
+expect(
+  (runtime.match(/\n\s+name: "(?:home|login|certificate|contact|register|forgot-password|access-denied|not-found)"/g) ?? []).length === 8,
+  "Matriz B122 deve possuir exatamente as oito rotas públicas contratadas.",
+);
 
 expect(
   /const waitForRouteReady = async \(client, sessionId, route\) => \{[\s\S]*?attempt < 80[\s\S]*?route\.required\.every\(\(fragment\) =>[\s\S]*?dom\.includes\(fragment\)[\s\S]*?lastState\?\.rootHtml\?\.trim\(\) && requiredContentReady/s.test(
     runtime,
   ),
-  "Prontidão B118 deve aguardar raiz React e todo o conteúdo final exigido pela rota.",
+  "Prontidão B118/B122 deve aguardar raiz React e todo o conteúdo final exigido pela rota.",
 );
 expect(
   !runtime.includes("waitForRenderedRoot"),
-  "B118 não pode voltar a aceitar o primeiro fallback não vazio como página pronta.",
+  "B118/B122 não pode voltar a aceitar o primeiro fallback não vazio como página pronta.",
 );
 expect(
   /client\.request\(\s*"Target\.createTarget",\s*\{\s*url:\s*"about:blank",\s*background:\s*false,?\s*\}\s*\)/s.test(
@@ -97,13 +131,13 @@ expect(
   /client\.request\(\s*"Emulation\.setDeviceMetricsOverride",\s*\{[\s\S]*?width:\s*1440,[\s\S]*?height:\s*1000,[\s\S]*?deviceScaleFactor:\s*1,[\s\S]*?mobile:\s*false,[\s\S]*?\},\s*sessionId,?\s*\)/.test(
     runtime,
   ),
-  "Viewport B118 deve permanecer definido via Emulation.setDeviceMetricsOverride.",
+  "Viewport B118/B122 deve permanecer definido via Emulation.setDeviceMetricsOverride.",
 );
 expect(
   /client\.request\(\s*"Page\.navigate",\s*\{\s*url:\s*`\$\{baseUrl\}\$\{route\.pathname\}`\s*\},\s*sessionId,\s*20_000,?\s*\)/s.test(
     runtime,
   ),
-  "Navegação B118 deve permanecer direcionada à rota atual pelo CDP.",
+  "Navegação B118/B122 deve permanecer direcionada à rota atual pelo CDP.",
 );
 
 for (const fragment of [
@@ -130,7 +164,7 @@ for (const forbidden of [
     !runtime
       .toLocaleLowerCase("pt-BR")
       .includes(forbidden.toLocaleLowerCase("pt-BR")),
-    `Runtime B118 não pode depender de ${forbidden}.`,
+    `Runtime B118/B122 não pode depender de ${forbidden}.`,
   );
 }
 
@@ -150,16 +184,16 @@ for (const fragment of [
   "navegador: **${process.env.BROWSER}**",
   'test "$BROWSER" = success',
 ]) {
-  expect(workflow.includes(fragment), `Workflow B118/B119 perdeu a garantia: ${fragment}`);
+  expect(workflow.includes(fragment), `Workflow B118/B119/B122 perdeu a garantia: ${fragment}`);
 }
 expect(
   !workflow.includes("secrets.SUPABASE_DEV_PUBLISHABLE_KEY"),
-  "O smoke B118 não pode voltar a depender de uma chave ausente no CI.",
+  "O smoke B118/B122 não pode voltar a depender de uma chave ausente no CI.",
 );
 
 expect(
   parent.includes('await import("./check-browser-runtime-smoke-contract.mjs")'),
-  "Contrato B118 deve permanecer encadeado ao gate de determinismo do CI.",
+  "Contrato B118/B122 deve permanecer encadeado ao gate de determinismo do CI.",
 );
 
 for (const fragment of [
@@ -178,13 +212,31 @@ for (const fragment of [
   expect(documentation.includes(fragment), `Documentação B118 ausente: ${fragment}`);
 }
 
+for (const fragment of [
+  "FASE B122",
+  "`/contato`",
+  "`/matricule-se`",
+  "`/esqueceu-senha`",
+  "`/acesso-negado`",
+  "`/rota-inexistente-b122`",
+  "oito rotas",
+  "não submete formulários",
+  "Nenhum usuário, contato ou pedido foi criado",
+  "Supabase remoto não foi modificado",
+]) {
+  expect(
+    matrixDocumentation.includes(fragment),
+    `Documentação B122 ausente: ${fragment}`,
+  );
+}
+
 if (failures.length > 0) {
   console.error(
-    "Contrato B118/B119 inválido:\n- " + [...new Set(failures)].join("\n- "),
+    "Contrato B118/B119/B122 inválido:\n- " + [...new Set(failures)].join("\n- "),
   );
   process.exit(1);
 }
 
 console.log(
-  "Contrato B118/B119 aprovado: Chrome headless usa CDP para aguardar o conteúdo final de cada rota, capturar exceções e validar um build development com configuração sintética isolada.",
+  "Contrato B118/B119/B122 aprovado: Chrome headless valida oito rotas públicas com prontidão por conteúdo final e configuração sintética isolada.",
 );
