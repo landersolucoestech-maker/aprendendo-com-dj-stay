@@ -2,16 +2,35 @@
 
 ## Problema comprovado
 
-A inspeção dos artefatos de um gate verde anterior mostrou uma diferença temporal relevante:
+A inspeção dos artefatos de gates verdes anteriores mostrou uma diferença temporal relevante:
 
 - a home já possuía `id="main-content"`;
-- login e certificado tinham o skip link, mas foram exportados antes que o `requestAnimationFrame` de `RouteAccessibility` preparasse o landmark principal.
+- login, certificado, contato, cadastro, recuperação, acesso negado e 404 tinham skip link e live region, mas não possuíam o landmark preparado no DOM final.
 
-O conteúdo visual estava correto e não havia exceção JavaScript, porém o snapshot não comprovava que a infraestrutura de navegação por teclado havia terminado de configurar a página.
+A causa foi reproduzida no ciclo de `Suspense`: o efeito de `RouteAccessibility` executava um `requestAnimationFrame` para preparar o `<main>` do fallback de carregamento. Quando o lazy chunk terminava, o fallback era substituído sem alteração de pathname. Como o efeito dependia apenas da rota, o novo `<main>` não recebia `id="main-content"` nem `tabindex="-1"`.
 
-## Implementação
+O conteúdo visual estava correto e não havia exceção JavaScript, porém a infraestrutura de navegação por teclado não sobrevivia à substituição assíncrona do nó.
 
-A condição de prontidão do CDP passa a exigir, para cada rota da matriz pública:
+## Implementação na aplicação
+
+`RouteAccessibility` continua preferindo o `<main>` ou `[role="main"]` fornecido pela página. Quando nenhum landmark existe, o boundary estável permanece como fallback com `role="main"`.
+
+Além da preparação inicial, o componente instala um `MutationObserver` no boundary com opções restritas a:
+
+- `childList: true`;
+- `subtree: true`.
+
+Cada substituição de conteúdo reagenda a preparação no próximo frame. Assim, quando o `Suspense` remove o fallback e monta a página lazy, o alvo final recebe novamente:
+
+- `id="main-content"`;
+- `tabindex="-1"` quando necessário;
+- papel principal somente quando a página não fornece landmark semântico.
+
+O observer não observa atributos. Portanto, as alterações de `id`, `role`, `tabindex` e `data-*` produzidas pela própria reconciliação não disparam um ciclo. No cleanup, o observer é desconectado e qualquer frame pendente é cancelado.
+
+## Prontidão no navegador
+
+A condição de prontidão do CDP exige, para cada rota da matriz pública:
 
 1. `#root` com conteúdo final;
 2. todos os fragmentos textuais contratados;
@@ -26,8 +45,11 @@ O DOM só é exportado depois que todas essas condições forem verdadeiras. As 
 
 ## Contrato permanente
 
-O contrato B118/B122/B123 impede:
+Os contratos B118/B122/B123 impedem:
 
+- remover a reconciliação após substituições do `Suspense`;
+- observar atributos e criar loop com as próprias correções;
+- deixar de desconectar o observer ou cancelar o frame;
 - remover os campos de acessibilidade da avaliação CDP;
 - voltar a considerar apenas texto e raiz React como prontidão;
 - aceitar zero ou múltiplos `#main-content`;
