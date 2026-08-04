@@ -85,7 +85,7 @@ if (failures.length === 0) {
 
   requireFragments(router, "Roteador B110", [
     'import StudentDashboardPage from "@/pages/student/StudentDashboardPage";',
-    'if (section === "dashboard")',
+    'case "dashboard":',
     "return <StudentDashboardPage />;",
   ]);
   requireFragments(documentation, "Documentação B110", [
