@@ -51,7 +51,8 @@ for (const fragment of [
   '"Log.entryAdded"',
   '"Runtime.evaluate"',
   'root?.innerHTML ?? ""',
-  "waitForRenderedRoot(client, sessionId)",
+  "waitForRouteReady(client, sessionId, route)",
+  "route.required.every((fragment)",
   '"Target.closeTarget"',
   "cdpClient.close()",
   "rmSync(browserProfileDirectory, { recursive: true, force: true })",
@@ -70,6 +71,16 @@ for (const fragment of [
   expect(runtime.includes(fragment), `Runtime B118 perdeu a garantia: ${fragment}`);
 }
 
+expect(
+  /const waitForRouteReady = async \(client, sessionId, route\) => \{[\s\S]*?attempt < 80[\s\S]*?route\.required\.every\(\(fragment\) =>[\s\S]*?dom\.includes\(fragment\)[\s\S]*?lastState\?\.rootHtml\?\.trim\(\) && requiredContentReady/s.test(
+    runtime,
+  ),
+  "Prontidão B118 deve aguardar raiz React e todo o conteúdo final exigido pela rota.",
+);
+expect(
+  !runtime.includes("waitForRenderedRoot"),
+  "B118 não pode voltar a aceitar o primeiro fallback não vazio como página pronta.",
+);
 expect(
   /client\.request\(\s*"Target\.createTarget",\s*\{\s*url:\s*"about:blank",\s*background:\s*false,?\s*\}\s*\)/s.test(
     runtime,
@@ -175,5 +186,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B118/B119 aprovado: Chrome headless usa CDP para aguardar o commit React, capturar exceções e validar um build development com configuração sintética isolada.",
+  "Contrato B118/B119 aprovado: Chrome headless usa CDP para aguardar o conteúdo final de cada rota, capturar exceções e validar um build development com configuração sintética isolada.",
 );
