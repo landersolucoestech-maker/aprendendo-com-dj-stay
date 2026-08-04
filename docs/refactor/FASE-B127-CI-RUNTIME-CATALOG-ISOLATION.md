@@ -16,7 +16,7 @@ A configuração pública deriva `ciRuntimeSmokeEnabled` exclusivamente da combi
 
 O shape público existente da configuração foi preservado.
 
-O catálogo sintético está em `src/runtime/ci-runtime-smoke-catalog.ts`. A fixture:
+O catálogo sintético está em `src/runtime/ci-runtime-smoke-catalog.ts`. A fixture canônica:
 
 - contém somente um curso explicitamente técnico;
 - não representa oferta comercial persistida;
