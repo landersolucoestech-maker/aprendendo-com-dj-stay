@@ -27,7 +27,9 @@ A sequência cobre, entre outros domínios:
 - execução do frontend em Chrome headless por CDP;
 - matriz de oito rotas públicas com conteúdo final;
 - reconciliação de landmark após substituições do `Suspense`;
-- prontidão de `#main-content`, `tabindex="-1"`, skip link e live region antes da coleta do DOM.
+- prontidão de `#main-content`, `tabindex="-1"`, skip link e live region antes da coleta do DOM;
+- foco diferido nos fallbacks lazy e transferência para o conteúdo final;
+- recuperação de foco quando o target final previamente focado é substituído.
 
 Cada arquivo `FASE-B*.md` descreve uma entrega específica. O estado consolidado está em [`../STATUS.md`](../STATUS.md).
 
@@ -43,6 +45,8 @@ No GitHub Actions, o mesmo snapshot também precisa passar:
 - conteúdo final de `/`, `/login`, `/certificado`, `/contato`, `/matricule-se`, `/esqueceu-senha`, `/acesso-negado` e fallback 404;
 - exatamente um landmark `#main-content` com `tabindex="-1"` em cada rota;
 - exatamente um link `Pular para o conteúdo principal` e uma live region de navegação;
+- navegação client-side home → `/login` com fallback observado e nunca focado;
+- foco final em `#main-content`, target conectado e anúncio de conclusão;
 - ausência de exceções JavaScript não tratadas e do Route Error Boundary.
 
 Uma fase só é considerada concluída quando todas as validações aplicáveis ao seu escopo passam no mesmo snapshot. A aprovação do artefato público não equivale a homologação financeira, E2E autenticado, pentest ou promoção para produção.
