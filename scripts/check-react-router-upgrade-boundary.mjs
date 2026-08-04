@@ -4,7 +4,6 @@ const paths = {
   package: "package.json",
   exception: "security/react-router-audit-exception.json",
   usageAudit: "scripts/audit-react-router-usage.mjs",
-  parent: "scripts/check-dependency-security.mjs",
   documentation: "docs/refactor/FASE-B116-REACT-ROUTER-UPGRADE-BOUNDARY.md",
 };
 
@@ -25,7 +24,6 @@ const exception = existsSync(paths.exception)
   ? JSON.parse(read(paths.exception))
   : {};
 const usageAudit = read(paths.usageAudit);
-const parent = read(paths.parent);
 const documentation = read(paths.documentation);
 
 expect(
@@ -80,7 +78,7 @@ expect(
 );
 
 for (const fragment of [
-  'const prohibitedRouterImportPattern =',
+  "const prohibitedRouterImportPattern =",
   '"createBrowserRouter"',
   '"RouterProvider"',
   '"HydratedRouter"',
@@ -88,16 +86,13 @@ for (const fragment of [
   '"RSCStaticRouter"',
   '"RSCHydratedRouter"',
   'appSource.includes("<BrowserRouter>")',
+  'await import("./check-react-router-upgrade-boundary.mjs")',
 ]) {
   expect(
     usageAudit.includes(fragment),
     `Inventário declarativo exigido pela B116 perdeu a garantia: ${fragment}`,
   );
 }
-expect(
-  parent.includes('await import("./check-react-router-upgrade-boundary.mjs")'),
-  "Contrato B116 deve permanecer encadeado ao gate de segurança de dependências.",
-);
 
 for (const fragment of [
   "FASE B116",
