@@ -268,7 +268,7 @@ for (const fragment of [
   "`tabindex=\"-1\"`",
   "`Pular para o conteúdo principal`",
   "live region",
-  "A mesma propriedades são revalidadas",
+  "As mesmas propriedades são revalidadas",
   "Supabase remoto não foi modificado",
 ]) {
   expect(
