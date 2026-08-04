@@ -28,12 +28,14 @@ O marketplace distribui somente cursos e produtos digitais do proprietário. Nã
 | Automação financeira | expiração idempotente de checkout, cron PostgreSQL, saúde administrativa e retenção limitada do histórico |
 | Afiliados e certificados | perfis, links, atribuições, comissões, pagamentos, emissão, revogação e validação pública |
 | Contatos e observabilidade | submissão idempotente, protocolo, tratamento administrativo e captura sanitizada de erros |
-| Administração do proprietário | indicadores reais de financeiro, acadêmico, catálogo, suporte, contatos e automação |
+| Dashboard administrativo do proprietário | seis read models reais para financeiro, acadêmico, catálogo, suporte, contatos e fila operacional, sem estimativas ou dados de exemplo |
 | Supply chain | audit de dependências, lockfile validado, SBOM, manifesto de fontes e redação de credenciais locais do Supabase CLI nos logs de CI |
 | Shell público e proveniência | `pt-BR`, metadados operacionais, favicon local e ausência bloqueante de Lovable, GPT Engineer ou scripts externos herdados |
 | Entrega HTTP | manifesto de release, assets locais, home e fallback SPA validados sobre `vite preview` |
 | Runtime público | Chrome headless controlado por CDP valida conteúdo final em oito rotas anônimas, captura exceções, rejeita o Error Boundary e exige landmark, `#main-content`, `tabindex="-1"`, skip link e live region antes do snapshot |
 | Frontend acessível | lazy loading, Error Boundary, reconciliação acessível após substituições do `Suspense`, foco diferido em fallbacks e handoff para o conteúdo final |
+
+O dashboard administrativo do proprietário é protegido pelo papel administrativo e consolida somente dados persistidos. A visão geral usa seis read models reais, não apresenta métricas estimadas e mantém links operacionais para pagamentos, alunos, suporte e contatos.
 
 A matriz pública executada no navegador contém:
 
