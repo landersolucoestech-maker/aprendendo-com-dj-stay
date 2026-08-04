@@ -2,12 +2,19 @@ import { z } from "zod";
 
 import { enrollmentWithCourseSchema } from "@/contracts/course-access";
 
+export const studentCourseAccessPageItemSchema = z
+  .object({
+    enrollment: enrollmentWithCourseSchema,
+    access_active: z.boolean(),
+  })
+  .strict();
+
 export const studentCourseAccessSchema = z
   .object({
     total: z.number().int().nonnegative(),
     active_total: z.number().int().nonnegative(),
     active_enrollments: z.array(enrollmentWithCourseSchema),
-    enrollments: z.array(enrollmentWithCourseSchema),
+    enrollments: z.array(studentCourseAccessPageItemSchema),
   })
   .strict()
   .superRefine((value, context) => {
