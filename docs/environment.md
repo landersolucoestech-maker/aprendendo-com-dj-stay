@@ -37,7 +37,24 @@ VITE_SUPABASE_URL=https://tduvfrxagujryfnqpdmc.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=<chave publishable ativa de produção>
 ```
 
-Nenhum valor de chave pode ser copiado para o repositório, documentação, issue ou log.
+Nenhum valor de chave ativa pode ser copiado para o repositório, documentação, issue ou log.
+
+## Smoke de runtime no CI
+
+O workflow técnico da branch `dev` produz um artefato de qualidade não implantável para executar o JavaScript compilado no Chrome headless. Esse estágio não recebe uma chave ativa do Supabase.
+
+A configuração sintética exige simultaneamente:
+
+```text
+VITE_APP_ENV=development
+VITE_CI_RUNTIME_SMOKE=true
+VITE_SUPABASE_URL=https://jmtyurketfclaneqxohu.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_ci_runtime_smoke_only_not_for_deployment
+```
+
+O valor sintético não é uma credencial, não autentica no Supabase e existe somente para permitir que a inicialização do cliente atravesse o bootstrap durante o smoke público. A aplicação o aceita apenas em build Vite `development`, com a flag exatamente igual a `true`.
+
+A flag é proibida em produção, em hospedagem, em builds de entrega e em desenvolvimento local normal. Qualquer build implantável continua exigindo uma chave publishable ativa fornecida pelo ambiente.
 
 ## Proveniência de release
 
@@ -65,9 +82,13 @@ A criação do cliente Supabase falha explicitamente quando houver:
 - chave `sb_secret_*`;
 - JWT público com role diferente de `anon`;
 - JWT `anon` emitido para outro project ref;
-- chave em formato desconhecido.
+- chave em formato desconhecido;
+- flag de smoke com valor diferente de `true`;
+- token sintético sem a flag de smoke;
+- flag de smoke combinada com uma chave normal;
+- token sintético fora de `development`.
 
-Chaves modernas `sb_publishable_*` são aceitas sem serem registradas ou inspecionadas além do formato público.
+Chaves modernas `sb_publishable_*` são aceitas sem serem registradas ou inspecionadas além do formato público, exceto pelo token sintético canônico isolado pelo contrato B119.
 
 ## Variáveis proibidas no frontend
 
@@ -90,6 +111,8 @@ npm run dev
 
 Use somente o `.env` local ignorado pelo Git. Não crie ou versione `.env.development`, `.env.production`, `.env.local` ou `.env.staging`.
 
+Não use `VITE_CI_RUNTIME_SMOKE` no desenvolvimento local. Essa variável pertence exclusivamente ao workflow técnico e não substitui uma chave publishable ativa.
+
 ## Gates
 
 ```bash
@@ -101,11 +124,13 @@ npm run build
 
 `check:environment` verifica arquivos versionados, referências legadas no runtime, hardcode no cliente e vínculo do Supabase CLI ao ambiente `dev`.
 
-O build valida também a correspondência entre revisão esperada, runtime compilado e `dist/release.json`.
+O build valida também a correspondência entre revisão esperada, runtime compilado e `dist/release.json`. No workflow técnico, o smoke B118 executa o bundle com a configuração sintética B119 e bloqueia qualquer raiz React não hidratada.
 
 ## Produção
 
 As variáveis de produção serão fornecidas pela plataforma de hospedagem somente à branch `main`. Nenhuma credencial de produção deve ser copiada para `dev`, arquivos locais compartilhados ou GitHub Actions.
+
+A configuração sintética do CI é explicitamente proibida na branch `main` e não pode ser usada como fallback de produção.
 
 ## Rotação e incidente
 
