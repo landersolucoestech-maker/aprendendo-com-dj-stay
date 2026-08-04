@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 
 const root = process.cwd();
@@ -29,7 +29,14 @@ const requiredFiles = [
   "src/pages/student/Certificates.tsx",
   "src/pages/student/MyDigitalProducts.tsx",
   "src/pages/EditProfile.tsx",
-  "src/pages/student/StudentPortal.tsx",
+  "src/pages/student/StudentDashboardPage.tsx",
+  "src/pages/student/StudentCoursesPage.tsx",
+  "src/pages/student/StudentCoursePage.tsx",
+  "src/pages/student/StudentLibraryPage.tsx",
+  "src/pages/student/StudentFinancialPortal.tsx",
+  "src/pages/student/StudentProfilePage.tsx",
+  "src/pages/student/StudentActivityHistory.tsx",
+  "src/pages/student/StudentPortalRouter.tsx",
 ];
 
 const contents = new Map(
@@ -59,6 +66,15 @@ const forbidText = (file, fragments) => {
     if (content.includes(fragment)) fail(`${file} ainda contém legado: ${fragment}`);
   }
 };
+
+const legacyPortalExists = await access(
+  path.join(root, "src/pages/student/StudentPortal.tsx"),
+)
+  .then(() => true)
+  .catch(() => false);
+if (legacyPortalExists) {
+  fail("src/pages/student/StudentPortal.tsx não pode ser restaurado após a extração B113");
+}
 
 requireText("docs/refactor/09-design-system.md", [
   "# FASE B23 — Identidade visual e design system",
@@ -223,7 +239,6 @@ requireText("src/components/student/StudentPortalPageFrame.tsx", [
   'import { StudentPortalShell } from "@/components/student/StudentPortalShell"',
   "<StudentPortalShell",
 ]);
-
 forbidText("src/components/student/StudentPortalShell.tsx", [
   "bg-black",
   "text-white",
@@ -353,40 +368,108 @@ requireText("src/pages/EditProfile.tsx", [
   'variant={studentPortal ? "context" : "default"}',
 ]);
 
-requireText("src/pages/student/StudentPortal.tsx", [
-  'import { StudentPortalShell } from "@/components/student/StudentPortalShell"',
-  "StudentSectionHeader",
-  "StudentStatCard",
-  "<StudentPortalShell",
+requireText("src/pages/student/StudentDashboardPage.tsx", [
+  "<StudentPortalPageFrame>",
+  "<StudentSectionHeader",
+  "<StudentStatCard",
+  'aria-label="Resumo acadêmico"',
+  'variant="course"',
+  'variant="context"',
+]);
+requireText("src/pages/student/StudentCoursesPage.tsx", [
+  "<StudentPortalPageFrame>",
+  "<StudentSectionHeader",
   "<PageState",
   "<Badge",
-  "<Button asChild",
-  'variant="context"',
-  'aria-label="Resumo acadêmico"',
+  'variant="course"',
   'aria-label="Matrículas do aluno"',
-  'aria-label="Materiais liberados"',
+  'aria-label="Paginação das matrículas"',
+]);
+requireText("src/pages/student/StudentCoursePage.tsx", [
+  "<StudentPortalPageFrame>",
+  "<StudentSectionHeader",
+  "<PageState",
+  'variant="course"',
+  "<Progress",
+  "<LessonGrid",
+  "<ModuleProgress",
+]);
+requireText("src/pages/student/StudentLibraryPage.tsx", [
+  "<StudentPortalPageFrame>",
+  "<StudentSectionHeader",
+  "<PageState",
+  'variant="course"',
   "downloadPrivateAsset",
 ]);
-requirePattern(
-  "src/pages/student/StudentPortal.tsx",
-  /const renderSection = \(section: StudentPortalSection\)[\s\S]*case "dashboard"[\s\S]*case "courses"[\s\S]*case "course"[\s\S]*case "library"[\s\S]*case "orders"[\s\S]*case "payments"[\s\S]*case "profile"[\s\S]*case "history"/,
-  "preservação das oito seções do Portal do Aluno",
-);
-forbidText("src/pages/student/StudentPortal.tsx", [
-  "const LoadingState",
-  "const ErrorState",
-  "const EmptyState",
-  "const StatCard",
-  "const NAVIGATION",
-  "NavLink",
-  "btn-brand",
-  "bg-black",
-  "text-white",
-  "text-gray-",
-  "bg-green-",
-  "bg-red-",
-  "border-white/",
+requireText("src/pages/student/StudentFinancialPortal.tsx", [
+  "<StudentPortalPageFrame>",
+  "<StudentSectionHeader",
+  "<PageState",
+  'variant="course"',
+  "useStudentPaymentHistory",
+]);
+requireText("src/pages/student/StudentProfilePage.tsx", [
+  "<StudentPortalPageFrame>",
+  "<StudentSectionHeader",
+  'variant="course"',
+  '<Link to="/aluno/perfil/editar">Editar perfil</Link>',
+]);
+requireText("src/pages/student/StudentActivityHistory.tsx", [
+  "<StudentPortalPageFrame>",
+  "<StudentSectionHeader",
+  "<PageState",
+  'variant="course"',
+  'aria-label="Histórico de atividades"',
+  'aria-label="Paginação do histórico"',
+]);
+requireText("src/pages/student/StudentPortalRouter.tsx", [
+  'import StudentDashboardPage from "@/pages/student/StudentDashboardPage"',
+  'import StudentCoursesPage from "@/pages/student/StudentCoursesPage"',
+  'import StudentCoursePage from "@/pages/student/StudentCoursePage"',
+  'import StudentLibraryPage from "@/pages/student/StudentLibraryPage"',
+  'import StudentFinancialPortal from "@/pages/student/StudentFinancialPortal"',
+  'import StudentProfilePage from "@/pages/student/StudentProfilePage"',
+  'import StudentActivityHistory from "@/pages/student/StudentActivityHistory"',
+  'case "dashboard":',
+  'case "courses":',
+  'case "course":',
+  'case "library":',
+  'case "orders":',
+  'case "payments":',
+  'case "profile":',
+  'case "history":',
+  "const exhaustiveSection: never = section",
+]);
+
+for (const file of [
+  "src/pages/student/StudentDashboardPage.tsx",
+  "src/pages/student/StudentCoursesPage.tsx",
+  "src/pages/student/StudentCoursePage.tsx",
+  "src/pages/student/StudentLibraryPage.tsx",
+  "src/pages/student/StudentFinancialPortal.tsx",
+  "src/pages/student/StudentProfilePage.tsx",
+  "src/pages/student/StudentActivityHistory.tsx",
+]) {
+  forbidText(file, [
+    "btn-brand",
+    "bg-black",
+    "text-white",
+    "text-gray-",
+    "border-white/",
+    "StudentPortalShell",
+  ]);
+}
+forbidText("src/pages/student/StudentCoursePage.tsx", [
+  "useCourseAccess",
+  "getActiveEnrollments",
+  "Date.now()",
+  "new Date(",
+]);
+forbidText("src/pages/student/StudentPortalRouter.tsx", [
+  'from "@/pages/student/StudentPortal"',
 ]);
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log("Contrato estático do Portal do Aluno na FASE B23/B84/B85 aprovado com contexto visual delegado pelo shell e modo aluno do editor.");
+console.log(
+  "Contrato estático do Portal do Aluno na FASE B23/B84/B85/B113 aprovado com contexto visual delegado pelo shell, páginas extraídas, roteamento exaustivo e modo aluno do editor.",
+);
