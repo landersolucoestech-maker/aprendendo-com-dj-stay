@@ -3,9 +3,13 @@ import { existsSync, readFileSync } from "node:fs";
 const paths = {
   stylesheet: "src/index.css",
   tailwind: "tailwind.config.ts",
+  routeRuntime: "scripts/run-browser-runtime-smoke.mjs",
+  navigationRuntime: "scripts/run-browser-client-navigation-smoke.mjs",
   runtimeCheck: "scripts/check-browser-network-isolation.mjs",
   workflow: ".github/workflows/baseline.yml",
   documentation: "docs/refactor/FASE-B128-PUBLIC-RUNTIME-NETWORK-ISOLATION.md",
+  navigationDocumentation:
+    "docs/refactor/FASE-B132-CLIENT-NAVIGATION-NETWORK-ISOLATION.md",
   parent: "scripts/check-ci-determinism.mjs",
 };
 
@@ -16,14 +20,17 @@ const expect = (condition, message) => {
 const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
 
 for (const path of Object.values(paths)) {
-  expect(existsSync(path), `Arquivo B128 ausente: ${path}`);
+  expect(existsSync(path), `Arquivo B128/B132 ausente: ${path}`);
 }
 
 const stylesheet = read(paths.stylesheet);
 const tailwind = read(paths.tailwind);
+const routeRuntime = read(paths.routeRuntime);
+const navigationRuntime = read(paths.navigationRuntime);
 const runtimeCheck = read(paths.runtimeCheck);
 const workflow = read(paths.workflow);
 const documentation = read(paths.documentation);
+const navigationDocumentation = read(paths.navigationDocumentation);
 const parent = read(paths.parent);
 
 for (const forbidden of [
@@ -56,36 +63,72 @@ for (const fragment of [
 }
 
 for (const fragment of [
-  '"home"',
-  '"login"',
-  '"certificate"',
-  '"contact"',
-  '"register"',
-  '"forgot-password"',
-  '"access-denied"',
-  '"not-found"',
+  'packet.method === "Network.requestWillBeSent"',
+  'packet.method === "Network.responseReceived"',
+  '`${route.name}.network.json`',
+]) {
+  expect(routeRuntime.includes(fragment), `Smoke de rotas B128 ausente: ${fragment}`);
+}
+
+for (const fragment of [
+  "const networkRecords = []",
+  'let networkPhase = "initial-document"',
+  'packet.method === "Network.requestWillBeSent"',
+  'packet.method === "Network.responseReceived"',
+  'networkPhase = "client-navigation"',
+  'kind: "phase"',
+  'pathname: "/login"',
+  '"client-navigation.network.json"',
+  'entry.kind === "response" && Number(entry.status) >= 400',
+  'code === "ENOTEMPTY"',
+  'code === "EBUSY"',
+  'code === "EPERM"',
+]) {
+  expect(
+    navigationRuntime.includes(fragment),
+    `Smoke de navegação B132 ausente: ${fragment}`,
+  );
+}
+
+for (const fragment of [
+  '{ name: "home", pathname: "/" }',
+  '{ name: "login", pathname: "/login" }',
+  '{ name: "certificate", pathname: "/certificado" }',
+  '{ name: "contact", pathname: "/contato" }',
+  '{ name: "register", pathname: "/matricule-se" }',
+  '{ name: "forgot-password", pathname: "/esqueceu-senha" }',
+  '{ name: "access-denied", pathname: "/acesso-negado" }',
+  '{ name: "not-found", pathname: "/rota-inexistente-b122" }',
+  'const clientNavigationFile = "client-navigation.network.json"',
   'file.endsWith(".network.json")',
   'entry.resourceType === "Document"',
   "documentRequests.length !== 1",
   'documentUrl.hostname === "127.0.0.1"',
   'documentUrl.hostname === "localhost"',
   'documentUrl.hostname === "[::1]"',
-  'requestUrl.protocol !== "http:"',
-  'requestUrl.protocol !== "https:"',
   "requestUrl.origin !== documentUrl.origin",
+  'entry.kind === "phase"',
+  'entry.phase === "client-navigation"',
+  'entry.pathname === "/login"',
+  "navigationDocumentRequests.length !== 0",
+  "expectedArtifactCount: routeExpectations.length + 1",
   '"external-network-summary.json"',
-  "routeOrigins",
   "outOfOriginRequestCount",
+  "failedResponseCount",
   "origem HTTP diferente do documento servido",
+  "resposta HTTP inesperada",
 ]) {
-  expect(runtimeCheck.includes(fragment), `Verificador B128 ausente: ${fragment}`);
+  expect(
+    runtimeCheck.includes(fragment),
+    `Verificador B128/B132 ausente: ${fragment}`,
+  );
 }
 
 expect(
-  /run-browser-runtime-smoke\.mjs[\s\S]*?check-browser-network-isolation\.mjs[\s\S]*?run-browser-client-navigation-smoke\.mjs/.test(
+  /run-browser-runtime-smoke\.mjs[\s\S]*?run-browser-client-navigation-smoke\.mjs[\s\S]*?check-browser-network-isolation\.mjs/.test(
     workflow,
   ),
-  "Workflow B128 deve verificar a rede entre o smoke de rotas e a navegação client-side.",
+  "Workflow B132 deve gerar as nove evidências antes da verificação consolidada de rede.",
 );
 
 for (const fragment of [
@@ -106,16 +149,36 @@ for (const fragment of [
   expect(documentation.includes(fragment), `Documentação B128 ausente: ${fragment}`);
 }
 
+for (const fragment of [
+  "FASE B132",
+  "não persistia os eventos `Network.requestWillBeSent` e `Network.responseReceived`",
+  "`client-navigation.network.json`",
+  "exatamente nove artefatos de rede",
+  "nenhuma requisição `Document` durante a fase `client-navigation`",
+  "mesma origem e porta do documento inicial",
+  "nenhuma resposta HTTP com status maior ou igual a 400",
+  "Supabase remoto não foi modificado",
+  "Nenhuma dependência ou lockfile foi alterado",
+  "Nenhuma exceção de rede foi adicionada",
+]) {
+  expect(
+    navigationDocumentation.includes(fragment),
+    `Documentação B132 ausente: ${fragment}`,
+  );
+}
+
 expect(
   parent.includes('await import("./check-public-runtime-network-isolation.mjs")'),
-  "Contrato B128 deve permanecer encadeado ao gate de determinismo do CI.",
+  "Contrato B128/B132 deve permanecer encadeado ao gate de determinismo do CI.",
 );
 
 if (failures.length > 0) {
-  console.error("Contrato B128 inválido:\n- " + [...new Set(failures)].join("\n- "));
+  console.error(
+    "Contrato B128/B132 inválido:\n- " + [...new Set(failures)].join("\n- "),
+  );
   process.exit(1);
 }
 
 console.log(
-  "Contrato B128 aprovado: o shell usa stack tipográfica nativa e as oito rotas públicas ficam restritas à origem e porta do documento servido.",
+  "Contrato B128/B132 aprovado: stack tipográfica nativa, oito rotas diretas e navegação client-side restritas à origem e porta do documento inicial.",
 );
