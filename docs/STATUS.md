@@ -24,8 +24,12 @@ O marketplace distribui somente cursos e produtos digitais do proprietário. Nã
 | Portal do aluno | matrículas, biblioteca, player, retomada e progresso monotônico |
 | Marketplace digital | produtos, licenças, entregáveis, acessos e biblioteca do comprador |
 | Pagamentos | checkout, ordens, tentativas, eventos do provider e concessão ou revogação de acesso |
+| Retorno financeiro exato | consulta autenticada pelo `checkout_intent` pertencente à conta, sem fallback por matrícula ou acesso não relacionado |
+| Expiração de checkout | reconciliação pelo relógio do servidor, proteção de pedidos financeiramente terminais e rotação controlada da idempotência |
+| Cron de expiração | job PostgreSQL `expire-due-checkout-intents` a cada cinco minutos, executado como `postgres`, limitado e sem requisição HTTP |
+| Saúde do cron | read model sanitizado do proprietário com configuração, última execução, último sucesso, falhas em 24 horas e histórico recente |
+| Retenção do cron | job diário `prune-platform-cron-run-history`, janela padrão de 30 dias, lote limitado e preservação de execuções recentes, ativas e externas |
 | Analytics financeiro | filtros temporais, receita confirmada, reversões, ticket médio, clientes únicos, receita por tipo, ranking e série diária |
-| Automação financeira | expiração idempotente de checkout, cron PostgreSQL, saúde administrativa e retenção limitada do histórico |
 | Afiliados e certificados | perfis, links, atribuições, comissões, pagamentos, emissão, revogação e validação pública |
 | Contatos e observabilidade | submissão idempotente, protocolo, tratamento administrativo e captura sanitizada de erros |
 | Dashboard administrativo do proprietário | seis read models reais para financeiro, acadêmico, catálogo, suporte, contatos e fila operacional, sem estimativas ou dados de exemplo |
@@ -54,9 +58,13 @@ A navegação client-side lazy da home para `/login` também é bloqueante. O Ch
 
 A home pública não apresenta números, avaliações, rankings, depoimentos, preços ou entregáveis sem fonte persistida e contratada. O catálogo é calculado a partir do CMS publicado e estados vazios não recebem dados substitutos.
 
-O retorno financeiro usa exclusivamente o `checkout_intent` pertencente à conta autenticada. A interface representa pendência, confirmação, liberação, cancelamento, expiração, falha, reembolso, chargeback, suspensão e revogação sem inferir sucesso por outro acesso existente.
+O Retorno financeiro exato usa exclusivamente o `checkout_intent` pertencente à conta autenticada. A interface representa pendência, confirmação, liberação, cancelamento, expiração, falha, reembolso, chargeback, suspensão e revogação sem inferir sucesso por outro acesso existente.
 
-Checkouts vencidos são reconciliados pelo relógio do PostgreSQL. Os jobs de expiração e retenção são limitados, idempotentes, executados como `postgres` e observáveis por read model sanitizado do proprietário.
+A Expiração de checkout é reconciliada por `expires_at` e pelo relógio do PostgreSQL. Pedidos pagos, em reembolso ou em chargeback não são reabertos; uma nova chave idempotente só é permitida após estado persistido compatível.
+
+O Cron de expiração `expire-due-checkout-intents` executa `private.expire_due_checkout_intents(100)` a cada cinco minutos como `postgres`. A Saúde do cron é exposta ao proprietário sem comando SQL, usuário do banco, PID ou identificadores internos do `pg_cron`.
+
+A Retenção do cron é executada pelo job `prune-platform-cron-run-history`. A política padrão mantém 30 dias e remove no máximo 5.000 execuções concluídas por lote somente dos jobs reconhecidos da plataforma; execuções em andamento, registros recentes e jobs externos são preservados.
 
 O gate técnico executa instalação limpa, lint, reconstrução local do Supabase, pgTAP, sincronização de tipos, contratos estáticos, TypeScript, audit de dependências, build, validação de chunks, smoke HTTP e smoke bloqueante em Chrome headless com matriz pública e prontidão acessível. O mesmo estágio executa a prova de transferência de foco por navegação client-side.
 
