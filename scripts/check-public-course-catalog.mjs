@@ -6,6 +6,9 @@ const requiredFiles = [
   "src/contracts/public-course-catalog.ts",
   "src/contracts/public-course-catalog.test.ts",
   "src/hooks/usePublicCourseCatalog.ts",
+  "src/runtime/load-public-course-catalog.ts",
+  "src/runtime/ci-runtime-smoke-catalog.ts",
+  "src/runtime/ci-runtime-smoke-catalog.test.ts",
   "src/components/HeroSection.tsx",
   "src/components/CourseModulesSection.tsx",
   "src/components/BenefitsSection.tsx",
@@ -34,7 +37,7 @@ const requireFragments = (source, label, fragments) => {
 };
 
 for (const file of requiredFiles) {
-  if (!existsSync(file)) failures.push(`Arquivo B88 ausente: ${file}`);
+  if (!existsSync(file)) failures.push(`Arquivo B88/B127 ausente: ${file}`);
 }
 for (const file of removedFiles) {
   if (existsSync(file)) failures.push(`Conteúdo público fictício não removido: ${file}`);
@@ -46,16 +49,19 @@ if (failures.length === 0) {
   const contract = read(requiredFiles[2]);
   const contractTest = read(requiredFiles[3]);
   const hook = read(requiredFiles[4]);
-  const hero = read(requiredFiles[5]);
-  const courses = read(requiredFiles[6]);
-  const benefits = read(requiredFiles[7]);
-  const instructor = read(requiredFiles[8]);
-  const trust = read(requiredFiles[9]);
-  const navigation = read(requiredFiles[10]);
-  const index = read(requiredFiles[11]);
-  const documentation = read(requiredFiles[14]);
-  const status = read(requiredFiles[15]);
-  const packageJson = read(requiredFiles[16]);
+  const loader = read(requiredFiles[5]);
+  const syntheticCatalog = read(requiredFiles[6]);
+  const syntheticCatalogTest = read(requiredFiles[7]);
+  const hero = read(requiredFiles[8]);
+  const courses = read(requiredFiles[9]);
+  const benefits = read(requiredFiles[10]);
+  const instructor = read(requiredFiles[11]);
+  const trust = read(requiredFiles[12]);
+  const navigation = read(requiredFiles[13]);
+  const index = read(requiredFiles[14]);
+  const documentation = read(requiredFiles[17]);
+  const status = read(requiredFiles[18]);
+  const packageJson = read(requiredFiles[19]);
 
   requireFragments(migration, "Migration B88", [
     "create or replace function private.get_public_course_catalog()",
@@ -91,10 +97,32 @@ if (failures.length === 0) {
     "rejects totals that diverge",
     "rejects private or administrative fields",
   ]);
-  requireFragments(hook, "Hook B88", [
+  requireFragments(hook, "Hook B88/B127", [
     'supabase.rpc("get_public_course_catalog")',
+    "ciRuntimeSmokeEnabled",
+    "loadPublicCourseCatalog",
+  ]);
+  requireFragments(loader, "Loader B127", [
+    "if (runtimeSmokeEnabled)",
+    "ciRuntimeSmokeCatalog",
     "parseDataContract",
+    '"catálogo sintético do smoke de runtime"',
     '"catálogo público de cursos"',
+    "const { data, error } = await executeRpc()",
+  ]);
+  requireFragments(syntheticCatalog, "Fixture B127", [
+    'ciRuntimeSmokeCourseTitle = "Curso de validação do runtime"',
+    'slug: "curso-validacao-runtime"',
+    'language_code: "pt-BR"',
+    'currency_code: "BRL"',
+    "satisfies PublicCourseCatalog",
+  ]);
+  requireFragments(syntheticCatalogTest, "Teste B127", [
+    'describe("ci runtime smoke catalog"',
+    'it("não invoca a RPC no modo sintético"',
+    "expect(executeRpc).not.toHaveBeenCalled()",
+    'it("mantém a RPC real fora do modo sintético"',
+    "expect(executeRpc).toHaveBeenCalledTimes(1)",
   ]);
   if (hook.includes('.from("courses")')) failures.push("Hook público não pode consultar courses diretamente.");
 
@@ -145,12 +173,12 @@ if (failures.length === 0) {
 }
 
 if (failures.length > 0) {
-  console.error("Contrato B88 inválido:\n- " + failures.join("\n- "));
+  console.error("Contrato B88/B127 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Contrato B88 aprovado: catálogo público deriva do CMS e a home não contém alegações comerciais fictícias.",
+  "Contrato B88/B127 aprovado: catálogo real deriva do CMS e o smoke sintético usa fixture validada sem invocar a RPC.",
 );
 
 await import("./check-course-storefront.mjs");
