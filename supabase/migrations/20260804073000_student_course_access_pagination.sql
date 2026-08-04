@@ -34,7 +34,7 @@ begin
         on course_record.id = enrollment_record.course_id
       where enrollment_record.user_id = v_user_id
         and enrollment_record.status = 'active'::public.enrollment_status
-        and course_record.status = 'published'::public.content_status
+        and course_record.status = 'published'::public.course_status
         and enrollment_record.starts_at <= current_timestamp
         and (
           enrollment_record.expires_at is null
@@ -66,7 +66,7 @@ begin
           on course_record.id = enrollment_record.course_id
         where enrollment_record.user_id = v_user_id
           and enrollment_record.status = 'active'::public.enrollment_status
-          and course_record.status = 'published'::public.content_status
+          and course_record.status = 'published'::public.course_status
           and enrollment_record.starts_at <= current_timestamp
           and (
             enrollment_record.expires_at is null
@@ -77,7 +77,10 @@ begin
       ) active_record
     ), '[]'::jsonb),
     'enrollments', coalesce((
-      select jsonb_agg(to_jsonb(page_record) order by page_record.created_at desc, page_record.id desc)
+      select jsonb_agg(
+        (to_jsonb(page_record) - 'created_at')
+        order by page_record.created_at desc, page_record.id desc
+      )
       from (
         select
           enrollment_record.id,
