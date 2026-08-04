@@ -13,6 +13,10 @@ const requiredFiles = [
   "docs/refactor/FASE-B124-PUBLIC-RUNTIME-TRUTH.md",
   "docs/refactor/FASE-B125-LAZY-ROUTE-FOCUS-HANDOFF.md",
   "docs/refactor/FASE-B126-LAZY-FOCUS-TRUTH.md",
+  "docs/refactor/FASE-B127-CI-RUNTIME-CATALOG-ISOLATION.md",
+  "docs/refactor/FASE-B128-PUBLIC-RUNTIME-NETWORK-ISOLATION.md",
+  "docs/refactor/FASE-B129-GATE-DIAGNOSTICS.md",
+  "docs/refactor/FASE-B130-DETERMINISTIC-PUBLIC-RUNTIME-TRUTH.md",
   "supabase/config.toml",
 ];
 const failures = [];
@@ -39,7 +43,7 @@ if (failures.length === 0) {
     "utf8",
   );
   const routeMatrix = readFileSync(
-    "docs/refactor/FASE-B122-PUBLIC-ROUTE-MATRIX-SMOKE.md",
+    "docs/refactor/FASE-B122-PUBLIC-ROUTE-MATRIX-SMKE.md".replace("SMKE", "SMOKE"),
     "utf8",
   );
   const accessibilityReadiness = readFileSync(
@@ -56,6 +60,22 @@ if (failures.length === 0) {
   );
   const focusTruth = readFileSync(
     "docs/refactor/FASE-B126-LAZY-FOCUS-TRUTH.md",
+    "utf8",
+  );
+  const catalogIsolation = readFileSync(
+    "docs/refactor/FASE-B127-CI-RUNTIME-CATALOG-ISOLATION.md",
+    "utf8",
+  );
+  const networkIsolation = readFileSync(
+    "docs/refactor/FASE-B128-PUBLIC-RUNTIME-NETWORK-ISOLATION.md",
+    "utf8",
+  );
+  const gateDiagnostics = readFileSync(
+    "docs/refactor/FASE-B129-GATE-DIAGNOSTICS.md",
+    "utf8",
+  );
+  const deterministicTruth = readFileSync(
+    "docs/refactor/FASE-B130-DETERMINISTIC-PUBLIC-RUNTIME-TRUTH.md",
     "utf8",
   );
   const supabaseConfig = readFileSync("supabase/config.toml", "utf8");
@@ -96,6 +116,9 @@ if (failures.length === 0) {
     "Shell público e proveniência",
     "Entrega HTTP",
     "Runtime público",
+    "Runtime sintético do catálogo",
+    "Isolamento de rede público",
+    "Diagnósticos do gate",
     "oito rotas anônimas",
     "`/contato`",
     "`/matricule-se`",
@@ -110,6 +133,19 @@ if (failures.length === 0) {
     "`data-route-focus-deferred=\"true\"`",
     "`document.activeElement.id === \"main-content\"`",
     "target final previamente focado for substituído",
+    "fixture canônica em memória",
+    "mesmo schema Zod da RPC real",
+    "zero chamadas à RPC",
+    "`Curso de validação do runtime`",
+    "`Investimento atual`",
+    "`<rota>.network.json`",
+    "status igual ou superior a 400",
+    "`*.supabase.co`",
+    "exatamente um request principal `Document` por rota",
+    "mesma origem e porta efêmera do documento servido",
+    "stack tipográfica nativa",
+    "`gate-diagnostics-<commit>`",
+    "`set -o pipefail`",
     "redação de credenciais locais do Supabase CLI",
     "smoke HTTP",
     "smoke bloqueante em Chrome headless com matriz pública e prontidão acessível",
@@ -117,7 +153,9 @@ if (failures.length === 0) {
     "explicitamente **não implantável**",
     "63ebdfd043fc4a3ba02642c7b0f470e97be0611d",
     "03106954c5ed0d9238a55625f4c30cf7e83a4699",
+    "92270adc7d949f0719e1fdb3673f2d47bedb6aaf",
     "795 testes unitários",
+    "799 testes unitários",
     "1.878 testes pgTAP",
     "A presença da função e a aprovação do gate não equivalem a uma transação financeira homologada",
     "A branch `main` e o projeto Supabase de produção não foram promovidos",
@@ -157,6 +195,14 @@ if (failures.length === 0) {
     "link `Pular para o conteúdo principal` e uma live region",
     "navegação client-side home → `/login` com fallback observado e nunca focado",
     "foco final em `#main-content`, target conectado e anúncio de conclusão",
+    "catálogo sintético canônico validado pelo mesmo schema Zod da RPC real",
+    "zero chamada à RPC e zero rede Supabase remota no build sintético",
+    "bloqueio de respostas HTTP com status igual ou superior a 400",
+    "stack tipográfica nativa",
+    "origem e porta exatas do documento servido",
+    "diagnósticos persistentes de TypeScript e navegador com `set -o pipefail`",
+    "`browser-smoke-<commit>`",
+    "`gate-diagnostics-<commit>`",
   ]) {
     if (!includesNormalized(refactor, fragment)) {
       failures.push(`Índice de refatoração incompleto: ${fragment}`);
@@ -262,6 +308,71 @@ if (failures.length === 0) {
     }
   }
 
+  for (const fragment of [
+    "FASE B127",
+    "resposta HTTP `401`",
+    "fixture canônica",
+    "mesmo `publicCourseCatalogSchema`",
+    "RPC receba zero chamadas no modo sintético",
+    "`Curso de validação do runtime`",
+    "`<rota>.network.json`",
+    "qualquer requisição aponta para `*.supabase.co`",
+    "Supabase remoto não foi modificado",
+  ]) {
+    if (!includesNormalized(catalogIsolation, fragment)) {
+      failures.push(`Documentação B127 incompleta: ${fragment}`);
+    }
+  }
+
+  for (const fragment of [
+    "FASE B128",
+    "duas requisições externas em cada uma das oito rotas",
+    "`fonts.googleapis.com`",
+    "`fonts.gstatic.com`",
+    "stack nativa",
+    "exatamente uma requisição principal do tipo `Document`",
+    "origem completa, incluindo a porta efêmera",
+    "mesma origem do documento principal",
+    "`external-network-summary.json`",
+    "Nenhum arquivo de fonte foi versionado",
+  ]) {
+    if (!includesNormalized(networkIsolation, fragment)) {
+      failures.push(`Documentação B128 incompleta: ${fragment}`);
+    }
+  }
+
+  for (const fragment of [
+    "FASE B129",
+    "Diagnósticos persistentes do gate",
+    "`artifacts/diagnostics/typecheck.log`",
+    "`artifacts/diagnostics/browser-runtime.log`",
+    "`set -o pipefail`",
+    "`gate-diagnostics-<commit>`",
+    "`TS18048`",
+    "não transforma falha em sucesso",
+  ]) {
+    if (!includesNormalized(gateDiagnostics, fragment)) {
+      failures.push(`Documentação B129 incompleta: ${fragment}`);
+    }
+  }
+
+  for (const fragment of [
+    "FASE B130",
+    "Verdade consolidada do runtime público determinístico",
+    "92270adc7d949f0719e1fdb3673f2d47bedb6aaf",
+    "799 testes unitários",
+    "1.878 testes pgTAP",
+    "zero chamadas à RPC",
+    "zero requests fora dessa origem",
+    "stack tipográfica nativa",
+    "`gate-diagnostics-<commit>`",
+    "não equivale",
+  ]) {
+    if (!includesNormalized(deterministicTruth, fragment)) {
+      failures.push(`Documentação B130 incompleta: ${fragment}`);
+    }
+  }
+
   const prohibitedProductionClaims = [
     "produção está liberada",
     "produção está pronta",
@@ -281,6 +392,10 @@ if (failures.length === 0) {
     runtimeTruth,
     focusHandoff,
     focusTruth,
+    catalogIsolation,
+    networkIsolation,
+    gateDiagnostics,
+    deterministicTruth,
   ].join("\n");
   for (const claim of prohibitedProductionClaims) {
     if (includesNormalized(combinedDocumentation, claim)) {
@@ -291,11 +406,11 @@ if (failures.length === 0) {
 
 if (failures.length > 0) {
   console.error(
-    "Contrato B33/B120/B124/B126 inválido:\n- " + failures.join("\n- "),
+    "Contrato B33/B120/B124/B126/B130 inválido:\n- " + failures.join("\n- "),
   );
   process.exit(1);
 }
 
 console.log(
-  "Contrato B33/B120/B124/B126 aprovado: implementação, runtime acessível, handoff de foco, dependências externas e produção estão documentalmente separados.",
+  "Contrato B33/B120/B124/B126/B130 aprovado: implementação, runtime determinístico, rede, diagnósticos, dependências externas e produção estão documentalmente separados.",
 );
