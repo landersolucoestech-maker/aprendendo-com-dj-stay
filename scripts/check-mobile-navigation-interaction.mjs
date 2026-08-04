@@ -94,8 +94,8 @@ for (const fragment of [
   'state.activeElementText === "Início"',
   'state.activeElementAriaControls === "mobile-navigation"',
   'event.defaultPrevented === true',
-  'phase: "mobile-menu-escape"',
-  'phase: "mobile-menu-reopen"',
+  'networkPhase = "mobile-menu-escape"',
+  'networkPhase = "mobile-menu-reopen"',
   "firstOpenState",
   "keyboardClosedState",
   "keyboardEvents: finalState?.keyboardEvents ?? []",
@@ -119,7 +119,7 @@ expect(
   "A sonda B137 deve observar em window o estado final do keydown após o handler do document.",
 );
 expect(
-  /firstOpenState = await waitForState\([\s\S]*?activeElementWithinMobileMenu === true[\s\S]*?activeElementText === "Início"[\s\S]*?dispatchTrustedEscape\(\)[\s\S]*?keyboardClosedState = await waitForState\([\s\S]*?activeElementAriaControls === "mobile-navigation"[\s\S]*?event\.defaultPrevented === true[\s\S]*?phase: "mobile-menu-reopen"/s.test(
+  /firstOpenState = await waitForState\([\s\S]*?activeElementWithinMobileMenu === true[\s\S]*?activeElementText === "Início"[\s\S]*?dispatchTrustedEscape\(\)[\s\S]*?keyboardClosedState = await waitForState\([\s\S]*?activeElementAriaControls === "mobile-navigation"[\s\S]*?event\.defaultPrevented === true[\s\S]*?networkPhase = "mobile-menu-reopen"/s.test(
     runtime,
   ),
   "B137 deve provar foco inicial, Escape prevenido, retorno ao botão e reabertura nessa ordem.",
