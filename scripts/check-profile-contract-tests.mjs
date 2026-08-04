@@ -10,7 +10,7 @@ const paths = {
   avatarHook: "src/hooks/useAvatarUpload.ts",
   editPage: "src/pages/EditProfile.tsx",
   app: "src/App.tsx",
-  studentPortal: "src/pages/student/StudentPortal.tsx",
+  studentProfile: "src/pages/student/StudentProfilePage.tsx",
   pageFrame: "src/components/student/StudentPortalPageFrame.tsx",
   generatedTypes: "src/integrations/supabase/types.ts",
   documentation: "docs/refactor/FASE-B79-PROFILE-CONTRACT-TESTS.md",
@@ -36,7 +36,7 @@ const profileHook = read(paths.profileHook);
 const avatarHook = read(paths.avatarHook);
 const editPage = read(paths.editPage);
 const app = read(paths.app);
-const studentPortal = read(paths.studentPortal);
+const studentProfile = read(paths.studentProfile);
 const pageFrame = read(paths.pageFrame);
 const generatedTypes = read(paths.generatedTypes);
 const documentation = read(paths.documentation);
@@ -176,7 +176,7 @@ expect(
   "Rota genérica deve preservar EditProfile sem modo aluno.",
 );
 expect(
-  studentPortal.includes('<Link to="/aluno/perfil/editar">Editar perfil</Link>'),
+  studentProfile.includes('<Link to="/aluno/perfil/editar">Editar perfil</Link>'),
   "Perfil do aluno deve apontar para o editor dentro do shell.",
 );
 for (const fragment of [
