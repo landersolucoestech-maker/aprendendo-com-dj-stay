@@ -7,6 +7,8 @@ const paths = {
   parent: "scripts/check-ci-determinism.mjs",
   documentation: "docs/refactor/FASE-B118-HEADLESS-BROWSER-SMOKE.md",
   matrixDocumentation: "docs/refactor/FASE-B122-PUBLIC-ROUTE-MATRIX-SMOKE.md",
+  accessibilityDocumentation:
+    "docs/refactor/FASE-B123-BROWSER-ACCESSIBILITY-READINESS.md",
 };
 
 const failures = [];
@@ -16,7 +18,7 @@ const expect = (condition, message) => {
 const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
 
 for (const path of Object.values(paths)) {
-  expect(existsSync(path), `Arquivo B118/B122 ausente: ${path}`);
+  expect(existsSync(path), `Arquivo B118/B122/B123 ausente: ${path}`);
 }
 
 const runtime = read(paths.runtime);
@@ -25,6 +27,7 @@ const workflow = read(paths.workflow);
 const parent = read(paths.parent);
 const documentation = read(paths.documentation);
 const matrixDocumentation = read(paths.matrixDocumentation);
+const accessibilityDocumentation = read(paths.accessibilityDocumentation);
 
 for (const fragment of [
   'import { CdpClient } from "./lib/cdp-client.mjs";',
@@ -53,6 +56,14 @@ for (const fragment of [
   '"Log.entryAdded"',
   '"Runtime.evaluate"',
   'root?.innerHTML ?? ""',
+  'document.getElementById("main-content")',
+  'document.querySelectorAll("#main-content").length',
+  'mainContent?.matches(\'main, [role="main"]\')',
+  'mainContent?.getAttribute("tabindex") ?? null',
+  'document.querySelectorAll(\'a[href="#main-content"]\')',
+  '"Pular para o conteúdo principal"',
+  "liveRegionCount",
+  "accessibilityReady",
   "waitForRouteReady(client, sessionId, route)",
   "route.required.every((fragment)",
   '"Target.closeTarget"',
@@ -79,9 +90,12 @@ for (const fragment of [
   '`${route.name}.html`',
   '"chrome-process.log"',
   '"preview-process.log"',
-  "oito rotas públicas",
+  "prontidão acessível",
 ]) {
-  expect(runtime.includes(fragment), `Runtime B118/B122 perdeu a garantia: ${fragment}`);
+  expect(
+    runtime.includes(fragment),
+    `Runtime B118/B122/B123 perdeu a garantia: ${fragment}`,
+  );
 }
 
 const routeNames = [
@@ -106,15 +120,28 @@ expect(
 );
 
 expect(
-  /const waitForRouteReady = async \(client, sessionId, route\) => \{[\s\S]*?attempt < 80[\s\S]*?route\.required\.every\(\(fragment\) =>[\s\S]*?dom\.includes\(fragment\)[\s\S]*?lastState\?\.rootHtml\?\.trim\(\) && requiredContentReady/s.test(
+  /const waitForRouteReady = async \(client, sessionId, route\) => \{[\s\S]*?attempt < 80[\s\S]*?route\.required\.every\(\(fragment\) =>[\s\S]*?const accessibilityReady =[\s\S]*?mainContentCount === 1[\s\S]*?mainContentIsLandmark === true[\s\S]*?mainContentTabIndex === "-1"[\s\S]*?skipLinkCount === 1[\s\S]*?skipLinkText\.includes\("Pular para o conteúdo principal"\)[\s\S]*?liveRegionCount >= 1[\s\S]*?requiredContentReady &&[\s\S]*?accessibilityReady/s.test(
     runtime,
   ),
-  "Prontidão B118/B122 deve aguardar raiz React e todo o conteúdo final exigido pela rota.",
+  "Prontidão B118/B122/B123 deve aguardar conteúdo final e estrutura acessível completa.",
 );
 expect(
   !runtime.includes("waitForRenderedRoot"),
-  "B118/B122 não pode voltar a aceitar o primeiro fallback não vazio como página pronta.",
+  "B118/B122/B123 não pode voltar a aceitar o primeiro fallback não vazio como página pronta.",
 );
+for (const validationFragment of [
+  "state?.mainContentCount !== 1",
+  "state?.mainContentIsLandmark !== true",
+  'state?.mainContentTabIndex !== "-1"',
+  "state?.skipLinkCount !== 1",
+  'state?.skipLinkText?.includes("Pular para o conteúdo principal")',
+  "state?.liveRegionCount",
+]) {
+  expect(
+    runtime.includes(validationFragment),
+    `Validação pós-espera B123 ausente: ${validationFragment}`,
+  );
+}
 expect(
   /client\.request\(\s*"Target\.createTarget",\s*\{\s*url:\s*"about:blank",\s*background:\s*false,?\s*\}\s*\)/s.test(
     runtime,
@@ -131,13 +158,13 @@ expect(
   /client\.request\(\s*"Emulation\.setDeviceMetricsOverride",\s*\{[\s\S]*?width:\s*1440,[\s\S]*?height:\s*1000,[\s\S]*?deviceScaleFactor:\s*1,[\s\S]*?mobile:\s*false,[\s\S]*?\},\s*sessionId,?\s*\)/.test(
     runtime,
   ),
-  "Viewport B118/B122 deve permanecer definido via Emulation.setDeviceMetricsOverride.",
+  "Viewport B118/B122/B123 deve permanecer definido via Emulation.setDeviceMetricsOverride.",
 );
 expect(
   /client\.request\(\s*"Page\.navigate",\s*\{\s*url:\s*`\$\{baseUrl\}\$\{route\.pathname\}`\s*\},\s*sessionId,\s*20_000,?\s*\)/s.test(
     runtime,
   ),
-  "Navegação B118/B122 deve permanecer direcionada à rota atual pelo CDP.",
+  "Navegação B118/B122/B123 deve permanecer direcionada à rota atual pelo CDP.",
 );
 
 for (const fragment of [
@@ -164,7 +191,7 @@ for (const forbidden of [
     !runtime
       .toLocaleLowerCase("pt-BR")
       .includes(forbidden.toLocaleLowerCase("pt-BR")),
-    `Runtime B118/B122 não pode depender de ${forbidden}.`,
+    `Runtime B118/B122/B123 não pode depender de ${forbidden}.`,
   );
 }
 
@@ -184,16 +211,19 @@ for (const fragment of [
   "navegador: **${process.env.BROWSER}**",
   'test "$BROWSER" = success',
 ]) {
-  expect(workflow.includes(fragment), `Workflow B118/B119/B122 perdeu a garantia: ${fragment}`);
+  expect(
+    workflow.includes(fragment),
+    `Workflow B118/B119/B122/B123 perdeu a garantia: ${fragment}`,
+  );
 }
 expect(
   !workflow.includes("secrets.SUPABASE_DEV_PUBLISHABLE_KEY"),
-  "O smoke B118/B122 não pode voltar a depender de uma chave ausente no CI.",
+  "O smoke B118/B122/B123 não pode voltar a depender de uma chave ausente no CI.",
 );
 
 expect(
   parent.includes('await import("./check-browser-runtime-smoke-contract.mjs")'),
-  "Contrato B118/B122 deve permanecer encadeado ao gate de determinismo do CI.",
+  "Contrato B118/B122/B123 deve permanecer encadeado ao gate de determinismo do CI.",
 );
 
 for (const fragment of [
@@ -230,13 +260,31 @@ for (const fragment of [
   );
 }
 
+for (const fragment of [
+  "FASE B123",
+  "login e certificado",
+  "requestAnimationFrame",
+  "exatamente um elemento com `id=\"main-content\"`",
+  "`tabindex=\"-1\"`",
+  "`Pular para o conteúdo principal`",
+  "live region",
+  "A mesma propriedades são revalidadas",
+  "Supabase remoto não foi modificado",
+]) {
+  expect(
+    accessibilityDocumentation.includes(fragment),
+    `Documentação B123 ausente: ${fragment}`,
+  );
+}
+
 if (failures.length > 0) {
   console.error(
-    "Contrato B118/B119/B122 inválido:\n- " + [...new Set(failures)].join("\n- "),
+    "Contrato B118/B119/B122/B123 inválido:\n- " +
+      [...new Set(failures)].join("\n- "),
   );
   process.exit(1);
 }
 
 console.log(
-  "Contrato B118/B119/B122 aprovado: Chrome headless valida oito rotas públicas com prontidão por conteúdo final e configuração sintética isolada.",
+  "Contrato B118/B119/B122/B123 aprovado: Chrome headless valida oito rotas públicas com conteúdo final, landmark, skip link e live region prontos.",
 );
