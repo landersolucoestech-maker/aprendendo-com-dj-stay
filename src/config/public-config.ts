@@ -65,16 +65,18 @@ function validateBuildMode(
   appEnvironment: AppEnvironment,
   rawEnvironment: RawPublicEnvironment,
 ): void {
-  const expectedMode = appEnvironment;
-
-  if (rawEnvironment.viteMode !== expectedMode) {
+  if (rawEnvironment.viteMode !== appEnvironment) {
     throw new Error(
       `Ambiente incompatível: VITE_APP_ENV=${appEnvironment} e MODE=${rawEnvironment.viteMode}.`,
     );
   }
 
-  if (appEnvironment === "development" && !rawEnvironment.isDevelopmentBuild) {
-    throw new Error("O ambiente development exige um build Vite de desenvolvimento.");
+  if (
+    rawEnvironment.isDevelopmentBuild === rawEnvironment.isProductionBuild
+  ) {
+    throw new Error(
+      "As flags nativas do Vite DEV e PROD devem possuir valores complementares.",
+    );
   }
 
   if (appEnvironment === "production" && !rawEnvironment.isProductionBuild) {
