@@ -106,7 +106,9 @@ jobs:
         id: browser
         if: steps.build.outcome == 'success'
         continue-on-error: true
-        run: node scripts/run-browser-runtime-smoke.mjs
+        run: |
+          node scripts/run-browser-runtime-smoke.mjs
+          node scripts/run-browser-client-navigation-smoke.mjs
 
       - name: Exportar tipos gerados
         if: steps.types.outcome == 'success'
