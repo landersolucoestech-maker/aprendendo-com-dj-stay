@@ -22,8 +22,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PageState } from "@/components/ui/page-state";
-import { getActiveEnrollments, useCourseAccess } from "@/hooks/useCourseAccess";
 import { useRecentActivities } from "@/hooks/useRecentActivities";
+import { useStudentCourseAccess } from "@/hooks/useStudentCourseAccess";
 import { useStudentLibrarySummary } from "@/hooks/useStudentLibrarySummary";
 import { useStudentProgressSummary } from "@/hooks/useStudentProgressSummary";
 import { formatAppDateTime } from "@/lib/date-time";
@@ -33,7 +33,7 @@ const formatAccessDate = (value: string | null): string =>
   formatAppDateTime(value, { fallback: "sem prazo definido" });
 
 const StudentDashboardPage = () => {
-  const accessQuery = useCourseAccess();
+  const accessQuery = useStudentCourseAccess(0, 1, 3);
   const progressSummaryQuery = useStudentProgressSummary();
   const activitiesQuery = useRecentActivities(5);
   const librarySummaryQuery = useStudentLibrarySummary();
@@ -76,7 +76,12 @@ const StudentDashboardPage = () => {
     );
   }
 
-  const activeEnrollments = getActiveEnrollments(accessQuery.data ?? []);
+  const access = accessQuery.data ?? {
+    total: 0,
+    active_total: 0,
+    active_enrollments: [],
+    enrollments: [],
+  };
   const activities = activitiesQuery.data ?? [];
   const progressSummary = progressSummaryQuery.data ?? {
     started_lessons: 0,
@@ -100,8 +105,8 @@ const StudentDashboardPage = () => {
         >
           <StudentStatCard
             label="Cursos ativos"
-            value={String(activeEnrollments.length)}
-            description="Matrículas válidas neste momento"
+            value={String(access.active_total)}
+            description="Total válido pelo relógio do servidor"
             icon={GraduationCap}
           />
           <StudentStatCard
@@ -133,7 +138,7 @@ const StudentDashboardPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {activeEnrollments.length === 0 ? (
+              {access.active_enrollments.length === 0 ? (
                 <PageState
                   variant="empty"
                   compact
@@ -142,7 +147,7 @@ const StudentDashboardPage = () => {
                   description="Os cursos aparecerão aqui quando houver uma matrícula válida."
                 />
               ) : (
-                activeEnrollments.slice(0, 3).map((enrollment) => (
+                access.active_enrollments.map((enrollment) => (
                   <article
                     key={enrollment.id}
                     className="surface-muted flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
