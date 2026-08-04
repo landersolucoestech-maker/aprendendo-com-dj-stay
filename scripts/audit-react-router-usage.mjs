@@ -88,3 +88,5 @@ if (prohibited.length > 0) {
 console.log(
   "Arquitetura React Router confirmada em modo declarativo, sem Data Router, SSR, Framework Mode ou APIs RSC.",
 );
+
+await import("./check-react-router-upgrade-boundary.mjs");
