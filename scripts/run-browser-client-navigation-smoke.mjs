@@ -15,6 +15,8 @@ import { CdpClient } from "./lib/cdp-client.mjs";
 const root = process.cwd();
 const artifactsDirectory = path.join(root, "artifacts", "browser-smoke");
 const viteExecutable = path.join(root, "node_modules", "vite", "bin", "vite.js");
+const loginLinkSelector =
+  'nav[aria-label="Navegação principal"] a[href="/login"]';
 const delay = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
 const failures = [];
@@ -52,7 +54,7 @@ if (browserExecutable === null) {
   failures.push("Chrome ou Chromium não foi encontrado no runner.");
 }
 if (failures.length > 0) {
-  console.error("Smoke B125/B132 bloqueado:\n- " + failures.join("\n- "));
+  console.error("Smoke B125/B132/B135 bloqueado:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
@@ -96,6 +98,7 @@ let client = null;
 let targetId = null;
 let sessionId = null;
 let finalState = null;
+let interactionTarget = null;
 let removeEventListener = () => {};
 
 const preview = spawn(
@@ -289,6 +292,7 @@ const readState = (session) =>
           .map((region) => region.textContent?.trim() ?? "")
           .find((text) => text.includes("Navegação concluída")) ?? "",
         probe: window.__b125RouteFocusProbe ?? null,
+        interaction: window.__b135InteractionProbe ?? null,
       };
     })()`,
   );
@@ -325,13 +329,111 @@ const waitForFinalFocus = async (session) => {
         "Navegação concluída. Conteúdo principal atualizado.",
       ) &&
       state.probe?.sawDeferred === true &&
-      state.probe?.deferredFocused === false
+      state.probe?.deferredFocused === false &&
+      state.interaction?.isTrusted === true &&
+      state.interaction?.text === "Entrar" &&
+      state.interaction?.pathname === "/login"
     ) {
       return state;
     }
     await delay(250);
   }
   return state;
+};
+
+const prepareTrustedLoginInteraction = (session) =>
+  evaluate(
+    session,
+    `(() => {
+      const selector = ${JSON.stringify(loginLinkSelector)};
+      const candidates = Array.from(document.querySelectorAll(selector));
+      const link = candidates.find((candidate) => {
+        if (!(candidate instanceof HTMLAnchorElement)) return false;
+        const rect = candidate.getBoundingClientRect();
+        const style = getComputedStyle(candidate);
+        return (
+          rect.width > 0 &&
+          rect.height > 0 &&
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          Number(style.opacity) > 0
+        );
+      });
+      if (!(link instanceof HTMLAnchorElement)) {
+        return { error: "Link Entrar visível não encontrado." };
+      }
+
+      const rect = link.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      const hit = document.elementFromPoint(x, y)?.closest(selector);
+      if (hit !== link) {
+        return { error: "Link Entrar não é o alvo superior no ponto de clique." };
+      }
+
+      window.__b135InteractionProbe = null;
+      const handleClick = (event) => {
+        const target =
+          event.target instanceof Element
+            ? event.target.closest(selector)
+            : null;
+        if (target !== link) return;
+        document.removeEventListener("click", handleClick);
+        window.__b135InteractionProbe = {
+          isTrusted: event.isTrusted,
+          defaultPrevented: event.defaultPrevented,
+          button: event.button,
+          detail: event.detail,
+          text: link.textContent?.trim() ?? "",
+          href: link.href,
+          pathname: new URL(link.href).pathname,
+        };
+      };
+      document.addEventListener("click", handleClick);
+
+      return {
+        selector,
+        x,
+        y,
+        width: rect.width,
+        height: rect.height,
+        text: link.textContent?.trim() ?? "",
+        href: link.href,
+        pathname: new URL(link.href).pathname,
+      };
+    })()`,
+  );
+
+const dispatchTrustedClick = async (session, target) => {
+  await client.request(
+    "Input.dispatchMouseEvent",
+    { type: "mouseMoved", x: target.x, y: target.y },
+    session,
+  );
+  await client.request(
+    "Input.dispatchMouseEvent",
+    {
+      type: "mousePressed",
+      x: target.x,
+      y: target.y,
+      button: "left",
+      buttons: 1,
+      clickCount: 1,
+    },
+    session,
+  );
+  await client.request(
+    "Input.dispatchMouseEvent",
+    {
+      type: "mouseReleased",
+      x: target.x,
+      y: target.y,
+      button: "left",
+      buttons: 0,
+      clickCount: 1,
+    },
+    session,
+  );
 };
 
 try {
@@ -413,7 +515,7 @@ try {
 
   const homeState = await waitForHome(sessionId);
   if (!homeState?.mainText.includes("Conteúdo publicado pelo instrutor")) {
-    throw new Error("A home não ficou pronta antes da transição B125/B132.");
+    throw new Error("A home não ficou pronta antes da transição B125/B132/B135.");
   }
 
   await evaluate(
@@ -444,6 +546,21 @@ try {
     })()`,
   );
 
+  interactionTarget = await prepareTrustedLoginInteraction(sessionId);
+  if (interactionTarget?.error) {
+    throw new Error(interactionTarget.error);
+  }
+  if (
+    interactionTarget?.text !== "Entrar" ||
+    interactionTarget?.pathname !== "/login" ||
+    !Number.isFinite(interactionTarget?.x) ||
+    !Number.isFinite(interactionTarget?.y)
+  ) {
+    throw new Error(
+      `Alvo B135 inválido: ${JSON.stringify(interactionTarget)}`,
+    );
+  }
+
   await client.request(
     "Network.emulateNetworkConditions",
     {
@@ -461,21 +578,11 @@ try {
     kind: "phase",
     phase: networkPhase,
     pathname: "/login",
+    interaction: "trusted-click",
+    selector: loginLinkSelector,
   });
 
-  const pathname = await evaluate(
-    sessionId,
-    `(() => {
-      window.history.pushState({ b125: true, b132: true }, "", "/login");
-      window.dispatchEvent(
-        new PopStateEvent("popstate", { state: { b125: true, b132: true } }),
-      );
-      return window.location.pathname;
-    })()`,
-  );
-  if (pathname !== "/login") {
-    throw new Error(`Pathname inesperado após pushState: ${String(pathname)}`);
-  }
+  await dispatchTrustedClick(sessionId, interactionTarget);
 
   finalState = await waitForFinalFocus(sessionId);
   await evaluate(
@@ -483,6 +590,11 @@ try {
     "window.__b125RouteFocusObserver?.disconnect(); true",
   );
 
+  if (finalState?.pathname !== "/login") {
+    failures.push(
+      `O clique real B135 não navegou para /login: ${String(finalState?.pathname)}`,
+    );
+  }
   if (finalState?.probe?.sawDeferred !== true) {
     failures.push("A transição B125 não observou o fallback com foco diferido.");
   }
@@ -505,21 +617,30 @@ try {
   ) {
     failures.push("A live region não anunciou a conclusão da navegação.");
   }
+  if (finalState?.interaction?.isTrusted !== true) {
+    failures.push("O evento de clique B135 não foi confiável para o navegador.");
+  }
+  if (finalState?.interaction?.text !== "Entrar") {
+    failures.push("O controle acionado B135 não foi o link Entrar.");
+  }
+  if (finalState?.interaction?.pathname !== "/login") {
+    failures.push("O link real B135 não apontava para /login.");
+  }
   for (const exception of diagnostics.filter(
     (entry) => entry.level === "exception",
   )) {
-    failures.push(`Exceção JavaScript B125/B132: ${exception.text}`);
+    failures.push(`Exceção JavaScript B125/B132/B135: ${exception.text}`);
   }
   for (const response of networkRecords.filter(
     (entry) => entry.kind === "response" && Number(entry.status) >= 400,
   )) {
     failures.push(
-      `Resposta HTTP B132 inesperada ${response.status} em ${response.url}`,
+      `Resposta HTTP B132/B135 inesperada ${response.status} em ${response.url}`,
     );
   }
 } catch (error) {
   failures.push(
-    `Execução B125/B132 falhou: ${error instanceof Error ? error.message : String(error)}`,
+    `Execução B125/B132/B135 falhou: ${error instanceof Error ? error.message : String(error)}`,
   );
 } finally {
   removeEventListener();
@@ -553,6 +674,18 @@ try {
     "utf8",
   );
   writeFileSync(
+    path.join(artifactsDirectory, "client-navigation.interaction.json"),
+    `${JSON.stringify(
+      {
+        target: interactionTarget,
+        event: finalState?.interaction ?? null,
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+  writeFileSync(
     path.join(artifactsDirectory, "client-navigation.chrome.log"),
     browserLogs.join(""),
     "utf8",
@@ -569,16 +702,18 @@ try {
     await removeProfileDirectory();
   } catch (error) {
     failures.push(
-      `Limpeza do perfil temporário B132 falhou: ${error instanceof Error ? error.message : String(error)}`,
+      `Limpeza do perfil temporário B132/B135 falhou: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }
 
 if (failures.length > 0) {
-  console.error("Smoke B125/B132 inválido:\n- " + failures.join("\n- "));
+  console.error(
+    "Smoke B125/B132/B135 inválido:\n- " + failures.join("\n- "),
+  );
   process.exit(1);
 }
 
 console.log(
-  "Smoke B125/B132 aprovado: fallback lazy nunca recebeu foco, login final foi focado e anunciado, e a rede completa da navegação client-side foi persistida.",
+  "Smoke B125/B132/B135 aprovado: clique confiável no link Entrar acionou a navegação real, fallback lazy nunca recebeu foco, login final foi focado e anunciado, e a rede client-side foi persistida.",
 );
