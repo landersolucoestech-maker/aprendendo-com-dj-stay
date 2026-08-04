@@ -37,11 +37,24 @@ Os seguintes domínios possuem implementação, persistência, autorização e c
 | Contatos | submissão idempotente, protocolo e tratamento administrativo |
 | Observabilidade | captura sanitizada de erros do frontend e fila administrativa |
 | Administração do proprietário | dashboard administrativo do proprietário com indicadores reais de financeiro, acadêmico, catálogo, suporte, contatos e automação de checkout |
-| Supply chain | audit de dependências, lockfile validado, SBOM e manifesto de fontes |
+| Supply chain | audit de dependências, lockfile validado, SBOM, manifesto de fontes e redação de credenciais locais do Supabase CLI nos logs de CI |
 | Shell público e proveniência | `pt-BR`, metadados operacionais, favicon local e ausência bloqueante de Lovable, GPT Engineer ou scripts externos herdados |
 | Entrega HTTP | manifesto de release, assets locais, resposta da home e fallback SPA validados sobre `vite preview` |
-| Runtime público | Chrome headless controlado por CDP, espera pelo conteúdo final de `/`, `/login` e `/certificado`, captura de exceções e rejeição do Error Boundary |
-| Frontend | lazy loading, Error Boundary, datas canônicas, acessibilidade e grafo de chunks acíclico |
+| Runtime público | Chrome headless controlado por CDP valida conteúdo final em oito rotas anônimas, captura exceções, rejeita o Error Boundary e exige landmark, `#main-content`, `tabindex="-1"`, skip link e live region antes do snapshot |
+| Frontend | lazy loading, Error Boundary, datas canônicas, reconciliação acessível após substituições do `Suspense` e grafo de chunks acíclico |
+
+A matriz pública executada no navegador contém:
+
+- `/`;
+- `/login`;
+- `/certificado`;
+- `/contato`;
+- `/matricule-se`;
+- `/esqueceu-senha`;
+- `/acesso-negado`;
+- uma rota inexistente dedicada ao fallback 404.
+
+Cada rota é considerada pronta somente quando o React renderizou o conteúdo final contratado, existe exatamente um `#main-content` representado por `<main>` ou `role="main"`, o alvo possui `tabindex="-1"`, existe exatamente um link `Pular para o conteúdo principal`, a live region de navegação está presente e não ocorreu exceção JavaScript não tratada.
 
 A home pública não apresenta números de alunos, avaliações, streams, rankings, depoimentos, parcerias, preços ou entregáveis sem uma fonte persistida e contratada. O catálogo é calculado a partir do CMS publicado; estados vazios ou indisponíveis não recebem dados substitutos.
 
@@ -59,11 +72,11 @@ O dashboard do proprietário consulta a saúde desse job por uma RPC sanitizada.
 
 O job `prune-platform-cron-run-history` executa diariamente a limpeza limitada do histórico nativo. A configuração padrão mantém 30 dias e remove no máximo 5.000 execuções concluídas por lote, exclusivamente dos jobs reconhecidos da plataforma. Execuções em andamento, registros recentes e jobs externos são preservados.
 
-O gate técnico executa instalação limpa, lint, reconstrução local do Supabase, pgTAP, sincronização de tipos, contratos estáticos, TypeScript, audit de dependências, build, validação de chunks, smoke HTTP e smoke bloqueante em Chrome headless.
+O gate técnico executa instalação limpa, lint, reconstrução local do Supabase, pgTAP, sincronização de tipos, contratos estáticos, TypeScript, audit de dependências, build, validação de chunks, smoke HTTP e smoke bloqueante em Chrome headless com matriz pública e prontidão acessível.
 
 O build de qualidade usado pelo CI para exercitar o runtime público utiliza uma chave sintética canônica e sem validade no Supabase. Esse artefato é explicitamente **não implantável**. Builds locais reais, homologação remota e produção continuam exigindo uma chave publishable ativa fornecida pelo ambiente e nunca versionada.
 
-A evidência integral mais recente desta sequência é o commit `f5e193a5e07a2ceca00b4b3f38034334fcb0db10`, aprovado no mesmo snapshot por testes unitários, pgTAP, contratos, TypeScript, build, entrega HTTP e navegador.
+A evidência integral mais recente desta sequência é o commit `63ebdfd043fc4a3ba02642c7b0f470e97be0611d`, aprovado no mesmo snapshot por instalação, lint, testes unitários, reconstrução local do Supabase, pgTAP, tipos, contratos, TypeScript, build, entrega HTTP e navegador acessível em oito rotas.
 
 ## Integrações implantadas em `dev`
 
