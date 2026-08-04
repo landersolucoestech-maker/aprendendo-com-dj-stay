@@ -22,19 +22,27 @@ const documentation = read(paths.documentation);
 const parent = read(paths.parent);
 
 for (const fragment of [
-  'const handleSkipToContent = (event: React.MouseEvent<HTMLAnchorElement>) =>',
+  'type MouseEvent,',
+  'const handleSkipToContent = (event: MouseEvent<HTMLAnchorElement>) =>',
   "event.preventDefault()",
-  'document.getElementById("main-content")',
+  "const target = preparePrimaryContent()",
   "target.focus({ preventScroll: true })",
   "focusedPathRef.current = location.pathname",
   "focusedTargetRef.current = target",
-  'target.scrollIntoView({ behavior: "smooth", block: "start" })',
-  '<a\n        href="#main-content"',
+  'target.scrollIntoView({ block: "start" })',
+  'href={`#${focusTargetId}`}',
   "onClick={handleSkipToContent}",
   "Pular para o conteúdo principal",
 ]) {
   expect(source.includes(fragment), `RouteAccessibility perdeu B138: ${fragment}`);
 }
+
+expect(
+  /const handleSkipToContent = \(event: MouseEvent<HTMLAnchorElement>\) => \{[\s\S]*?event\.preventDefault\(\)[\s\S]*?const target = preparePrimaryContent\(\)[\s\S]*?target\.focus\(\{ preventScroll: true \}\)[\s\S]*?focusedPathRef\.current = location\.pathname[\s\S]*?focusedTargetRef\.current = target[\s\S]*?target\.scrollIntoView\(\{ block: "start" \}\)/s.test(
+    source,
+  ),
+  "O handler B138 deve prevenir o fragmento, preparar o conteúdo e registrar o foco real antes do scroll.",
+);
 
 for (const fragment of [
   'const skipLinkSelector = \'a[href="#main-content"]\'',
@@ -83,10 +91,16 @@ expect(
   "B138 deve provar Tab e Enter no skip link antes de acionar o login real.",
 );
 expect(
-  /window\.addEventListener\("click", handleClick\)[\s\S]*?click\.defaultPrevented === true[\s\S]*?click\.detail === 0/s.test(
+  /const waitForSkipLinkActivation = async \(session\) =>[\s\S]*?state\.skipLinkProbe\?\.click\?\.isTrusted === true[\s\S]*?state\.skipLinkProbe\.click\.defaultPrevented === true[\s\S]*?state\.skipLinkProbe\.click\.detail === 0/s.test(
     runtime,
   ),
-  "B138 deve observar o clique confiável após o handler React e exigir semântica de teclado.",
+  "B138 deve exigir no estado final clique confiável, prevenido e com semântica de teclado.",
+);
+expect(
+  /const handleClick = \(event\) => \{[\s\S]*?window\.__b138SkipLinkProbe\.click = \{[\s\S]*?isTrusted: event\.isTrusted[\s\S]*?defaultPrevented: event\.defaultPrevented[\s\S]*?detail: event\.detail[\s\S]*?window\.addEventListener\("click", handleClick\)/s.test(
+    runtime,
+  ),
+  "B138 deve observar o clique no window depois do handler React e persistir seus campos reais.",
 );
 
 for (const forbidden of [
