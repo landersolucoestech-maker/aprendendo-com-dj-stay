@@ -56,18 +56,42 @@ export const RouteAccessibility = ({ children }: RouteAccessibilityProps) => {
   }, []);
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      const target = preparePrimaryContent();
-      if (!target) return;
+    const boundary = boundaryRef.current;
+    if (!boundary) return;
 
-      if (previousPathRef.current !== location.pathname) {
-        target.focus({ preventScroll: true });
-        setAnnouncement("Navegação concluída. Conteúdo principal atualizado.");
+    let frame: number | null = null;
+
+    const prepareAfterRender = () => {
+      if (frame !== null) {
+        window.cancelAnimationFrame(frame);
       }
-      previousPathRef.current = location.pathname;
-    });
 
-    return () => window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        const target = preparePrimaryContent();
+        if (!target) return;
+
+        if (previousPathRef.current !== location.pathname) {
+          target.focus({ preventScroll: true });
+          setAnnouncement("Navegação concluída. Conteúdo principal atualizado.");
+        }
+        previousPathRef.current = location.pathname;
+      });
+    };
+
+    const observer = new MutationObserver(prepareAfterRender);
+    observer.observe(boundary, {
+      childList: true,
+      subtree: true,
+    });
+    prepareAfterRender();
+
+    return () => {
+      observer.disconnect();
+      if (frame !== null) {
+        window.cancelAnimationFrame(frame);
+      }
+    };
   }, [location.pathname, preparePrimaryContent]);
 
   const handleSkipToContent = (event: MouseEvent<HTMLAnchorElement>) => {
