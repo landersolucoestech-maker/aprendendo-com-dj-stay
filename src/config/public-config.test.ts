@@ -103,6 +103,24 @@ describe("public config", () => {
     expect(Object.isFrozen(config)).toBe(true);
   });
 
+  it("aceita artefato otimizado com MODE development", async () => {
+    const { createPublicConfig } = await loadPublicConfigModule();
+
+    expect(
+      createPublicConfig(
+        developmentInput({
+          isDevelopmentBuild: false,
+          isProductionBuild: true,
+        }),
+      ),
+    ).toEqual({
+      appEnvironment: "development",
+      supabaseUrl: `https://${DEVELOPMENT_REF}.supabase.co`,
+      supabasePublishableKey: VALID_PUBLISHABLE_KEY,
+      supabaseProjectRef: DEVELOPMENT_REF,
+    });
+  });
+
   it("aceita JWT anon legado pertencente ao projeto de produção", async () => {
     const { createPublicConfig } = await loadPublicConfigModule();
     const anonKey = createJwt({ role: "anon", ref: PRODUCTION_REF });
@@ -127,6 +145,8 @@ describe("public config", () => {
         developmentInput({
           supabasePublishableKey: CI_RUNTIME_SMOKE_PUBLISHABLE_KEY,
           ciRuntimeSmoke: "true",
+          isDevelopmentBuild: false,
+          isProductionBuild: true,
         }),
       ),
     ).toEqual({
@@ -155,11 +175,24 @@ describe("public config", () => {
       "Ambiente incompatível: VITE_APP_ENV=development e MODE=production.",
     ],
     [
-      developmentInput({ isDevelopmentBuild: false }),
-      "O ambiente development exige um build Vite de desenvolvimento.",
+      developmentInput({
+        isDevelopmentBuild: false,
+        isProductionBuild: false,
+      }),
+      "As flags nativas do Vite DEV e PROD devem possuir valores complementares.",
     ],
     [
-      productionInput({ isProductionBuild: false }),
+      developmentInput({
+        isDevelopmentBuild: true,
+        isProductionBuild: true,
+      }),
+      "As flags nativas do Vite DEV e PROD devem possuir valores complementares.",
+    ],
+    [
+      productionInput({
+        isDevelopmentBuild: true,
+        isProductionBuild: false,
+      }),
       "O ambiente production exige um build Vite de produção.",
     ],
   ] as const)("rejeita contrato de ambiente inválido", async (input, message) => {
