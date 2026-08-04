@@ -52,7 +52,7 @@ if (browserExecutable === null) {
   failures.push("Chrome ou Chromium não foi encontrado no runner.");
 }
 if (failures.length > 0) {
-  console.error("Smoke B125 bloqueado:\n- " + failures.join("\n- "));
+  console.error("Smoke B125/B132 bloqueado:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
@@ -85,12 +85,17 @@ const profileDirectory = mkdtempSync(
 );
 const previewLogs = [];
 const browserLogs = [];
+const diagnostics = [];
+const networkRecords = [];
+let networkPhase = "initial-document";
 let previewExited = false;
 let browserExited = false;
 let previewSpawnError = null;
 let browserSpawnError = null;
 let client = null;
 let targetId = null;
+let sessionId = null;
+let finalState = null;
 let removeEventListener = () => {};
 
 const preview = spawn(
@@ -173,6 +178,20 @@ const stopProcess = async (processHandle, exitPromise, hasExited) => {
   }
 };
 
+const removeProfileDirectory = async () => {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      rmSync(profileDirectory, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      const code = error instanceof Error ? error.code : undefined;
+      const retryable = code === "ENOTEMPTY" || code === "EBUSY" || code === "EPERM";
+      if (!retryable || attempt === 5) throw error;
+      await delay(200 * (attempt + 1));
+    }
+  }
+};
+
 const waitForPreview = async () => {
   for (let attempt = 0; attempt < 40; attempt += 1) {
     if (previewSpawnError !== null) throw previewSpawnError;
@@ -232,7 +251,7 @@ const serializeRuntimeException = (details) => {
   return stack ? `${description}\n${stack}` : String(description);
 };
 
-const evaluate = async (sessionId, expression) => {
+const evaluate = async (session, expression) => {
   const response = await client.request(
     "Runtime.evaluate",
     {
@@ -240,7 +259,7 @@ const evaluate = async (sessionId, expression) => {
       returnByValue: true,
       awaitPromise: true,
     },
-    sessionId,
+    session,
   );
   if (response.exceptionDetails) {
     throw new Error(serializeRuntimeException(response.exceptionDetails));
@@ -248,9 +267,9 @@ const evaluate = async (sessionId, expression) => {
   return response.result?.value;
 };
 
-const readState = (sessionId) =>
+const readState = (session) =>
   evaluate(
-    sessionId,
+    session,
     `(() => {
       const main = document.getElementById("main-content");
       const liveRegions = Array.from(
@@ -274,10 +293,10 @@ const readState = (sessionId) =>
     })()`,
   );
 
-const waitForHome = async (sessionId) => {
+const waitForHome = async (session) => {
   let state = null;
   for (let attempt = 0; attempt < 80; attempt += 1) {
-    state = await readState(sessionId);
+    state = await readState(session);
     if (
       state?.pathname === "/" &&
       state.mainCount === 1 &&
@@ -290,10 +309,10 @@ const waitForHome = async (sessionId) => {
   return state;
 };
 
-const waitForFinalFocus = async (sessionId) => {
+const waitForFinalFocus = async (session) => {
   let state = null;
   for (let attempt = 0; attempt < 100; attempt += 1) {
-    state = await readState(sessionId);
+    state = await readState(session);
     if (
       state?.pathname === "/login" &&
       state.mainCount === 1 &&
@@ -314,10 +333,6 @@ const waitForFinalFocus = async (sessionId) => {
   }
   return state;
 };
-
-const diagnostics = [];
-let sessionId = null;
-let finalState = null;
 
 try {
   await waitForPreview();
@@ -347,6 +362,24 @@ try {
         level: packet.params.entry.level,
         source: packet.params.entry.source,
         text: packet.params.entry.text,
+      });
+    } else if (packet.method === "Network.requestWillBeSent") {
+      networkRecords.push({
+        kind: "request",
+        phase: networkPhase,
+        requestId: packet.params.requestId,
+        method: packet.params.request.method,
+        url: packet.params.request.url,
+        resourceType: packet.params.type,
+      });
+    } else if (packet.method === "Network.responseReceived") {
+      networkRecords.push({
+        kind: "response",
+        phase: networkPhase,
+        requestId: packet.params.requestId,
+        status: packet.params.response.status,
+        url: packet.params.response.url,
+        resourceType: packet.params.type,
       });
     }
   });
@@ -380,7 +413,7 @@ try {
 
   const homeState = await waitForHome(sessionId);
   if (!homeState?.mainText.includes("Conteúdo publicado pelo instrutor")) {
-    throw new Error("A home não ficou pronta antes da transição B125.");
+    throw new Error("A home não ficou pronta antes da transição B125/B132.");
   }
 
   await evaluate(
@@ -423,11 +456,20 @@ try {
     sessionId,
   );
 
+  networkPhase = "client-navigation";
+  networkRecords.push({
+    kind: "phase",
+    phase: networkPhase,
+    pathname: "/login",
+  });
+
   const pathname = await evaluate(
     sessionId,
     `(() => {
-      window.history.pushState({ b125: true }, "", "/login");
-      window.dispatchEvent(new PopStateEvent("popstate", { state: { b125: true } }));
+      window.history.pushState({ b125: true, b132: true }, "", "/login");
+      window.dispatchEvent(
+        new PopStateEvent("popstate", { state: { b125: true, b132: true } }),
+      );
       return window.location.pathname;
     })()`,
   );
@@ -439,22 +481,6 @@ try {
   await evaluate(
     sessionId,
     "window.__b125RouteFocusObserver?.disconnect(); true",
-  );
-
-  writeFileSync(
-    path.join(artifactsDirectory, "client-navigation.html"),
-    finalState?.html ?? "",
-    "utf8",
-  );
-  writeFileSync(
-    path.join(artifactsDirectory, "client-navigation.runtime.json"),
-    `${JSON.stringify(diagnostics, null, 2)}\n`,
-    "utf8",
-  );
-  writeFileSync(
-    path.join(artifactsDirectory, "client-navigation.probe.json"),
-    `${JSON.stringify(finalState, null, 2)}\n`,
-    "utf8",
   );
 
   if (finalState?.probe?.sawDeferred !== true) {
@@ -482,11 +508,18 @@ try {
   for (const exception of diagnostics.filter(
     (entry) => entry.level === "exception",
   )) {
-    failures.push(`Exceção JavaScript B125: ${exception.text}`);
+    failures.push(`Exceção JavaScript B125/B132: ${exception.text}`);
+  }
+  for (const response of networkRecords.filter(
+    (entry) => entry.kind === "response" && Number(entry.status) >= 400,
+  )) {
+    failures.push(
+      `Resposta HTTP B132 inesperada ${response.status} em ${response.url}`,
+    );
   }
 } catch (error) {
   failures.push(
-    `Execução B125 falhou: ${error instanceof Error ? error.message : String(error)}`,
+    `Execução B125/B132 falhou: ${error instanceof Error ? error.message : String(error)}`,
   );
 } finally {
   removeEventListener();
@@ -500,6 +533,26 @@ try {
   if (client !== null) client.close();
 
   writeFileSync(
+    path.join(artifactsDirectory, "client-navigation.html"),
+    finalState?.html ?? "",
+    "utf8",
+  );
+  writeFileSync(
+    path.join(artifactsDirectory, "client-navigation.runtime.json"),
+    `${JSON.stringify(diagnostics, null, 2)}\n`,
+    "utf8",
+  );
+  writeFileSync(
+    path.join(artifactsDirectory, "client-navigation.network.json"),
+    `${JSON.stringify(networkRecords, null, 2)}\n`,
+    "utf8",
+  );
+  writeFileSync(
+    path.join(artifactsDirectory, "client-navigation.probe.json"),
+    `${JSON.stringify(finalState, null, 2)}\n`,
+    "utf8",
+  );
+  writeFileSync(
     path.join(artifactsDirectory, "client-navigation.chrome.log"),
     browserLogs.join(""),
     "utf8",
@@ -512,14 +565,20 @@ try {
 
   await stopProcess(browser, browserExit, () => browserExited);
   await stopProcess(preview, previewExit, () => previewExited);
-  rmSync(profileDirectory, { recursive: true, force: true });
+  try {
+    await removeProfileDirectory();
+  } catch (error) {
+    failures.push(
+      `Limpeza do perfil temporário B132 falhou: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 if (failures.length > 0) {
-  console.error("Smoke B125 inválido:\n- " + failures.join("\n- "));
+  console.error("Smoke B125/B132 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Smoke B125 aprovado: fallback lazy observado sem foco e conteúdo final de login focado e anunciado após navegação client-side.",
+  "Smoke B125/B132 aprovado: fallback lazy nunca recebeu foco, login final foi focado e anunciado, e a rede completa da navegação client-side foi persistida.",
 );
