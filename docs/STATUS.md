@@ -38,6 +38,9 @@ Os seguintes domínios possuem implementação, persistência, autorização e c
 | Observabilidade | captura sanitizada de erros do frontend e fila administrativa |
 | Administração do proprietário | dashboard administrativo do proprietário com indicadores reais de financeiro, acadêmico, catálogo, suporte, contatos e automação de checkout |
 | Supply chain | audit de dependências, lockfile validado, SBOM e manifesto de fontes |
+| Shell público e proveniência | `pt-BR`, metadados operacionais, favicon local e ausência bloqueante de Lovable, GPT Engineer ou scripts externos herdados |
+| Entrega HTTP | manifesto de release, assets locais, resposta da home e fallback SPA validados sobre `vite preview` |
+| Runtime público | Chrome headless controlado por CDP, espera pelo conteúdo final de `/`, `/login` e `/certificado`, captura de exceções e rejeição do Error Boundary |
 | Frontend | lazy loading, Error Boundary, datas canônicas, acessibilidade e grafo de chunks acíclico |
 
 A home pública não apresenta números de alunos, avaliações, streams, rankings, depoimentos, parcerias, preços ou entregáveis sem uma fonte persistida e contratada. O catálogo é calculado a partir do CMS publicado; estados vazios ou indisponíveis não recebem dados substitutos.
@@ -56,7 +59,11 @@ O dashboard do proprietário consulta a saúde desse job por uma RPC sanitizada.
 
 O job `prune-platform-cron-run-history` executa diariamente a limpeza limitada do histórico nativo. A configuração padrão mantém 30 dias e remove no máximo 5.000 execuções concluídas por lote, exclusivamente dos jobs reconhecidos da plataforma. Execuções em andamento, registros recentes e jobs externos são preservados.
 
-O gate técnico executa instalação limpa, lint, reconstrução local do Supabase, pgTAP, sincronização de tipos, contratos estáticos, TypeScript, audit de dependências, build e validação de chunks.
+O gate técnico executa instalação limpa, lint, reconstrução local do Supabase, pgTAP, sincronização de tipos, contratos estáticos, TypeScript, audit de dependências, build, validação de chunks, smoke HTTP e smoke bloqueante em Chrome headless.
+
+O build de qualidade usado pelo CI para exercitar o runtime público utiliza uma chave sintética canônica e sem validade no Supabase. Esse artefato é explicitamente **não implantável**. Builds locais reais, homologação remota e produção continuam exigindo uma chave publishable ativa fornecida pelo ambiente e nunca versionada.
+
+A evidência integral mais recente desta sequência é o commit `f5e193a5e07a2ceca00b4b3f38034334fcb0db10`, aprovado no mesmo snapshot por testes unitários, pgTAP, contratos, TypeScript, build, entrega HTTP e navegador.
 
 ## Integrações implantadas em `dev`
 
@@ -82,7 +89,7 @@ Ainda exigem validação fora do repositório:
 - testes de carga e observação de índices com tráfego representativo;
 - pentest independente antes da promoção para produção.
 
-Nenhum desses itens pode ser marcado como concluído apenas porque o código compila ou a Edge Function está implantada.
+Nenhum desses itens pode ser marcado como concluído apenas porque o código compila, a Edge Function está implantada ou o navegador público passa no CI.
 
 ## Produção
 
@@ -98,6 +105,7 @@ Portanto:
 ## Fonte de verdade
 
 - estado funcional: código, migrations, pgTAP e contratos versionados;
+- estado do artefato público: build, smoke HTTP e evidências do Chrome headless;
 - estado de ambiente: [`environment.md`](environment.md);
 - decisões e fases: [`refactor`](refactor/README.md);
 - auditoria: [`audit`](audit/README.md);
