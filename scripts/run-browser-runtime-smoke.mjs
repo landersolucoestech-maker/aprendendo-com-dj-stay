@@ -11,6 +11,8 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { CdpClient } from "./lib/cdp-client.mjs";
+
 const root = process.cwd();
 const paths = {
   distIndex: path.join(root, "dist", "index.html"),
@@ -89,11 +91,20 @@ const reserveLoopbackPort = () =>
     });
   });
 
-const port = await reserveLoopbackPort();
-const baseUrl = `http://127.0.0.1:${port}`;
+const previewPort = await reserveLoopbackPort();
+const browserDebugPort = await reserveLoopbackPort();
+const baseUrl = `http://127.0.0.1:${previewPort}`;
+const browserDebugUrl = `http://127.0.0.1:${browserDebugPort}`;
 const previewLogs = [];
+const browserLogs = [];
+const browserProfileDirectory = mkdtempSync(
+  path.join(tmpdir(), "djstay-browser-profile-"),
+);
 let previewExited = false;
 let previewSpawnError = null;
+let browserExited = false;
+let browserSpawnError = null;
+let cdpClient = null;
 
 const preview = spawn(
   process.execPath,
@@ -103,7 +114,7 @@ const preview = spawn(
     "--host",
     "127.0.0.1",
     "--port",
-    String(port),
+    String(previewPort),
     "--strictPort",
   ],
   {
@@ -121,6 +132,48 @@ preview.once("error", (error) => {
 const previewExit = new Promise((resolve) => {
   preview.once("exit", (code, signal) => {
     previewExited = true;
+    resolve({ code, signal });
+  });
+});
+
+const browser = spawn(
+  browserExecutable,
+  [
+    "--headless=new",
+    "--no-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--disable-background-networking",
+    "--disable-component-update",
+    "--disable-default-apps",
+    "--disable-extensions",
+    "--disable-sync",
+    "--metrics-recording-only",
+    "--no-first-run",
+    "--mute-audio",
+    "--hide-scrollbars",
+    "--window-size=1440,1000",
+    "--remote-debugging-address=127.0.0.1",
+    `--remote-debugging-port=${browserDebugPort}`,
+    "--remote-allow-origins=*",
+    `--user-data-dir=${browserProfileDirectory}`,
+    "about:blank",
+  ],
+  {
+    cwd: root,
+    env: process.env,
+    stdio: ["ignore", "pipe", "pipe"],
+  },
+);
+
+browser.stdout.on("data", (chunk) => browserLogs.push(String(chunk)));
+browser.stderr.on("data", (chunk) => browserLogs.push(String(chunk)));
+browser.once("error", (error) => {
+  browserSpawnError = error;
+});
+const browserExit = new Promise((resolve) => {
+  browser.once("exit", (code, signal) => {
+    browserExited = true;
     resolve({ code, signal });
   });
 });
@@ -152,13 +205,44 @@ const waitForPreview = async () => {
   );
 };
 
-const stopPreview = async () => {
-  if (previewExited || preview.pid === undefined) return;
-  preview.kill("SIGTERM");
-  await Promise.race([previewExit, delay(2_000)]);
-  if (!previewExited) {
-    preview.kill("SIGKILL");
-    await previewExit;
+const waitForBrowserDebugger = async () => {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    if (browserSpawnError !== null) throw browserSpawnError;
+    if (browserExited) {
+      throw new Error(
+        `Chrome encerrou antes de disponibilizar o CDP.\n${browserLogs.join("")}`,
+      );
+    }
+
+    try {
+      const response = await fetch(`${browserDebugUrl}/json/version`, {
+        redirect: "error",
+        signal: AbortSignal.timeout(3_000),
+      });
+      if (response.ok) {
+        const version = await response.json();
+        if (typeof version.webSocketDebuggerUrl === "string") {
+          return version.webSocketDebuggerUrl;
+        }
+      }
+    } catch {
+      // O endpoint de debugging ainda pode estar inicializando.
+    }
+    await delay(250);
+  }
+
+  throw new Error(
+    `Chrome DevTools Protocol não ficou disponível.\n${browserLogs.join("")}`,
+  );
+};
+
+const stopProcess = async (processHandle, exitPromise, hasExited) => {
+  if (hasExited() || processHandle.pid === undefined) return;
+  processHandle.kill("SIGTERM");
+  await Promise.race([exitPromise, delay(2_000)]);
+  if (!hasExited()) {
+    processHandle.kill("SIGKILL");
+    await exitPromise;
   }
 };
 
@@ -187,97 +271,161 @@ const forbiddenContent = [
   "gptengineer.js",
 ];
 
-const summarizeBrowserDiagnostics = (stderr) => {
-  const lines = stderr
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .filter((line) =>
-      /CONSOLE|Uncaught|TypeError|ReferenceError|SyntaxError|Failed to load|ERR_|supabase|Configuração pública|bootstrap/i.test(
-        line,
-      ),
-    );
-
-  return [...new Set(lines)].slice(0, 12).join(" | ");
+const valueFromRemoteObject = (remoteObject) => {
+  if (Object.hasOwn(remoteObject, "value")) return remoteObject.value;
+  return remoteObject.description ?? remoteObject.type ?? "valor indisponível";
 };
 
-const runRoute = (route) => {
-  const profileDirectory = mkdtempSync(
-    path.join(tmpdir(), `djstay-browser-${route.name}-`),
+const serializeRuntimeException = (details) => {
+  const description =
+    details.exception?.description ?? details.exception?.value ?? details.text;
+  const frames = details.stackTrace?.callFrames ?? [];
+  const stack = frames
+    .slice(0, 12)
+    .map(
+      (frame) =>
+        `${frame.functionName || "<anonymous>"} (${frame.url}:${frame.lineNumber + 1}:${frame.columnNumber + 1})`,
+    )
+    .join("\n");
+  return stack ? `${description}\n${stack}` : String(description);
+};
+
+const evaluatePageState = async (client, sessionId) => {
+  const response = await client.request(
+    "Runtime.evaluate",
+    {
+      expression: `(() => {
+        const root = document.getElementById("root");
+        return {
+          lang: document.documentElement.lang,
+          title: document.title,
+          rootExists: Boolean(root),
+          rootHtml: root?.innerHTML ?? "",
+          html: document.documentElement.outerHTML
+        };
+      })()`,
+      returnByValue: true,
+      awaitPromise: true,
+    },
+    sessionId,
   );
+
+  if (response.exceptionDetails) {
+    throw new Error(
+      `Runtime.evaluate falhou: ${serializeRuntimeException(response.exceptionDetails)}`,
+    );
+  }
+
+  return response.result?.value ?? null;
+};
+
+const waitForRenderedRoot = async (client, sessionId) => {
+  let lastState = null;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    lastState = await evaluatePageState(client, sessionId);
+    if (lastState?.rootHtml?.trim()) return lastState;
+    await delay(250);
+  }
+  return lastState;
+};
+
+const runRoute = async (client, route) => {
+  const diagnostics = [];
+  let targetId = null;
+  let sessionId = null;
+  let removeEventListener = () => {};
+
   try {
-    const result = spawnSync(
-      browserExecutable,
-      [
-        "--headless=new",
-        "--no-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--disable-background-networking",
-        "--disable-component-update",
-        "--disable-default-apps",
-        "--disable-extensions",
-        "--disable-sync",
-        "--metrics-recording-only",
-        "--no-first-run",
-        "--mute-audio",
-        "--hide-scrollbars",
-        "--enable-logging=stderr",
-        "--v=1",
-        "--window-size=1440,1000",
-        "--virtual-time-budget=10000",
-        `--user-data-dir=${profileDirectory}`,
-        "--dump-dom",
-        `${baseUrl}${route.pathname}`,
-      ],
-      {
-        cwd: root,
-        encoding: "utf8",
-        maxBuffer: 30 * 1024 * 1024,
-        timeout: 30_000,
-        env: process.env,
-      },
+    const target = await client.request("Target.createTarget", {
+      url: "about:blank",
+      width: 1440,
+      height: 1000,
+      newWindow: false,
+      background: false,
+    });
+    targetId = target.targetId;
+
+    const attached = await client.request("Target.attachToTarget", {
+      targetId,
+      flatten: true,
+    });
+    sessionId = attached.sessionId;
+
+    removeEventListener = client.addEventListener((packet) => {
+      if (packet.sessionId !== sessionId) return;
+
+      if (packet.method === "Runtime.exceptionThrown") {
+        diagnostics.push({
+          level: "exception",
+          source: "runtime",
+          text: serializeRuntimeException(packet.params.exceptionDetails),
+        });
+      } else if (packet.method === "Runtime.consoleAPICalled") {
+        diagnostics.push({
+          level: packet.params.type,
+          source: "console",
+          text: packet.params.args.map(valueFromRemoteObject).join(" "),
+        });
+      } else if (packet.method === "Log.entryAdded") {
+        const entry = packet.params.entry;
+        diagnostics.push({
+          level: entry.level,
+          source: entry.source,
+          text: entry.text,
+          ...(entry.url ? { url: entry.url } : {}),
+        });
+      }
+    });
+
+    await Promise.all([
+      client.request("Page.enable", {}, sessionId),
+      client.request("Runtime.enable", {}, sessionId),
+      client.request("Log.enable", {}, sessionId),
+    ]);
+
+    const loaded = client.waitForEvent("Page.loadEventFired", sessionId, 20_000);
+    const navigation = await client.request(
+      "Page.navigate",
+      { url: `${baseUrl}${route.pathname}` },
+      sessionId,
+      20_000,
     );
-
-    const stderr = result.stderr ?? "";
-    writeFileSync(
-      path.join(paths.artifacts, `${route.name}.chrome.log`),
-      stderr,
-      "utf8",
-    );
-
-    if (result.error) {
-      failures.push(`${route.pathname}: Chrome falhou: ${result.error.message}`);
-      return;
+    if (navigation.errorText) {
+      throw new Error(`Navegação falhou: ${navigation.errorText}`);
     }
-    if (result.status !== 0) {
-      failures.push(
-        `${route.pathname}: Chrome encerrou com status ${String(result.status)}. ${summarizeBrowserDiagnostics(stderr) || stderr.trim()}`,
-      );
-      return;
-    }
+    await loaded;
 
-    const dom = result.stdout;
+    const state = await waitForRenderedRoot(client, sessionId);
+    const dom = state?.html ?? "";
+
     writeFileSync(
       path.join(paths.artifacts, `${route.name}.html`),
       dom,
       "utf8",
     );
+    writeFileSync(
+      path.join(paths.artifacts, `${route.name}.runtime.json`),
+      `${JSON.stringify(diagnostics, null, 2)}\n`,
+      "utf8",
+    );
 
-    if (!/<html\s+lang="pt-BR"/i.test(dom)) {
+    if (!state?.rootExists) {
+      failures.push(`${route.pathname}: elemento #root ausente.`);
+    } else if (!state.rootHtml.trim()) {
+      const runtimeExceptions = diagnostics
+        .filter((entry) => entry.level === "exception")
+        .map((entry) => entry.text)
+        .join(" | ");
+      failures.push(
+        `${route.pathname}: React não renderizou o elemento #root no limite definido.${runtimeExceptions ? ` Exceção: ${runtimeExceptions}` : " Consulte o artefato runtime.json."}`,
+      );
+    }
+
+    if (state?.lang !== "pt-BR") {
       failures.push(`${route.pathname}: idioma pt-BR ausente no DOM renderizado.`);
     }
-    if (!dom.includes("<title>Aprendendo com DJ Stay</title>")) {
+    if (state?.title !== "Aprendendo com DJ Stay") {
       failures.push(`${route.pathname}: título operacional ausente no DOM renderizado.`);
-    }
-    if (!dom.includes('id="root"')) {
-      failures.push(`${route.pathname}: elemento #root ausente.`);
-    }
-    if (/<div\s+id="root"\s*>\s*<\/div>/i.test(dom)) {
-      const diagnostics = summarizeBrowserDiagnostics(stderr);
-      failures.push(
-        `${route.pathname}: React não hidratou o elemento #root.${diagnostics ? ` Diagnóstico: ${diagnostics}` : " Consulte o artefato .chrome.log."}`,
-      );
     }
 
     for (const fragment of route.required) {
@@ -290,20 +438,56 @@ const runRoute = (route) => {
         failures.push(`${route.pathname}: conteúdo proibido renderizado: ${fragment}`);
       }
     }
+
+    const runtimeExceptions = diagnostics.filter(
+      (entry) => entry.level === "exception",
+    );
+    for (const exception of runtimeExceptions) {
+      failures.push(`${route.pathname}: exceção JavaScript não tratada: ${exception.text}`);
+    }
   } finally {
-    rmSync(profileDirectory, { recursive: true, force: true });
+    removeEventListener();
+    if (targetId !== null) {
+      try {
+        await client.request("Target.closeTarget", { targetId });
+      } catch (error) {
+        failures.push(
+          `${route.pathname}: não foi possível fechar o target: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
   }
 };
 
 try {
   await waitForPreview();
-  for (const route of routes) runRoute(route);
+  const webSocketDebuggerUrl = await waitForBrowserDebugger();
+  cdpClient = await CdpClient.connect(webSocketDebuggerUrl);
+
+  for (const route of routes) {
+    await runRoute(cdpClient, route);
+  }
 } catch (error) {
   failures.push(
     `Execução do navegador falhou: ${error instanceof Error ? error.message : String(error)}`,
   );
 } finally {
-  await stopPreview();
+  if (cdpClient !== null) cdpClient.close();
+
+  writeFileSync(
+    path.join(paths.artifacts, "chrome-process.log"),
+    browserLogs.join(""),
+    "utf8",
+  );
+  writeFileSync(
+    path.join(paths.artifacts, "preview-process.log"),
+    previewLogs.join(""),
+    "utf8",
+  );
+
+  await stopProcess(browser, browserExit, () => browserExited);
+  await stopProcess(preview, previewExit, () => previewExited);
+  rmSync(browserProfileDirectory, { recursive: true, force: true });
 }
 
 if (failures.length > 0) {
@@ -312,5 +496,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `Smoke B118 aprovado em ${browserExecutable}: home, login e certificado executaram o JavaScript compilado e renderizaram sem Error Boundary.`,
+  `Smoke B118 aprovado em ${browserExecutable}: CDP aguardou a renderização React de home, login e certificado sem exceções não tratadas.`,
 );
