@@ -24,7 +24,7 @@ O marketplace distribui somente cursos e produtos digitais do proprietário. Nã
 | Portal do aluno | matrículas, biblioteca, player, retomada e progresso monotônico |
 | Marketplace digital | produtos, licenças, entregáveis, acessos e biblioteca do comprador |
 | Pagamentos | checkout, ordens, tentativas, eventos do provider e concessão ou revogação de acesso |
-| Retorno financeiro exato | consulta autenticada pelo `checkout_intent` pertencente à conta, sem fallback por matrícula ou acesso não relacionado |
+| Retorno financeiro exato | consulta autenticada pelo `checkout_intent` pertencente à conta autenticada, sem fallback por matrícula ou acesso não relacionado |
 | Expiração de checkout | reconciliação pelo relógio do servidor, proteção de pedidos financeiramente terminais e rotação controlada da idempotência |
 | Cron de expiração | job PostgreSQL `expire-due-checkout-intents` a cada cinco minutos, executado como `postgres`, limitado e sem requisição HTTP |
 | Saúde do cron | read model sanitizado do proprietário com configuração, última execução, último sucesso, falhas em 24 horas e histórico recente |
@@ -37,6 +37,9 @@ O marketplace distribui somente cursos e produtos digitais do proprietário. Nã
 | Shell público e proveniência | `pt-BR`, metadados operacionais, favicon local e ausência bloqueante de Lovable, GPT Engineer ou scripts externos herdados |
 | Entrega HTTP | manifesto de release, assets locais, home e fallback SPA validados sobre `vite preview` |
 | Runtime público | Chrome headless controlado por CDP valida conteúdo final em oito rotas anônimas, captura exceções, rejeita o Error Boundary e exige landmark, `#main-content`, `tabindex="-1"`, skip link e live region antes do snapshot |
+| Runtime sintético do catálogo | fixture canônica em memória validada pelo mesmo schema Zod da RPC, zero chamada a `get_public_course_catalog`, zero rede Supabase remota e home aprovada somente após conteúdo final |
+| Isolamento de rede público | stack tipográfica nativa, exatamente um `Document` por rota e toda requisição HTTP ou HTTPS restrita à origem e porta exatas do documento servido |
+| Diagnósticos do gate | stdout e stderr de TypeScript e navegador persistidos em artifact com `set -o pipefail`, sem transformar falhas em sucesso |
 | Frontend acessível | lazy loading, Error Boundary, reconciliação acessível após substituições do `Suspense`, foco diferido em fallbacks e handoff para o conteúdo final |
 
 O dashboard administrativo do proprietário é protegido pelo papel administrativo e consolida somente dados persistidos. A visão geral usa seis read models reais, não apresenta métricas estimadas e mantém links operacionais para pagamentos, alunos, suporte e contatos.
@@ -56,7 +59,13 @@ Cada rota é considerada pronta somente quando o React renderizou o conteúdo fi
 
 A navegação client-side lazy da home para `/login` também é bloqueante. O Chrome precisa observar o fallback com `data-route-focus-deferred="true"`, comprovar que ele nunca recebeu foco e terminar com `document.activeElement.id === "main-content"`, elemento ativo conectado ao DOM e anúncio `Navegação concluída. Conteúdo principal atualizado.`. Se o target final previamente focado for substituído, o foco é restaurado apenas quando a referência anterior estiver desconectada; mutações que preservam o target não causam refoco.
 
-A home pública não apresenta números, avaliações, rankings, depoimentos, preços ou entregáveis sem fonte persistida e contratada. O catálogo é calculado a partir do CMS publicado e estados vazios não recebem dados substitutos.
+A home pública não apresenta números, avaliações, rankings, depoimentos, preços ou entregáveis sem fonte persistida e contratada. O catálogo real é calculado a partir do CMS publicado e estados vazios não recebem dados substitutos.
+
+No build sintético de qualidade, o catálogo é fornecido por uma fixture canônica em memória que satisfaz `PublicCourseCatalog` e passa pelo mesmo schema Zod da RPC real. O carregador retorna antes de executar `get_public_course_catalog`; os testes exigem zero chamadas à RPC e o Chrome exige `Curso de validação do runtime` e `Investimento atual` antes de considerar a home pronta. Estados `Carregando catálogo`, `Carregando conteúdo publicado` e `Catálogo temporariamente indisponível` são rejeitados.
+
+O domínio Network do CDP grava `<rota>.network.json`, bloqueia respostas HTTP com status igual ou superior a 400 e qualquer request para `*.supabase.co`. O verificador B128 exige exatamente um request principal `Document` por rota e restringe todos os recursos HTTP ou HTTPS à mesma origem e porta efêmera do documento servido. O shell usa stack tipográfica nativa e não depende de Google Fonts ou arquivo de fonte versionado.
+
+Os comandos de TypeScript e dos três smokes do navegador persistem seus logs no artifact `gate-diagnostics-<commit>`. A captura usa `set -o pipefail`, portanto o exit code original permanece bloqueante.
 
 O Retorno financeiro exato usa exclusivamente o `checkout_intent` pertencente à conta autenticada. A interface representa pendência, confirmação, liberação, cancelamento, expiração, falha, reembolso, chargeback, suspensão e revogação sem inferir sucesso por outro acesso existente.
 
@@ -66,11 +75,11 @@ O Cron de expiração `expire-due-checkout-intents` executa `private.expire_due_
 
 A Retenção do cron é executada pelo job `prune-platform-cron-run-history`. A política padrão mantém 30 dias e remove no máximo 5.000 execuções concluídas por lote somente dos jobs reconhecidos da plataforma; execuções em andamento, registros recentes e jobs externos são preservados.
 
-O gate técnico executa instalação limpa, lint, reconstrução local do Supabase, pgTAP, sincronização de tipos, contratos estáticos, TypeScript, audit de dependências, build, validação de chunks, smoke HTTP e smoke bloqueante em Chrome headless com matriz pública e prontidão acessível. O mesmo estágio executa a prova de transferência de foco por navegação client-side.
+O gate técnico executa instalação limpa, lint, reconstrução local do Supabase, pgTAP, sincronização de tipos, contratos estáticos, TypeScript, audit de dependências, build, validação de chunks, smoke HTTP e smoke bloqueante em Chrome headless com matriz pública e prontidão acessível. O mesmo estágio executa a prova de transferência de foco por navegação client-side e o isolamento exato de rede.
 
 O build de qualidade usado pelo CI utiliza uma chave sintética canônica e sem validade no Supabase. Esse artefato é explicitamente **não implantável**. Builds locais reais, homologação remota e produção continuam exigindo uma chave publishable ativa fornecida pelo ambiente e nunca versionada.
 
-A evidência B123 permanece registrada no commit `63ebdfd043fc4a3ba02642c7b0f470e97be0611d`. A evidência integral mais recente é o commit `03106954c5ed0d9238a55625f4c30cf7e83a4699`, aprovado no mesmo snapshot por instalação, lint, 795 testes unitários, reconstrução local do Supabase, 1.878 testes pgTAP, tipos, contratos, TypeScript, build, entrega HTTP, oito rotas públicas acessíveis e handoff de foco lazy.
+A evidência B123 permanece registrada no commit `63ebdfd043fc4a3ba02642c7b0f470e97be0611d`. A evidência B125 registrou 795 testes unitários no commit `03106954c5ed0d9238a55625f4c30cf7e83a4699`. A evidência integral mais recente é o commit `92270adc7d949f0719e1fdb3673f2d47bedb6aaf`, aprovado no mesmo snapshot por instalação, lint, 799 testes unitários, reconstrução local do Supabase, 1.878 testes pgTAP, tipos, contratos, TypeScript, build, entrega HTTP, oito rotas públicas acessíveis, handoff de foco lazy, catálogo sintético final e isolamento exato de rede.
 
 ## Integrações implantadas em `dev`
 
@@ -112,7 +121,7 @@ Portanto:
 ## Fonte de verdade
 
 - estado funcional: código, migrations, pgTAP e contratos versionados;
-- estado do artefato público: build, smoke HTTP e evidências do Chrome headless;
+- estado do artefato público: build, smoke HTTP, evidências do Chrome headless e artifacts de rede/diagnóstico;
 - estado de ambiente: [`environment.md`](environment.md);
 - decisões e fases: [`refactor`](refactor/README.md);
 - auditoria: [`audit`](audit/README.md);
