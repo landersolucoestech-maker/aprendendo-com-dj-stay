@@ -4,7 +4,8 @@ const paths = {
   pureModule: "src/lib/course-progress.ts",
   tests: "src/lib/overall-course-progress.test.ts",
   dashboard: "src/pages/Dashboard.tsx",
-  studentPortal: "src/pages/student/StudentPortal.tsx",
+  studentCoursePage: "src/pages/student/StudentCoursePage.tsx",
+  studentDashboardPage: "src/pages/student/StudentDashboardPage.tsx",
   b81Contract: "scripts/check-course-progress-tests.mjs",
   documentation: "docs/refactor/FASE-B82-OVERALL-COURSE-PROGRESS.md",
   package: "package.json",
@@ -19,11 +20,16 @@ const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
 for (const path of Object.values(paths)) {
   expect(existsSync(path), `${path} deve existir.`);
 }
+expect(
+  !existsSync("src/pages/student/StudentPortal.tsx"),
+  "O monólito StudentPortal.tsx não pode ser restaurado após a B113.",
+);
 
 const pureModule = read(paths.pureModule);
 const tests = read(paths.tests);
 const dashboard = read(paths.dashboard);
-const studentPortal = read(paths.studentPortal);
+const studentCoursePage = read(paths.studentCoursePage);
+const studentDashboardPage = read(paths.studentDashboardPage);
 const b81Contract = read(paths.b81Contract);
 const documentation = read(paths.documentation);
 const packageJson = existsSync(paths.package)
@@ -72,34 +78,65 @@ expect(
   "A suíte B82 deve permanecer pura e independente de hooks, Supabase e React Query.",
 );
 
-for (const [name, source, argument] of [
-  ["Dashboard", dashboard, "modulesWithProgress"],
-  ["Portal do Aluno", studentPortal, "modules"],
+expect(
+  dashboard.includes('from "@/lib/course-progress"'),
+  "Dashboard deve importar o cálculo B82 do módulo puro.",
+);
+expect(
+  dashboard.includes("calculateOverallCourseProgress(modulesWithProgress)"),
+  "Dashboard deve calcular progresso geral por aulas.",
+);
+expect(
+  !dashboard.includes(
+    "modulesWithProgress.reduce((total, module) => total + module.progress",
+  ),
+  "Dashboard não pode restaurar média simples entre módulos.",
+);
+
+for (const fragment of [
+  'from "@/lib/course-progress"',
+  "useProgressCalculation(modulesQuery.data)",
+  "calculateOverallCourseProgress(modules)",
 ]) {
   expect(
-    source.includes('from "@/lib/course-progress"'),
-    `${name} deve importar o cálculo B82 do módulo puro.`,
+    studentCoursePage.includes(fragment),
+    `Página do curso B82/B113 ausente: ${fragment}`,
   );
+}
+for (const forbidden of [
+  "modules.reduce((total, module) => total + module.progress",
+  "module.progress, 0) /",
+  "const averageProgress =",
+  "row.progresso_percentual",
+  "useCourseAccess",
+  "getActiveEnrollments",
+  "Date.now()",
+  "new Date(",
+]) {
   expect(
-    source.includes(`calculateOverallCourseProgress(${argument})`),
-    `${name} deve calcular progresso geral por aulas.`,
-  );
-  expect(
-    !source.includes(`${argument}.reduce((total, module) => total + module.progress`),
-    `${name} não pode restaurar média simples entre módulos.`,
+    !studentCoursePage.includes(forbidden),
+    `Página do curso não pode restaurar lógica obsoleta: ${forbidden}`,
   );
 }
 
 for (const fragment of [
-  "const averageProgress =",
-  "row.progresso_percentual",
+  "useStudentProgressSummary()",
   'label="Progresso médio"',
+  "progressSummary.average_progress_percent",
+  "progressSummary.completed_lessons",
+  "Conclusões agregadas no banco",
 ]) {
   expect(
-    studentPortal.includes(fragment),
-    `A métrica separada do painel geral deve ser preservada: ${fragment}`,
+    studentDashboardPage.includes(fragment),
+    `Painel geral do aluno B111/B113 deve preservar a métrica persistida: ${fragment}`,
   );
 }
+expect(
+  !studentDashboardPage.includes("useUserProgress()") &&
+    !studentDashboardPage.includes("row.progresso_percentual") &&
+    !studentDashboardPage.includes("const averageProgress ="),
+  "O painel geral do aluno não pode restaurar agregação de progresso no navegador.",
+);
 
 for (const fragment of [
   "calculateOverallCourseProgress",
@@ -107,8 +144,10 @@ for (const fragment of [
   "calculateOverallCourseProgress(modules)",
   "Dashboard não pode restaurar média simples",
   "Página do curso não pode restaurar média simples",
+  "StudentCoursePage.tsx",
+  "StudentDashboardPage.tsx",
 ]) {
-  expect(b81Contract.includes(fragment), `Ponte B81/B82 ausente: ${fragment}`);
+  expect(b81Contract.includes(fragment), `Ponte B81/B82/B113 ausente: ${fragment}`);
 }
 
 expect(
@@ -142,10 +181,10 @@ expect(
 );
 
 if (failures.length > 0) {
-  console.error("Falhas no contrato B82:\n- " + failures.join("\n- "));
+  console.error("Falhas no contrato B82/B111/B113:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Contrato B82 aprovado: progresso geral ponderado por aulas permanece puro, imutável e compartilhado pelos dois portais.",
+  "Contrato B82/B111/B113 aprovado: progresso por aulas permanece puro e as páginas extraídas consomem cálculos e resumos persistidos sem restaurar o monólito.",
 );
