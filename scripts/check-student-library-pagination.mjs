@@ -95,11 +95,20 @@ if (failures.length === 0) {
     failures.push("Página B109 não pode usar o tamanho da página como total persistido.");
   }
 
-  requireFragments(router, "Roteador B109", [
+  requireFragments(router, "Roteador B109/B113", [
     'import StudentLibraryPage from "@/pages/student/StudentLibraryPage";',
-    'if (section === "library")',
+    'export type StudentPortalSection =',
+    '| "library"',
+    "switch (section)",
+    'case "library":',
     "return <StudentLibraryPage />;",
+    "const exhaustiveSection: never = section;",
   ]);
+  if (router.includes('if (section === "library")')) {
+    failures.push(
+      "Roteador B109/B113 não pode restaurar condicionais isoladas após adotar switch exaustivo.",
+    );
+  }
   requireFragments(privateAssets, "Download privado preservado", [
     "signedAssetUrlSchema",
     'asset.state !== "published"',
@@ -124,12 +133,12 @@ if (failures.length === 0) {
 }
 
 if (failures.length > 0) {
-  console.error("Contrato B109 inválido:\n- " + failures.join("\n- "));
+  console.error("Contrato B109/B113 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 await import("./check-student-dashboard-library-summary.mjs");
 
 console.log(
-  "Contrato B109 aprovado: o aluno acessa toda a biblioteca privada por paginação real no servidor.",
+  "Contrato B109/B113 aprovado: a biblioteca usa paginação real no servidor e permanece integrada ao roteador exaustivo do portal extraído.",
 );
