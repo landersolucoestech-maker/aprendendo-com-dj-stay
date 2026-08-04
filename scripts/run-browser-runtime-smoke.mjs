@@ -187,6 +187,20 @@ const forbiddenContent = [
   "gptengineer.js",
 ];
 
+const summarizeBrowserDiagnostics = (stderr) => {
+  const lines = stderr
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) =>
+      /CONSOLE|Uncaught|TypeError|ReferenceError|SyntaxError|Failed to load|ERR_|supabase|Configuração pública|bootstrap/i.test(
+        line,
+      ),
+    );
+
+  return [...new Set(lines)].slice(0, 12).join(" | ");
+};
+
 const runRoute = (route) => {
   const profileDirectory = mkdtempSync(
     path.join(tmpdir(), `djstay-browser-${route.name}-`),
@@ -208,6 +222,8 @@ const runRoute = (route) => {
         "--no-first-run",
         "--mute-audio",
         "--hide-scrollbars",
+        "--enable-logging=stderr",
+        "--v=1",
         "--window-size=1440,1000",
         "--virtual-time-budget=10000",
         `--user-data-dir=${profileDirectory}`,
@@ -223,13 +239,20 @@ const runRoute = (route) => {
       },
     );
 
+    const stderr = result.stderr ?? "";
+    writeFileSync(
+      path.join(paths.artifacts, `${route.name}.chrome.log`),
+      stderr,
+      "utf8",
+    );
+
     if (result.error) {
       failures.push(`${route.pathname}: Chrome falhou: ${result.error.message}`);
       return;
     }
     if (result.status !== 0) {
       failures.push(
-        `${route.pathname}: Chrome encerrou com status ${String(result.status)}. ${result.stderr.trim()}`,
+        `${route.pathname}: Chrome encerrou com status ${String(result.status)}. ${summarizeBrowserDiagnostics(stderr) || stderr.trim()}`,
       );
       return;
     }
@@ -251,7 +274,10 @@ const runRoute = (route) => {
       failures.push(`${route.pathname}: elemento #root ausente.`);
     }
     if (/<div\s+id="root"\s*>\s*<\/div>/i.test(dom)) {
-      failures.push(`${route.pathname}: React não hidratou o elemento #root.`);
+      const diagnostics = summarizeBrowserDiagnostics(stderr);
+      failures.push(
+        `${route.pathname}: React não hidratou o elemento #root.${diagnostics ? ` Diagnóstico: ${diagnostics}` : " Consulte o artefato .chrome.log."}`,
+      );
     }
 
     for (const fragment of route.required) {
