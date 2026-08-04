@@ -114,6 +114,7 @@ jobs:
           set -o pipefail
           node scripts/run-browser-runtime-smoke.mjs 2>&1 | tee artifacts/diagnostics/browser-runtime.log
           node scripts/run-browser-client-navigation-smoke.mjs 2>&1 | tee artifacts/diagnostics/browser-navigation.log
+          node scripts/run-browser-mobile-navigation-smoke.mjs 2>&1 | tee artifacts/diagnostics/browser-mobile-navigation.log
           node scripts/check-browser-network-isolation.mjs 2>&1 | tee artifacts/diagnostics/browser-network.log
 
       - name: Exportar tipos gerados
