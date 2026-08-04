@@ -43,6 +43,25 @@ A condição de prontidão do CDP exige, para cada rota da matriz pública:
 
 O DOM só é exportado depois que todas essas condições forem verdadeiras. As mesmas propriedades são revalidadas após a espera para produzir mensagens de falha específicas por rota.
 
+## Evidência aprovada
+
+O commit `63ebdfd043fc4a3ba02642c7b0f470e97be0611d` concluiu no mesmo snapshot:
+
+- instalação limpa, lint e testes unitários;
+- reconstrução local do Supabase e pgTAP;
+- sincronização de tipos, contratos estáticos e TypeScript;
+- build, entrega HTTP e Chrome headless;
+- oito rotas públicas com conteúdo final e sem exceções JavaScript não tratadas.
+
+A inspeção dos artefatos exportados confirmou, em cada uma das oito rotas:
+
+- exatamente um `#main-content`;
+- alvo principal representado por `<main>`;
+- `tabindex="-1"`;
+- exatamente um skip link;
+- ao menos uma live region de navegação;
+- zero eventos `Runtime.exceptionThrown`.
+
 ## Contrato permanente
 
 Os contratos B118/B122/B123 impedem:
