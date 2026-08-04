@@ -7,6 +7,8 @@ const paths = {
   browserRuntime: "scripts/run-browser-client-navigation-smoke.mjs",
   workflow: ".github/workflows/baseline.yml",
   documentation: "docs/refactor/FASE-B125-LAZY-ROUTE-FOCUS-HANDOFF.md",
+  realInteractionDocumentation:
+    "docs/refactor/FASE-B135-REAL-NAVIGATION-INTERACTION.md",
   parent: "scripts/check-ci-determinism.mjs",
 };
 
@@ -17,7 +19,7 @@ const expect = (condition, message) => {
 const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
 
 for (const path of Object.values(paths)) {
-  expect(existsSync(path), `Arquivo B125 ausente: ${path}`);
+  expect(existsSync(path), `Arquivo B125/B135 ausente: ${path}`);
 }
 
 const source = read(paths.source);
@@ -26,6 +28,7 @@ const authFallback = read(paths.authFallback);
 const browserRuntime = read(paths.browserRuntime);
 const workflow = read(paths.workflow);
 const documentation = read(paths.documentation);
+const realInteractionDocumentation = read(paths.realInteractionDocumentation);
 const parent = read(paths.parent);
 
 for (const fragment of [
@@ -79,22 +82,49 @@ for (const fragment of [
   '"Network.enable"',
   '"Network.emulateNetworkConditions"',
   "latency: 500",
-  "window.history.pushState",
-  'new PopStateEvent("popstate"',
+  'nav[aria-label="Navegação principal"] a[href="/login"]',
+  "prepareTrustedLoginInteraction",
+  "document.elementFromPoint(x, y)?.closest(selector)",
+  'document.addEventListener("click", handleClick)',
+  "event.isTrusted",
+  '"Input.dispatchMouseEvent"',
+  'type: "mousePressed"',
+  'type: "mouseReleased"',
+  'interaction: "trusted-click"',
   'data-route-focus-deferred="true"',
   "sawDeferred",
   "deferredFocused",
   'activeElementId === "main-content"',
   "activeElementConnected === true",
   "Navegação concluída. Conteúdo principal atualizado.",
+  'state.interaction?.isTrusted === true',
+  'state.interaction?.text === "Entrar"',
+  'state.interaction?.pathname === "/login"',
   '"client-navigation.html"',
   '"client-navigation.runtime.json"',
   '"client-navigation.probe.json"',
+  '"client-navigation.interaction.json"',
+  "O evento de clique B135 não foi confiável para o navegador.",
   "A transição B125 não observou o fallback com foco diferido.",
   "O fallback B125 recebeu foco durante a navegação.",
 ]) {
-  expect(browserRuntime.includes(fragment), `Smoke B125 perdeu a garantia: ${fragment}`);
+  expect(
+    browserRuntime.includes(fragment),
+    `Smoke B125/B135 perdeu a garantia: ${fragment}`,
+  );
 }
+
+for (const forbidden of [
+  "window.history.pushState",
+  "PopStateEvent",
+  'window.dispatchEvent(new Event("popstate"',
+]) {
+  expect(
+    !browserRuntime.includes(forbidden),
+    `Smoke B135 preserva navegação artificial proibida: ${forbidden}`,
+  );
+}
+
 expect(
   browserRuntime.includes('window.__b125RouteFocusObserver?.disconnect(); true'),
   "A sonda B125 deve desconectar seu observer após a transição.",
@@ -104,13 +134,13 @@ for (const fragment of [
   "node scripts/run-browser-runtime-smoke.mjs",
   "node scripts/run-browser-client-navigation-smoke.mjs",
 ]) {
-  expect(workflow.includes(fragment), `Workflow B125 perdeu o comando: ${fragment}`);
+  expect(workflow.includes(fragment), `Workflow B125/B135 perdeu o comando: ${fragment}`);
 }
 expect(
   /- name: Smoke no navegador[\s\S]*?run: \|[\s\S]*?run-browser-runtime-smoke\.mjs[\s\S]*?run-browser-client-navigation-smoke\.mjs/.test(
     workflow,
   ),
-  "Os smokes B118/B125 devem permanecer sequenciais no mesmo estágio bloqueante.",
+  "Os smokes B118/B125/B135 devem permanecer sequenciais no mesmo estágio bloqueante.",
 );
 
 for (const fragment of [
@@ -129,18 +159,36 @@ for (const fragment of [
   expect(documentation.includes(fragment), `Documentação B125 ausente: ${fragment}`);
 }
 
+for (const fragment of [
+  "FASE B135",
+  "`window.history.pushState`",
+  "link real `Entrar`",
+  "`Input.dispatchMouseEvent`",
+  "`event.isTrusted === true`",
+  "`client-navigation.interaction.json`",
+  "nenhum novo `Document`",
+  "Supabase remoto não foi modificado",
+  "Nenhuma migration, dependência ou lockfile foi alterado",
+]) {
+  expect(
+    realInteractionDocumentation.includes(fragment),
+    `Documentação B135 ausente: ${fragment}`,
+  );
+}
+
 expect(
   parent.includes('await import("./check-route-focus-handoff.mjs")'),
-  "Contrato B125 deve permanecer encadeado ao gate de determinismo do CI.",
+  "Contrato B125/B135 deve permanecer encadeado ao gate de determinismo do CI.",
 );
 
 if (failures.length > 0) {
   console.error(
-    "Contrato B125 inválido:\n- " + [...new Set(failures)].join("\n- "),
+    "Contrato B125/B135 inválido:\n- " +
+      [...new Set(failures)].join("\n- "),
   );
   process.exit(1);
 }
 
 console.log(
-  "Contrato B125 aprovado: fallbacks mantêm foco diferido e targets finais substituídos recuperam foco sem interferir em mutações normais.",
+  "Contrato B125/B135 aprovado: fallbacks mantêm foco diferido e a transição para login é acionada pelo link real com evento confiável, sem mutação artificial do histórico.",
 );
