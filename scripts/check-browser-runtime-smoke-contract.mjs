@@ -27,7 +27,7 @@ const documentation = read(paths.documentation);
 for (const fragment of [
   'import { CdpClient } from "./lib/cdp-client.mjs";',
   'path.join(root, "artifacts", "browser-smoke")',
-  'process.env.BROWSER_EXECUTABLE',
+  "process.env.BROWSER_EXECUTABLE",
   '"/usr/bin/google-chrome"',
   '"/usr/bin/chromium"',
   '"--headless=new"',
@@ -37,23 +37,24 @@ for (const fragment of [
   '`--remote-debugging-port=${browserDebugPort}`',
   '"--remote-allow-origins=*"',
   '`${browserDebugUrl}/json/version`',
-  'CdpClient.connect(webSocketDebuggerUrl)',
-  'client.request("Target.createTarget"',
-  'client.request("Target.attachToTarget"',
-  'client.request("Page.enable"',
-  'client.request("Runtime.enable"',
-  'client.request("Log.enable"',
-  'client.waitForEvent("Page.loadEventFired"',
-  'client.request("Page.navigate"',
+  "CdpClient.connect(webSocketDebuggerUrl)",
+  '"Target.createTarget"',
+  '"Target.attachToTarget"',
+  '"Page.enable"',
+  '"Runtime.enable"',
+  '"Log.enable"',
+  '"Emulation.setDeviceMetricsOverride"',
+  '"Page.loadEventFired"',
+  '"Page.navigate"',
   '"Runtime.exceptionThrown"',
   '"Runtime.consoleAPICalled"',
   '"Log.entryAdded"',
   '"Runtime.evaluate"',
   'root?.innerHTML ?? ""',
-  'waitForRenderedRoot(client, sessionId)',
-  'client.request("Target.closeTarget"',
-  'cdpClient.close()',
-  'rmSync(browserProfileDirectory, { recursive: true, force: true })',
+  "waitForRenderedRoot(client, sessionId)",
+  '"Target.closeTarget"',
+  "cdpClient.close()",
+  "rmSync(browserProfileDirectory, { recursive: true, force: true })",
   'pathname: "/"',
   'pathname: "/login"',
   'pathname: "/certificado"',
@@ -68,6 +69,31 @@ for (const fragment of [
 ]) {
   expect(runtime.includes(fragment), `Runtime B118 perdeu a garantia: ${fragment}`);
 }
+
+expect(
+  /client\.request\(\s*"Target\.createTarget",\s*\{\s*url:\s*"about:blank",\s*background:\s*false,?\s*\}\s*\)/s.test(
+    runtime,
+  ),
+  "Target.createTarget deve criar uma aba isolada sem parâmetros de posição incompatíveis.",
+);
+expect(
+  !/client\.request\(\s*"Target\.createTarget"[\s\S]*?newWindow:\s*false[\s\S]*?\)/.test(
+    runtime,
+  ),
+  "Target.createTarget não pode voltar a combinar dimensões de janela com newWindow=false.",
+);
+expect(
+  /client\.request\(\s*"Emulation\.setDeviceMetricsOverride",\s*\{[\s\S]*?width:\s*1440,[\s\S]*?height:\s*1000,[\s\S]*?deviceScaleFactor:\s*1,[\s\S]*?mobile:\s*false,[\s\S]*?\},\s*sessionId,?\s*\)/.test(
+    runtime,
+  ),
+  "Viewport B118 deve permanecer definido via Emulation.setDeviceMetricsOverride.",
+);
+expect(
+  /client\.request\(\s*"Page\.navigate",\s*\{\s*url:\s*`\$\{baseUrl\}\$\{route\.pathname\}`\s*\},\s*sessionId,\s*20_000,?\s*\)/s.test(
+    runtime,
+  ),
+  "Navegação B118 deve permanecer direcionada à rota atual pelo CDP.",
+);
 
 for (const fragment of [
   "export class CdpClient",
@@ -90,7 +116,9 @@ for (const forbidden of [
   '"--virtual-time-budget',
 ]) {
   expect(
-    !runtime.toLocaleLowerCase("pt-BR").includes(forbidden.toLocaleLowerCase("pt-BR")),
+    !runtime
+      .toLocaleLowerCase("pt-BR")
+      .includes(forbidden.toLocaleLowerCase("pt-BR")),
     `Runtime B118 não pode depender de ${forbidden}.`,
   );
 }
@@ -140,7 +168,9 @@ for (const fragment of [
 }
 
 if (failures.length > 0) {
-  console.error("Contrato B118/B119 inválido:\n- " + failures.join("\n- "));
+  console.error(
+    "Contrato B118/B119 inválido:\n- " + [...new Set(failures)].join("\n- "),
+  );
   process.exit(1);
 }
 
