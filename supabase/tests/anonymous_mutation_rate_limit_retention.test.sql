@@ -8,149 +8,40 @@ select ok(
 );
 
 select ok(
-  (
-    select function.prosecdef
-    from pg_proc function
-    join pg_namespace namespace on namespace.oid = function.pronamespace
-    where namespace.nspname = 'private'
-      and function.proname = 'prune_anonymous_mutation_rate_limits'
-      and pg_get_function_identity_arguments(function.oid) = 'p_delete_limit integer'
-  ),
+  (select p.prosecdef from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'private' and p.proname = 'prune_anonymous_mutation_rate_limits' and pg_get_function_identity_arguments(p.oid) = 'p_delete_limit integer'),
   'retention function is SECURITY DEFINER'
 );
 
 select ok(
-  (
-    select strpos(pg_get_functiondef(function.oid), 'SET search_path TO') > 0
-    from pg_proc function
-    join pg_namespace namespace on namespace.oid = function.pronamespace
-    where namespace.nspname = 'private'
-      and function.proname = 'prune_anonymous_mutation_rate_limits'
-      and pg_get_function_identity_arguments(function.oid) = 'p_delete_limit integer'
-  ),
+  (select strpos(pg_get_functiondef(p.oid), 'SET search_path TO') > 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'private' and p.proname = 'prune_anonymous_mutation_rate_limits' and pg_get_function_identity_arguments(p.oid) = 'p_delete_limit integer'),
   'retention function fixes an empty search_path'
 );
 
 select ok(
-  (
-    select pg_get_functiondef(function.oid) like '%session_user <> ''postgres''%'
-    from pg_proc function
-    join pg_namespace namespace on namespace.oid = function.pronamespace
-    where namespace.nspname = 'private'
-      and function.proname = 'prune_anonymous_mutation_rate_limits'
-      and pg_get_function_identity_arguments(function.oid) = 'p_delete_limit integer'
-  ),
+  (select pg_get_functiondef(p.oid) like '%session_user <> ''postgres''%' from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'private' and p.proname = 'prune_anonymous_mutation_rate_limits' and pg_get_function_identity_arguments(p.oid) = 'p_delete_limit integer'),
   'retention function requires the postgres session executor'
 );
 
 select ok(
-  (
-    select lower(pg_get_functiondef(function.oid)) like '%for update skip locked%'
-    from pg_proc function
-    join pg_namespace namespace on namespace.oid = function.pronamespace
-    where namespace.nspname = 'private'
-      and function.proname = 'prune_anonymous_mutation_rate_limits'
-      and pg_get_function_identity_arguments(function.oid) = 'p_delete_limit integer'
-  ),
+  (select lower(pg_get_functiondef(p.oid)) like '%for update skip locked%' from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'private' and p.proname = 'prune_anonymous_mutation_rate_limits' and pg_get_function_identity_arguments(p.oid) = 'p_delete_limit integer'),
   'retention function skips rows locked by concurrent maintenance'
 );
 
 select ok(
-  (
-    select pg_get_functiondef(function.oid) like '%p_delete_limit not between 1 and 10000%'
-    from pg_proc function
-    join pg_namespace namespace on namespace.oid = function.pronamespace
-    where namespace.nspname = 'private'
-      and function.proname = 'prune_anonymous_mutation_rate_limits'
-      and pg_get_function_identity_arguments(function.oid) = 'p_delete_limit integer'
-  ),
+  (select pg_get_functiondef(p.oid) like '%p_delete_limit not between 1 and 10000%' from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'private' and p.proname = 'prune_anonymous_mutation_rate_limits' and pg_get_function_identity_arguments(p.oid) = 'p_delete_limit integer'),
   'retention function enforces a bounded batch size'
 );
 
-select ok(
-  not has_function_privilege(
-    'public',
-    'private.prune_anonymous_mutation_rate_limits(integer)'::regprocedure,
-    'EXECUTE'
-  ),
-  'PUBLIC cannot execute anonymous rate-limit retention'
-);
+select ok(not has_function_privilege('public', 'private.prune_anonymous_mutation_rate_limits(integer)'::regprocedure, 'EXECUTE'), 'PUBLIC cannot execute anonymous rate-limit retention');
+select ok(not has_function_privilege('anon', 'private.prune_anonymous_mutation_rate_limits(integer)'::regprocedure, 'EXECUTE'), 'anon cannot execute anonymous rate-limit retention');
+select ok(not has_function_privilege('authenticated', 'private.prune_anonymous_mutation_rate_limits(integer)'::regprocedure, 'EXECUTE'), 'authenticated cannot execute anonymous rate-limit retention');
+select ok(not has_function_privilege('service_role', 'private.prune_anonymous_mutation_rate_limits(integer)'::regprocedure, 'EXECUTE'), 'service_role cannot execute anonymous rate-limit retention');
 
-select ok(
-  not has_function_privilege(
-    'anon',
-    'private.prune_anonymous_mutation_rate_limits(integer)'::regprocedure,
-    'EXECUTE'
-  ),
-  'anon cannot execute anonymous rate-limit retention'
-);
-
-select ok(
-  not has_function_privilege(
-    'authenticated',
-    'private.prune_anonymous_mutation_rate_limits(integer)'::regprocedure,
-    'EXECUTE'
-  ),
-  'authenticated cannot execute anonymous rate-limit retention'
-);
-
-select ok(
-  not has_function_privilege(
-    'service_role',
-    'private.prune_anonymous_mutation_rate_limits(integer)'::regprocedure,
-    'EXECUTE'
-  ),
-  'service_role cannot execute anonymous rate-limit retention'
-);
-
-select is(
-  (
-    select count(*)::integer
-    from cron.job
-    where jobname = 'prune-anonymous-mutation-rate-limits'
-  ),
-  1,
-  'exactly one retention cron job exists'
-);
-
-select is(
-  (
-    select schedule
-    from cron.job
-    where jobname = 'prune-anonymous-mutation-rate-limits'
-  ),
-  '37 * * * *',
-  'retention cron runs hourly at minute 37'
-);
-
-select is(
-  (
-    select command
-    from cron.job
-    where jobname = 'prune-anonymous-mutation-rate-limits'
-  ),
-  'select private.prune_anonymous_mutation_rate_limits(5000);',
-  'retention cron invokes the bounded database function'
-);
-
-select is(
-  (
-    select username
-    from cron.job
-    where jobname = 'prune-anonymous-mutation-rate-limits'
-  ),
-  'postgres',
-  'retention cron executes as postgres'
-);
-
-select ok(
-  (
-    select active
-    from cron.job
-    where jobname = 'prune-anonymous-mutation-rate-limits'
-  ),
-  'retention cron is active'
-);
+select is((select count(*)::integer from cron.job where jobname = 'prune-anonymous-mutation-rate-limits'), 1, 'exactly one retention cron job exists');
+select is((select schedule from cron.job where jobname = 'prune-anonymous-mutation-rate-limits'), '37 * * * *', 'retention cron runs hourly at minute 37');
+select is((select command from cron.job where jobname = 'prune-anonymous-mutation-rate-limits'), 'select private.prune_anonymous_mutation_rate_limits(5000);', 'retention cron invokes the bounded database function');
+select is((select username from cron.job where jobname = 'prune-anonymous-mutation-rate-limits'), 'postgres', 'retention cron executes as postgres');
+select ok((select active from cron.job where jobname = 'prune-anonymous-mutation-rate-limits'), 'retention cron is active');
 
 insert into private.anonymous_mutation_rate_limits (
   scope,
@@ -210,54 +101,19 @@ begin
 
   update anonymous_rate_limit_retention_proof
   set second_deleted = v_second,
-      expired_after_second = (
-        select count(*)::integer
-        from private.anonymous_mutation_rate_limits
-        where expires_at <= statement_timestamp()
-      ),
-      active_after_second = (
-        select count(*)::integer
-        from private.anonymous_mutation_rate_limits
-        where expires_at > statement_timestamp()
-      ),
+      expired_after_second = (select count(*)::integer from private.anonymous_mutation_rate_limits where expires_at <= statement_timestamp()),
+      active_after_second = (select count(*)::integer from private.anonymous_mutation_rate_limits where expires_at > statement_timestamp()),
       invalid_limit_blocked = v_invalid;
 end;
 $probe$;
 
-select is(
-  (select first_deleted from anonymous_rate_limit_retention_proof),
-  2::bigint,
-  'first retention batch deletes only its configured maximum'
-);
-
-select is(
-  (select expired_after_first from anonymous_rate_limit_retention_proof),
-  1,
-  'one expired counter remains after the bounded first batch'
-);
-
-select is(
-  (select active_after_first from anonymous_rate_limit_retention_proof),
-  1,
-  'active counters survive the first retention batch'
-);
-
-select is(
-  (select second_deleted from anonymous_rate_limit_retention_proof),
-  1::bigint,
-  'second retention batch deletes the final expired counter'
-);
-
-select is(
-  (select expired_after_second from anonymous_rate_limit_retention_proof),
-  0,
-  'no expired counters remain after the second batch'
-);
-
-select ok(
-  (select active_after_second = 1 and invalid_limit_blocked from anonymous_rate_limit_retention_proof),
-  'active counters survive and invalid batch sizes fail closed'
-);
+select is((select first_deleted from anonymous_rate_limit_retention_proof), 2::bigint, 'first retention batch deletes only its configured maximum');
+select is((select expired_after_first from anonymous_rate_limit_retention_proof), 1, 'one expired counter remains after the bounded first batch');
+select is((select active_after_first from anonymous_rate_limit_retention_proof), 1, 'active counters survive the first retention batch');
+select is((select second_deleted from anonymous_rate_limit_retention_proof), 1::bigint, 'second retention batch deletes the final expired counter');
+select is((select expired_after_second from anonymous_rate_limit_retention_proof), 0, 'no expired counters remain after the second batch');
+select is((select active_after_second from anonymous_rate_limit_retention_proof), 1, 'active counters survive the second retention batch');
+select ok((select invalid_limit_blocked from anonymous_rate_limit_retention_proof), 'invalid batch sizes fail closed');
 
 select * from finish();
 rollback;
