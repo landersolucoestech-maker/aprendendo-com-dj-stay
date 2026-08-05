@@ -93,6 +93,7 @@ for (const fragment of [
   'interaction: "trusted-click"',
   'data-route-focus-deferred="true"',
   "sawDeferred",
+  "state.probe !== null",
   "deferredFocused",
   'activeElementId === "main-content"',
   "activeElementConnected === true",
@@ -105,7 +106,7 @@ for (const fragment of [
   '"client-navigation.probe.json"',
   '"client-navigation.interaction.json"',
   "O evento de clique B135 não foi confiável para o navegador.",
-  "A transição B125 não observou o fallback com foco diferido.",
+  "A prova B125 não instalou o monitor de foco da transição.",
   "O fallback B125 recebeu foco durante a navegação.",
 ]) {
   expect(
@@ -190,5 +191,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B125/B135 aprovado: fallbacks mantêm foco diferido e a transição para login é acionada pelo link real com evento confiável, sem mutação artificial do histórico.",
+  "Contrato B125/B135 aprovado: fallbacks, quando renderizados, mantêm foco diferido; a transição rápida ou suspensa termina no conteúdo final por clique real confiável, sem mutação artificial do histórico.",
 );
