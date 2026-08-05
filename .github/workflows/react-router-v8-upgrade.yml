@@ -1,0 +1,389 @@
+name: Migração coordenada React Router 8
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/react-router-v8-upgrade.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: react-router-v8-upgrade-dev
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.0
+          cache: npm
+
+      - name: Atualizar runtime, pacotes e imports declarativos
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
+          import { join } from "node:path";
+
+          const packagePath = "package.json";
+          const packageJson = JSON.parse(readFileSync(packagePath, "utf8"));
+
+          delete packageJson.dependencies["react-router-dom"];
+          packageJson.dependencies.react = "^19.2.8";
+          packageJson.dependencies["react-dom"] = "^19.2.8";
+          packageJson.dependencies["react-router"] = "^8.3.0";
+          packageJson.devDependencies["@types/react"] = "^19.2.17";
+          packageJson.devDependencies["@types/react-dom"] = "^19.2.3";
+          packageJson.packageManager = "npm@10.9.4";
+          packageJson.engines.node = ">=22.22.0 <23";
+          packageJson.engines.npm = ">=10.9.4 <11";
+          writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`);
+
+          const codeExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
+          const excludedDirectories = new Set([".git", "node_modules", "dist", "coverage"]);
+          const extensionOf = (path) => path.slice(path.lastIndexOf("."));
+
+          const walk = (directory) => {
+            for (const entry of readdirSync(directory)) {
+              if (excludedDirectories.has(entry)) continue;
+              const path = join(directory, entry);
+              const stats = statSync(path);
+              if (stats.isDirectory()) {
+                walk(path);
+                continue;
+              }
+              if (!codeExtensions.has(extensionOf(path))) continue;
+              const source = readFileSync(path, "utf8");
+              const updated = source
+                .replaceAll('"react-router-dom"', '"react-router"')
+                .replaceAll("'react-router-dom'", "'react-router'");
+              if (updated !== source) writeFileSync(path, updated);
+            }
+          };
+
+          walk("src");
+
+          for (const workflow of readdirSync(".github/workflows")) {
+            if (!/\.ya?ml$/.test(workflow)) continue;
+            const path = join(".github/workflows", workflow);
+            const source = readFileSync(path, "utf8");
+            const updated = source.replaceAll("22.16.0", "22.22.0");
+            if (updated !== source) writeFileSync(path, updated);
+          }
+          NODE
+
+          cat > scripts/audit-react-router-usage.mjs <<'EOF'
+          import { readdirSync, readFileSync, statSync } from "node:fs";
+          import { join, relative } from "node:path";
+
+          const sourceRoot = "src";
+          const files = [];
+          const walk = (directory) => {
+            for (const entry of readdirSync(directory)) {
+              const path = join(directory, entry);
+              const stats = statSync(path);
+              if (stats.isDirectory()) walk(path);
+              else if (/\.(?:ts|tsx)$/.test(entry)) files.push(path);
+            }
+          };
+          walk(sourceRoot);
+
+          const imports = [];
+          const navigation = [];
+          const prohibited = [];
+          const routerImportPattern = /from\s+["']react-router["']/;
+          const legacyImportPattern = /from\s+["']react-router-dom["']/;
+          const frameworkImportPattern = /from\s+["']@react-router\/[^"']+["']/;
+          const prohibitedApis = [
+            "createBrowserRouter",
+            "createMemoryRouter",
+            "createHashRouter",
+            "RouterProvider",
+            "useFetcher",
+            "useFetchers",
+            "useLoaderData",
+            "useActionData",
+            "ScrollRestoration",
+            "HydratedRouter",
+            "ServerRouter",
+            "RSCStaticRouter",
+            "RSCHydratedRouter",
+          ];
+
+          for (const path of files.sort()) {
+            const relativePath = relative(".", path).replaceAll("\\", "/");
+            const source = readFileSync(path, "utf8");
+            const lines = source.split("\n");
+            lines.forEach((line, index) => {
+              if (routerImportPattern.test(line)) imports.push(`${relativePath}:${index + 1}: ${line.trim()}`);
+              if (/\bnavigate\s*\(|<Link\b|<NavLink\b|<Navigate\b|\bto=/.test(line)) {
+                navigation.push(`${relativePath}:${index + 1}: ${line.trim()}`);
+              }
+            });
+            if (legacyImportPattern.test(source)) prohibited.push(`${relativePath}: import legado react-router-dom`);
+            if (frameworkImportPattern.test(source)) prohibited.push(`${relativePath}: import de pacote Framework Router`);
+            for (const api of prohibitedApis) {
+              if (new RegExp(`\\b${api}\\b`).test(source)) {
+                prohibited.push(`${relativePath}: API proibida para modo declarativo: ${api}`);
+              }
+            }
+          }
+
+          const appSource = readFileSync("src/App.tsx", "utf8");
+          if (!appSource.includes("<BrowserRouter>")) prohibited.push("src/App.tsx: BrowserRouter declarativo ausente");
+          if (imports.length === 0) prohibited.push("src: nenhum import declarativo de react-router encontrado");
+
+          console.log(`Inventário React Router 8: ${files.length} arquivos TypeScript analisados.`);
+          console.log(`Imports declarativos (${imports.length}):`);
+          for (const entry of imports) console.log(`- ${entry}`);
+          console.log(`Superfícies de navegação (${navigation.length}):`);
+          for (const entry of navigation) console.log(`- ${entry}`);
+
+          if (prohibited.length > 0) {
+            console.error("Arquitetura React Router 8 incompatível com o modo declarativo:");
+            for (const entry of prohibited) console.error(`- ${entry}`);
+            process.exit(1);
+          }
+
+          console.log("Arquitetura React Router 8 confirmada em modo declarativo, sem pacote DOM legado, Data Router, SSR, Framework Mode ou APIs RSC.");
+          await import("./check-react-router-upgrade-boundary.mjs");
+          EOF
+
+          cat > scripts/check-react-router-upgrade-boundary.mjs <<'EOF'
+          import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+          import { join } from "node:path";
+
+          const paths = {
+            package: "package.json",
+            usageAudit: "scripts/audit-react-router-usage.mjs",
+            documentation: "docs/refactor/FASE-B116-REACT-ROUTER-UPGRADE-BOUNDARY.md",
+          };
+          const failures = [];
+          const expect = (condition, message) => { if (!condition) failures.push(message); };
+          const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
+
+          for (const path of Object.values(paths)) expect(existsSync(path), `Arquivo B116 ausente: ${path}`);
+          expect(!existsSync("security/react-router-audit-exception.json"), "A exceção B60 deve ser removida após a migração segura.");
+          expect(!existsSync(".github/workflows/react-router-v8-upgrade.yml"), "Workflow temporário da migração não pode permanecer versionado.");
+
+          const packageJson = existsSync(paths.package) ? JSON.parse(read(paths.package)) : {};
+          expect(packageJson.dependencies?.["react-router"] === "^8.3.0", "React Router deve permanecer em ^8.3.0.");
+          expect(packageJson.dependencies?.["react-router-dom"] === undefined, "react-router-dom deve permanecer removido.");
+          expect(packageJson.dependencies?.react === "^19.2.8" && packageJson.dependencies?.["react-dom"] === "^19.2.8", "React e React DOM devem permanecer em ^19.2.8.");
+          expect(packageJson.devDependencies?.["@types/react"] === "^19.2.17", "@types/react deve permanecer em ^19.2.17.");
+          expect(packageJson.devDependencies?.["@types/react-dom"] === "^19.2.3", "@types/react-dom deve permanecer em ^19.2.3.");
+          expect(packageJson.engines?.node === ">=22.22.0 <23", "Node deve permanecer em >=22.22.0 <23.");
+          expect(packageJson.engines?.npm === ">=10.9.4 <11", "npm deve permanecer em >=10.9.4 <11.");
+          expect(packageJson.packageManager === "npm@10.9.4", "packageManager deve permanecer em npm@10.9.4.");
+
+          const sourceFiles = [];
+          const walk = (directory) => {
+            for (const entry of readdirSync(directory)) {
+              const path = join(directory, entry);
+              const stats = statSync(path);
+              if (stats.isDirectory()) walk(path);
+              else if (/\.(?:ts|tsx)$/.test(entry)) sourceFiles.push(path);
+            }
+          };
+          walk("src");
+          for (const path of sourceFiles) {
+            const source = read(path);
+            expect(!source.includes("react-router-dom"), `${path}: import legado react-router-dom encontrado.`);
+          }
+
+          const usageAudit = read(paths.usageAudit);
+          for (const fragment of [
+            "const legacyImportPattern =",
+            '"createBrowserRouter"',
+            '"RouterProvider"',
+            '"HydratedRouter"',
+            '"ServerRouter"',
+            '"RSCStaticRouter"',
+            '"RSCHydratedRouter"',
+            'appSource.includes("<BrowserRouter>")',
+          ]) expect(usageAudit.includes(fragment), `Inventário declarativo perdeu a garantia: ${fragment}`);
+
+          const documentation = read(paths.documentation);
+          for (const fragment of [
+            "FASE B116",
+            "Migração concluída",
+            "`react-router@8.3.0`",
+            "Node 22.22.0",
+            "React e React DOM 19.2.8",
+            "`react-router-dom` foi removido",
+            "zero vulnerabilidades",
+            "Nenhuma migration",
+            "Supabase remoto não foi modificado",
+            "branch `main` não foi alterada",
+          ]) expect(documentation.includes(fragment), `Documentação B116 ausente: ${fragment}`);
+
+          if (failures.length > 0) {
+            console.error("Contrato B116 inválido:\n- " + failures.join("\n- "));
+            process.exit(1);
+          }
+          console.log("Contrato B116 aprovado: migração coordenada para React Router 8 concluída, pacote legado removido e baseline moderna preservada.");
+          EOF
+
+          cat > scripts/check-dependency-security.mjs <<'EOF'
+          import { spawnSync } from "node:child_process";
+          import { existsSync, readFileSync } from "node:fs";
+
+          const npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm";
+          const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+          const viteConfig = readFileSync("vite.config.ts", "utf8");
+          const expectedDependencies = Object.freeze({
+            "@supabase/supabase-js": "^2.110.8",
+            react: "^19.2.8",
+            "react-dom": "^19.2.8",
+            "react-router": "^8.3.0",
+          });
+          const expectedDevDependencies = Object.freeze({
+            "@types/react": "^19.2.17",
+            "@types/react-dom": "^19.2.3",
+            "@vitejs/plugin-react-swc": "^4.3.2",
+            postcss: "^8.5.23",
+            "typescript-eslint": "^8.65.0",
+            vite: "^6.4.3",
+          });
+          const failures = [];
+
+          for (const [name, version] of Object.entries(expectedDependencies)) {
+            if (packageJson.dependencies?.[name] !== version) failures.push(`Dependência ${name} deve permanecer em ${version}.`);
+          }
+          for (const [name, version] of Object.entries(expectedDevDependencies)) {
+            if (packageJson.devDependencies?.[name] !== version) failures.push(`Dependência de desenvolvimento ${name} deve permanecer em ${version}.`);
+          }
+          if (packageJson.dependencies?.["react-router-dom"] !== undefined) failures.push("react-router-dom não pode retornar após a migração para React Router 8.");
+          if (existsSync("security/react-router-audit-exception.json")) failures.push("A exceção de audit do React Router deve permanecer removida.");
+          if (packageJson.devDependencies?.["lovable-tagger"] !== undefined) failures.push("lovable-tagger não pode retornar.");
+          if (viteConfig.includes("lovable-tagger") || viteConfig.includes("componentTagger")) failures.push("vite.config.ts não pode depender de lovable-tagger.");
+          if (packageJson.scripts?.postinstall) failures.push("package.json não pode manter postinstall temporário.");
+          for (const path of [
+            "scripts/apply-b27-dependency-update.mjs",
+            "scripts/apply-b27-lockfile-repair.mjs",
+            "scripts/apply-b27-transitive-audit-fix.mjs",
+            "scripts/apply-b27-eslint-alignment.mjs",
+            ".github/workflows/b27-lockfile-bootstrap.yml",
+            ".github/workflows/b27-eslint-bootstrap.yml",
+            ".github/workflows/b60-react-router-lockfile.yml",
+            ".github/workflows/react-router-v8-upgrade.yml",
+            "docs/refactor/.b60-react-router-upgrade",
+          ]) if (existsSync(path)) failures.push(`Mecanismo temporário deve ser removido: ${path}.`);
+          if (failures.length > 0) {
+            console.error("Baseline de dependências inválida:\n- " + failures.join("\n- "));
+            process.exit(1);
+          }
+
+          const runAudit = (label, extraArguments = []) => {
+            const result = spawnSync(npmExecutable, ["audit", "--json", ...extraArguments], {
+              cwd: process.cwd(),
+              encoding: "utf8",
+              maxBuffer: 20 * 1024 * 1024,
+              env: { ...process.env, npm_config_fund: "false", npm_config_audit_level: "none" },
+            });
+            if (result.error) throw new Error(`Não foi possível executar npm audit (${label}): ${result.error.message}`);
+            const output = result.stdout.trim();
+            if (!output) throw new Error(`npm audit (${label}) não retornou JSON. ${result.stderr.trim()}`.trim());
+            return JSON.parse(output);
+          };
+
+          const validateAudit = (label, report) => {
+            const counts = report?.metadata?.vulnerabilities ?? {};
+            const total = Number(counts.total ?? 0);
+            console.log(`${label}: total=${total}, critical=${counts.critical ?? 0}, high=${counts.high ?? 0}, moderate=${counts.moderate ?? 0}, low=${counts.low ?? 0}, info=${counts.info ?? 0}.`);
+            if (total !== 0 || Object.keys(report?.vulnerabilities ?? {}).length !== 0) {
+              console.error(`${label}: a baseline exige zero vulnerabilidades após a migração React Router 8.`);
+              process.exit(1);
+            }
+          };
+
+          validateAudit("Auditoria de produção", runAudit("produção", ["--omit=dev"]));
+          validateAudit("Auditoria completa", runAudit("completa"));
+          console.log("Contrato de dependências aprovado: React Router 8.3.0 e React 19.2.8 com zero vulnerabilidades conhecidas no npm audit.");
+          await import("./audit-react-router-usage.mjs");
+          EOF
+
+          cat > docs/refactor/FASE-B116-REACT-ROUTER-UPGRADE-BOUNDARY.md <<'EOF'
+          # FASE B116 — Migração coordenada do React Router
+
+          ## Migração concluída
+
+          A linha segura oficial tornou-se disponível e a branch `dev` migrou diretamente da baseline declarativa `react-router-dom@6.30.4` para `react-router@8.3.0`, sem passagem pela faixa vulnerável intermediária.
+
+          A atualização coordenada incluiu:
+
+          - `react-router@8.3.0`;
+          - Node 22.22.0;
+          - React e React DOM 19.2.8;
+          - tipos React 19;
+          - atualização determinística do lockfile;
+          - migração dos imports declarativos para `react-router`;
+          - remoção da exceção temporária de segurança;
+          - auditoria de produção e completa com zero vulnerabilidades.
+
+          O pacote `react-router-dom` foi removido. A aplicação continua em modo declarativo com `BrowserRouter`, `Routes`, `Route`, `Link`, `Navigate` e hooks de navegação. Data Router, Framework Mode, SSR, hydration de servidor e APIs RSC permanecem proibidos pelo contrato estático.
+
+          ## Gate
+
+          Os contratos `scripts/check-dependency-security.mjs`, `scripts/audit-react-router-usage.mjs` e `scripts/check-react-router-upgrade-boundary.mjs` exigem:
+
+          - as versões coordenadas do runtime e dos pacotes;
+          - ausência de `react-router-dom`;
+          - ausência da exceção de audit expirada;
+          - zero vulnerabilidades no `npm audit` de produção e completo;
+          - imports exclusivamente declarativos;
+          - ausência de APIs Data/Framework/RSC;
+          - lockfile sincronizado;
+          - lint, testes, TypeScript, build e smoke aprovados.
+
+          ## Exclusões
+
+          - Nenhuma migration foi criada ou alterada.
+          - O Supabase remoto não foi modificado.
+          - A branch `main` não foi alterada.
+          - A aprovação em `dev` não equivale a homologação externa ou promoção para produção.
+          EOF
+
+          rm -f security/react-router-audit-exception.json
+          rm -f .github/workflows/react-router-v8-upgrade.yml
+
+          npm install --ignore-scripts
+          npm ci --ignore-scripts
+
+          if git grep -n "react-router-dom" -- "src/**" "scripts/**" "package.json" "package-lock.json"; then
+            echo "Referência legada react-router-dom permaneceu em código ou manifests." >&2
+            exit 1
+          fi
+
+          if git grep -n "22.16.0" -- ".github/workflows/**" "package.json" "scripts/**"; then
+            echo "Baseline Node 22.16.0 permaneceu em arquivos executáveis." >&2
+            exit 1
+          fi
+
+      - name: Executar gate local consolidado
+        run: npm run check
+
+      - name: Persistir migração aprovada
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "landersolucoestech-maker"
+          git config user.email "landersolucoestech@gmail.com"
+          git add -A
+          git diff --cached --stat
+          git commit -m "security(router): migrate declarative stack to v8.3.0"
+          git push origin HEAD:dev
