@@ -76,6 +76,7 @@ jobs:
           set -euo pipefail
           rm -f scripts/apply-react-router-v8-upgrade.mjs
           rm -f scripts/apply-react19-ui-compat.mjs
+          rm -f scripts/apply-react19-ui-compat.py
           git restore .github/workflows/react-router-v8-upgrade.yml
           git config user.name "landersolucoestech-maker"
           git config user.email "landersolucoestech@gmail.com"
