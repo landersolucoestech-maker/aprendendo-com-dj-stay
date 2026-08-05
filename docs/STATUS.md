@@ -44,6 +44,9 @@ O marketplace distribui somente cursos e produtos digitais do proprietário. Nã
 | Diagnósticos do gate | stdout e stderr de TypeScript e navegador persistidos em artifact com `set -o pipefail`, sem transformar falhas em sucesso |
 | Frontend acessível | lazy loading, Error Boundary, reconciliação acessível após substituições do `Suspense`, foco diferido em fallbacks e handoff para o conteúdo final |
 | Supabase remoto `dev` | quatorze migrations previamente ausentes aplicadas, contratos confrontados, `pg_cron` 1.6.4 instalado, dois jobs ativos, execução de expiração observada com sucesso e advisor de segurança sem lints |
+| Funções privadas | zero função do schema `private` executável por `PUBLIC`, quatro grants anônimos explícitos e restritos às superfícies públicas, consumidores autenticados preservados e privilégio padrão fechado para novas funções |
+
+O hardening B142 foi aplicado no Supabase remoto `dev` pela migration `20260805015339_private_function_execute_hardening`. Cinquenta e quatro funções privadas deixaram de depender de `PUBLIC EXECUTE`; os acessos necessários de `authenticated` e `service_role` foram preservados explicitamente. O teste pgTAP dedicado possui 11 asserções e foi executado sem falhas. A prova completa está em [`refactor/FASE-B142-PRIVATE-FUNCTION-EXECUTE-HARDENING.md`](refactor/FASE-B142-PRIVATE-FUNCTION-EXECUTE-HARDENING.md).
 
 O dashboard administrativo do proprietário é protegido pelo papel administrativo e consolida somente dados persistidos. A visão geral usa seis read models reais, não apresenta métricas estimadas e mantém links operacionais para pagamentos, alunos, suporte e contatos.
 
@@ -104,6 +107,7 @@ O módulo PostgreSQL `pg_cron`, os jobs de expiração e retenção e o read mod
 
 Ainda exigem validação fora do repositório:
 
+- criação de massa operacional válida no Supabase `dev` para E2E autenticado de matrícula, mídia e playback, porque o ambiente permanece sem usuários, cursos, aulas, assets ou matrículas;
 - credenciais válidas do sandbox Asaas;
 - configuração do webhook no painel do provider;
 - execução de compra, confirmação, reembolso e chargeback no sandbox;
