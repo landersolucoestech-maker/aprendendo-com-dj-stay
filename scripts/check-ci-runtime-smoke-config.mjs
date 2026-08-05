@@ -123,8 +123,23 @@ const trackedFiles = execFileSync("git", ["ls-files", "-z"], {
 })
   .split("\0")
   .filter(Boolean);
+const pendingTrackedDeletions = new Set(
+  execFileSync("git", ["diff", "--name-only", "--diff-filter=D", "-z"], {
+    encoding: "utf8",
+  })
+    .split("\0")
+    .filter(Boolean),
+);
 const realPublishablePattern = /\bsb_publishable_[A-Za-z0-9_-]{20,}\b/g;
 for (const path of trackedFiles) {
+  if (!existsSync(path)) {
+    expect(
+      pendingTrackedDeletions.has(path),
+      `Arquivo versionado ausente sem exclusão registrada no diff: ${path}.`,
+    );
+    continue;
+  }
+
   const sourceText = readFileSync(path, "utf8").replaceAll(syntheticKey, "");
   const matches = sourceText.match(realPublishablePattern) ?? [];
   expect(
