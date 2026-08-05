@@ -43,6 +43,10 @@ describe("getErrorMessage", () => {
       "Não foi possível validar a origem da solicitação. Atualize a página e tente novamente.",
     ],
     [
+      { message: "RATE_LIMIT_CONTEXT_INVALID", code: "22023" },
+      "Não foi possível validar a origem da solicitação. Atualize a página e tente novamente.",
+    ],
+    [
       new Error("RATE_LIMIT_CONTEXT_INVALID"),
       "Não foi possível validar a origem da solicitação. Atualize a página e tente novamente.",
     ],
