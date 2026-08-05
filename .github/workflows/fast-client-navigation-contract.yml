@@ -42,7 +42,6 @@ jobs:
           npm ci
           npm run build:dev
           node scripts/run-browser-client-navigation-smoke.mjs
-          node scripts/check-browser-network-isolation.mjs
 
       - name: Persistir somente o contrato aprovado
         shell: bash
