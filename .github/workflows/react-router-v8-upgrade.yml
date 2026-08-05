@@ -17,7 +17,7 @@ concurrency:
 jobs:
   migrate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
       - uses: actions/checkout@v6
@@ -30,22 +30,58 @@ jobs:
           node-version: 22.22.0
           cache: npm
 
-      - name: Atualizar runtime, pacotes e imports declarativos
+      - name: Atualizar runtime, UI, roteador e contratos
         shell: bash
         run: |
           set -euo pipefail
 
           node <<'NODE'
+          import { execFileSync } from "node:child_process";
           import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
           import { join } from "node:path";
 
           const packagePath = "package.json";
           const packageJson = JSON.parse(readFileSync(packagePath, "utf8"));
+          const dependencies = packageJson.dependencies;
 
-          delete packageJson.dependencies["react-router-dom"];
-          packageJson.dependencies.react = "^19.2.8";
-          packageJson.dependencies["react-dom"] = "^19.2.8";
-          packageJson.dependencies["react-router"] = "^8.3.0";
+          delete dependencies["react-router-dom"];
+          Object.assign(dependencies, {
+            react: "^19.2.8",
+            "react-dom": "^19.2.8",
+            "react-router": "^8.3.0",
+            cmdk: "^1.1.1",
+            "embla-carousel-react": "^8.6.0",
+            "input-otp": "^1.4.2",
+            "next-themes": "^0.4.6",
+            "react-day-picker": "^10.0.1",
+            recharts: "^3.10.1",
+            "react-is": "^19.2.8",
+            sonner: "^2.0.7",
+            vaul: "^1.1.2",
+          });
+
+          const packagesToRefresh = Object.keys(dependencies).filter(
+            (name) =>
+              name.startsWith("@radix-ui/react-") ||
+              name === "react-resizable-panels",
+          );
+
+          for (const name of packagesToRefresh) {
+            const rawVersion = execFileSync(
+              "npm",
+              ["view", name, "version", "--json"],
+              { encoding: "utf8" },
+            ).trim();
+            const parsedVersion = JSON.parse(rawVersion);
+            const version = Array.isArray(parsedVersion)
+              ? parsedVersion.at(-1)
+              : parsedVersion;
+            if (typeof version !== "string" || !/^\d+\.\d+\.\d+/.test(version)) {
+              throw new Error(`Versão inválida retornada para ${name}: ${rawVersion}`);
+            }
+            dependencies[name] = `^${version}`;
+          }
+
           packageJson.devDependencies["@types/react"] = "^19.2.17";
           packageJson.devDependencies["@types/react-dom"] = "^19.2.3";
           packageJson.packageManager = "npm@10.9.4";
@@ -57,31 +93,41 @@ jobs:
           const excludedDirectories = new Set([".git", "node_modules", "dist", "coverage"]);
           const extensionOf = (path) => path.slice(path.lastIndexOf("."));
 
-          const walk = (directory) => {
+          const walkAndTransform = (directory, transform) => {
             for (const entry of readdirSync(directory)) {
               if (excludedDirectories.has(entry)) continue;
               const path = join(directory, entry);
               const stats = statSync(path);
               if (stats.isDirectory()) {
-                walk(path);
+                walkAndTransform(path, transform);
                 continue;
               }
               if (!codeExtensions.has(extensionOf(path))) continue;
               const source = readFileSync(path, "utf8");
-              const updated = source
-                .replaceAll('"react-router-dom"', '"react-router"')
-                .replaceAll("'react-router-dom'", "'react-router'");
+              const updated = transform(source);
               if (updated !== source) writeFileSync(path, updated);
             }
           };
 
-          walk("src");
+          walkAndTransform("src", (source) =>
+            source
+              .replaceAll('"react-router-dom"', '"react-router"')
+              .replaceAll("'react-router-dom'", "'react-router'"),
+          );
+
+          walkAndTransform("scripts", (source) =>
+            source
+              .replaceAll("22.16.0", "22.22.0")
+              .replaceAll("10.9.2", "10.9.4"),
+          );
 
           for (const workflow of readdirSync(".github/workflows")) {
             if (!/\.ya?ml$/.test(workflow)) continue;
             const path = join(".github/workflows", workflow);
             const source = readFileSync(path, "utf8");
-            const updated = source.replaceAll("22.16.0", "22.22.0");
+            const updated = source
+              .replaceAll("22.16.0", "22.22.0")
+              .replaceAll("10.9.2", "10.9.4");
             if (updated !== source) writeFileSync(path, updated);
           }
           NODE
@@ -250,6 +296,15 @@ jobs:
             react: "^19.2.8",
             "react-dom": "^19.2.8",
             "react-router": "^8.3.0",
+            cmdk: "^1.1.1",
+            "embla-carousel-react": "^8.6.0",
+            "input-otp": "^1.4.2",
+            "next-themes": "^0.4.6",
+            "react-day-picker": "^10.0.1",
+            recharts: "^3.10.1",
+            "react-is": "^19.2.8",
+            sonner: "^2.0.7",
+            vaul: "^1.1.2",
           });
           const expectedDevDependencies = Object.freeze({
             "@types/react": "^19.2.17",
@@ -313,7 +368,7 @@ jobs:
 
           validateAudit("Auditoria de produção", runAudit("produção", ["--omit=dev"]));
           validateAudit("Auditoria completa", runAudit("completa"));
-          console.log("Contrato de dependências aprovado: React Router 8.3.0 e React 19.2.8 com zero vulnerabilidades conhecidas no npm audit.");
+          console.log("Contrato de dependências aprovado: React Router 8.3.0, React 19.2.8 e UI compatível com zero vulnerabilidades conhecidas no npm audit.");
           await import("./audit-react-router-usage.mjs");
           EOF
 
@@ -330,6 +385,7 @@ jobs:
           - Node 22.22.0;
           - React e React DOM 19.2.8;
           - tipos React 19;
+          - bibliotecas de UI atualizadas para peer dependencies compatíveis;
           - atualização determinística do lockfile;
           - migração dos imports declarativos para `react-router`;
           - remoção da exceção temporária de segurança;
@@ -345,6 +401,7 @@ jobs:
           - ausência de `react-router-dom`;
           - ausência da exceção de audit expirada;
           - zero vulnerabilidades no `npm audit` de produção e completo;
+          - resolução estrita das peer dependencies, sem `force` ou `legacy-peer-deps`;
           - imports exclusivamente declarativos;
           - ausência de APIs Data/Framework/RSC;
           - lockfile sincronizado;
@@ -360,9 +417,10 @@ jobs:
 
           rm -f security/react-router-audit-exception.json
           rm -f .github/workflows/react-router-v8-upgrade.yml
+          rm -rf node_modules package-lock.json
 
-          npm install --ignore-scripts
-          npm ci --ignore-scripts
+          npm install --ignore-scripts --strict-peer-deps
+          npm ci --ignore-scripts --strict-peer-deps
 
           if git grep -n "react-router-dom" -- "src/**" "scripts/**" "package.json" "package-lock.json"; then
             echo "Referência legada react-router-dom permaneceu em código ou manifests." >&2
