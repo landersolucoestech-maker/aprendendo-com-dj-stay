@@ -105,24 +105,66 @@ while (stack.length > 0) {
   for (const dependency of dependencyGraph.get(file) ?? []) stack.push(dependency);
 }
 
-const allowedUnreachablePatterns = [
-  /^src\/components\/ui\//,
-  /^src\/hooks\/use-mobile\.tsx$/,
-];
+const allowedUnreachable = new Set([
+  "src/components/ui/accordion.tsx",
+  "src/components/ui/alert-dialog.tsx",
+  "src/components/ui/alert.tsx",
+  "src/components/ui/aspect-ratio.tsx",
+  "src/components/ui/breadcrumb.tsx",
+  "src/components/ui/calendar.tsx",
+  "src/components/ui/carousel.tsx",
+  "src/components/ui/chart.tsx",
+  "src/components/ui/collapsible.tsx",
+  "src/components/ui/command.tsx",
+  "src/components/ui/context-menu.tsx",
+  "src/components/ui/drawer.tsx",
+  "src/components/ui/dropdown-menu.tsx",
+  "src/components/ui/form.tsx",
+  "src/components/ui/hover-card.tsx",
+  "src/components/ui/input-otp.tsx",
+  "src/components/ui/menubar.tsx",
+  "src/components/ui/navigation-menu.tsx",
+  "src/components/ui/pagination.tsx",
+  "src/components/ui/popover.tsx",
+  "src/components/ui/radio-group.tsx",
+  "src/components/ui/resizable.tsx",
+  "src/components/ui/scroll-area.tsx",
+  "src/components/ui/separator.tsx",
+  "src/components/ui/sheet.tsx",
+  "src/components/ui/sidebar.tsx",
+  "src/components/ui/skeleton.tsx",
+  "src/components/ui/slider.tsx",
+  "src/components/ui/table.tsx",
+  "src/components/ui/toggle-group.tsx",
+  "src/components/ui/toggle-variants.ts",
+  "src/components/ui/toggle.tsx",
+  "src/components/ui/use-toast.ts",
+  "src/hooks/use-mobile.tsx",
+]);
 const unreachable = productionFiles
   .filter((file) => !reachable.has(file))
   .map(normalize)
   .sort();
-const unexpected = unreachable.filter(
-  (file) => !allowedUnreachablePatterns.some((pattern) => pattern.test(file)),
-);
+const unreachableSet = new Set(unreachable);
+const unexpected = unreachable.filter((file) => !allowedUnreachable.has(file));
+const staleAllowlist = [...allowedUnreachable]
+  .filter((file) => !unreachableSet.has(file))
+  .sort();
 
+const failures = [];
 if (unexpected.length > 0) {
-  throw new Error(
-    "Módulos de produto fora do runtime:\n- " + unexpected.join("\n- "),
+  failures.push("Módulos de produto fora do runtime:\n- " + unexpected.join("\n- "));
+}
+if (staleAllowlist.length > 0) {
+  failures.push(
+    "Allowlist de alcance desatualizada; remova entradas que deixaram de ser órfãs:\n- " +
+      staleAllowlist.join("\n- "),
   );
+}
+if (failures.length > 0) {
+  throw new Error(failures.join("\n\n"));
 }
 
 console.log(
-  `Contrato de alcance aprovado: ${reachable.size}/${productionFiles.length} módulos entram no runtime; ${unreachable.length} wrappers opcionais do design system permanecem permitidos.`,
+  `Contrato de alcance aprovado: ${reachable.size}/${productionFiles.length} módulos entram no runtime; ${unreachable.length} wrappers opcionais possuem allowlist explícita.`,
 );
