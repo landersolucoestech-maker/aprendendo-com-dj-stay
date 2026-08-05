@@ -1,0 +1,43 @@
+name: Ajustar verificação temporária do React Router 8
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/react-router-v8-upgrade-grep-fix.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Corrigir escopo e remover workflow auxiliar
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/react-router-v8-upgrade.yml')
+          source = path.read_text()
+          old = 'if git grep -n "react-router-dom" -- "src/**" "scripts/**" "package.json" "package-lock.json"; then'
+          new = 'if git grep -n "react-router-dom" -- "src/**" "package.json" "package-lock.json"; then'
+          if source.count(old) != 1:
+              raise SystemExit('Trecho esperado não encontrado exatamente uma vez.')
+          path.write_text(source.replace(old, new))
+          PY
+
+          rm -f .github/workflows/react-router-v8-upgrade-grep-fix.yml
+          git config user.name "landersolucoestech-maker"
+          git config user.email "landersolucoestech@gmail.com"
+          git add -A
+          git commit -m "fix(ci): scope router legacy scan to deployable files"
+          git push origin HEAD:dev
