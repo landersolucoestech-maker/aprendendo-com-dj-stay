@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(24);
 
 select ok(
   to_regclass('private.anonymous_mutation_rate_limit_secret') is not null,
@@ -218,6 +218,72 @@ begin
 end
 $affiliate_probe$;
 
+set local request.headers = '{"cf-connecting-ip":"203.0.113.34","x-real-ip":"203.0.113.44","x-forwarded-for":"198.51.100.250"}';
+select private.consume_anonymous_mutation_quota(
+  'affiliate_click',
+  1,
+  interval '10 minutes'
+);
+
+set local request.headers = '{"cf-connecting-ip":"203.0.113.34","x-real-ip":"203.0.113.45","x-forwarded-for":"198.51.100.251"}';
+do $cf_precedence_probe$
+begin
+  begin
+    perform private.consume_anonymous_mutation_quota(
+      'affiliate_click',
+      1,
+      interval '10 minutes'
+    );
+    raise exception 'CF_ORIGIN_PRECEDENCE_NOT_ENFORCED';
+  exception
+    when sqlstate 'P0001' then
+      if sqlerrm <> 'RATE_LIMITED' then
+        raise;
+      end if;
+  end;
+end
+$cf_precedence_probe$;
+
+set local request.headers = '{"cf-connecting-ip":"203.0.113.35","x-real-ip":"203.0.113.45","x-forwarded-for":"198.51.100.251"}';
+select private.consume_anonymous_mutation_quota(
+  'affiliate_click',
+  1,
+  interval '10 minutes'
+);
+
+set local request.headers = '{"x-real-ip":"203.0.113.36","x-forwarded-for":"198.51.100.252"}';
+select private.consume_anonymous_mutation_quota(
+  'affiliate_click',
+  1,
+  interval '10 minutes'
+);
+
+set local request.headers = '{"x-real-ip":"203.0.113.36","x-forwarded-for":"198.51.100.253"}';
+do $real_ip_precedence_probe$
+begin
+  begin
+    perform private.consume_anonymous_mutation_quota(
+      'affiliate_click',
+      1,
+      interval '10 minutes'
+    );
+    raise exception 'REAL_IP_ORIGIN_PRECEDENCE_NOT_ENFORCED';
+  exception
+    when sqlstate 'P0001' then
+      if sqlerrm <> 'RATE_LIMITED' then
+        raise;
+      end if;
+  end;
+end
+$real_ip_precedence_probe$;
+
+set local request.headers = '{"x-forwarded-for":"203.0.113.37, 198.51.100.1"}';
+select private.consume_anonymous_mutation_quota(
+  'affiliate_click',
+  1,
+  interval '10 minutes'
+);
+
 set local request.method = 'POST';
 set local request.headers = '{"x-forwarded-for":"203.0.113.33"}';
 set local request.jwt.claims = '{"role":"service_role"}';
@@ -299,6 +365,88 @@ select ok(
       )
   ),
   'service-role request context does not consume anonymous quota'
+);
+
+select ok(
+  exists (
+    select 1
+    from private.anonymous_mutation_rate_limits quota
+    cross join private.anonymous_mutation_rate_limit_secret secret
+    where quota.scope = 'affiliate_click'
+      and quota.identity_hash = extensions.hmac(
+        pg_catalog.convert_to('203.0.113.34', 'UTF8'),
+        secret.secret,
+        'sha256'
+      )
+  )
+  and not exists (
+    select 1
+    from private.anonymous_mutation_rate_limits quota
+    cross join private.anonymous_mutation_rate_limit_secret secret
+    where quota.scope = 'affiliate_click'
+      and quota.identity_hash = extensions.hmac(
+        pg_catalog.convert_to('198.51.100.250', 'UTF8'),
+        secret.secret,
+        'sha256'
+      )
+  ),
+  'cf-connecting-ip takes precedence over spoofable forwarded values'
+);
+
+select ok(
+  exists (
+    select 1
+    from private.anonymous_mutation_rate_limits quota
+    cross join private.anonymous_mutation_rate_limit_secret secret
+    where quota.scope = 'affiliate_click'
+      and quota.identity_hash = extensions.hmac(
+        pg_catalog.convert_to('203.0.113.35', 'UTF8'),
+        secret.secret,
+        'sha256'
+      )
+  ),
+  'a different cf-connecting-ip receives an independent counter'
+);
+
+select ok(
+  exists (
+    select 1
+    from private.anonymous_mutation_rate_limits quota
+    cross join private.anonymous_mutation_rate_limit_secret secret
+    where quota.scope = 'affiliate_click'
+      and quota.identity_hash = extensions.hmac(
+        pg_catalog.convert_to('203.0.113.36', 'UTF8'),
+        secret.secret,
+        'sha256'
+      )
+  )
+  and not exists (
+    select 1
+    from private.anonymous_mutation_rate_limits quota
+    cross join private.anonymous_mutation_rate_limit_secret secret
+    where quota.scope = 'affiliate_click'
+      and quota.identity_hash = extensions.hmac(
+        pg_catalog.convert_to('198.51.100.252', 'UTF8'),
+        secret.secret,
+        'sha256'
+      )
+  ),
+  'x-real-ip takes precedence when the edge-specific header is absent'
+);
+
+select ok(
+  exists (
+    select 1
+    from private.anonymous_mutation_rate_limits quota
+    cross join private.anonymous_mutation_rate_limit_secret secret
+    where quota.scope = 'affiliate_click'
+      and quota.identity_hash = extensions.hmac(
+        pg_catalog.convert_to('203.0.113.37', 'UTF8'),
+        secret.secret,
+        'sha256'
+      )
+  ),
+  'the first x-forwarded-for address is used only as the final fallback'
 );
 
 select ok(
