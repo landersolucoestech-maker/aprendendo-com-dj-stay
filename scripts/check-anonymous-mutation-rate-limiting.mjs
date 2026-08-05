@@ -10,6 +10,8 @@ const paths = {
   errorMessageTests: "src/lib/error-message.test.ts",
   documentation:
     "docs/refactor/FASE-B143-ANONYMOUS-MUTATION-RATE-LIMITING.md",
+  refactorIndex: "docs/refactor/README.md",
+  operationalStatus: "docs/STATUS.md",
 };
 
 const failures = [];
@@ -28,6 +30,8 @@ const tests = read(paths.databaseTests);
 const errorMessages = read(paths.errorMessages);
 const errorMessageTests = read(paths.errorMessageTests);
 const documentation = read(paths.documentation);
+const refactorIndex = read(paths.refactorIndex);
+const operationalStatus = read(paths.operationalStatus);
 
 for (const fragment of [
   "private.anonymous_mutation_rate_limit_secret",
@@ -120,6 +124,24 @@ for (const fragment of [
   "produção permaneceu intacta",
 ]) {
   expect(documentation.includes(fragment), `Documentação B143 ausente: ${fragment}`);
+}
+
+for (const fragment of [
+  "limitação das mutações anônimas de contato e afiliado",
+  "origem pseudonimizada",
+  "mensagens públicas sanitizadas",
+]) {
+  expect(refactorIndex.includes(fragment), `Índice B143 ausente: ${fragment}`);
+}
+
+for (const fragment of [
+  "| Mutações anônimas |",
+  "20260805022138_anonymous_mutation_rate_limiting",
+  "20260805022356_anonymous_mutation_rate_limit_rls_policies",
+  "HMAC-SHA256",
+  "A branch `main` e o projeto Supabase de produção não foram promovidos",
+]) {
+  expect(operationalStatus.includes(fragment), `STATUS B143 ausente: ${fragment}`);
 }
 
 if (failures.length > 0) {
