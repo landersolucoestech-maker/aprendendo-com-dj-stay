@@ -33,7 +33,7 @@ O marketplace distribui somente cursos e produtos digitais do proprietário. Nã
 | Afiliados e certificados | perfis, links, atribuições, comissões, pagamentos, emissão, revogação e validação pública |
 | Contatos e observabilidade | submissão idempotente, protocolo, tratamento administrativo e captura sanitizada de erros |
 | Dashboard administrativo do proprietário | seis read models reais para financeiro, acadêmico, catálogo, suporte, contatos e fila operacional, sem estimativas ou dados de exemplo |
-| Supply chain | audit de dependências, lockfile validado, SBOM, manifesto de fontes e redação de credenciais locais do Supabase CLI nos logs de CI |
+| Supply chain | React Router 8.3.0, React 19.2.8, lockfile estrito, auditorias completa e de produção com zero vulnerabilidades, SBOM, manifesto de fontes e redação de credenciais locais do Supabase CLI nos logs de CI |
 | Shell público e proveniência | `pt-BR`, metadados operacionais, favicon local e ausência bloqueante de Lovable, GPT Engineer ou scripts externos herdados |
 | Entrega HTTP | manifesto de release, assets locais, home e fallback SPA validados sobre `vite preview` |
 | Runtime público | Chrome headless controlado por CDP valida conteúdo final em oito rotas anônimas, captura exceções, rejeita o Error Boundary e exige landmark, `#main-content`, `tabindex="-1"`, skip link e live region antes do snapshot |
@@ -43,7 +43,7 @@ O marketplace distribui somente cursos e produtos digitais do proprietário. Nã
 | Limpeza do perfil do Chrome | repetição limitada somente da exclusão do diretório criado pelo smoke para `ENOTEMPTY`, `EBUSY` ou `EPERM`; nenhuma reexecução integral do navegador e nenhum glob em `/tmp` |
 | Diagnósticos do gate | stdout e stderr de TypeScript e navegador persistidos em artifact com `set -o pipefail`, sem transformar falhas em sucesso |
 | Frontend acessível | lazy loading, Error Boundary, reconciliação acessível após substituições do `Suspense`, foco diferido em fallbacks e handoff para o conteúdo final |
-| Supabase remoto `dev` | migrations versionadas sincronizadas, contratos confrontados, `pg_cron` 1.6.4 instalado, dois jobs ativos, execução de expiração observada com sucesso e advisor de segurança sem lints |
+| Supabase remoto `dev` | migrations versionadas sincronizadas, contratos confrontados, `pg_cron` 1.6.4 instalado, três jobs ativos, 132 de 132 execuções concluídas com sucesso na janela de 24 horas observada e advisor de segurança sem lints |
 | Funções privadas | zero função do schema `private` executável por `PUBLIC`, quatro grants anônimos explícitos e restritos às superfícies públicas, consumidores autenticados preservados e privilégio padrão fechado para novas funções |
 | Mutações anônimas | contato limitado a cinco submissões em quinze minutos e afiliado a cento e vinte cliques em dez minutos por origem HMAC, com precedência `cf-connecting-ip` → `x-real-ip` → fallback `x-forwarded-for`, sem IP bruto, RLS, falha fechada e mensagens públicas sanitizadas |
 
@@ -66,7 +66,7 @@ A matriz pública executada no navegador contém:
 
 Cada rota é considerada pronta somente quando o React renderizou o conteúdo final contratado, existe exatamente um `#main-content` representado por `<main>` ou `role="main"`, o alvo possui `tabindex="-1"`, existe exatamente um link `Pular para o conteúdo principal`, a live region de navegação está presente e não ocorreu exceção JavaScript não tratada.
 
-A navegação client-side lazy da home para `/login` também é bloqueante. O Chrome precisa observar o fallback com `data-route-focus-deferred="true"`, comprovar que ele nunca recebeu foco e terminar com `document.activeElement.id === "main-content"`, elemento ativo conectado ao DOM e anúncio `Navegação concluída. Conteúdo principal atualizado.`. Se o target final previamente focado for substituído, o foco é restaurado apenas quando a referência anterior estiver desconectada; mutações que preservam o target não causam refoco.
+A navegação client-side lazy da home para `/login` também é bloqueante. O fallback com `data-route-focus-deferred="true"` pode ou não ser observado, conforme a disponibilidade do chunk; quando renderizado, ele nunca pode receber foco. Em ambos os caminhos, a transição deve terminar com `document.activeElement.id === "main-content"`, elemento ativo conectado ao DOM e anúncio `Navegação concluída. Conteúdo principal atualizado.`. Se o target final previamente focado for substituído, o foco é restaurado apenas quando a referência anterior estiver desconectada; mutações que preservam o target não causam refoco.
 
 A mesma transição persiste `client-navigation.network.json`. A matriz consolidada exige exatamente nove artefatos de rede: oito carregamentos diretos e uma prova client-side. A prova começa com exatamente um `Document` para `/`, registra um marcador de fase para `/login`, proíbe novo `Document` durante a transição e restringe todos os requests HTTP ou HTTPS à origem e porta efêmera do documento inicial. Qualquer resposta HTTP com status igual ou superior a 400 bloqueia o gate.
 
@@ -92,7 +92,9 @@ O gate técnico executa instalação limpa, lint, reconstrução local do Supaba
 
 O build de qualidade usado pelo CI utiliza uma chave sintética canônica e sem validade no Supabase. Esse artefato é explicitamente **não implantável**. Builds locais reais, homologação remota e produção continuam exigindo uma chave publishable ativa fornecida pelo ambiente e nunca versionada.
 
-A evidência B123 permanece registrada no commit `63ebdfd043fc4a3ba02642c7b0f470e97be0611d`. A evidência B125 registrou 795 testes unitários no commit `03106954c5ed0d9238a55625f4c30cf7e83a4699`. A evidência B127–B130 registrou 799 testes unitários no commit `92270adc7d949f0719e1fdb3673f2d47bedb6aaf`. A evidência integral B139 mais recente usa o snapshot funcional `c4e299b8f544dc07bd394f1ae287efb4ee53e2e9`, issue `#1074` e run `30957555483`, aprovado no mesmo snapshot por instalação, lint, 799 testes unitários, reconstrução local do Supabase, 1.878 testes pgTAP, tipos, contratos, TypeScript, build, oito rotas públicas acessíveis, handoff de foco lazy, exatamente nove artefatos de rede, ausência de novo `Document` na navegação home → `/login`, isolamento exato de origem e porta e uma única execução do smoke principal sem contorno no workflow. A sincronização remota posterior está registrada em [`refactor/FASE-B140-SUPABASE-DEV-REMOTE-SYNC.md`](refactor/FASE-B140-SUPABASE-DEV-REMOTE-SYNC.md).
+A evidência B123 permanece registrada no commit `63ebdfd043fc4a3ba02642c7b0f470e97be0611d`. A evidência B125 registrou 795 testes unitários no commit `03106954c5ed0d9238a55625f4c30cf7e83a4699`. A evidência B127–B130 registrou 799 testes unitários no commit `92270adc7d949f0719e1fdb3673f2d47bedb6aaf`. A evidência integral B139 permanece preservada no snapshot funcional `c4e299b8f544dc07bd394f1ae287efb4ee53e2e9`, issue `#1074` e run `30957555483`, aprovado no mesmo snapshot por instalação, lint, 799 testes unitários, reconstrução local do Supabase, 1.878 testes pgTAP, tipos, contratos, TypeScript, build, oito rotas públicas acessíveis, handoff de foco lazy, exatamente nove artefatos de rede, ausência de novo `Document` na navegação home → `/login`, isolamento exato de origem e porta e uma única execução do smoke principal sem contorno no workflow. A sincronização remota posterior está registrada em [`refactor/FASE-B140-SUPABASE-DEV-REMOTE-SYNC.md`](refactor/FASE-B140-SUPABASE-DEV-REMOTE-SYNC.md).
+
+A evidência técnica mais recente usa o snapshot `e721da645855b92c5a1a5b09202f4a96bf89127a`, issue `#1128` e run `30978834435`. O mesmo snapshot aprovou instalação limpa, lint, 804 testes unitários, reconstrução local do Supabase, 1.935 testes pgTAP, sincronização de tipos, todos os contratos estáticos, TypeScript, auditorias completa e de produção com zero vulnerabilidades, build, oito rotas públicas, navegação client-side rápida ou suspensa, navegação móvel, skip link por teclado confiável, exatamente nove artefatos de rede e isolamento de origem, porta e `Document`.
 
 ## Integrações implantadas em `dev`
 
@@ -104,7 +106,7 @@ As Edge Functions abaixo fazem parte da implementação de desenvolvimento:
 
 A presença da função e a aprovação do gate não equivalem a uma transação financeira homologada pelo provider.
 
-O módulo PostgreSQL `pg_cron`, os jobs de expiração e retenção e o read model administrativo de saúde foram promovidos ao Supabase remoto `dev`. A versão instalada do `pg_cron` é `1.6.4`; os dois jobs estão ativos e a primeira execução observada de `expire-due-checkout-intents` terminou com status `succeeded`. Nenhum desses componentes foi promovido à produção.
+O módulo PostgreSQL `pg_cron`, os jobs de expiração e retenção e o read model administrativo de saúde foram promovidos ao Supabase remoto `dev`. A versão instalada do `pg_cron` é `1.6.4`; os três jobs estão ativos. Na janela de 24 horas observada em 5 de agosto de 2026, `expire-due-checkout-intents` concluiu 123 de 123 execuções, `prune-anonymous-mutation-rate-limits` concluiu 8 de 8 e `prune-platform-cron-run-history` concluiu 1 de 1, totalizando 132 sucessos e zero falhas. O advisor de segurança permaneceu sem lints. Os avisos de performance são apenas informativos sobre índices ainda não usados em um ambiente sem tráfego representativo; nenhum índice foi removido com base nesse sinal. Nenhum desses componentes foi promovido à produção.
 
 ## Dependências de homologação externa
 
@@ -114,7 +116,7 @@ Ainda exigem validação fora do repositório:
 - credenciais válidas do sandbox Asaas;
 - configuração do webhook no painel do provider;
 - execução de compra, confirmação, reembolso e chargeback no sandbox;
-- observação continuada dos jobs e de `cron.job_run_details` por janela representativa;
+- observação continuada dos jobs e de `cron.job_run_details` antes da promoção, apesar da janela atual de 24 horas já registrar 132 de 132 execuções bem-sucedidas;
 - validação de e-mails transacionais;
 - testes de carga e observação de índices com tráfego representativo;
 - pentest independente antes da promoção para produção.
