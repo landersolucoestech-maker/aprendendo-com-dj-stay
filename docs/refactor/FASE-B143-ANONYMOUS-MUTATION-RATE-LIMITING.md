@@ -84,4 +84,4 @@ A branch de desenvolvimento permanece sem massa operacional de usuários, cursos
 
 ## Resultado
 
-As duas mutações anônimas graváveis agora possuem quota por origem pseudonimizada, concorrência serializada, retenção limitada, falha fechada e estado inacessível aos clientes. O Supabase de produção permaneceu intacto e nenhuma promoção da branch `main` foi realizada.
+As duas mutações anônimas graváveis agora possuem quota por origem pseudonimizada, concorrência serializada, retenção limitada, falha fechada e estado inacessível aos clientes. O Supabase de produção permaneceu intacto e nenhuma promoção da branch `main` foi realizada. A produção permaneceu intacta.
