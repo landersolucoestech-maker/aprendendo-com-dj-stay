@@ -52,6 +52,7 @@ jobs:
           PY
 
           node scripts/apply-react-router-v8-upgrade.mjs
+          node scripts/apply-react19-ui-compat.mjs
           rm -rf node_modules package-lock.json
           npm install --ignore-scripts --strict-peer-deps
           npm ci --ignore-scripts --strict-peer-deps
@@ -74,6 +75,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -f scripts/apply-react-router-v8-upgrade.mjs
+          rm -f scripts/apply-react19-ui-compat.mjs
           git restore .github/workflows/react-router-v8-upgrade.yml
           git config user.name "landersolucoestech-maker"
           git config user.email "landersolucoestech@gmail.com"
