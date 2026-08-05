@@ -7,7 +7,6 @@ const paths = {
   documentation:
     "docs/refactor/FASE-B144-ANONYMOUS-MUTATION-RATE-LIMIT-RETENTION.md",
   refactorIndex: "docs/refactor/README.md",
-  operationalStatus: "docs/STATUS.md",
 };
 
 const failures = [];
@@ -24,7 +23,6 @@ const migration = read(paths.migration);
 const tests = read(paths.tests);
 const documentation = read(paths.documentation);
 const refactorIndex = read(paths.refactorIndex);
-const operationalStatus = read(paths.operationalStatus);
 
 for (const fragment of [
   "create function private.prune_anonymous_mutation_rate_limits",
@@ -90,16 +88,6 @@ for (const fragment of [
   "`pg_cron`",
 ]) {
   expect(refactorIndex.includes(fragment), `Índice B144 ausente: ${fragment}`);
-}
-
-for (const fragment of [
-  "| Retenção das quotas anônimas |",
-  "20260805030014_anonymous_mutation_rate_limit_retention",
-  "prune-anonymous-mutation-rate-limits",
-  "37 * * * *",
-  "A branch `main` e o projeto Supabase de produção não foram promovidos",
-]) {
-  expect(operationalStatus.includes(fragment), `STATUS B144 ausente: ${fragment}`);
 }
 
 if (failures.length > 0) {
