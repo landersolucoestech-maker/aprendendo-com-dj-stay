@@ -5,6 +5,8 @@ const paths = {
     "supabase/migrations/20260805022138_anonymous_mutation_rate_limiting.sql",
   rlsMigration:
     "supabase/migrations/20260805022356_anonymous_mutation_rate_limit_rls_policies.sql",
+  originPrecedenceMigration:
+    "supabase/migrations/20260805023924_anonymous_mutation_rate_limit_origin_precedence.sql",
   databaseTests: "supabase/tests/anonymous_mutation_rate_limiting.test.sql",
   errorMessages: "src/lib/error-message.ts",
   errorMessageTests: "src/lib/error-message.test.ts",
@@ -26,6 +28,7 @@ for (const path of Object.values(paths)) {
 
 const migration = read(paths.rateLimitMigration);
 const rlsMigration = read(paths.rlsMigration);
+const originPrecedenceMigration = read(paths.originPrecedenceMigration);
 const tests = read(paths.databaseTests);
 const errorMessages = read(paths.errorMessages);
 const errorMessageTests = read(paths.errorMessageTests);
@@ -76,12 +79,40 @@ for (const fragment of [
 }
 
 for (const fragment of [
-  "select plan(20)",
+  "create or replace function private.consume_anonymous_mutation_quota",
+  "cf-connecting-ip",
+  "x-real-ip",
+  "x-forwarded-for",
+  "revoke all on function private.consume_anonymous_mutation_quota",
+]) {
+  expect(
+    originPrecedenceMigration.includes(fragment),
+    `Hardening de origem B143 ausente: ${fragment}`,
+  );
+}
+
+const cfHeaderPosition = originPrecedenceMigration.indexOf("v_headers ->> 'cf-connecting-ip'");
+const realIpHeaderPosition = originPrecedenceMigration.indexOf("v_headers ->> 'x-real-ip'");
+const forwardedHeaderPosition = originPrecedenceMigration.indexOf("v_headers ->> 'x-forwarded-for'");
+expect(
+  cfHeaderPosition >= 0 &&
+    realIpHeaderPosition > cfHeaderPosition &&
+    forwardedHeaderPosition > realIpHeaderPosition,
+  "A origem deve priorizar cf-connecting-ip, depois x-real-ip e usar x-forwarded-for apenas como fallback.",
+);
+
+for (const fragment of [
+  "select plan(24)",
   "set local role anon",
   "for v_index in 1..5 loop",
   "RATE_LIMITED",
   "RATE_LIMIT_CONTEXT_REQUIRED",
   "origem diferente mantém sua própria janela",
+  "CF_ORIGIN_PRECEDENCE_NOT_ENFORCED",
+  "REAL_IP_ORIGIN_PRECEDENCE_NOT_ENFORCED",
+  "cf-connecting-ip takes precedence over spoofable forwarded values",
+  "x-real-ip takes precedence when the edge-specific header is absent",
+  "the first x-forwarded-for address is used only as the final fallback",
   "service_role",
   "32-byte HMAC",
   "raw IP addresses are never persisted",
@@ -115,10 +146,14 @@ for (const fragment of [
   "FASE B143",
   "20260805022138",
   "20260805022356",
+  "20260805023924",
   "cinco submissões em quinze minutos",
   "cento e vinte cliques em dez minutos",
   "HMAC-SHA256",
   "nenhum endereço IP bruto",
+  "`cf-connecting-ip`",
+  "`x-real-ip`",
+  "`x-forwarded-for` apenas como fallback",
   "advisor de segurança",
   "Supabase remoto `dev`",
   "produção permaneceu intacta",
@@ -138,6 +173,7 @@ for (const fragment of [
   "| Mutações anônimas |",
   "20260805022138_anonymous_mutation_rate_limiting",
   "20260805022356_anonymous_mutation_rate_limit_rls_policies",
+  "20260805023924_anonymous_mutation_rate_limit_origin_precedence",
   "HMAC-SHA256",
   "A branch `main` e o projeto Supabase de produção não foram promovidos",
 ]) {
@@ -150,5 +186,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B143 aprovado: mutações anônimas possuem quota por origem pseudonimizada, estado privado, falha fechada e mensagens públicas sanitizadas.",
+  "Contrato B143 aprovado: mutações anônimas possuem quota por origem pseudonimizada, precedência segura de cabeçalhos, estado privado, falha fechada e mensagens públicas sanitizadas.",
 );
