@@ -42,8 +42,8 @@ export function getErrorMessage(
   const mappedDatabaseMessage = PUBLIC_DATABASE_ERROR_MESSAGES.get(structuredMessage);
   if (mappedDatabaseMessage) return mappedDatabaseMessage;
 
-  if (error instanceof Error && structuredMessage.length > 0) {
-    return structuredMessage;
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message.trim();
   }
 
   return fallback;
