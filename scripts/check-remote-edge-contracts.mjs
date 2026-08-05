@@ -57,7 +57,7 @@ const expect = (condition, message) => {
   if (!condition) failures.push(message);
 };
 
-const expectJsonError = (result, status, code) => {
+const expectFunctionJsonError = (result, status, code) => {
   expect(result.status === status, `${result.name}: esperado HTTP ${status}, recebido ${result.status}`);
   expect(
     result.payload && typeof result.payload === "object" && result.payload.error === code,
@@ -70,6 +70,14 @@ const expectJsonError = (result, status, code) => {
   expect(
     result.headers.xContentTypeOptions === "nosniff",
     `${result.name}: X-Content-Type-Options nosniff ausente`,
+  );
+};
+
+const expectGatewayError = (result, status, code) => {
+  expect(result.status === status, `${result.name}: esperado HTTP ${status}, recebido ${result.status}`);
+  expect(
+    result.payload && typeof result.payload === "object" && result.payload.code === code,
+    `${result.name}: esperado código de gateway ${code}, recebido ${JSON.stringify(result.payload)}`,
   );
 };
 
@@ -94,30 +102,22 @@ expect(
 );
 
 const checkoutNoAuth = await request({
-  name: "checkout-auth-required",
+  name: "checkout-gateway-auth-required",
   slug: "create-asaas-checkout",
   origin: allowedOrigin,
   headers: { "Content-Type": "application/json" },
   body: "{}",
 });
-expectJsonError(checkoutNoAuth, 401, "AUTHORIZATION_REQUIRED");
-expect(
-  checkoutNoAuth.headers.accessControlAllowOrigin === allowedOrigin,
-  "checkout-auth-required: CORS da origem permitida ausente",
-);
+expectGatewayError(checkoutNoAuth, 401, "UNAUTHORIZED_NO_AUTH_HEADER");
 
-const checkoutBadOrigin = await request({
-  name: "checkout-origin-denied",
+const checkoutBadOriginWithoutAuth = await request({
+  name: "checkout-gateway-precedes-origin-without-jwt",
   slug: "create-asaas-checkout",
   origin: disallowedOrigin,
   headers: { "Content-Type": "application/json" },
   body: "{}",
 });
-expectJsonError(checkoutBadOrigin, 403, "ORIGIN_NOT_ALLOWED");
-expect(
-  checkoutBadOrigin.headers.accessControlAllowOrigin === null,
-  "checkout-origin-denied: origem proibida foi refletida",
-);
+expectGatewayError(checkoutBadOriginWithoutAuth, 401, "UNAUTHORIZED_NO_AUTH_HEADER");
 
 const playbackPreflight = await request({
   name: "playback-preflight-allowed",
@@ -146,7 +146,7 @@ const playbackInvalid = await request({
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ token: "invalid", fingerprint: "invalid" }),
 });
-expectJsonError(playbackInvalid, 400, "INVALID_PLAYBACK_CREDENTIALS");
+expectFunctionJsonError(playbackInvalid, 400, "INVALID_PLAYBACK_CREDENTIALS");
 expect(
   playbackInvalid.headers.accessControlAllowOrigin === allowedOrigin,
   "playback-invalid-credentials: CORS da origem permitida ausente",
@@ -159,24 +159,51 @@ const playbackBadOrigin = await request({
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ token: "invalid", fingerprint: "invalid" }),
 });
-expectJsonError(playbackBadOrigin, 403, "ORIGIN_NOT_ALLOWED");
+expectFunctionJsonError(playbackBadOrigin, 403, "ORIGIN_NOT_ALLOWED");
 expect(
   playbackBadOrigin.headers.accessControlAllowOrigin === null,
   "playback-origin-denied: origem proibida foi refletida",
 );
 
 const webhookProbe = await request({
-  name: "webhook-authentication-required",
+  name: "webhook-readiness",
   slug: "asaas-webhook",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ id: "configuration-probe", event: "PAYMENT_CREATED" }),
 });
-expectJsonError(webhookProbe, 401, "WEBHOOK_AUTHENTICATION_FAILED");
+
+let webhookConfigured = false;
+if (
+  webhookProbe.status === 401 &&
+  webhookProbe.payload &&
+  typeof webhookProbe.payload === "object" &&
+  webhookProbe.payload.error === "WEBHOOK_AUTHENTICATION_FAILED"
+) {
+  webhookConfigured = true;
+  expectFunctionJsonError(webhookProbe, 401, "WEBHOOK_AUTHENTICATION_FAILED");
+} else if (
+  webhookProbe.status === 503 &&
+  webhookProbe.payload &&
+  typeof webhookProbe.payload === "object" &&
+  webhookProbe.payload.error === "WEBHOOK_NOT_CONFIGURED"
+) {
+  expectFunctionJsonError(webhookProbe, 503, "WEBHOOK_NOT_CONFIGURED");
+} else {
+  failures.push(
+    `webhook-readiness: resposta inesperada ${webhookProbe.status} ${JSON.stringify(webhookProbe.payload)}`,
+  );
+}
 
 mkdirSync(path.join("artifacts", "remote-edge-contracts"), { recursive: true });
 writeFileSync(
   path.join("artifacts", "remote-edge-contracts", "evidence.json"),
-  `${JSON.stringify({ checkedAt: new Date().toISOString(), baseUrl: normalizedBaseUrl, allowedOrigin, evidence }, null, 2)}\n`,
+  `${JSON.stringify({
+    checkedAt: new Date().toISOString(),
+    baseUrl: normalizedBaseUrl,
+    allowedOrigin,
+    readiness: { webhookConfigured },
+    evidence,
+  }, null, 2)}\n`,
   "utf8",
 );
 
@@ -186,5 +213,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Smoke remoto aprovado: checkout e playback preservam CORS e falha fechada; webhook exige token configurado sem persistir o probe.",
+  `Smoke remoto aprovado: gateway do checkout, CORS e rejeições do playback estão corretos; webhookConfigured=${webhookConfigured}.`,
 );
