@@ -1,0 +1,75 @@
+name: Auditoria de código órfão
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/dead-code-audit.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dead-code-audit-dev
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.0
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Mapear referências dos candidatos
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/dead-code-audit
+          {
+            echo "HEAD=$(git rev-parse HEAD)"
+            echo
+            for candidate in \
+              "src/pages/Dashboard.tsx" \
+              "src/examples/LessonFilesExample.tsx" \
+              "src/components/DashboardHeader.tsx" \
+              "src/components/LessonGrid.tsx" \
+              "src/components/ModuleProgress.tsx" \
+              "src/components/RecentActivities.tsx" \
+              "src/components/UserProfile.tsx"; do
+              stem="$(basename "$candidate")"
+              stem="${stem%.*}"
+              echo "## $candidate"
+              grep -RIn --exclude-dir=node_modules --exclude-dir=.git \
+                --exclude="$(basename "$candidate")" \
+                -E "${stem}|${candidate#src/}|@/${candidate#src/}" src scripts .github package.json \
+                || true
+              echo
+            done
+          } | tee artifacts/dead-code-audit/references.txt
+
+      - name: Executar análise de entrypoints
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          npx --yes knip@5.62.0 --no-progress --reporter compact \
+            2>&1 | tee artifacts/dead-code-audit/knip.txt
+
+      - name: Exportar auditoria
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: dead-code-audit-${{ github.sha }}
+          path: artifacts/dead-code-audit
+          retention-days: 1
+          if-no-files-found: error
