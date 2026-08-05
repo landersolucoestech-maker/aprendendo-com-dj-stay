@@ -105,7 +105,7 @@ jobs:
               --headless=new \
               --no-sandbox \
               --disable-dev-shm-usage \
-              --disable-gpu \
+              --run-all-compositor-stages-before-draw \
               --disable-background-networking \
               --disable-component-update \
               --disable-default-apps \
@@ -124,7 +124,7 @@ jobs:
               --headless=new \
               --no-sandbox \
               --disable-dev-shm-usage \
-              --disable-gpu \
+              --run-all-compositor-stages-before-draw \
               --disable-background-networking \
               --disable-component-update \
               --disable-default-apps \
