@@ -33,6 +33,35 @@ describe("getErrorMessage", () => {
     );
   });
 
+  it.each([
+    [
+      { message: "RATE_LIMITED", code: "P0001" },
+      "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.",
+    ],
+    [
+      { message: "RATE_LIMIT_CONTEXT_REQUIRED", code: "P0001" },
+      "Não foi possível validar a origem da solicitação. Atualize a página e tente novamente.",
+    ],
+    [
+      new Error("RATE_LIMIT_CONTEXT_INVALID"),
+      "Não foi possível validar a origem da solicitação. Atualize a página e tente novamente.",
+    ],
+  ])("mapeia erro público de quota sem expor o token técnico", (error, expected) => {
+    const message = getErrorMessage(error);
+
+    expect(message).toBe(expected);
+    expect(message).not.toContain("RATE_LIMIT");
+  });
+
+  it("não expõe mensagem de objeto estruturado desconhecido", () => {
+    expect(
+      getErrorMessage({
+        message: "internal database detail",
+        details: "private.anonymous_mutation_rate_limits",
+      }),
+    ).toBe("A operação não pôde ser concluída. Tente novamente.");
+  });
+
   it.each([new Error(""), new Error("   "), "erro textual", null, undefined, 42])(
     "aplica fallback padrão para valor não utilizável: %s",
     (error) => {
