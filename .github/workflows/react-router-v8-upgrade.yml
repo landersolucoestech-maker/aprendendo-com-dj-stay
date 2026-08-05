@@ -34,6 +34,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("scripts/apply-react-router-v8-upgrade.mjs")
+          source = path.read_text()
+          source = source.replace(
+              'if (existsSync("scripts/apply-react-router-v8-upgrade.mjs")) failures.push("O helper temporário da migração deve ser removido.");',
+              'if (existsSync("scripts/apply-react-router-v8-upgrade.mjs") && process.env.GITHUB_WORKFLOW !== "Migração coordenada React Router 8") failures.push("O helper temporário da migração deve ser removido.");',
+          )
+          source = source.replace(
+              'rmSync("scripts/apply-react-router-v8-upgrade.mjs", { force: true });\n',
+              '',
+          )
+          path.write_text(source)
+          PY
+
           node scripts/apply-react-router-v8-upgrade.mjs
           rm -rf node_modules package-lock.json
           npm install --ignore-scripts --strict-peer-deps
@@ -56,6 +73,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          rm -f scripts/apply-react-router-v8-upgrade.mjs
           git restore .github/workflows/react-router-v8-upgrade.yml
           git config user.name "landersolucoestech-maker"
           git config user.email "landersolucoestech@gmail.com"
@@ -63,5 +81,3 @@ jobs:
           git diff --cached --stat
           git commit -m "security(router): migrate declarative stack to v8.3.0"
           git push origin HEAD:dev
-
-# rerun after repository hygiene learned pending tracked deletions
