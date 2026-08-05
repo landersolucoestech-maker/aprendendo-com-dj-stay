@@ -1,5 +1,5 @@
 import { AlertTriangle, ArrowLeft, Home } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router";
 
 import { useAuth } from "@/auth/use-auth";
 import { Button } from "@/components/ui/button";

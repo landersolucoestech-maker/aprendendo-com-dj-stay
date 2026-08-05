@@ -1,5 +1,5 @@
 import { Download, FileArchive, Library, PackageCheck, ShieldCheck } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { AppPageShell } from "@/components/layout/AppPageShell";
 import { StudentPortalPageFrame } from "@/components/student/StudentPortalPageFrame";

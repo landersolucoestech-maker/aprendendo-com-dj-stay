@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Camera, Loader2, Save, User } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { getAuthErrorMessage } from "@/auth/auth-errors";
 import { getUserMetadataProfile } from "@/auth/user-metadata";

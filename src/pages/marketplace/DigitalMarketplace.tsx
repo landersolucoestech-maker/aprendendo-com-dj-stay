@@ -6,7 +6,7 @@ import {
   ShoppingBag,
   Tag,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { AppPageShell } from "@/components/layout/AppPageShell";
 import { FavoriteToggleButton } from "@/components/student/FavoriteToggleButton";

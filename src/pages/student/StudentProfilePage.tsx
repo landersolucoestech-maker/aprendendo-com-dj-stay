@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { UserRound } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { getUserMetadataProfile } from "@/auth/user-metadata";
 import { useAuth } from "@/auth/use-auth";

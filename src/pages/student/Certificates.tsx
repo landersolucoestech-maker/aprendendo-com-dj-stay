@@ -1,5 +1,5 @@
 import { Award, ExternalLink, Printer } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { StudentPortalPageFrame } from "@/components/student/StudentPortalPageFrame";
 import { StudentSectionHeader } from "@/components/student/StudentPortalPrimitives";

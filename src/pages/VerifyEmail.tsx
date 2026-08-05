@@ -1,6 +1,6 @@
 import { CheckCircle, Home, Mail, RefreshCw } from "lucide-react";
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router";
 
 import { getAuthErrorMessage } from "@/auth/auth-errors";
 import { resendSignupConfirmation } from "@/auth/auth-service";

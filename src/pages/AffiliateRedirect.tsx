@@ -1,6 +1,6 @@
 import { Loader2, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { affiliateClickResultSchema } from "@/contracts/affiliate";

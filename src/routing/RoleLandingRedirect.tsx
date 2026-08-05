@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate } from "react-router";
 
 import { useCurrentRole } from "@/hooks/useCurrentRole";
 import { getErrorMessage } from "@/lib/error-message";

@@ -19,7 +19,7 @@ import {
   UserRound,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { brandConfig } from "@/config/brand";

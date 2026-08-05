@@ -1,6 +1,6 @@
 import { ArrowLeft, Eye, Plus, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 
 import { AdminCourseLayout } from "@/components/admin/AdminCourseLayout";
 import { CurriculumModuleCard } from "@/components/admin/CurriculumModuleCard";

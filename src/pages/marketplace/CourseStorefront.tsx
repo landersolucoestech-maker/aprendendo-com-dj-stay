@@ -8,7 +8,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router";
 
 import { AppPageShell } from "@/components/layout/AppPageShell";
 import { Badge } from "@/components/ui/badge";

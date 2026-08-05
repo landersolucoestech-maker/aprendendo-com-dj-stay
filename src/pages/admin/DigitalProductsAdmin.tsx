@@ -9,7 +9,7 @@ import {
   Store,
   UploadCloud,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { AppPageShell } from "@/components/layout/AppPageShell";
 import { Badge } from "@/components/ui/badge";

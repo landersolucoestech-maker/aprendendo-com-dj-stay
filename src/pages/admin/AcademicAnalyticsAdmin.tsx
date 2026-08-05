@@ -1,5 +1,5 @@
 import { GraduationCap } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { AcademicAnalyticsCard } from "@/components/admin/AcademicAnalyticsCard";
 import { Button } from "@/components/ui/button";

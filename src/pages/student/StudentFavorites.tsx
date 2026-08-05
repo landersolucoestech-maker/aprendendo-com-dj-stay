@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { FavoriteToggleButton } from "@/components/student/FavoriteToggleButton";
 import { StudentPortalPageFrame } from "@/components/student/StudentPortalPageFrame";

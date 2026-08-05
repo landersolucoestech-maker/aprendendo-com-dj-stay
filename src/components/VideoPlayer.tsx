@@ -8,7 +8,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import ExternalLessonMedia from "@/components/ExternalLessonMedia";
 import LessonTextPanel from "@/components/LessonTextPanel";

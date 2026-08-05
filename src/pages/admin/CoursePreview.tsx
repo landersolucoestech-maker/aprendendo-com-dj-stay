@@ -1,5 +1,5 @@
 import { ArrowLeft, Award, CalendarClock, CheckCircle2, Languages, Users } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 
 import { AdminCourseLayout } from "@/components/admin/AdminCourseLayout";
 import { Badge } from "@/components/ui/badge";

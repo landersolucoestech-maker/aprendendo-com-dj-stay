@@ -5,7 +5,7 @@ import {
   Layers3,
   Sparkles,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import type { PublicCourse } from "@/contracts/public-course-catalog";

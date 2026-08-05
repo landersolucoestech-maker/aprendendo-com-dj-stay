@@ -9,7 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { PaymentAnalyticsCard } from "@/components/admin/PaymentAnalyticsCard";
 import { Button } from "@/components/ui/button";

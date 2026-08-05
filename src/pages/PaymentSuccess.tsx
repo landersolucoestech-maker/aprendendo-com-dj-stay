@@ -12,7 +12,7 @@ import {
   Undo2,
   type LucideIcon,
 } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import {

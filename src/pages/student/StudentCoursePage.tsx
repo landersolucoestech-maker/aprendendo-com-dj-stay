@@ -1,5 +1,5 @@
 import { BookOpen } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router";
 
 import LessonGrid from "@/components/LessonGrid";
 import ModuleProgress from "@/components/ModuleProgress";

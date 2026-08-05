@@ -4,7 +4,7 @@ import {
   type ReactNode,
 } from "react";
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { reportFrontendError } from "@/observability/frontend-error-reporting";

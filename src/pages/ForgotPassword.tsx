@@ -1,6 +1,6 @@
 import { ArrowLeft, Mail } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { getAuthErrorMessage } from "@/auth/auth-errors";
 import { requestPasswordReset } from "@/auth/auth-service";

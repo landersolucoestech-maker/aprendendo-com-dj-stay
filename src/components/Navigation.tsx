@@ -1,6 +1,6 @@
 import { Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { useAuth } from "@/auth/use-auth";
 import { Button } from "@/components/ui/button";

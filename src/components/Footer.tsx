@@ -1,5 +1,5 @@
 import { BadgeCheck, BookOpen, LifeBuoy, LogIn } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { brandConfig } from "@/config/brand";
 

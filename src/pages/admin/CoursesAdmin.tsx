@@ -1,5 +1,5 @@
 import { Archive, Copy, Eye, FilePlus2, ListTree, Pencil, Send, Trash2, Undo2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { AdminCourseLayout } from "@/components/admin/AdminCourseLayout";
 import { Badge } from "@/components/ui/badge";

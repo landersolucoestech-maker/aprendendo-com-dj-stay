@@ -1,5 +1,5 @@
 import { Award, BookOpen } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { getUserMetadataProfile, type UserMetadataProfile } from "@/auth/user-metadata";
 import { useAuth } from "@/auth/use-auth";

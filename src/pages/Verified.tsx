@@ -1,5 +1,5 @@
 import { ArrowRight, CheckCircle, Home } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router";
 
 import { useAuth } from "@/auth/use-auth";
 import { Button } from "@/components/ui/button";

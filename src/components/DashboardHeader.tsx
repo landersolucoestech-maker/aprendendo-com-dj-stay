@@ -1,5 +1,5 @@
 import { LogOut, Settings } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { getAuthErrorMessage } from "@/auth/auth-errors";
 import { useAuth } from "@/auth/use-auth";

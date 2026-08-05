@@ -1,6 +1,6 @@
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router";
 
 import { getAuthErrorMessage } from "@/auth/auth-errors";
 import { signInWithPassword } from "@/auth/auth-service";

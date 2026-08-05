@@ -1,5 +1,5 @@
 import { ArrowLeft, Clock } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 
 import VideoPlayer from "@/components/VideoPlayer";
 import { Button } from "@/components/ui/button";

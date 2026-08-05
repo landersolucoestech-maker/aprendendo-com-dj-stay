@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { getUserMetadataProfile } from "@/auth/user-metadata";
 import { useAuth } from "@/auth/use-auth";

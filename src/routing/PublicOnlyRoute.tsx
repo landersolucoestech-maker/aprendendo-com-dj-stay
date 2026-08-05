@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate } from "react-router";
 
 import { useAuth } from "@/auth/use-auth";
 import { AuthLoadingScreen } from "./AuthLoadingScreen";

@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate } from "react-router";
 
 import type { AppRole } from "@/contracts/authorization";
 import { useCurrentRole } from "@/hooks/useCurrentRole";
