@@ -38,7 +38,6 @@ if (existsSync(dateTimePath)) {
 }
 
 const temporalConsumers = [
-  "src/components/ConnectionStatus.tsx",
   "src/lib/recent-activities.ts",
   "src/pages/CertificateValidation.tsx",
   "src/pages/Contact.tsx",
@@ -64,6 +63,11 @@ for (const path of temporalConsumers) {
     `${path} deve consumir a camada temporal canônica.`,
   );
 }
+
+expect(
+  !existsSync("src/components/ConnectionStatus.tsx"),
+  "O polling legado ConnectionStatus deve permanecer removido do frontend.",
+);
 
 const recentActivitiesHookPath = "src/hooks/useRecentActivities.ts";
 expect(existsSync(recentActivitiesHookPath), `${recentActivitiesHookPath} deve existir.`);
@@ -183,5 +187,5 @@ if (failures.length) {
 }
 
 console.log(
-  `Contrato estático da FASE B26 aprovado em ${sourceFiles.length} arquivos TypeScript e ${temporalConsumers.length} consumidores temporais, com delegação B80 e read models do aluno verificados.`,
+  `Contrato estático da FASE B26 aprovado em ${sourceFiles.length} arquivos TypeScript e ${temporalConsumers.length} consumidores temporais, sem o polling legado e com delegação B80/read models do aluno verificados.`,
 );

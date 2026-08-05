@@ -6,7 +6,6 @@ const paths = {
   hook: "src/hooks/useStudentLibrarySummary.ts",
   page: "src/pages/student/StudentDashboardPage.tsx",
   router: "src/pages/student/StudentPortalRouter.tsx",
-  legacyHook: "src/hooks/useStudentLibrary.ts",
   documentation:
     "docs/refactor/FASE-B110-STUDENT-DASHBOARD-LIBRARY-SUMMARY.md",
 };
@@ -23,6 +22,12 @@ const requireFragments = (source, label, fragments) => {
 
 for (const path of Object.values(paths)) {
   if (!existsSync(path)) failures.push(`Arquivo B110 ausente: ${path}`);
+}
+
+if (existsSync("src/hooks/useStudentLibrary.ts")) {
+  failures.push(
+    "O hook legado useStudentLibrary deve permanecer removido; o dashboard usa somente o resumo agregado B110.",
+  );
 }
 
 if (failures.length === 0) {
@@ -106,5 +111,5 @@ if (failures.length > 0) {
 await import("./check-student-progress-summary.mjs");
 
 console.log(
-  "Contrato B110 aprovado: o dashboard do aluno conta materiais com total exato sem transferir a biblioteca.",
+  "Contrato B110 aprovado: o dashboard do aluno conta materiais com total exato sem transferir a biblioteca e sem restaurar o hook legado.",
 );
