@@ -43,10 +43,13 @@ O marketplace distribui somente cursos e produtos digitais do proprietário. Nã
 | Limpeza do perfil do Chrome | repetição limitada somente da exclusão do diretório criado pelo smoke para `ENOTEMPTY`, `EBUSY` ou `EPERM`; nenhuma reexecução integral do navegador e nenhum glob em `/tmp` |
 | Diagnósticos do gate | stdout e stderr de TypeScript e navegador persistidos em artifact com `set -o pipefail`, sem transformar falhas em sucesso |
 | Frontend acessível | lazy loading, Error Boundary, reconciliação acessível após substituições do `Suspense`, foco diferido em fallbacks e handoff para o conteúdo final |
-| Supabase remoto `dev` | quatorze migrations previamente ausentes aplicadas, contratos confrontados, `pg_cron` 1.6.4 instalado, dois jobs ativos, execução de expiração observada com sucesso e advisor de segurança sem lints |
+| Supabase remoto `dev` | migrations versionadas sincronizadas, contratos confrontados, `pg_cron` 1.6.4 instalado, dois jobs ativos, execução de expiração observada com sucesso e advisor de segurança sem lints |
 | Funções privadas | zero função do schema `private` executável por `PUBLIC`, quatro grants anônimos explícitos e restritos às superfícies públicas, consumidores autenticados preservados e privilégio padrão fechado para novas funções |
+| Mutações anônimas | contato limitado a cinco submissões em quinze minutos e afiliado a cento e vinte cliques em dez minutos por origem HMAC, sem IP bruto, com RLS, falha fechada e mensagens públicas sanitizadas |
 
 O hardening B142 foi aplicado no Supabase remoto `dev` pela migration `20260805015339_private_function_execute_hardening`. Cinquenta e quatro funções privadas deixaram de depender de `PUBLIC EXECUTE`; os acessos necessários de `authenticated` e `service_role` foram preservados explicitamente. O teste pgTAP dedicado possui 11 asserções e foi executado sem falhas. A prova completa está em [`refactor/FASE-B142-PRIVATE-FUNCTION-EXECUTE-HARDENING.md`](refactor/FASE-B142-PRIVATE-FUNCTION-EXECUTE-HARDENING.md).
+
+O B143 foi aplicado pelas migrations `20260805022138_anonymous_mutation_rate_limiting` e `20260805022356_anonymous_mutation_rate_limit_rls_policies`. As RPCs anônimas de contato e clique de afiliado permanecem públicas, porém toda inserção nas tabelas-alvo passa por quota transacional baseada na origem entregue pelo gateway. O identificador é pseudonimizado com HMAC-SHA256, nenhum endereço IP bruto é persistido, chamadas HTTP sem origem falham fechado e o contexto `service_role` não consome quota anônima. A prova pgTAP dedicada possui 20 asserções e o advisor de segurança remoto permaneceu sem lints. A evidência integral está em [`refactor/FASE-B143-ANONYMOUS-MUTATION-RATE-LIMITING.md`](refactor/FASE-B143-ANONYMOUS-MUTATION-RATE-LIMITING.md).
 
 O dashboard administrativo do proprietário é protegido pelo papel administrativo e consolida somente dados persistidos. A visão geral usa seis read models reais, não apresenta métricas estimadas e mantém links operacionais para pagamentos, alunos, suporte e contatos.
 
@@ -116,7 +119,7 @@ Ainda exigem validação fora do repositório:
 - testes de carga e observação de índices com tráfego representativo;
 - pentest independente antes da promoção para produção.
 
-Nenhum desses itens pode ser marcado como concluído apenas porque o código compila, a Edge Function está implantada, o cron executou uma vez ou o navegador público passa no CI.
+Nenhum desses itens pode ser marcado como concluído apenas porque o código compila, a Edge Function está implantada, o cron executou uma vez, uma quota por origem está ativa ou o navegador público passa no CI.
 
 ## Produção
 
