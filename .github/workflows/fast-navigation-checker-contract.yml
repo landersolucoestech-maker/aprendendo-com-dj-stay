@@ -1,0 +1,40 @@
+name: Ajustar checker de navegação rápida
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/fast-navigation-checker-contract.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.0
+          cache: npm
+      - name: Aplicar e validar checker
+        run: |
+          set -euo pipefail
+          node scripts/apply-fast-navigation-checker-contract.mjs
+          npm ci
+          npm run check:ci-determinism
+      - name: Persistir somente o checker aprovado
+        run: |
+          set -euo pipefail
+          rm -f scripts/apply-fast-navigation-checker-contract.mjs
+          git restore .github/workflows
+          git config user.name "landersolucoestech-maker"
+          git config user.email "landersolucoestech@gmail.com"
+          git add -A
+          git commit -m "test(accessibility): align checker with direct final focus"
+          git push origin HEAD:dev
