@@ -36,7 +36,9 @@ jobs:
           cache: npm
 
       - name: Instalar dependências
-        run: npm ci
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false --ignore-scripts puppeteer-core@24.16.0
 
       - name: Gerar build visual isolado
         env:
@@ -81,76 +83,149 @@ jobs:
           done
           test "$ready" = true
 
-          routes=(
-            "home|/"
-            "home-course|/#curso"
-            "home-instructor|/#instrutor"
-            "home-transparency|/#transparencia"
-            "home-footer|/#contato"
-            "login|/login"
-            "register|/matricule-se"
-            "forgot-password|/esqueceu-senha"
-            "contact|/contato"
-            "certificate|/certificado"
-            "access-denied|/acesso-negado"
-            "not-found|/rota-inexistente-b122"
-          )
+          cat > artifacts/visual-preview/capture.mjs <<'NODE'
+          import fs from "node:fs/promises";
+          import puppeteer from "puppeteer-core";
 
-          for entry in "${routes[@]}"; do
-            name="${entry%%|*}"
-            route="${entry#*|}"
-            url="http://127.0.0.1:4173${route}"
+          const baseUrl = "http://127.0.0.1:4173";
+          const routes = [
+            { name: "home", path: "/" },
+            { name: "home-course", path: "/#curso", expectedSection: "curso" },
+            { name: "home-instructor", path: "/#instrutor", expectedSection: "instrutor" },
+            { name: "home-transparency", path: "/#transparencia", expectedSection: "transparencia" },
+            { name: "home-footer", path: "/#contato", expectedSection: "contato" },
+            { name: "login", path: "/login" },
+            { name: "register", path: "/matricule-se" },
+            { name: "forgot-password", path: "/esqueceu-senha" },
+            { name: "contact", path: "/contato" },
+            { name: "certificate", path: "/certificado" },
+            { name: "access-denied", path: "/acesso-negado" },
+            { name: "not-found", path: "/rota-inexistente-b122" },
+          ];
+          const viewports = [
+            { name: "desktop", width: 1440, height: 1000 },
+            { name: "mobile", width: 390, height: 844, isMobile: true, hasTouch: true },
+          ];
 
-            "$browser" \
-              --headless=new \
-              --no-sandbox \
-              --disable-dev-shm-usage \
-              --run-all-compositor-stages-before-draw \
-              --disable-background-networking \
-              --disable-component-update \
-              --disable-default-apps \
-              --disable-extensions \
-              --disable-sync \
-              --metrics-recording-only \
-              --no-first-run \
-              --mute-audio \
-              --hide-scrollbars \
-              --virtual-time-budget=5000 \
-              --window-size="1440,1000" \
-              --screenshot="artifacts/visual-preview/desktop/${name}.png" \
-              "$url"
+          const browser = await puppeteer.launch({
+            executablePath: process.env.BROWSER_PATH,
+            headless: true,
+            args: [
+              "--no-sandbox",
+              "--disable-dev-shm-usage",
+              "--disable-background-networking",
+              "--disable-component-update",
+              "--disable-default-apps",
+              "--disable-extensions",
+              "--disable-sync",
+              "--metrics-recording-only",
+              "--no-first-run",
+              "--mute-audio",
+              "--hide-scrollbars",
+            ],
+          });
 
-            "$browser" \
-              --headless=new \
-              --no-sandbox \
-              --disable-dev-shm-usage \
-              --run-all-compositor-stages-before-draw \
-              --disable-background-networking \
-              --disable-component-update \
-              --disable-default-apps \
-              --disable-extensions \
-              --disable-sync \
-              --metrics-recording-only \
-              --no-first-run \
-              --mute-audio \
-              --hide-scrollbars \
-              --virtual-time-budget=5000 \
-              --window-size="390,844" \
-              --screenshot="artifacts/visual-preview/mobile/${name}.png" \
-              "$url"
-          done
+          const captures = [];
 
-          cat > artifacts/visual-preview/manifest.json <<JSON
-          {
-            "commit": "${GITHUB_SHA}",
-            "branch": "${GITHUB_REF_NAME}",
-            "mode": "development-ci-visual-preview",
-            "deployable": false,
-            "routes": ["/", "/#curso", "/#instrutor", "/#transparencia", "/#contato", "/login", "/matricule-se", "/esqueceu-senha", "/contato", "/certificado", "/acesso-negado", "/rota-inexistente-b122"],
-            "viewports": ["1440x1000 desktop", "390x844 mobile"]
+          try {
+            for (const viewport of viewports) {
+              for (const route of routes) {
+                const page = await browser.newPage();
+                await page.setViewport({
+                  width: viewport.width,
+                  height: viewport.height,
+                  deviceScaleFactor: 1,
+                  isMobile: viewport.isMobile ?? false,
+                  hasTouch: viewport.hasTouch ?? false,
+                });
+
+                await page.goto(`${baseUrl}${route.path}`, {
+                  waitUntil: "domcontentloaded",
+                  timeout: 30_000,
+                });
+                await new Promise((resolve) => setTimeout(resolve, 2_500));
+                await page.evaluate(
+                  () => new Promise((resolve) =>
+                    requestAnimationFrame(() => requestAnimationFrame(resolve)),
+                  ),
+                );
+
+                const sectionState = route.expectedSection
+                  ? await page.evaluate((sectionId) => {
+                      const target = document.getElementById(sectionId);
+                      if (!target) {
+                        return { exists: false, visible: false, scrollY: window.scrollY };
+                      }
+
+                      const rect = target.getBoundingClientRect();
+                      return {
+                        exists: true,
+                        visible: rect.bottom > 85 && rect.top < window.innerHeight,
+                        scrollY: window.scrollY,
+                        top: rect.top,
+                        bottom: rect.bottom,
+                        viewportHeight: window.innerHeight,
+                      };
+                    }, route.expectedSection)
+                  : null;
+
+                if (route.expectedSection && !sectionState?.visible) {
+                  throw new Error(
+                    `Section ${route.expectedSection} is not visible for ${viewport.name}/${route.name}: ${JSON.stringify(sectionState)}`,
+                  );
+                }
+
+                const screenshotPath = `artifacts/visual-preview/${viewport.name}/${route.name}.png`;
+                await page.screenshot({
+                  path: screenshotPath,
+                  type: "png",
+                  captureBeyondViewport: false,
+                });
+
+                if (route.name === "home") {
+                  await page.screenshot({
+                    path: `artifacts/visual-preview/${viewport.name}/home-full.png`,
+                    type: "png",
+                    fullPage: true,
+                  });
+                }
+
+                captures.push({
+                  viewport: viewport.name,
+                  route: route.path,
+                  name: route.name,
+                  sectionState,
+                });
+                await page.close();
+              }
+            }
+          } finally {
+            await browser.close();
           }
-          JSON
 
+          await fs.writeFile(
+            "artifacts/visual-preview/manifest.json",
+            JSON.stringify(
+              {
+                commit: process.env.GITHUB_SHA,
+                branch: process.env.GITHUB_REF_NAME,
+                mode: "development-ci-visual-preview",
+                deployable: false,
+                viewports: viewports.map(({ name, width, height }) => ({
+                  name,
+                  width,
+                  height,
+                })),
+                captures,
+              },
+              null,
+              2,
+            ),
+          );
+          NODE
+
+          BROWSER_PATH="$browser" node artifacts/visual-preview/capture.mjs
+          rm artifacts/visual-preview/capture.mjs
           find artifacts/visual-preview -maxdepth 3 -type f -print
 
       - name: Exportar prévia visual
