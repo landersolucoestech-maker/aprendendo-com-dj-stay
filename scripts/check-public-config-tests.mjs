@@ -96,7 +96,7 @@ if (failures.length === 0) {
     "Respostas válidas | 200",
     "Falhas | 0",
     "p95 | 977,80 ms",
-    "cinco submissões aceitas",
+    "As cinco primeiras chamadas retornaram HTTP 200",
     '"code": "P0001"',
     '"message": "RATE_LIMITED"',
     "mensagens residuais: 0",
