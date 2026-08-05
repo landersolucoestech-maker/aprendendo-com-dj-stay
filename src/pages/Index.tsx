@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 
 import BenefitsSection from "@/components/BenefitsSection";
 import CourseModulesSection from "@/components/CourseModulesSection";
@@ -9,66 +9,63 @@ import Navigation from "@/components/Navigation";
 import OperationalTrustSection from "@/components/OperationalTrustSection";
 
 const SECTION_HEADER_OFFSET = 85;
-const MAX_HASH_SCROLL_ATTEMPTS = 120;
+const INITIAL_HASH_RECHECK_DELAYS = [0, 100, 500, 1500] as const;
+
+const getHashSectionId = (): string | null => {
+  const rawHash = window.location.hash.slice(1);
+  if (!rawHash) return null;
+
+  try {
+    return decodeURIComponent(rawHash);
+  } catch {
+    return null;
+  }
+};
+
+const scrollToCurrentHash = (behavior: ScrollBehavior): boolean => {
+  const sectionId = getHashSectionId();
+  if (!sectionId) return false;
+
+  const target = document.getElementById(sectionId);
+  if (!target) return false;
+
+  const top = Math.max(
+    0,
+    target.getBoundingClientRect().top + window.scrollY - SECTION_HEADER_OFFSET,
+  );
+
+  if (behavior === "auto") {
+    window.scrollTo(0, top);
+  } else {
+    window.scrollTo({ top, behavior });
+  }
+
+  return true;
+};
 
 const Index = () => {
-  useEffect(() => {
-    let animationFrameId: number | null = null;
-    let attempts = 0;
+  useLayoutEffect(() => {
+    const timeoutIds = INITIAL_HASH_RECHECK_DELAYS.map((delay) =>
+      window.setTimeout(() => {
+        scrollToCurrentHash("auto");
+      }, delay),
+    );
 
-    const scrollToHashSection = () => {
-      const rawHash = window.location.hash.slice(1);
-      if (!rawHash) return;
-
-      let sectionId: string;
-      try {
-        sectionId = decodeURIComponent(rawHash);
-      } catch {
-        return;
-      }
-
-      const target = document.getElementById(sectionId);
-      if (!target) {
-        attempts += 1;
-        if (attempts < MAX_HASH_SCROLL_ATTEMPTS) {
-          animationFrameId = window.requestAnimationFrame(scrollToHashSection);
-        }
-        return;
-      }
-
-      attempts = 0;
+    const handleHashChange = () => {
       const prefersReducedMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;
-      const top = Math.max(
-        0,
-        target.getBoundingClientRect().top +
-          window.scrollY -
-          SECTION_HEADER_OFFSET,
-      );
 
-      window.scrollTo({
-        top,
-        behavior: prefersReducedMotion ? "auto" : "smooth",
+      window.requestAnimationFrame(() => {
+        scrollToCurrentHash(prefersReducedMotion ? "auto" : "smooth");
       });
     };
 
-    const scheduleHashScroll = () => {
-      attempts = 0;
-      if (animationFrameId !== null) {
-        window.cancelAnimationFrame(animationFrameId);
-      }
-      animationFrameId = window.requestAnimationFrame(scrollToHashSection);
-    };
-
-    scheduleHashScroll();
-    window.addEventListener("hashchange", scheduleHashScroll);
+    window.addEventListener("hashchange", handleHashChange);
 
     return () => {
-      window.removeEventListener("hashchange", scheduleHashScroll);
-      if (animationFrameId !== null) {
-        window.cancelAnimationFrame(animationFrameId);
-      }
+      window.removeEventListener("hashchange", handleHashChange);
+      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
     };
   }, []);
 
