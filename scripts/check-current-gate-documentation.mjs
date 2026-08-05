@@ -2,18 +2,18 @@ import { existsSync, readFileSync } from "node:fs";
 
 const paths = {
   status: "docs/STATUS.md",
-  phase: "docs/refactor/FASE-B134-CURRENT-GATE-DOCUMENTATION-TRUTH.md",
+  phase: "docs/refactor/FASE-B139-INTERACTION-RUNTIME-TRUTH.md",
 };
 const failures = [];
 
 for (const path of Object.values(paths)) {
-  if (!existsSync(path)) failures.push(`Fonte B134 ausente: ${path}`);
+  if (!existsSync(path)) failures.push(`Fonte B139 ausente: ${path}`);
 }
 
 const requireFragments = (label, content, fragments) => {
   for (const fragment of fragments) {
     if (!content.includes(fragment)) {
-      failures.push(`${label} não comprova B134: ${fragment}`);
+      failures.push(`${label} não comprova B139: ${fragment}`);
     }
   }
 };
@@ -28,29 +28,31 @@ if (failures.length === 0) {
     "um único `Document` inicial",
     "não cria novo `Document`",
     "uma única execução do smoke principal sem contorno no workflow",
-    "7f0b21f4f39dd80508f589619e89b987d903a5bc",
-    "#1055",
-    "30952181505",
+    "c4e299b8f544dc07bd394f1ae287efb4ee53e2e9",
+    "#1074",
+    "30957555483",
     "799 testes unitários",
     "1.878 testes pgTAP",
     "A branch `main` e o projeto Supabase de produção não foram promovidos",
   ]);
 
-  requireFragments("FASE B134", phase, [
-    "documentação operacional atrás do código validado",
-    "exatamente nove artefatos `*.network.json`",
-    "um único `Document` inicial e nenhum novo `Document`",
-    "ausência de repetição integral do smoke",
-    "não pode declarar o workaround de repetição como comportamento atual",
-    "a branch `main` e o Supabase de produção permanecem sem promoção",
+  requireFragments("FASE B139", phase, [
+    "verdade consolidada das interações públicas",
+    "commit `c4e299b8f544dc07bd394f1ae287efb4ee53e2e9`",
+    "issue de evidência `#1074`",
+    "run `30957555483`",
+    "skip link alcançado e ativado por teclado real",
+    "exatamente um `Document` inicial por prova client-side",
+    "zero origem externa e zero resposta HTTP com status maior ou igual a 400",
+    "Produção e branch `main` permanecem sem promoção",
   ]);
 }
 
 if (failures.length > 0) {
-  console.error("Contrato B134 inválido:\n- " + failures.join("\n- "));
+  console.error("Contrato B139 inválido:\n- " + failures.join("\n- "));
   process.exit(1);
 }
 
 console.log(
-  "Contrato B134 aprovado: status operacional e fase documental apontam para a evidência integral atual, sem reintroduzir o contorno do Chrome.",
+  "Contrato B139 aprovado: status operacional e fase documental apontam para a evidência integral atual das interações públicas, sem reintroduzir o contorno do Chrome.",
 );
