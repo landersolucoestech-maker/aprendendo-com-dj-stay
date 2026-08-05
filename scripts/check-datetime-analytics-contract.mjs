@@ -42,7 +42,6 @@ const temporalConsumers = [
   "src/lib/recent-activities.ts",
   "src/pages/CertificateValidation.tsx",
   "src/pages/Contact.tsx",
-  "src/pages/Dashboard.tsx",
   "src/pages/admin/AffiliatesAdmin.tsx",
   "src/pages/admin/ContactsAdmin.tsx",
   "src/pages/admin/StudentsAdmin.tsx",

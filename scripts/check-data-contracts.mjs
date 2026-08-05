@@ -36,7 +36,8 @@ const domainFiles = [
   "src/components/LessonCard.tsx",
   "src/components/LessonGrid.tsx",
   "src/components/VideoPlayer.tsx",
-  "src/pages/Dashboard.tsx",
+  "src/pages/student/StudentCoursePage.tsx",
+  "src/pages/student/StudentDashboardPage.tsx",
   "src/pages/EditProfile.tsx",
   "src/pages/Lesson.tsx",
 ];

@@ -4,7 +4,7 @@ const paths = {
   pureModule: "src/lib/recent-activities.ts",
   tests: "src/lib/recent-activities.test.ts",
   hook: "src/hooks/useRecentActivities.ts",
-  component: "src/components/RecentActivities.tsx",
+  studentDashboard: "src/pages/student/StudentDashboardPage.tsx",
   learning: "src/contracts/learning.ts",
   dateTime: "src/lib/date-time.ts",
   dateTimeContract: "scripts/check-datetime-analytics-contract.mjs",
@@ -25,7 +25,7 @@ const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
 const pureModule = read(paths.pureModule);
 const tests = read(paths.tests);
 const hook = read(paths.hook);
-const component = read(paths.component);
+const studentDashboard = read(paths.studentDashboard);
 const learning = read(paths.learning);
 const dateTime = read(paths.dateTime);
 const dateTimeContract = read(paths.dateTimeContract);
@@ -108,13 +108,18 @@ expect(
 );
 
 for (const fragment of [
-  'useRecentActivities, type RecentActivity',
-  'type === "lesson_completed"',
-  "activities.map((item)",
-  "item.activity",
-  "item.time",
+  "useRecentActivities(5)",
+  "activitiesQuery.isLoading",
+  "activitiesQuery.error",
+  "const activities = activitiesQuery.data ?? []",
+  "activities.map((activity)",
+  "activity.activity",
+  "activity.time",
 ]) {
-  expect(component.includes(fragment), `Componente B80 ausente: ${fragment}`);
+  expect(
+    studentDashboard.includes(fragment),
+    `Dashboard do aluno B80 ausente: ${fragment}`,
+  );
 }
 
 for (const fragment of [

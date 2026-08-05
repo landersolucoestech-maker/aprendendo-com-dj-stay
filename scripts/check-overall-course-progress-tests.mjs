@@ -3,7 +3,6 @@ import { existsSync, readFileSync } from "node:fs";
 const paths = {
   pureModule: "src/lib/course-progress.ts",
   tests: "src/lib/overall-course-progress.test.ts",
-  dashboard: "src/pages/Dashboard.tsx",
   studentCoursePage: "src/pages/student/StudentCoursePage.tsx",
   studentDashboardPage: "src/pages/student/StudentDashboardPage.tsx",
   b81Contract: "scripts/check-course-progress-tests.mjs",
@@ -27,7 +26,6 @@ expect(
 
 const pureModule = read(paths.pureModule);
 const tests = read(paths.tests);
-const dashboard = read(paths.dashboard);
 const studentCoursePage = read(paths.studentCoursePage);
 const studentDashboardPage = read(paths.studentDashboardPage);
 const b81Contract = read(paths.b81Contract);
@@ -78,21 +76,6 @@ expect(
   "A suíte B82 deve permanecer pura e independente de hooks, Supabase e React Query.",
 );
 
-expect(
-  dashboard.includes('from "@/lib/course-progress"'),
-  "Dashboard deve importar o cálculo B82 do módulo puro.",
-);
-expect(
-  dashboard.includes("calculateOverallCourseProgress(modulesWithProgress)"),
-  "Dashboard deve calcular progresso geral por aulas.",
-);
-expect(
-  !dashboard.includes(
-    "modulesWithProgress.reduce((total, module) => total + module.progress",
-  ),
-  "Dashboard não pode restaurar média simples entre módulos.",
-);
-
 for (const fragment of [
   'from "@/lib/course-progress"',
   "useProgressCalculation(modulesQuery.data)",
@@ -140,7 +123,6 @@ expect(
 
 for (const fragment of [
   "calculateOverallCourseProgress",
-  "calculateOverallCourseProgress(modulesWithProgress)",
   "calculateOverallCourseProgress(modules)",
   "studentCoursePage",
   "studentDashboardPage",

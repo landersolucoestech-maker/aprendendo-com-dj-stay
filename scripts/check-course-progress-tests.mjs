@@ -6,7 +6,6 @@ const paths = {
   modulesHook: "src/hooks/useModules.ts",
   progressHook: "src/hooks/useProgressCalculation.ts",
   userProgressHook: "src/hooks/useUserProgress.ts",
-  dashboard: "src/pages/Dashboard.tsx",
   studentCoursePage: "src/pages/student/StudentCoursePage.tsx",
   studentDashboardPage: "src/pages/student/StudentDashboardPage.tsx",
   lessonGrid: "src/components/LessonGrid.tsx",
@@ -35,7 +34,6 @@ const tests = read(paths.tests);
 const modulesHook = read(paths.modulesHook);
 const progressHook = read(paths.progressHook);
 const userProgressHook = read(paths.userProgressHook);
-const dashboard = read(paths.dashboard);
 const studentCoursePage = read(paths.studentCoursePage);
 const studentDashboardPage = read(paths.studentDashboardPage);
 const lessonGrid = read(paths.lessonGrid);
@@ -150,24 +148,6 @@ for (const fragment of [
 ]) {
   expect(userProgressHook.includes(fragment), `Progresso persistido B81 ausente: ${fragment}`);
 }
-
-for (const fragment of [
-  "useProgressCalculation",
-  "type ModuleLessonWithProgress",
-  "modulesQuery.data",
-  "modulesWithProgress",
-  "calculateOverallCourseProgress",
-  "calculateOverallCourseProgress(modulesWithProgress)",
-  "LessonGrid",
-  "ModuleProgress",
-]) {
-  expect(dashboard.includes(fragment), `Dashboard B81/B82 ausente: ${fragment}`);
-}
-expect(
-  !dashboard.includes("modulesWithProgress.reduce((total, module) => total + module.progress") &&
-    !dashboard.includes("modulesWithProgress.length"),
-  "Dashboard não pode restaurar média simples de percentuais dos módulos.",
-);
 
 for (const fragment of [
   "useStudentCourseDetailAccess(courseId)",
