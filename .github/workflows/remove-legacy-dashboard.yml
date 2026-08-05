@@ -1,0 +1,64 @@
+name: Remover dashboard legado
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/remove-legacy-dashboard.yml"
+      - "scripts/apply-remove-legacy-dashboard.mjs"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: remove-legacy-dashboard-dev
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 2
+          persist-credentials: true
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.0
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Aplicar remoção e realinhar contratos
+        run: node scripts/apply-remove-legacy-dashboard.mjs
+
+      - name: Validar alteração antes do push
+        run: |
+          npm run lint
+          npm run test:unit
+          npm run typecheck
+
+      - name: Publicar alteração somente na dev
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            scripts/check-auth-contract.mjs \
+            scripts/check-data-contracts.mjs \
+            scripts/check-course-progress-tests.mjs \
+            scripts/check-overall-course-progress-tests.mjs \
+            scripts/check-datetime-analytics-contract.mjs \
+            scripts/check-recent-activities-tests.mjs \
+            src/pages/Dashboard.tsx \
+            src/components/DashboardHeader.tsx \
+            src/components/UserProfile.tsx \
+            src/components/RecentActivities.tsx
+          git diff --cached --check
+          git commit -m "refactor(student): remove legacy dashboard surface"
+          git push origin HEAD:dev
