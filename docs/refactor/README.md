@@ -43,7 +43,8 @@ A sequência cobre, entre outros domínios:
 - verdade documental bloqueante para o commit, issue e run integrais mais recentes;
 - diagnósticos persistentes de TypeScript e navegador com `set -o pipefail`;
 - sincronização comprovada das migrations versionadas com o Supabase remoto `dev`, incluindo contratos, `pg_cron`, jobs ativos, execução observada e advisor de segurança limpo;
-- confronto das Edge Functions remotas com o GitHub, correção seletiva do drift de `media-playback` e validação runtime do contrato SQL por parser compartilhado fail-closed.
+- confronto das Edge Functions remotas com o GitHub, correção seletiva do drift de `media-playback` e validação runtime do contrato SQL por parser compartilhado fail-closed;
+- revogação de `PUBLIC EXECUTE` nas funções privadas, grants explícitos para consumidores legítimos e privilégio padrão fechado para funções futuras.
 
 Cada arquivo `FASE-B*.md` descreve uma entrega específica. O estado consolidado está em [`../STATUS.md`](../STATUS.md).
 
