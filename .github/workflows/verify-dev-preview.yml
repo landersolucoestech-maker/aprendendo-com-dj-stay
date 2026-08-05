@@ -1,0 +1,148 @@
+name: Validar preview implantada da dev
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/verify-dev-preview.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-deployed-dev-preview
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PREVIEW_URL: https://aprendendo-com-dj-stay-ee3mptuom-landerrecords-6009s-projects.vercel.app
+      PREVIOUS_RUNTIME_SHA: bf86ed19aced7dd90e429f3ad31c728086b7edd8
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.0
+
+      - name: Comprovar que o commit não exige novo deploy
+        env:
+          VERCEL_GIT_PREVIOUS_SHA: ${{ env.PREVIOUS_RUNTIME_SHA }}
+          VERCEL_GIT_COMMIT_SHA: ${{ github.sha }}
+        run: node scripts/vercel-ignore-build.mjs
+
+      - name: Validar entrega HTTP das rotas públicas
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/deployed-preview/http
+          routes=(
+            "/"
+            "/login"
+            "/certificado"
+            "/contato"
+            "/matricule-se"
+            "/esqueceu-senha"
+            "/acesso-negado"
+            "/rota-inexistente-deploy"
+          )
+
+          for route in "${routes[@]}"; do
+            name="${route#/}"
+            [[ -n "$name" ]] || name="home"
+            output="artifacts/deployed-preview/http/${name//\//-}.html"
+            headers="artifacts/deployed-preview/http/${name//\//-}.headers"
+            status="$({ curl --silent --show-error --location --max-redirs 5 \
+              --connect-timeout 15 --max-time 45 \
+              --dump-header "$headers" --output "$output" \
+              --write-out '%{http_code}' "${PREVIEW_URL}${route}"; } || true)"
+
+            if [[ "$status" != "200" ]]; then
+              echo "${route}: HTTP ${status}" >&2
+              sed -n '1,40p' "$headers" >&2 || true
+              exit 1
+            fi
+
+            grep -Fq 'id="root"' "$output" || {
+              echo "${route}: shell React ausente" >&2
+              exit 1
+            }
+          done
+
+      - name: Validar renderização em Chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          chrome="$(command -v google-chrome || command -v chromium || true)"
+          [[ -n "$chrome" ]] || {
+            echo "Chrome/Chromium indisponível no runner" >&2
+            exit 1
+          }
+
+          mkdir -p artifacts/deployed-preview/browser
+          routes=(
+            "/"
+            "/login"
+            "/contato"
+            "/matricule-se"
+            "/acesso-negado"
+          )
+
+          for route in "${routes[@]}"; do
+            name="${route#/}"
+            [[ -n "$name" ]] || name="home"
+            dom="artifacts/deployed-preview/browser/${name}.html"
+            "$chrome" \
+              --headless=new \
+              --no-sandbox \
+              --disable-gpu \
+              --disable-dev-shm-usage \
+              --hide-scrollbars \
+              --virtual-time-budget=12000 \
+              --dump-dom "${PREVIEW_URL}${route}" > "$dom"
+
+            grep -Fq 'id="main-content"' "$dom" || {
+              echo "${route}: #main-content não renderizado" >&2
+              exit 1
+            }
+            if grep -Eqi 'Application error|Internal Server Error|Vercel Authentication' "$dom"; then
+              echo "${route}: página de erro/proteção encontrada" >&2
+              exit 1
+            fi
+          done
+
+          "$chrome" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --disable-dev-shm-usage \
+            --hide-scrollbars \
+            --window-size=1440,1000 \
+            --virtual-time-budget=12000 \
+            --screenshot=artifacts/deployed-preview/browser/home-desktop.png \
+            "${PREVIEW_URL}/"
+
+          "$chrome" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --disable-dev-shm-usage \
+            --hide-scrollbars \
+            --window-size=390,844 \
+            --virtual-time-budget=12000 \
+            --screenshot=artifacts/deployed-preview/browser/home-mobile.png \
+            "${PREVIEW_URL}/"
+
+      - name: Exportar evidência implantada
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: deployed-dev-preview-${{ github.sha }}
+          path: artifacts/deployed-preview
+          retention-days: 1
+          if-no-files-found: warn
