@@ -136,3 +136,4 @@ console.log(
 );
 await import("./check-contact-admin-pagination.mjs");
 await import("./check-anonymous-mutation-rate-limiting.mjs");
+await import("./check-anonymous-mutation-rate-limit-retention.mjs");
