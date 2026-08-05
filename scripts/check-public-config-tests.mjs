@@ -4,16 +4,33 @@ const sourcePath = "src/config/public-config.ts";
 const testPath = "src/config/public-config.test.ts";
 const documentationPath =
   "docs/refactor/FASE-B56-PUBLIC-SUPABASE-CONFIG-UNIT-TESTS.md";
+const remoteHomologationPath =
+  "docs/refactor/REMOTE-DEV-HOMOLOGATION.md";
+const temporaryWorkflowPath =
+  ".github/workflows/remote-dev-validation.yml";
 const packagePath = "package.json";
 const failures = [];
 
-for (const path of [sourcePath, testPath, documentationPath, packagePath]) {
+for (const path of [
+  sourcePath,
+  testPath,
+  documentationPath,
+  remoteHomologationPath,
+  packagePath,
+]) {
   if (!existsSync(path)) failures.push(`Arquivo obrigatório ausente: ${path}`);
+}
+
+if (existsSync(temporaryWorkflowPath)) {
+  failures.push(
+    `${temporaryWorkflowPath}: workflow temporário não pode permanecer versionado após a homologação`,
+  );
 }
 
 if (failures.length === 0) {
   const source = readFileSync(sourcePath, "utf8");
   const test = readFileSync(testPath, "utf8");
+  const remoteHomologation = readFileSync(remoteHomologationPath, "utf8");
   const packageJson = JSON.parse(readFileSync(packagePath, "utf8"));
 
   for (const fragment of [
@@ -71,6 +88,31 @@ if (failures.length === 0) {
     }
   }
 
+  for (const fragment of [
+    "b665dd9bcd6e1c91a121f584d21cf20e834a5c34",
+    "30974559049",
+    "remote-dev-validation-b665dd9bcd6e1c91a121f584d21cf20e834a5c34",
+    "200 requisições",
+    "Respostas válidas | 200",
+    "Falhas | 0",
+    "p95 | 977,80 ms",
+    "cinco submissões aceitas",
+    '"code": "P0001"',
+    '"message": "RATE_LIMITED"',
+    "mensagens residuais: 0",
+    "contadores residuais da prova: 0",
+    "security advisor: zero lints",
+    "Nenhum índice foi removido",
+    "não utilizou `service_role`",
+    "não alterou o Supabase de produção",
+  ]) {
+    if (!remoteHomologation.includes(fragment)) {
+      failures.push(
+        `${remoteHomologationPath}: evidência remota obrigatória ausente: ${fragment}`,
+      );
+    }
+  }
+
   if (
     packageJson.scripts?.["check:public-config-tests"] !==
     "node scripts/check-public-config-tests.mjs"
@@ -86,7 +128,7 @@ if (failures.length === 0) {
 }
 
 if (failures.length > 0) {
-  console.error("Falhas no contrato B56/B119:");
+  console.error("Falhas no contrato B56/B119 e na prova remota do dev:");
   for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
@@ -94,5 +136,5 @@ if (failures.length > 0) {
 await import("./check-ci-runtime-smoke-config.mjs");
 
 console.log(
-  "Contrato B56/B119 aprovado: configuração pública real e smoke sintético possuem cobertura isolada por ambiente, flag e formato.",
+  "Contrato B56/B119 aprovado: configuração pública real, smoke sintético e evidência remota do dev permanecem isolados e sem workflow temporário.",
 );
