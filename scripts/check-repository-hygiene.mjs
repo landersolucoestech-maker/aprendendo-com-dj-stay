@@ -29,6 +29,37 @@ const pendingTrackedDeletions = new Set(
     .filter(Boolean),
 );
 
+if (process.env.GITHUB_ACTIONS === "true") {
+  try {
+    const remoteBranches = execFileSync(
+      "git",
+      ["ls-remote", "--heads", "origin"],
+      { encoding: "utf8" },
+    )
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map((line) => line.trim().split(/\s+/)[1])
+      .filter((ref) => ref?.startsWith("refs/heads/"))
+      .map((ref) => ref.replace("refs/heads/", ""))
+      .sort((left, right) => left.localeCompare(right));
+    const authorizedBranches = ["dev", "main"];
+
+    expect(
+      remoteBranches.length === authorizedBranches.length &&
+        remoteBranches.every(
+          (branch, index) => branch === authorizedBranches[index],
+        ),
+      `Topologia remota inválida. Esperado somente dev e main; encontrado: ${remoteBranches.join(", ") || "nenhuma branch"}.`,
+    );
+  } catch (error) {
+    failures.push(
+      `Não foi possível validar as branches remotas no GitHub Actions: ${
+        error instanceof Error ? error.message : String(error)
+      }.`,
+    );
+  }
+}
+
 const forbiddenPathPatterns = [
   /^(?:node_modules|dist|dist-ssr|coverage|artifacts)\//,
   /^(?:\.env|\.env\..+)$/,
