@@ -5,7 +5,10 @@ const paths = {
   tests: "src/contracts/course-access.test.ts",
   boundaryTests: "src/contracts/course-access-boundaries.test.ts",
   pureFilterTests: "src/contracts/course-access-pure-filter.test.ts",
-  hook: "src/hooks/useCourseAccess.ts",
+  studentAccessContract: "src/contracts/student-course-access.ts",
+  studentAccessHook: "src/hooks/useStudentCourseAccess.ts",
+  studentDetailContract: "src/contracts/student-course-detail-access.ts",
+  studentDetailHook: "src/hooks/useStudentCourseDetailAccess.ts",
   schema: "supabase/migrations/20260730200000_course_access_schema.sql",
   rpcs: "supabase/migrations/20260730200100_course_access_rpcs.sql",
   documentation: "docs/refactor/FASE-B76-COURSE-ACCESS-CONTRACT-TESTS.md",
@@ -20,13 +23,20 @@ const expect = (condition, message) => {
 for (const path of Object.values(paths)) {
   expect(existsSync(path), `${path} deve existir.`);
 }
+expect(
+  !existsSync("src/hooks/useCourseAccess.ts"),
+  "O hook legado useCourseAccess deve permanecer removido; os consumidores atuais usam read models do servidor.",
+);
 
 const read = (path) => (existsSync(path) ? readFileSync(path, "utf8") : "");
 const contracts = read(paths.contracts);
 const tests = read(paths.tests);
 const boundaryTests = read(paths.boundaryTests);
 const pureFilterTests = read(paths.pureFilterTests);
-const hook = read(paths.hook);
+const studentAccessContract = read(paths.studentAccessContract);
+const studentAccessHook = read(paths.studentAccessHook);
+const studentDetailContract = read(paths.studentDetailContract);
+const studentDetailHook = read(paths.studentDetailHook);
 const database = `${read(paths.schema)}\n${read(paths.rpcs)}`;
 const documentation = read(paths.documentation);
 const packageJson = existsSync(paths.package)
@@ -104,11 +114,11 @@ for (const fragment of [
   expect(tests.includes(fragment), `Cobertura B76 ausente: ${fragment}`);
 }
 expect(
-  !tests.includes('@/hooks/useCourseAccess'),
-  "A suíte B76 não pode importar o hook que inicializa o cliente Supabase.",
+  !tests.includes("@/hooks/useCourseAccess"),
+  "A suíte B76 não pode importar o hook legado nem inicializar o cliente Supabase.",
 );
 expect(
-  tests.includes('@/contracts/course-access'),
+  tests.includes("@/contracts/course-access"),
   "A suíte B76 deve importar o filtro puro diretamente dos contratos.",
 );
 
@@ -133,28 +143,69 @@ expect(
   !pureFilterTests.includes("@/hooks/useCourseAccess") &&
     !pureFilterTests.includes("@/integrations/supabase") &&
     !pureFilterTests.includes("@/config/public-config"),
-  "A regressão pura B76 não pode depender do hook, Supabase ou configuração pública.",
+  "A regressão pura B76 não pode depender de hook, Supabase ou configuração pública.",
 );
 
 for (const fragment of [
-  "enrollmentsWithCourseSchema",
-  "parseDataContract",
-  'from("enrollments")',
-  'eq("user_id", user.id)',
-  'export { getActiveEnrollments } from "@/contracts/course-access";',
+  "studentCourseAccessPageItemSchema",
+  "enrollmentWithCourseSchema",
+  "access_active: z.boolean()",
+  "active_total: z.number().int().nonnegative()",
+  "active_enrollments: z.array(enrollmentWithCourseSchema)",
+  "A amostra ativa não pode exceder o total ativo.",
+  ".strict()",
 ]) {
-  expect(hook.includes(fragment), `Consumidor B76 ausente: ${fragment}`);
+  expect(
+    studentAccessContract.includes(fragment),
+    `Read model paginado B76 ausente: ${fragment}`,
+  );
+}
+
+for (const fragment of [
+  "studentCourseAccessSchema",
+  "parseDataContract",
+  'queryKey: [',
+  '"student-course-access"',
+  'supabase.rpc("get_student_course_access"',
+  "p_limit: normalizedPageSize",
+  "p_offset: normalizedPage * normalizedPageSize",
+  "p_active_limit: normalizedActiveLimit",
+  "placeholderData: (previousData) => previousData",
+]) {
+  expect(
+    studentAccessHook.includes(fragment),
+    `Consumidor paginado B76 ausente: ${fragment}`,
+  );
 }
 expect(
-  !hook.includes("const isCurrentlyActive"),
-  "O hook não pode duplicar a regra temporal pura de acesso ativo.",
+  !studentAccessHook.includes('.from("enrollments")') &&
+    !studentAccessHook.includes('eq("user_id"'),
+  "O consumidor paginado B76 não pode restaurar consulta direta de matrículas no navegador.",
 );
+
+for (const fragment of [
+  "studentCourseDetailAccessSchema",
+  "StudentCourseDetailAccess",
+  "parseDataContract",
+  '"student-course-detail-access"',
+  '"get_student_course_detail_access"',
+  "p_course_id: normalizedCourseId",
+  "enabled: user !== null && courseId !== undefined",
+]) {
+  expect(
+    `${studentDetailContract}\n${studentDetailHook}`.includes(fragment),
+    `Acesso direcionado B76 ausente: ${fragment}`,
+  );
+}
 
 expect(
   documentation.includes("Fase B76") &&
+    documentation.includes("useStudentCourseAccess") &&
+    documentation.includes("useStudentCourseDetailAccess") &&
+    documentation.includes("hook legado `useCourseAccess`") &&
     documentation.includes("Nenhuma migration") &&
     documentation.includes("Supabase remoto"),
-  "Documentação B76 deve registrar escopo e exclusões.",
+  "Documentação B76 deve registrar consumidores atuais, remoção do legado, escopo e exclusões.",
 );
 expect(
   packageJson.scripts?.["check:course-access-contract-tests"] ===
@@ -174,5 +225,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Contrato B76 aprovado: matrícula, origem, pagamento, janela e acesso ativo possuem validação estrita, limites exatos e suíte independente do cliente Supabase.",
+  "Contrato B76 aprovado: matrícula, origem, pagamento e janela possuem validação pura; listagem paginada e detalhe usam read models do servidor sem restaurar o hook legado.",
 );

@@ -2,9 +2,9 @@
 
 ## Objetivo
 
-Alinhar os contratos TypeScript/Zod de matrícula aos constraints PostgreSQL e ao recorte realmente consumido por `useCourseAccess`.
+Alinhar os contratos TypeScript/Zod de matrícula aos constraints PostgreSQL e aos read models realmente consumidos pelo portal do aluno.
 
-A fase cobre curso resumido, matrícula do aluno, registro completo, eventos auditáveis e o filtro local de acesso atualmente válido.
+A fase cobre curso resumido, matrícula, registro completo, eventos auditáveis, o filtro puro de acesso ativo e os consumidores atuais `useStudentCourseAccess` e `useStudentCourseDetailAccess`.
 
 ## Curso resumido
 
@@ -16,9 +16,9 @@ A fase cobre curso resumido, matrícula do aluno, registro completo, eventos aud
 - status `draft`, `published` ou `archived`;
 - rejeição de campos extras.
 
-## Matrícula consumida pelo portal
+## Matrícula canônica
 
-`enrollmentWithCourseSchema` preserva exatamente o recorte selecionado por `useCourseAccess` e reproduz:
+`enrollmentWithCourseSchema` reproduz:
 
 - UUIDs do registro, usuário e curso;
 - status e origem canônicos;
@@ -33,7 +33,7 @@ A fase cobre curso resumido, matrícula do aluno, registro completo, eventos aud
 
 ## Registro completo
 
-`enrollmentRowSchema` adiciona os campos persistidos não selecionados pelo portal:
+`enrollmentRowSchema` adiciona os campos persistidos não expostos nos read models resumidos:
 
 - concedente manual;
 - timestamps de suspensão e revogação;
@@ -61,16 +61,37 @@ A coerência do registro completo reproduz as RPCs:
 
 O schema valida matrícula, ator opcional, estados anterior/posterior opcionais, objeto JSON de detalhes, timestamp e rejeição de campos extras.
 
-## Filtro de acesso ativo
+## Filtro puro de acesso ativo
 
-`getActiveEnrollments` permanece como a regra consumida pelo portal e exige simultaneamente:
+`getActiveEnrollments` permanece como regra pura e determinística para os contratos e exige simultaneamente:
 
 - matrícula `active`;
 - curso `published`;
-- `starts_at` menor ou igual ao instante atual;
-- `expires_at` nulo ou estritamente posterior ao instante atual.
+- `starts_at` menor ou igual ao instante informado;
+- `expires_at` nulo ou estritamente posterior ao instante informado.
 
-A suíte usa relógio falso para provar que o início é inclusivo e a expiração é exclusiva.
+A suíte usa relógio falso para provar que o início é inclusivo e a expiração é exclusiva. Esse filtro não inicializa o cliente Supabase.
+
+## Consumidores atuais
+
+O portal não consulta mais a tabela `enrollments` diretamente pelo navegador.
+
+`useStudentCourseAccess`:
+
+- chama `get_student_course_access`;
+- envia limite, offset e limite da amostra ativa normalizados;
+- valida o retorno com `studentCourseAccessSchema`;
+- recebe total geral, total ativo, amostra ativa e página de matrículas;
+- mantém o resultado anterior durante a troca de página.
+
+`useStudentCourseDetailAccess`:
+
+- valida o UUID do curso;
+- chama `get_student_course_detail_access`;
+- valida o retorno com `studentCourseDetailAccessSchema`;
+- entrega somente o recorte direcionado ao curso solicitado e ao usuário autenticado.
+
+O hook legado `useCourseAccess` foi removido. Ele não pode ser restaurado porque duplicava no cliente uma consulta que hoje pertence aos read models do servidor.
 
 ## Testes
 
@@ -87,7 +108,7 @@ A suíte usa relógio falso para provar que o início é inclusivo e a expiraç�
 - filtro de acesso ativo com início, expiração, status e publicação;
 - UUIDs, timestamps e campos extras.
 
-`scripts/check-course-access-contract-tests.mjs` vincula contratos, testes, hook, migration, RPCs, documentação e `package.json`.
+As suítes de limites e filtro puro preservam a independência do cliente Supabase. `scripts/check-course-access-contract-tests.mjs` vincula contratos, testes, read models, hooks atuais, migrations, RPCs, documentação e `package.json`, além de bloquear o retorno do hook legado.
 
 ## Exclusões deliberadas
 
@@ -110,4 +131,5 @@ A fase somente pode ser encerrada após o mesmo snapshot aprovar:
 - banco local e pgTAP;
 - geração de tipos;
 - TypeScript;
-- build.
+- build;
+- navegador.
