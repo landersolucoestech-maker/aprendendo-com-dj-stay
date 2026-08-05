@@ -85,4 +85,4 @@ jobs:
           git commit -m "security(router): migrate declarative stack to v8.3.0"
           git push origin HEAD:dev
 
-# rerun after unambiguous chart compatibility patch
+# rerun after function-safe Recharts tooltip key normalization
