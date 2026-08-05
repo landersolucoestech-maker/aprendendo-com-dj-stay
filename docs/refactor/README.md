@@ -41,7 +41,8 @@ A sequência cobre, entre outros domínios:
 - limpeza limitada do perfil temporário dentro de cada smoke do Chrome;
 - proibição de reexecutar o smoke inteiro para contornar `ENOTEMPTY`;
 - verdade documental bloqueante para o commit, issue e run integrais mais recentes;
-- diagnósticos persistentes de TypeScript e navegador com `set -o pipefail`.
+- diagnósticos persistentes de TypeScript e navegador com `set -o pipefail`;
+- sincronização comprovada das migrations versionadas com o Supabase remoto `dev`, incluindo contratos, `pg_cron`, jobs ativos, execução observada e advisor de segurança limpo.
 
 Cada arquivo `FASE-B*.md` descreve uma entrega específica. O estado consolidado está em [`../STATUS.md`](../STATUS.md).
 
