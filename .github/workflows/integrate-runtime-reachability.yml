@@ -1,0 +1,73 @@
+name: Integrar alcance ao gate
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - .github/workflows/integrate-runtime-reachability.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: integrate-runtime-reachability-dev
+  cancel-in-progress: false
+
+jobs:
+  integrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.0
+          cache: npm
+
+      - name: Integrar contrato ao typecheck
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          package_path = Path("package.json")
+          package = json.loads(package_path.read_text(encoding="utf-8"))
+          scripts = package["scripts"]
+          command = "npm run check:runtime-reachability"
+          anchor = "npm run check:repository-hygiene"
+
+          if command not in scripts["typecheck"]:
+              if anchor not in scripts["typecheck"]:
+                  raise SystemExit("Âncora check:repository-hygiene ausente no typecheck.")
+              scripts["typecheck"] = scripts["typecheck"].replace(
+                  anchor,
+                  f"{anchor} && {command}",
+                  1,
+              )
+
+          scripts["check:runtime-reachability"] = (
+              "node scripts/check-runtime-reachability.mjs"
+          )
+          package_path.write_text(
+              json.dumps(package, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Instalar e validar contrato
+        run: |
+          npm ci
+          npm run check:runtime-reachability
+
+      - name: Remover CI redundante e publicar
+        run: |
+          git rm .github/workflows/runtime-reachability.yml
+          git rm .github/workflows/integrate-runtime-reachability.yml
+          git add package.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m "ci(frontend): integrate reachability into technical gate"
+          git push origin HEAD:dev
