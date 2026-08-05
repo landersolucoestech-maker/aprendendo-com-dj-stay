@@ -1,0 +1,52 @@
+name: Sincronizar status operacional atual
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/current-operational-status.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: current-operational-status-dev
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.0
+          cache: npm
+
+      - name: Sincronizar e validar documentação canônica
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/apply-current-operational-status.mjs
+          node scripts/check-documentation-truth.mjs
+          node scripts/check-current-gate-documentation.mjs
+
+      - name: Publicar somente STATUS aprovado
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f scripts/apply-current-operational-status.mjs
+          git restore .github/workflows
+          git config user.name "landersolucoestech-maker"
+          git config user.email "landersolucoestech@gmail.com"
+          git add docs/STATUS.md
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m "docs: sync current runtime and cron evidence"
+          git push origin HEAD:dev
