@@ -70,14 +70,14 @@ jobs:
       - name: Executar gate local consolidado
         run: npm run check
 
-      - name: Persistir migração aprovada sem alterar workflow
+      - name: Persistir migração aprovada sem alterar workflows
         shell: bash
         run: |
           set -euo pipefail
           rm -f scripts/apply-react-router-v8-upgrade.mjs
           rm -f scripts/apply-react19-ui-compat.mjs
           rm -f scripts/apply-react19-ui-compat.py
-          git restore .github/workflows/react-router-v8-upgrade.yml
+          git restore .github/workflows
           git config user.name "landersolucoestech-maker"
           git config user.email "landersolucoestech@gmail.com"
           git add -A
@@ -85,4 +85,4 @@ jobs:
           git commit -m "security(router): migrate declarative stack to v8.3.0"
           git push origin HEAD:dev
 
-# rerun after function-safe Recharts tooltip key normalization
+# publish only code and lockfile; workflow cleanup follows through the connector
