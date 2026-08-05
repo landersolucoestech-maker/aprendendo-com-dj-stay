@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: remote-edge-contracts-dev
@@ -32,6 +33,79 @@ jobs:
 
       - name: Verificar contratos sem mutação
         run: node scripts/check-remote-edge-contracts.mjs
+
+      - name: Reconciliar prontidão do webhook
+        if: always() && hashFiles('artifacts/remote-edge-contracts/evidence.json') != ''
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require("node:fs");
+            const evidence = JSON.parse(
+              fs.readFileSync("artifacts/remote-edge-contracts/evidence.json", "utf8")
+            );
+            const webhookConfigured = evidence.readiness?.webhookConfigured === true;
+            const title = "Homologação Asaas — configurar ASAAS_WEBHOOK_TOKEN no Supabase dev";
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              "O smoke remoto não mutável comprovou que o endpoint `asaas-webhook` responde `503 WEBHOOK_NOT_CONFIGURED`.",
+              "",
+              "Ação externa necessária:",
+              "1. gerar um token forte;",
+              "2. configurar o valor como secret `ASAAS_WEBHOOK_TOKEN` no Supabase `dev`;",
+              "3. configurar o mesmo valor no webhook do sandbox Asaas, no header `asaas-access-token`;",
+              "4. reexecutar o workflow `Contratos remotos das Edge Functions`.",
+              "",
+              "Nunca publicar o valor do token nesta issue, em logs ou artifacts.",
+              "",
+              `Run mais recente: ${runUrl}`,
+              "Runbook: `docs/REMOTE-EDGE-CONTRACTS.md`"
+            ].join("\n");
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "all",
+              per_page: 100,
+            });
+            const issue = issues.find(
+              (candidate) => !candidate.pull_request && candidate.title === title
+            );
+
+            if (webhookConfigured) {
+              if (issue?.state === "open") {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: `O smoke remoto passou a responder \`401 WEBHOOK_AUTHENTICATION_FAILED\`, comprovando que o secret está configurado. Run: ${runUrl}`,
+                });
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: "closed",
+                  state_reason: "completed",
+                });
+              }
+              return;
+            }
+
+            if (!issue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+              });
+            } else {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: "open",
+                body,
+              });
+            }
 
       - name: Exportar evidência sanitizada
         if: always()
