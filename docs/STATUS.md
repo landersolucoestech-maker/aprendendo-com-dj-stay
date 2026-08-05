@@ -43,6 +43,7 @@ O marketplace distribui somente cursos e produtos digitais do proprietário. Nã
 | Limpeza do perfil do Chrome | repetição limitada somente da exclusão do diretório criado pelo smoke para `ENOTEMPTY`, `EBUSY` ou `EPERM`; nenhuma reexecução integral do navegador e nenhum glob em `/tmp` |
 | Diagnósticos do gate | stdout e stderr de TypeScript e navegador persistidos em artifact com `set -o pipefail`, sem transformar falhas em sucesso |
 | Frontend acessível | lazy loading, Error Boundary, reconciliação acessível após substituições do `Suspense`, foco diferido em fallbacks e handoff para o conteúdo final |
+| Supabase remoto `dev` | quatorze migrations previamente ausentes aplicadas, contratos confrontados, `pg_cron` 1.6.4 instalado, dois jobs ativos, execução de expiração observada com sucesso e advisor de segurança sem lints |
 
 O dashboard administrativo do proprietário é protegido pelo papel administrativo e consolida somente dados persistidos. A visão geral usa seis read models reais, não apresenta métricas estimadas e mantém links operacionais para pagamentos, alunos, suporte e contatos.
 
@@ -85,7 +86,7 @@ O gate técnico executa instalação limpa, lint, reconstrução local do Supaba
 
 O build de qualidade usado pelo CI utiliza uma chave sintética canônica e sem validade no Supabase. Esse artefato é explicitamente **não implantável**. Builds locais reais, homologação remota e produção continuam exigindo uma chave publishable ativa fornecida pelo ambiente e nunca versionada.
 
-A evidência B123 permanece registrada no commit `63ebdfd043fc4a3ba02642c7b0f470e97be0611d`. A evidência B125 registrou 795 testes unitários no commit `03106954c5ed0d9238a55625f4c30cf7e83a4699`. A evidência B127–B130 registrou 799 testes unitários no commit `92270adc7d949f0719e1fdb3673f2d47bedb6aaf`. A evidência integral B132/B133 mais recente é o commit `7f0b21f4f39dd80508f589619e89b987d903a5bc`, issue de evidência `#1055` e run `30952181505`, aprovado no mesmo snapshot por instalação, lint, 799 testes unitários, reconstrução local do Supabase, 1.878 testes pgTAP, tipos, contratos, TypeScript, build, oito rotas públicas acessíveis, handoff de foco lazy, exatamente nove artefatos de rede, ausência de novo `Document` na navegação home → `/login`, isolamento exato de origem e porta e uma única execução do smoke principal sem contorno no workflow.
+A evidência B123 permanece registrada no commit `63ebdfd043fc4a3ba02642c7b0f470e97be0611d`. A evidência B125 registrou 795 testes unitários no commit `03106954c5ed0d9238a55625f4c30cf7e83a4699`. A evidência B127–B130 registrou 799 testes unitários no commit `92270adc7d949f0719e1fdb3673f2d47bedb6aaf`. A evidência integral B139 mais recente usa o snapshot funcional `c4e299b8f544dc07bd394f1ae287efb4ee53e2e9`, issue `#1074` e run `30957555483`, aprovado no mesmo snapshot por instalação, lint, 799 testes unitários, reconstrução local do Supabase, 1.878 testes pgTAP, tipos, contratos, TypeScript, build, oito rotas públicas acessíveis, handoff de foco lazy, exatamente nove artefatos de rede, ausência de novo `Document` na navegação home → `/login`, isolamento exato de origem e porta e uma única execução do smoke principal sem contorno no workflow. A sincronização remota posterior está registrada em [`refactor/FASE-B140-SUPABASE-DEV-REMOTE-SYNC.md`](refactor/FASE-B140-SUPABASE-DEV-REMOTE-SYNC.md).
 
 ## Integrações implantadas em `dev`
 
@@ -97,7 +98,7 @@ As Edge Functions abaixo fazem parte da implementação de desenvolvimento:
 
 A presença da função e a aprovação do gate não equivalem a uma transação financeira homologada pelo provider.
 
-O módulo PostgreSQL `pg_cron`, os jobs de expiração e retenção e o read model administrativo de saúde fazem parte das migrations versionadas em `dev`, mas ainda não foram promovidos ao Supabase remoto ou à produção.
+O módulo PostgreSQL `pg_cron`, os jobs de expiração e retenção e o read model administrativo de saúde foram promovidos ao Supabase remoto `dev`. A versão instalada do `pg_cron` é `1.6.4`; os dois jobs estão ativos e a primeira execução observada de `expire-due-checkout-intents` terminou com status `succeeded`. Nenhum desses componentes foi promovido à produção.
 
 ## Dependências de homologação externa
 
@@ -106,12 +107,12 @@ Ainda exigem validação fora do repositório:
 - credenciais válidas do sandbox Asaas;
 - configuração do webhook no painel do provider;
 - execução de compra, confirmação, reembolso e chargeback no sandbox;
-- observação dos jobs e de `cron.job_run_details` após aplicar migrations no ambiente remoto;
+- observação continuada dos jobs e de `cron.job_run_details` por janela representativa;
 - validação de e-mails transacionais;
 - testes de carga e observação de índices com tráfego representativo;
 - pentest independente antes da promoção para produção.
 
-Nenhum desses itens pode ser marcado como concluído apenas porque o código compila, a Edge Function está implantada ou o navegador público passa no CI.
+Nenhum desses itens pode ser marcado como concluído apenas porque o código compila, a Edge Function está implantada, o cron executou uma vez ou o navegador público passa no CI.
 
 ## Produção
 
