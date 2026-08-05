@@ -1,0 +1,165 @@
+name: Prévia visual
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/visual-preview.yml"
+      - "src/**"
+      - "public/**"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.ts"
+      - "tailwind.config.ts"
+      - "postcss.config.js"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visual-preview-dev
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.16.0
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar build visual isolado
+        env:
+          VITE_APP_ENV: development
+          VITE_CI_RUNTIME_SMOKE: "true"
+          VITE_SUPABASE_URL: https://jmtyurketfclaneqxohu.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_runtime_smoke_only_not_for_deployment
+        run: npm run build:dev
+
+      - name: Capturar telas desktop e mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          browser=""
+          for candidate in google-chrome google-chrome-stable chromium chromium-browser; do
+            if command -v "$candidate" >/dev/null 2>&1; then
+              browser="$(command -v "$candidate")"
+              break
+            fi
+          done
+          test -n "$browser"
+          "$browser" --version
+
+          mkdir -p artifacts/visual-preview/desktop artifacts/visual-preview/mobile artifacts/visual-preview/logs
+
+          node node_modules/vite/bin/vite.js preview \
+            --host 127.0.0.1 \
+            --port 4173 \
+            --strictPort \
+            > artifacts/visual-preview/logs/preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+
+          ready=false
+          for _ in $(seq 1 80); do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/ >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 0.25
+          done
+          test "$ready" = true
+
+          routes=(
+            "home|/"
+            "login|/login"
+            "register|/matricule-se"
+            "forgot-password|/esqueceu-senha"
+            "contact|/contato"
+            "certificate|/certificado"
+            "access-denied|/acesso-negado"
+            "not-found|/rota-inexistente-b122"
+          )
+
+          for entry in "${routes[@]}"; do
+            name="${entry%%|*}"
+            route="${entry#*|}"
+            url="http://127.0.0.1:4173${route}"
+
+            desktop_height=1600
+            mobile_height=2200
+            if test "$name" = home; then
+              desktop_height=5600
+              mobile_height=10000
+            fi
+
+            "$browser" \
+              --headless=new \
+              --no-sandbox \
+              --disable-dev-shm-usage \
+              --disable-gpu \
+              --disable-background-networking \
+              --disable-component-update \
+              --disable-default-apps \
+              --disable-extensions \
+              --disable-sync \
+              --metrics-recording-only \
+              --no-first-run \
+              --mute-audio \
+              --hide-scrollbars \
+              --virtual-time-budget=5000 \
+              --window-size="1440,${desktop_height}" \
+              --screenshot="artifacts/visual-preview/desktop/${name}.png" \
+              "$url"
+
+            "$browser" \
+              --headless=new \
+              --no-sandbox \
+              --disable-dev-shm-usage \
+              --disable-gpu \
+              --disable-background-networking \
+              --disable-component-update \
+              --disable-default-apps \
+              --disable-extensions \
+              --disable-sync \
+              --metrics-recording-only \
+              --no-first-run \
+              --mute-audio \
+              --hide-scrollbars \
+              --virtual-time-budget=5000 \
+              --window-size="390,${mobile_height}" \
+              --screenshot="artifacts/visual-preview/mobile/${name}.png" \
+              "$url"
+          done
+
+          cat > artifacts/visual-preview/manifest.json <<JSON
+          {
+            "commit": "${GITHUB_SHA}",
+            "branch": "${GITHUB_REF_NAME}",
+            "mode": "development-ci-visual-preview",
+            "deployable": false,
+            "routes": ["/", "/login", "/matricule-se", "/esqueceu-senha", "/contato", "/certificado", "/acesso-negado", "/rota-inexistente-b122"],
+            "viewports": ["1440px desktop", "390px mobile"]
+          }
+          JSON
+
+          find artifacts/visual-preview -type f -maxdepth 3 -print
+
+      - name: Exportar prévia visual
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-preview-${{ github.sha }}
+          path: artifacts/visual-preview
+          retention-days: 3
+          if-no-files-found: error
