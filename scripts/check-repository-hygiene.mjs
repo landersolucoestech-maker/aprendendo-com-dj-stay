@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   readFileSync,
   statSync,
@@ -20,6 +21,13 @@ const trackedFiles = execFileSync("git", ["ls-files", "-z"], {
   .split("\0")
   .filter(Boolean)
   .sort((left, right) => left.localeCompare(right));
+const pendingTrackedDeletions = new Set(
+  execFileSync("git", ["diff", "--name-only", "--diff-filter=D", "-z"], {
+    encoding: "utf8",
+  })
+    .split("\0")
+    .filter(Boolean),
+);
 
 const forbiddenPathPatterns = [
   /^(?:node_modules|dist|dist-ssr|coverage|artifacts)\//,
@@ -105,6 +113,14 @@ const maxTrackedFileBytes = 10 * 1024 * 1024;
 for (const path of trackedFiles) {
   for (const pattern of forbiddenPathPatterns) {
     expect(!pattern.test(path), `Arquivo proibido versionado: ${path}.`);
+  }
+
+  if (!existsSync(path)) {
+    expect(
+      pendingTrackedDeletions.has(path),
+      `Arquivo versionado ausente sem exclusão registrada no diff: ${path}.`,
+    );
+    continue;
   }
 
   const stats = statSync(path);
