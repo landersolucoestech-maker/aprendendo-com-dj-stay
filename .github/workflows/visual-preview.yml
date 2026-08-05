@@ -85,7 +85,7 @@ jobs:
             "home|/"
             "home-course|/#curso"
             "home-instructor|/#instrutor"
-            "home-testimonials|/#depoimentos"
+            "home-transparency|/#transparencia"
             "home-footer|/#contato"
             "login|/login"
             "register|/matricule-se"
@@ -146,7 +146,7 @@ jobs:
             "branch": "${GITHUB_REF_NAME}",
             "mode": "development-ci-visual-preview",
             "deployable": false,
-            "routes": ["/", "/#curso", "/#instrutor", "/#depoimentos", "/#contato", "/login", "/matricule-se", "/esqueceu-senha", "/contato", "/certificado", "/acesso-negado", "/rota-inexistente-b122"],
+            "routes": ["/", "/#curso", "/#instrutor", "/#transparencia", "/#contato", "/login", "/matricule-se", "/esqueceu-senha", "/contato", "/certificado", "/acesso-negado", "/rota-inexistente-b122"],
             "viewports": ["1440x1000 desktop", "390x844 mobile"]
           }
           JSON
