@@ -25,8 +25,23 @@ const unnecessaryLegendSpreadPatch = `chart = replace_once(
 if (!source.includes(unnecessaryLegendSpreadPatch)) {
   throw new Error("Bloco ambíguo esperado não foi encontrado no patcher Python.");
 }
-
 source = source.replace(unnecessaryLegendSpreadPatch, "");
+
+const chartWriteAnchor = "chart_path.write_text(chart)\n";
+const tooltipKeyPatch = [
+  "chart = replace_once(",
+  "    chart,",
+  "    '''                key={item.dataKey}''',",
+  "    '''                key={`${String(item.name ?? \"item\")}-${index}`}''',",
+  "    \"chart tooltip key\",",
+  ")",
+  "",
+].join("\n");
+
+if (source.split(chartWriteAnchor).length !== 2) {
+  throw new Error("Âncora única para gravar chart.tsx não foi encontrada.");
+}
+source = source.replace(chartWriteAnchor, `${tooltipKeyPatch}${chartWriteAnchor}`);
 writeFileSync(pythonPath, source, "utf8");
 
 const result = spawnSync("python3", [pythonPath], {
