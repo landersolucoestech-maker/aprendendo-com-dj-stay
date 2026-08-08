@@ -7,6 +7,7 @@ const previewHtml = resolve(root, "wave1-preview.html");
 const previewEntry = resolve(root, "src/wave1-preview.tsx");
 const outputDir = resolve(root, "wave1-screenshots");
 const reportPath = resolve(root, "wave1-preview-report.json");
+const collapseStorageKey = "frontend-v2-auth-shell-collapsed";
 
 const sleep = (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
 
@@ -193,6 +194,9 @@ const createPage = async (browserPort, url, width, height) => {
     deviceScaleFactor: 1,
     mobile: width < 640,
   });
+  await client.send("Page.addScriptToEvaluateOnNewDocument", {
+    source: `try { window.localStorage.removeItem(${JSON.stringify(collapseStorageKey)}); } catch {}`,
+  });
   await client.send("Page.navigate", { url });
   const deadline = Date.now() + 20000;
   while (Date.now() < deadline) {
@@ -214,6 +218,15 @@ const evaluate = async (client, expression) => {
   });
   if (result.exceptionDetails) throw new Error("Browser evaluation failed: " + expression);
   return result.result?.value;
+};
+
+const waitForCondition = async (client, expression, label, timeoutMs = 5000) => {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await evaluate(client, expression)) return;
+    await sleep(50);
+  }
+  throw new Error("Timed out waiting for " + label);
 };
 
 const assert = (condition, message) => {
@@ -303,14 +316,42 @@ try {
     const desktop = await createPage(browserPort, url, 1440, 1000);
     assert(await evaluate(desktop, "Boolean(document.querySelector('a[aria-current=\"page\"]'))"), role + ": active state missing on desktop");
     assert(await evaluate(desktop, "Boolean(document.querySelector('[data-shell-logout]'))"), role + ": logout missing on desktop");
+    const collapseTriggerFound = await evaluate(desktop, "Boolean(document.querySelector('[data-shell-collapse]'))");
+    const initialCollapsed = await evaluate(desktop, "document.querySelector('[data-shell-sidebar]').dataset.collapsed");
+    const initialWidth = await evaluate(desktop, "document.querySelector('[data-shell-sidebar]').getBoundingClientRect().width");
+    const initialAriaPressed = await evaluate(desktop, "document.querySelector('[data-shell-collapse]').getAttribute('aria-pressed')");
+    assert(collapseTriggerFound, role + ": collapse trigger missing");
+    assert(initialCollapsed === "false", role + ": preview must start expanded");
+    assert(initialWidth >= 240 && initialWidth <= 272, role + ": expanded sidebar width outside expected range");
+    assert(initialAriaPressed === "false", role + ": collapse trigger aria-pressed must start false");
     await pressTab(desktop);
     assert(await evaluate(desktop, "document.activeElement !== document.body && document.activeElement.matches(':focus-visible')"), role + ": keyboard focus is not visible");
     await capture(desktop, role + "-desktop.png");
-    await evaluate(desktop, "document.querySelector('[data-shell-collapse]').click()\n");
-    await sleep(300);
-    assert(await evaluate(desktop, "document.querySelector('[data-shell-sidebar]').dataset.collapsed === 'true'"), role + ": collapse state did not activate");
-    assert(await evaluate(desktop, "document.querySelector('[data-shell-sidebar]').getBoundingClientRect().width <= 84"), role + ": collapsed rail wider than expected");
-    report.roles[role].desktop = { activeState: true, collapse: true, keyboardFocus: true, logout: true };
+    await evaluate(desktop, "document.querySelector('[data-shell-collapse]').click()");
+    await waitForCondition(
+      desktop,
+      "document.querySelector('[data-shell-sidebar]').dataset.collapsed === 'true' && document.querySelector('[data-shell-collapse]').getAttribute('aria-pressed') === 'true'",
+      role + " collapse state",
+    );
+    await waitForCondition(
+      desktop,
+      "document.querySelector('[data-shell-sidebar]').getBoundingClientRect().width <= 84",
+      role + " collapsed width",
+    );
+    const collapsedWidth = await evaluate(desktop, "document.querySelector('[data-shell-sidebar]').getBoundingClientRect().width");
+    console.log(
+      `COLLAPSE_DIAGNOSTIC role=${role} trigger=${collapseTriggerFound} initial=${initialCollapsed} initialWidth=${initialWidth} final=true finalWidth=${collapsedWidth}`,
+    );
+    report.roles[role].desktop = {
+      activeState: true,
+      collapse: true,
+      collapseTriggerFound,
+      initialCollapsed,
+      initialWidth,
+      collapsedWidth,
+      keyboardFocus: true,
+      logout: true,
+    };
     desktop.close();
 
     const tablet = await createPage(browserPort, url, 820, 900);
