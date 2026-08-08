@@ -4,6 +4,8 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 
 import { RouteAccessibility } from "@/accessibility/RouteAccessibility";
 import { AuthProvider } from "@/auth/AuthProvider";
+import { AdminShell } from "@/app/shells/AdminShell";
+import { AffiliateShell } from "@/app/shells/AffiliateShell";
 import { AdminNavigation } from "@/components/admin/AdminNavigation";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -75,7 +77,9 @@ const StudentRoute = ({ children }: { children: React.ReactNode }) => (
 
 const AffiliateRoute = ({ children }: { children: React.ReactNode }) => (
   <RequireAuth>
-    <RequireRole allowedRoles={["afiliado"]}>{children}</RequireRole>
+    <RequireRole allowedRoles={["afiliado"]}>
+      <AffiliateShell>{children}</AffiliateShell>
+    </RequireRole>
   </RequireAuth>
 );
 
@@ -98,10 +102,7 @@ const MarketplaceRoute = ({ children }: { children: React.ReactNode }) => (
 const AdminRoute = ({ children }: { children: React.ReactNode }) => (
   <RequireAuth>
     <RequireRole allowedRoles={["administrador_proprietario"]}>
-      <div className="min-h-screen bg-black">
-        <AdminNavigation />
-        {children}
-      </div>
+      <AdminShell navigation={<AdminNavigation />}>{children}</AdminShell>
     </RequireRole>
   </RequireAuth>
 );

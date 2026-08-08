@@ -2,15 +2,13 @@ import {
   Award,
   Bell,
   BookOpen,
+  Boxes,
   CreditCard,
-  GraduationCap,
   Heart,
   History,
   LayoutDashboard,
   Library,
   LifeBuoy,
-  Loader2,
-  LogOut,
   PackageCheck,
   ReceiptText,
   Settings2,
@@ -21,9 +19,10 @@ import {
 import type { ReactNode } from "react";
 import { Link, NavLink } from "react-router";
 
-import { Button } from "@/components/ui/button";
+import { StudentShell } from "@/app/shells/StudentShell";
 import { brandConfig } from "@/config/brand";
 import { cn } from "@/lib/utils";
+import { useAuthenticatedShellNavigation } from "@/shared/navigation/AuthenticatedShell";
 
 const studentNavigation = [
   { to: "/aluno", label: "Início", icon: LayoutDashboard, end: true },
@@ -43,6 +42,90 @@ const studentNavigation = [
   { to: "/aluno/privacidade", label: "Privacidade", icon: ShieldCheck, end: false },
 ] as const;
 
+const studentNavigationByPath = new Map(studentNavigation.map((item) => [item.to, item] as const));
+const courseStorefrontNavigation = studentNavigationByPath.get("/cursos")!;
+const commerceNavigation = [
+  { ...courseStorefrontNavigation, displayLabel: "Cursos" },
+  { to: "/marketplace", label: "Produtos digitais", displayLabel: "Produtos digitais", icon: Boxes, end: false },
+] as const;
+
+const studentGroups = [
+  { label: "APRENDIZADO", paths: ["/aluno", "/aluno/cursos", "/aluno/biblioteca", "/aluno/favoritos", "/aluno/certificados", "/aluno/historico"] },
+  { label: "MINHAS COMPRAS", paths: ["/aluno/produtos", "/aluno/pedidos", "/aluno/pagamentos"] },
+  { label: "CONTA", paths: ["/aluno/notificacoes", "/aluno/suporte", "/aluno/perfil", "/aluno/preferencias", "/aluno/privacidade"] },
+] as const;
+
+const StudentBrand = () => (
+  <Link
+    to="/aluno"
+    className="flex min-h-12 items-center gap-3 rounded-xl px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar"
+    aria-label={`Ir para o início de ${brandConfig.name}`}
+  >
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-course/25 bg-course/10">
+      <img src={brandConfig.logoPath} alt={brandConfig.logoAlt} className="h-full w-full object-cover" />
+    </span>
+    <span className="min-w-0">
+      <span className="block truncate text-sm font-bold text-sidebar-foreground">{brandConfig.name}</span>
+      <span className="block truncate text-xs text-muted-foreground">Portal do Aluno</span>
+    </span>
+  </Link>
+);
+
+const StudentNavigation = ({ mobile = false }: { readonly mobile?: boolean }) => {
+  const { collapsed, closeNavigation } = useAuthenticatedShellNavigation();
+  const compact = collapsed && !mobile;
+  const renderItem = (item: (typeof studentNavigation)[number]) => {
+    const Icon = item.icon;
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        end={item.end}
+        aria-label={compact ? item.label : undefined}
+        onClick={closeNavigation}
+        className={({ isActive }) => cn(
+          "flex min-h-11 items-center rounded-xl text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
+          compact ? "justify-center px-2" : "gap-3 px-3",
+          isActive ? "bg-course text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        )}
+      >
+        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+        {!compact ? <span>{item.label}</span> : null}
+      </NavLink>
+    );
+  };
+
+  return (
+    <nav className="flex flex-col gap-5 overflow-y-auto pb-2" aria-label={mobile ? "Navegação móvel do Portal do Aluno" : "Navegação do Portal do Aluno"}>
+      <div>
+        {!compact ? <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">APRENDIZADO</p> : null}
+        <div className="space-y-1">{studentGroups[0].paths.map((path) => renderItem(studentNavigationByPath.get(path)!))}</div>
+      </div>
+      <div>
+        {!compact ? <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">COMPRAR</p> : null}
+        <div className="space-y-1">
+          {commerceNavigation.map(({ to, displayLabel, icon: Icon, end }) => (
+            <NavLink key={to} to={to} end={end} aria-label={compact ? displayLabel : undefined} onClick={closeNavigation} className={({ isActive }) => cn(
+              "flex min-h-11 items-center rounded-xl text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
+              compact ? "justify-center px-2" : "gap-3 px-3",
+              isActive ? "bg-marketplace/15 text-marketplace" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}>
+              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {!compact ? <span>{displayLabel}</span> : null}
+            </NavLink>
+          ))}
+        </div>
+      </div>
+      {studentGroups.slice(1).map((group) => (
+        <div key={group.label}>
+          {!compact ? <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{group.label}</p> : null}
+          <div className="space-y-1">{group.paths.map((path) => renderItem(studentNavigationByPath.get(path)!))}</div>
+        </div>
+      ))}
+    </nav>
+  );
+};
+
 interface StudentPortalShellProps {
   readonly displayName: string;
   readonly email: string;
@@ -51,135 +134,18 @@ interface StudentPortalShellProps {
   readonly children: ReactNode;
 }
 
-const StudentNavigation = ({ mobile = false }: { readonly mobile?: boolean }) => (
-  <nav
-    className={cn(
-      mobile
-        ? "flex gap-2 overflow-x-auto pb-1"
-        : "mt-10 flex flex-col gap-2",
-    )}
-    aria-label={
-      mobile
-        ? "Navegação móvel do Portal do Aluno"
-        : "Navegação do Portal do Aluno"
-    }
+export const StudentPortalShell = ({ displayName, email, isSigningOut, onSignOut, children }: StudentPortalShellProps) => (
+  <div data-context="course" className="app-shell">
+    <StudentShell
+    displayName={displayName}
+    email={email}
+    isSigningOut={isSigningOut}
+    onSignOut={onSignOut}
+    navigation={<StudentNavigation />}
+    mobileNavigation={<StudentNavigation mobile />}
+    brand={<StudentBrand />}
   >
-    {studentNavigation.map(({ to, label, icon: Icon, end }) => (
-      <NavLink
-        key={to}
-        to={to}
-        end={end}
-        className={({ isActive }) =>
-          cn(
-            "inline-flex items-center gap-3 font-medium transition-[color,background-color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-            mobile
-              ? "shrink-0 rounded-full px-3 py-2 text-xs"
-              : "min-h-11 rounded-xl px-4 py-3 text-sm",
-            isActive
-              ? "bg-course text-primary-foreground shadow-sm"
-              : mobile
-                ? "border border-border bg-card text-muted-foreground hover:border-course/40 hover:text-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          )
-        }
-      >
-        <Icon className={mobile ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden="true" />
-        {label}
-      </NavLink>
-    ))}
-  </nav>
-);
-
-export const StudentPortalShell = ({
-  displayName,
-  email,
-  isSigningOut,
-  onSignOut,
-  children,
-}: StudentPortalShellProps) => (
-  <div className="app-shell" data-context="course">
-    <div className="mx-auto flex min-h-screen max-w-[1600px]">
-      <aside className="hidden w-72 shrink-0 border-r border-border bg-sidebar p-6 lg:flex lg:flex-col">
-        <Link
-          to="/aluno"
-          aria-label={`Ir para o início de ${brandConfig.name}`}
-          className="flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-sidebar"
-        >
-          <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl border border-course/30 bg-course/10">
-            <img
-              src={brandConfig.logoPath}
-              alt=""
-              className="h-full w-full object-cover"
-              aria-hidden="true"
-            />
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate font-bold text-sidebar-foreground">
-              {brandConfig.name}
-            </span>
-            <span className="block text-xs text-muted-foreground">Portal do Aluno</span>
-          </span>
-        </Link>
-
-        <StudentNavigation />
-
-        <div className="surface-muted mt-auto p-4">
-          <div className="flex items-center gap-3">
-            <span className="rounded-lg bg-course/15 p-2 text-course">
-              <GraduationCap className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-foreground">{displayName}</p>
-              <p className="truncate text-xs text-muted-foreground">{email}</p>
-            </div>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            className="mt-3 w-full justify-start"
-            disabled={isSigningOut}
-            onClick={onSignOut}
-          >
-            {isSigningOut ? (
-              <Loader2 className="animate-spin" aria-hidden="true" />
-            ) : (
-              <LogOut aria-hidden="true" />
-            )}
-            Sair
-          </Button>
-        </div>
-      </aside>
-
-      <div className="min-w-0 flex-1">
-        <header className="app-header sticky top-0 z-20 px-4 py-4 lg:px-8">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm text-muted-foreground">Olá,</p>
-              <p className="truncate font-semibold text-foreground">{displayName}</p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="lg:hidden"
-              disabled={isSigningOut}
-              onClick={onSignOut}
-            >
-              {isSigningOut ? (
-                <Loader2 className="animate-spin" aria-hidden="true" />
-              ) : (
-                <LogOut aria-hidden="true" />
-              )}
-              Sair
-            </Button>
-          </div>
-          <div className="mt-4 lg:hidden">
-            <StudentNavigation mobile />
-          </div>
-        </header>
-
-        <main className="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">{children}</main>
-      </div>
-    </div>
+      {children}
+    </StudentShell>
   </div>
 );

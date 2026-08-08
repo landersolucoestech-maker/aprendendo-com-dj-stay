@@ -10,61 +10,75 @@ import {
   LifeBuoy,
   MessagesSquare,
   ShieldCheck,
-  UsersRound,
 } from "lucide-react";
 import { NavLink } from "react-router";
 
 import { cn } from "@/lib/utils";
+import { useAuthenticatedShellNavigation } from "@/shared/navigation/AuthenticatedShell";
 
 const adminNavigation = [
   { to: "/admin", label: "Visão geral", icon: LayoutDashboard },
   { to: "/admin/cursos", label: "Cursos", icon: BookOpen },
   { to: "/admin/produtos", label: "Produtos", icon: Boxes },
-  { to: "/admin/pagamentos", label: "Pagamentos", icon: Banknote },
-  { to: "/admin/afiliados", label: "Afiliados", icon: HandCoins },
   { to: "/admin/alunos", label: "Alunos", icon: GraduationCap },
   { to: "/admin/academico", label: "Acadêmico", icon: BarChart3 },
+  { to: "/admin/pagamentos", label: "Pagamentos", icon: Banknote },
+  { to: "/admin/afiliados", label: "Afiliados", icon: HandCoins },
   { to: "/admin/contatos", label: "Contatos", icon: MessagesSquare },
   { to: "/admin/suporte", label: "Suporte", icon: LifeBuoy },
   { to: "/admin/privacidade", label: "Privacidade", icon: ShieldCheck },
   { to: "/admin/erros", label: "Erros", icon: Bug },
 ] as const;
 
-export const AdminNavigation = () => (
-  <header className="sticky top-0 z-50 border-b border-white/10 bg-black/95 px-4 py-3 text-white backdrop-blur sm:px-6 lg:px-8">
-    <div className="mx-auto flex max-w-[1600px] items-center gap-4">
-      <NavLink
-        to="/portal"
-        className="flex shrink-0 items-center gap-2 rounded-lg px-2 py-2 font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
-        aria-label="Voltar ao portal"
-      >
-        <UsersRound className="h-5 w-5 text-purple-300" aria-hidden="true" />
-        <span className="hidden sm:inline">Administração</span>
-      </NavLink>
+const adminGroupByPath = {
+  "/admin": "VISÃO GERAL",
+  "/admin/cursos": "CONTEÚDO",
+  "/admin/produtos": "CONTEÚDO",
+  "/admin/alunos": "ACADÊMICO",
+  "/admin/academico": "ACADÊMICO",
+  "/admin/pagamentos": "FINANCEIRO",
+  "/admin/afiliados": "FINANCEIRO",
+  "/admin/contatos": "RELACIONAMENTO",
+  "/admin/suporte": "RELACIONAMENTO",
+  "/admin/privacidade": "GOVERNANÇA",
+  "/admin/erros": "GOVERNANÇA",
+} as const;
 
-      <nav
-        aria-label="Navegação administrativa"
-        className="flex min-w-0 flex-1 gap-2 overflow-x-auto py-1"
-      >
-        {adminNavigation.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === "/admin"}
-            className={({ isActive }) =>
-              cn(
-                "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400",
-                isActive
-                  ? "border-purple-400/60 bg-purple-500/20 text-white"
-                  : "border-white/10 bg-white/5 text-gray-300 hover:border-white/25 hover:bg-white/10 hover:text-white",
-              )
-            }
-          >
-            <Icon className="h-4 w-4" aria-hidden="true" />
-            {label}
-          </NavLink>
-        ))}
-      </nav>
-    </div>
-  </header>
-);
+const visibleAdminNavigation = adminNavigation.filter((item) => item.to !== "/admin/erros");
+const adminGroups = ["VISÃO GERAL", "CONTEÚDO", "ACADÊMICO", "FINANCEIRO", "RELACIONAMENTO", "GOVERNANÇA"] as const;
+
+export const AdminNavigation = () => {
+  const { collapsed, closeNavigation } = useAuthenticatedShellNavigation();
+  return (
+    <nav aria-label="Navegação administrativa" className="flex h-full flex-col gap-5 overflow-x-auto overflow-y-auto pb-2">
+      {adminGroups.map((group) => {
+        const items = visibleAdminNavigation.filter((item) => adminGroupByPath[item.to] === group);
+        if (items.length === 0) return null;
+        return (
+          <div key={group}>
+            {!collapsed ? <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{group}</p> : null}
+            <div className="space-y-1">
+              {items.map(({ to, label, icon: Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={to === "/admin"}
+                  aria-label={collapsed ? (to === "/admin" ? "Dashboard" : label) : undefined}
+                  onClick={closeNavigation}
+                  className={({ isActive }) => cn(
+                    "flex min-h-11 items-center rounded-xl text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
+                    collapsed ? "justify-center px-2" : "gap-3 px-3",
+                    isActive ? "bg-admin/15 text-admin" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  {!collapsed ? <span>{to === "/admin" ? "Dashboard" : label}</span> : null}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </nav>
+  );
+};

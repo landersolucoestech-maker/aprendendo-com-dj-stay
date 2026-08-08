@@ -412,10 +412,14 @@ const AffiliatePortal = () => {
       }
     >
       <div className="space-y-8">
+        <span id="affiliate-overview" className="sr-only" />
         <section
+          id="affiliate-performance"
           className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
           aria-label="Resumo do afiliado"
         >
+          <span id="affiliate-clicks" className="sr-only" />
+          <span id="affiliate-conversions" className="sr-only" />
           <SummaryCard
             label="Cliques"
             value={String(portal.summary.clicks)}
@@ -443,7 +447,7 @@ const AffiliatePortal = () => {
           />
         </section>
 
-        <Card variant="affiliate">
+        <Card id="affiliate-offers" variant="affiliate">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Link2 className="h-5 w-5 text-affiliate" aria-hidden="true" />
@@ -542,7 +546,7 @@ const AffiliatePortal = () => {
           </CardContent>
         </Card>
 
-        <Card variant="affiliate">
+        <Card id="affiliate-links" variant="affiliate">
           <CardHeader>
             <CardTitle>Links rastreáveis</CardTitle>
             <CardDescription>
@@ -641,7 +645,7 @@ const AffiliatePortal = () => {
         </Card>
 
         <div className="grid gap-6 xl:grid-cols-2">
-          <Card variant="affiliate">
+          <Card id="affiliate-commissions" variant="affiliate">
             <CardHeader>
               <CardTitle>Comissões</CardTitle>
             </CardHeader>
@@ -695,7 +699,7 @@ const AffiliatePortal = () => {
             </CardContent>
           </Card>
 
-          <Card variant="affiliate">
+          <Card id="affiliate-payouts" variant="affiliate">
             <CardHeader>
               <CardTitle>Repasses</CardTitle>
             </CardHeader>
@@ -746,7 +750,7 @@ const AffiliatePortal = () => {
           </Card>
         </div>
 
-        <Card variant="affiliate">
+        <Card id="affiliate-events" variant="affiliate">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-affiliate" aria-hidden="true" />
