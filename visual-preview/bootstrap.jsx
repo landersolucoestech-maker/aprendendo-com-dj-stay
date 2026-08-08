@@ -10,7 +10,39 @@ const surface = SURFACES.find((item) => item.slug === slug) ?? SURFACES[0];
 globalThis.__VISUAL_PREVIEW_ONLY__ = Object.freeze({ slug, surface });
 
 const UUID_USER = "00000000-0000-4000-8000-000000000001";
+const UUID_COURSE = "11111111-1111-4111-8111-111111111111";
+const UUID_MODULE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const UUID_LESSON = "22222222-2222-4222-8222-222222222222";
 const now = "2026-08-08T12:00:00.000Z";
+
+const courseEnrollment = {
+  id: "99999999-9999-4999-8999-999999999999",
+  user_id: UUID_USER,
+  course_id: UUID_COURSE,
+  status: "active",
+  source: "purchase",
+  source_reference: "PREVIEW-ORDER-001",
+  payment_confirmed_at: now,
+  starts_at: now,
+  expires_at: null,
+  status_reason: null,
+  courses: { id: UUID_COURSE, title: "Curso Preview Navegável", slug: "curso-preview-navegavel", status: "published" },
+};
+
+const courseAccessFixture = {
+  total: 1,
+  active_total: 1,
+  active_enrollments: [courseEnrollment],
+  enrollments: [{ enrollment: courseEnrollment, access_active: true }],
+};
+
+const moduleFixture = [{
+  id: UUID_MODULE,
+  titulo: "Módulo 1 · Fundamentos",
+  descricao: "Conteúdo VISUAL_PREVIEW_ONLY para permitir navegação real entre curso, módulo e aula.",
+  ordem: 1,
+  aulas: [{ id: UUID_LESSON, titulo: "Aula 1 · Introdução", descricao: "Aula navegável do preview.", ordem: 1, duracao: 12 }],
+}];
 
 const affiliateFixture = () => {
   const mode = surface.slug.split("/")[1];
@@ -34,7 +66,7 @@ const affiliateFixture = () => {
   const active = profileStatus === "active";
   const offer = {
     subject_type: "course",
-    subject_id: "11111111-1111-4111-8111-111111111111",
+    subject_id: UUID_COURSE,
     title: "Curso Preview",
     slug: "curso-preview",
     commission_bps: 1000,
@@ -93,14 +125,16 @@ const affiliateFixture = () => {
 };
 
 const studentSummary = {
-  total: 0, active_total: 0, active_enrollments: [], enrollments: [],
+  total: 1, active_total: 1, active_enrollments: [courseEnrollment], enrollments: courseAccessFixture.enrollments,
   started_lessons: 0, completed_lessons: 0, average_progress_percent: 0,
-  items: [], rows: [], courses: [], modules: [], lessons: [], materials: [],
+  items: [], rows: [], courses: [courseEnrollment.courses], modules: moduleFixture, lessons: moduleFixture[0].aulas, materials: [],
 };
 
 const rpcFixture = (name) => {
   if (name === "get_affiliate_portal") return affiliateFixture();
-  if (name.includes("student_course_access")) return { total: 0, active_total: 0, active_enrollments: [], enrollments: [] };
+  if (name === "get_student_course_access") return courseAccessFixture;
+  if (name === "get_student_course_detail_access") return courseEnrollment;
+  if (name.includes("student_course_access")) return courseAccessFixture;
   if (name.includes("student_progress_summary")) return { started_lessons: 0, completed_lessons: 0, average_progress_percent: 0 };
   if (name.includes("student_library_summary")) return { total: 0 };
   if (name.includes("recent_activities")) return [];
@@ -131,6 +165,11 @@ globalThis.fetch = async (input, init = {}) => {
       created_at: now, updated_at: now,
     });
   }
+  if (url.pathname.includes("/rest/v1/modulos")) return jsonResponse(moduleFixture);
+  if (url.pathname.includes("/rest/v1/aulas")) {
+    return jsonResponse([{ id: UUID_LESSON, modulo_id: UUID_MODULE, titulo: "Aula 1 · Introdução", descricao: "Aula navegável do preview.", ordem: 1, duracao: 12, completion_mode: "manual", completion_percent: null, content_kind: "video" }]);
+  }
+  if (url.pathname.includes("/rest/v1/progresso_aulas")) return jsonResponse([]);
   if (url.pathname.includes("/rest/v1/")) {
     const requestHeaders = typeof input === "string" ? init.headers : (init.headers || input.headers);
     const accept = String(new Headers(requestHeaders || {}).get("accept") || "");
