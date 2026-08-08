@@ -304,7 +304,11 @@ function PreviewNavigator() {
         Preview · {surface.slug}
       </button>
       {open ? (
-        <div className="mt-2 max-h-[80vh] w-[min(92vw,420px)] overflow-auto rounded-2xl border border-border bg-background p-3 text-foreground shadow-2xl">
+        <div
+          data-preview-navigator-scroll
+          className="mt-2 max-h-[80vh] w-[min(92vw,420px)] overflow-auto rounded-2xl border border-border bg-background p-3 text-foreground shadow-2xl"
+          style={{ maxHeight: "80vh", overflowY: "auto" }}
+        >
           {Object.entries(grouped).map(([area, items]) => (
             <section key={area} className="mb-4 last:mb-0">
               <p className="mb-2 px-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">{groupLabels[area]}</p>
