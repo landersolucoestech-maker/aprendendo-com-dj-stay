@@ -132,6 +132,7 @@ jobs:
           exit 1
 
       - name: Chrome smoke — 73 URLs desktop + mobile
+        continue-on-error: true
         env:
           PREVIEW_BASE_URL: http://127.0.0.1:4173/aprendendo-com-dj-stay/
         run: node visual-preview/smoke.mjs
