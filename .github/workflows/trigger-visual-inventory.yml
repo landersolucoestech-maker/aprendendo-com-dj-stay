@@ -1,0 +1,23 @@
+name: Trigger Visual Inventory
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/trigger-visual-inventory.yml"
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  trigger:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Dispatch full visual inventory
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            repos/${{ github.repository }}/actions/workflows/visual-preview.yml/dispatches \
+            -f ref=dev
