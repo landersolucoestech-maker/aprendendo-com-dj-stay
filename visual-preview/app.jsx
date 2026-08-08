@@ -86,6 +86,14 @@ const authValue = {
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, staleTime: Infinity, refetchOnWindowFocus: false }, mutations: { retry: false } },
 });
+queryClient.setQueryData(["user-profile"], {
+  id: "33333333-3333-4333-8333-333333333333",
+  user_id: user.id,
+  avatar_asset_id: null,
+  created_at: now,
+  updated_at: now,
+  avatarSignedUrl: null,
+});
 const previewLesson = {
   id: LESSON_ID,
   title: "Aula 1 · Introdução",
