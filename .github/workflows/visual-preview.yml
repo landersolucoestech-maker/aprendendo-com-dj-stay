@@ -192,3 +192,19 @@ jobs:
           done
           echo "URL pública não respondeu com o preview esperado."
           exit 1
+
+      - name: Checkout somente para validar navegação pública
+        uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 1
+
+      - name: Node para click-smoke público
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.0
+
+      - name: Chrome click-smoke — URL pública real
+        env:
+          PREVIEW_BASE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node visual-preview/click-smoke.mjs
