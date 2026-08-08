@@ -136,6 +136,11 @@ jobs:
           PREVIEW_BASE_URL: http://127.0.0.1:4173/aprendendo-com-dj-stay/
         run: node visual-preview/smoke.mjs
 
+      - name: Chrome click-smoke — navegação real desktop + mobile
+        env:
+          PREVIEW_BASE_URL: http://127.0.0.1:4173/aprendendo-com-dj-stay/
+        run: node visual-preview/click-smoke.mjs
+
       - name: Confirmar isolamento do preview
         shell: bash
         run: |
