@@ -115,8 +115,10 @@ const overlaySnapshot = async (cdp, selector) => evaluate(cdp, `(() => {
   const chain=(node)=>{const rows=[];let current=node;while(current){rows.push(summarize(current));current=current.parentElement;}return rows;};
   const r=el.getBoundingClientRect();const x=Math.min(innerWidth-1,Math.max(0,r.left+r.width/2));const y=Math.min(innerHeight-1,Math.max(0,r.top+r.height/2));
   const point=document.elementFromPoint(x,y);
+  const overlays=Array.from(document.querySelectorAll('body *')).filter((node)=>{if(!(node instanceof HTMLElement)||node===el||el.contains(node)||node.closest('[data-preview-navigator]'))return false;const s=getComputedStyle(node);if(!['fixed','sticky'].includes(s.position)||s.pointerEvents==='none'||s.visibility==='hidden'||s.display==='none')return false;const nr=node.getBoundingClientRect();return nr.width>0&&nr.height>0&&nr.bottom>0&&nr.top<innerHeight&&nr.right>r.left&&nr.left<r.right;});
+  const containingOverlay=overlays.find((node)=>node.contains(el))||null;
   let scrollOwner=null;let p=el.parentElement;while(p){if(p.scrollHeight>p.clientHeight){scrollOwner=summarize(p);break;}p=p.parentElement;}if(!scrollOwner&&document.documentElement.scrollHeight>innerHeight)scrollOwner={tag:'WINDOW',scrollY:window.scrollY,scrollHeight:document.documentElement.scrollHeight,clientHeight:innerHeight};
-  return {target:summarize(el),targetParentChain:chain(el),interceptor:summarize(point),interceptorParentChain:chain(point),windowScrollY:window.scrollY,innerHeight,documentHeight:document.documentElement.scrollHeight,scrollOwner,center:{x,y},interceptorConfirmed:Boolean(point&&point!==el&&!el.contains(point))};
+  return {target:summarize(el),targetParentChain:chain(el),interceptor:summarize(point),interceptorParentChain:chain(point),overlay:summarize(containingOverlay),targetInsideOverlay:Boolean(containingOverlay),targetIsOverlay:overlays.includes(el),targetOverlayRelation:containingOverlay?'INSIDE_OVERLAY':(overlays.length?'OUTSIDE_OVERLAY':'NO_OVERLAY'),windowScrollY:window.scrollY,innerHeight,documentHeight:document.documentElement.scrollHeight,scrollOwner,center:{x,y},interceptorConfirmed:Boolean(point&&point!==el&&!el.contains(point))};
 })()`);
 
 const stabilizeTarget = async (cdp, selector) => evaluate(cdp, `new Promise((resolve) => {
@@ -129,31 +131,45 @@ const stabilizeTarget = async (cdp, selector) => evaluate(cdp, `new Promise((res
   const windowScrollYBefore=window.scrollY;
   const scrollable=(()=>{let parent=el.parentElement;while(parent){if(parent.scrollHeight>parent.clientHeight)return parent;parent=parent.parentElement;}return null;})();
   const scrollOwnerBefore=scrollable?.scrollTop??window.scrollY;
-  el.scrollIntoView({block:'center',inline:'nearest'});
-  if(scrollable){const er=el.getBoundingClientRect();const pr=scrollable.getBoundingClientRect();scrollable.scrollTop += (er.top+er.height/2)-(pr.top+scrollable.clientHeight/2);}
+  const safety=12;
+  const findFixedOverlays=(rect)=>Array.from(document.querySelectorAll('body *')).filter((node)=>{
+    if(!(node instanceof HTMLElement)||node===el||el.contains(node)||node.closest('[data-preview-navigator]'))return false;
+    const s=getComputedStyle(node);if(!['fixed','sticky'].includes(s.position)||s.pointerEvents==='none'||s.visibility==='hidden'||s.display==='none')return false;
+    const nr=node.getBoundingClientRect();return nr.width>0&&nr.height>0&&nr.bottom>0&&nr.top<innerHeight&&nr.right>rect.left&&nr.left<rect.right;
+  }).map((node)=>{const nr=node.getBoundingClientRect();const s=getComputedStyle(node);return{node,rect:nr,position:s.position,zIndex:s.zIndex,pointerEvents:s.pointerEvents};});
+  const initialOverlays=findFixedOverlays(beforeRect);
+  const initialContainingOverlay=initialOverlays.find((item)=>item.node.contains(el))||null;
+  const targetInsideOverlay=Boolean(initialContainingOverlay);
+  if(!targetInsideOverlay){
+    el.scrollIntoView({block:'center',inline:'nearest'});
+    if(scrollable){const er=el.getBoundingClientRect();const pr=scrollable.getBoundingClientRect();scrollable.scrollTop += (er.top+er.height/2)-(pr.top+scrollable.clientHeight/2);}
+  }
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    const safety=12;
-    const findFixedOverlays=(rect)=>Array.from(document.querySelectorAll('body *')).filter((node)=>{
-      if(!(node instanceof HTMLElement)||node===el||el.contains(node)||node.closest('[data-preview-navigator]'))return false;
-      const s=getComputedStyle(node);if(!['fixed','sticky'].includes(s.position)||s.pointerEvents==='none'||s.visibility==='hidden'||s.display==='none')return false;
-      const nr=node.getBoundingClientRect();return nr.width>0&&nr.height>0&&nr.bottom>0&&nr.top<innerHeight&&nr.right>rect.left&&nr.left<rect.right;
-    }).map((node)=>{const nr=node.getBoundingClientRect();const s=getComputedStyle(node);return{node,rect:nr,position:s.position,zIndex:s.zIndex,pointerEvents:s.pointerEvents};});
     let r=el.getBoundingClientRect();
     let overlays=findFixedOverlays(r);
-    let headerBottom=overlays.filter((item)=>item.rect.top<=0||item.rect.top<r.bottom).reduce((max,item)=>Math.max(max,item.rect.bottom),0);
-    const safeTop=Math.max(0,headerBottom)+safety;
+    let containingOverlay=overlays.find((item)=>item.node.contains(el))||null;
+    let blockingOverlays=overlays.filter((item)=>!item.node.contains(el));
+    let headerBottom=blockingOverlays.filter((item)=>item.rect.top<=0||item.rect.top<r.bottom).reduce((max,item)=>Math.max(max,item.rect.bottom),0);
+    const safeTop=headerBottom>0?headerBottom+safety:0;
     const safeBottom=innerHeight-safety;
     let adjustment=0;
-    if(r.top<safeTop) adjustment=r.top-safeTop;
-    else if(r.bottom>safeBottom) adjustment=r.bottom-safeBottom;
+    if(!containingOverlay){
+      if(r.top<safeTop) adjustment=r.top-safeTop;
+      else if(r.bottom>safeBottom) adjustment=r.bottom-safeBottom;
+    }
     if(adjustment!==0){if(scrollable)scrollable.scrollTop+=adjustment;else window.scrollBy(0,adjustment);}
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
       r=el.getBoundingClientRect();
       overlays=findFixedOverlays(r);
-      headerBottom=overlays.filter((item)=>item.rect.top<=0||item.rect.top<r.bottom).reduce((max,item)=>Math.max(max,item.rect.bottom),0);
-      const clickable={left:Math.max(0,r.left),top:Math.max(0,r.top,headerBottom+safety),right:Math.min(innerWidth,r.right),bottom:Math.min(innerHeight-safety,r.bottom)};
+      containingOverlay=overlays.find((item)=>item.node.contains(el))||null;
+      blockingOverlays=overlays.filter((item)=>!item.node.contains(el));
+      headerBottom=blockingOverlays.filter((item)=>item.rect.top<=0||item.rect.top<r.bottom).reduce((max,item)=>Math.max(max,item.rect.bottom),0);
+      const clickableTop=containingOverlay?Math.max(0,r.top):Math.max(0,r.top,headerBottom>0?headerBottom+safety:0);
+      const clickable={left:Math.max(0,r.left),top:clickableTop,right:Math.min(innerWidth,r.right),bottom:Math.min(innerHeight-safety,r.bottom)};
       clickable.width=Math.max(0,clickable.right-clickable.left);clickable.height=Math.max(0,clickable.bottom-clickable.top);
-      if(clickable.width<=0||clickable.height<=0){resolve({unClickable:true,text:(el.textContent||'').trim(),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},clickableRect:clickable,headerBottom,windowScrollYBefore,windowScrollYAfter:window.scrollY,scrollTopBefore:scrollOwnerBefore,scrollTopAfter:scrollable?.scrollTop??window.scrollY});return;}
+      const relation=containingOverlay?'INSIDE_OVERLAY':(overlays.length?'OUTSIDE_OVERLAY':'NO_OVERLAY');
+      const overlayRect=containingOverlay?{left:containingOverlay.rect.left,top:containingOverlay.rect.top,right:containingOverlay.rect.right,bottom:containingOverlay.rect.bottom,width:containingOverlay.rect.width,height:containingOverlay.rect.height}:null;
+      if(clickable.width<=0||clickable.height<=0){resolve({unClickable:true,text:(el.textContent||'').trim(),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},clickableRect:clickable,headerBottom,targetInsideOverlay:Boolean(containingOverlay),targetOverlayRelation:relation,overlayRect,windowScrollYBefore,windowScrollYAfter:window.scrollY,scrollTopBefore:scrollOwnerBefore,scrollTopAfter:scrollable?.scrollTop??window.scrollY});return;}
       const xs=[0.5,0.25,0.75].map((p)=>clickable.left+clickable.width*p);
       const ys=[0.5,0.25,0.75].map((p)=>clickable.top+clickable.height*p);
       let chosen=null;
@@ -161,7 +177,7 @@ const stabilizeTarget = async (cdp, selector) => evaluate(cdp, `new Promise((res
       const x=chosen?.x??(clickable.left+clickable.width/2);const y=chosen?.y??(clickable.top+clickable.height/2);const point=chosen?.point??document.elementFromPoint(x,y);
       const pointRect=point?.getBoundingClientRect?.();
       const overlayAtPoint=point&&point!==el&&!el.contains(point)?{tag:point.tagName,classes:point.className||'',rect:pointRect?{left:pointRect.left,top:pointRect.top,right:pointRect.right,bottom:pointRect.bottom,width:pointRect.width,height:pointRect.height}:null,position:getComputedStyle(point).position,zIndex:getComputedStyle(point).zIndex,pointerEvents:getComputedStyle(point).pointerEvents,text:(point.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160)}:null;
-      resolve({x,y,text:(el.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160),aria:el.getAttribute('aria-label'),tag:el.tagName,href:el.getAttribute('href'),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},rectBefore:{left:beforeRect.left,top:beforeRect.top,right:beforeRect.right,bottom:beforeRect.bottom,width:beforeRect.width,height:beforeRect.height},clickableRect:clickable,headerBottom,interceptor:overlayAtPoint,elementFromPoint:point?{tag:point.tagName,text:(point.textContent||'').trim().replace(/\\s+/g,' ').slice(0,120),href:point.closest('a')?.getAttribute('href')||null,same:point===el||el.contains(point)}:null,scrollTopBefore:scrollOwnerBefore,scrollTopAfter:scrollable?.scrollTop??window.scrollY,windowScrollYBefore,windowScrollYAfter:window.scrollY,scrollOwner:scrollable?{tag:scrollable.tagName,classes:scrollable.className||'',clientHeight:scrollable.clientHeight,scrollHeight:scrollable.scrollHeight}: {tag:'WINDOW',clientHeight:innerHeight,scrollHeight:document.documentElement.scrollHeight}});
+      resolve({x,y,text:(el.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160),aria:el.getAttribute('aria-label'),tag:el.tagName,href:el.getAttribute('href'),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},rectBefore:{left:beforeRect.left,top:beforeRect.top,right:beforeRect.right,bottom:beforeRect.bottom,width:beforeRect.width,height:beforeRect.height},clickableRect:clickable,headerBottom,targetInsideOverlay:Boolean(containingOverlay),targetOverlayRelation:relation,overlayRect,interceptor:overlayAtPoint,elementFromPoint:point?{tag:point.tagName,text:(point.textContent||'').trim().replace(/\\s+/g,' ').slice(0,120),href:point.closest('a')?.getAttribute('href')||null,same:point===el||el.contains(point)}:null,scrollTopBefore:scrollOwnerBefore,scrollTopAfter:scrollable?.scrollTop??window.scrollY,windowScrollYBefore,windowScrollYAfter:window.scrollY,scrollOwner:scrollable?{tag:scrollable.tagName,classes:scrollable.className||'',clientHeight:scrollable.clientHeight,scrollHeight:scrollable.scrollHeight}:{tag:'WINDOW',clientHeight:innerHeight,scrollHeight:document.documentElement.scrollHeight}});
     }));
   }));
 })`);
@@ -188,13 +204,13 @@ const selectorForDestination = (slug, navigator = false) => navigator
   ? `[data-preview-navigator] a[href$="/visual-preview/${slug}/"]`
   : `[data-preview-destination="${slug}"]:not([data-preview-navigator] *)`;
 
+const publicMenuSelector = `button[aria-label*="menu" i],button[aria-label*="navegação" i],button[aria-label*="navegacao" i]`;
 const openResponsiveMenu = async (cdp) => {
   if (await trustedClick(cdp, "[data-shell-menu-button]")) {
     await waitFor(cdp, `Boolean(document.querySelector('[data-shell-drawer-content]'))`, 3000);
     return true;
   }
-  const publicMenu = `button[aria-label*="menu" i],button[aria-label*="navegação" i],button[aria-label*="navegacao" i]`;
-  if (await trustedClick(cdp, publicMenu)) { await sleep(150); return true; }
+  if (await trustedClick(cdp, publicMenuSelector)) { await sleep(150); return true; }
   return false;
 };
 
@@ -225,7 +241,7 @@ const clickDestination = async (cdp, slug, { navigator = false, scenario = "navi
   }
   currentStep.selector = target.aria || target.text || selector;
   await waitSurface(cdp, slug);
-  await logStep(cdp, "PASS", { TRUSTED_CLICK: target.probe?.trusted === true, CLICK_RECEIVED: target.probe?.received === true, DEFAULT_PREVENTED: target.probe?.defaultPrevented ?? null, TARGET_RECT: target.rect, TARGET_RECT_BEFORE: target.rectBefore ?? null, CLICKABLE_RECT: target.clickableRect ?? null, CLICK_POINT: { x: target.x, y: target.y }, ELEMENT_FROM_POINT: target.elementFromPoint, SCROLL_OWNER: target.scrollOwner ?? null, SCROLL_TOP_BEFORE: target.scrollTopBefore ?? null, SCROLL_TOP_AFTER: target.scrollTopAfter ?? null, WINDOW_SCROLL_Y_BEFORE: target.windowScrollYBefore ?? null, WINDOW_SCROLL_Y_AFTER: target.windowScrollYAfter ?? null });
+  await logStep(cdp, "PASS", { TRUSTED_CLICK: target.probe?.trusted === true, CLICK_RECEIVED: target.probe?.received === true, DEFAULT_PREVENTED: target.probe?.defaultPrevented ?? null, TARGET_RECT: target.rect, TARGET_RECT_BEFORE: target.rectBefore ?? null, TARGET_INSIDE_OVERLAY: target.targetInsideOverlay ?? null, TARGET_OVERLAY_RELATION: target.targetOverlayRelation ?? null, OVERLAY_RECT: target.overlayRect ?? null, CLICKABLE_RECT: target.clickableRect ?? null, CLICK_POINT: { x: target.x, y: target.y }, ELEMENT_FROM_POINT: target.elementFromPoint, SCROLL_OWNER: target.scrollOwner ?? null, SCROLL_TOP_BEFORE: target.scrollTopBefore ?? null, SCROLL_TOP_AFTER: target.scrollTopAfter ?? null, WINDOW_SCROLL_Y_BEFORE: target.windowScrollYBefore ?? null, WINDOW_SCROLL_Y_AFTER: target.windowScrollYAfter ?? null });
 };
 
 const browserBackForward = async (cdp, backSlug, forwardSlug, scenario) => {
@@ -351,6 +367,36 @@ const classifyNavigatorTarget = (snapshot) => {
   return "OTHER";
 };
 
+const runFocusedPublicMobileCourses = async (cdp) => {
+  currentStep.viewport = "mobile";
+  await cdp.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await prepareScenario(cdp, "public/home", "PUBLIC_MOBILE_COURSES_FOCUSED");
+  const coursesSelector = selectorForDestination("commerce/courses");
+  const beforeHistory = await cdp.send("Page.getNavigationHistory");
+  let courses = await trustedClick(cdp, coursesSelector);
+  let trigger = null;
+  if (!courses) {
+    const relation = await overlaySnapshot(cdp, publicMenuSelector);
+    console.log(JSON.stringify({ SCENARIO:"PUBLIC", VIEWPORT:"mobile", FROM:"public/home", ACTION:"Landing → Cursos / abrir menu", TARGET_TAG:relation?.target?.tag??null, TARGET_RECT:relation?.target?.rect??null, TARGET_CLASSES:relation?.target?.classes??null, TARGET_PARENT_CHAIN:relation?.targetParentChain??[], OVERLAY:relation?.overlay??null, OVERLAY_TAG:relation?.overlay?.tag??null, OVERLAY_RECT:relation?.overlay?.rect??null, OVERLAY_CLASSES:relation?.overlay?.classes??null, OVERLAY_POSITION:relation?.overlay?.position??null, TARGET_INSIDE_OVERLAY:relation?.targetInsideOverlay===true, TARGET_IS_OVERLAY_DESCENDANT:relation?.targetInsideOverlay===true, TARGET_IS_OVERLAY:relation?.targetIsOverlay===true, TARGET_OVERLAY_RELATION:relation?.targetOverlayRelation??"NO_OVERLAY" }));
+    trigger = await trustedClick(cdp, publicMenuSelector);
+    if (!trigger) throw new Error("MENU_TRIGGER_FOUND=false");
+    if (trigger.targetInsideOverlay !== true) throw new Error(`MENU_TRIGGER_INSIDE_OVERLAY=false: ${JSON.stringify(trigger)}`);
+    if (trigger.probe?.trusted !== true || trigger.elementFromPoint?.same !== true) throw new Error(`MENU_TRIGGER_TRUSTED_CLICK=false: ${JSON.stringify(trigger)}`);
+    const opened = await waitFor(cdp, `Array.from(document.querySelectorAll(${JSON.stringify(coursesSelector)})).some((node)=>{const r=node.getBoundingClientRect();const s=getComputedStyle(node);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden';})`, 3000);
+    if (!opened) throw new Error("MENU_OPENED=false");
+    courses = await trustedClick(cdp, coursesSelector);
+  }
+  if (!courses) throw new Error("COURSES_TARGET_FOUND=false");
+  if (courses.probe?.trusted !== true || courses.elementFromPoint?.same !== true) throw new Error(`COURSES_TARGET_TRUSTED_CLICK=false: ${JSON.stringify(courses)}`);
+  await waitSurface(cdp, "commerce/courses");
+  const afterHistory = await cdp.send("Page.getNavigationHistory");
+  const entryCreated = afterHistory.entries.some((entry)=>entry.url.includes(expectedPath("commerce/courses"))) && afterHistory.entries.length > beforeHistory.entries.length;
+  if (!entryCreated) throw new Error("HISTORY_ENTRY_CREATED=false para commerce/courses");
+  console.log(JSON.stringify({ SCENARIO:"PUBLIC_MOBILE_COURSES_FOCUSED", VIEWPORT:"mobile", FROM:"public/home", ACTION:"Landing → Cursos", MENU_TRIGGER_FOUND:Boolean(trigger), MENU_TRIGGER_INSIDE_OVERLAY:trigger?.targetInsideOverlay??null, MENU_TRIGGER_TRUSTED_CLICK:trigger?.probe?.trusted===true, MENU_OPENED:Boolean(trigger), TARGET_RECT:trigger?.rect??courses.rect, OVERLAY_RECT:trigger?.overlayRect??null, CLICKABLE_RECT:trigger?.clickableRect??courses.clickableRect, CLICK_X:trigger?.x??courses.x, CLICK_Y:trigger?.y??courses.y, ELEMENT_FROM_POINT:trigger?.elementFromPoint??courses.elementFromPoint, ELEMENT_FROM_POINT_MATCH:(trigger?.elementFromPoint??courses.elementFromPoint)?.same===true, COURSES_TARGET_FOUND:true, COURSES_TARGET_TRUSTED_CLICK:courses.probe?.trusted===true, URL_AFTER:await evaluate(cdp,"location.href"), EXPECTED_SURFACE:"commerce/courses", OBSERVED_SURFACE:await evaluate(cdp,currentSlugExpression), URL_CHANGED:true, HISTORY_ENTRY_CREATED:true, RESULT:"PASS" }));
+  await browserBackForward(cdp, "public/home", "commerce/courses", "PUBLIC_MOBILE_COURSES_FOCUSED_HISTORY");
+  console.log("FOCUSED_PUBLIC_MOBILE_COURSES_TEST=PASS");
+};
+
 const runFocusedPublicMobile = async (cdp) => {
   currentStep.viewport = "mobile";
   await cdp.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
@@ -368,9 +414,9 @@ const runFocusedPublicMobile = async (cdp) => {
   const afterHistory = await cdp.send("Page.getNavigationHistory");
   const entryCreated = afterHistory.entries.some((entry)=>entry.url.includes(expectedPath("public/contact"))) && afterHistory.entries.length > beforeHistory.entries.length;
   if (!entryCreated) throw new Error("Histórico não recebeu entrada public/contact.");
-  console.log(JSON.stringify({ SCENARIO:"PUBLIC_MOBILE_FOCUSED", VIEWPORT:"mobile", FROM:"public/home", ACTION:"Landing → Contato", TARGET:"Tirar uma dúvida", TARGET_RECT_BEFORE:target.rectBefore, TARGET_RECT_AFTER:target.rect, HEADER_HEIGHT:target.headerBottom, INTERCEPTOR_RECT:before?.interceptor?.rect??null, CLICKABLE_RECT:target.clickableRect, CLICK_X:target.x, CLICK_Y:target.y, ELEMENT_FROM_POINT_BEFORE:before?.interceptor??null, ELEMENT_FROM_POINT_AFTER:target.elementFromPoint, ELEMENT_FROM_POINT_MATCH:target.elementFromPoint?.same===true, WINDOW_SCROLL_Y_BEFORE:target.windowScrollYBefore, WINDOW_SCROLL_Y_AFTER:target.windowScrollYAfter, SCROLL_OWNER:target.scrollOwner, TRUSTED_CLICK:true, CLICK_RECEIVED:true, URL_BEFORE:urlBefore, URL_AFTER:await evaluate(cdp,"location.href"), URL_CHANGED:true, EXPECTED_SURFACE:"public/contact", OBSERVED_SURFACE:await evaluate(cdp,currentSlugExpression), HISTORY_ENTRY_CREATED:true, RESULT:"PASS" }));
+  console.log(JSON.stringify({ SCENARIO:"PUBLIC_MOBILE_FOCUSED", VIEWPORT:"mobile", FROM:"public/home", ACTION:"Landing → Contato", TARGET:"Tirar uma dúvida", TARGET_RECT_BEFORE:target.rectBefore, TARGET_RECT_AFTER:target.rect, HEADER_HEIGHT:target.headerBottom, INTERCEPTOR_RECT:before?.interceptor?.rect??null, TARGET_INSIDE_OVERLAY:target.targetInsideOverlay, CLICKABLE_RECT:target.clickableRect, CLICK_X:target.x, CLICK_Y:target.y, ELEMENT_FROM_POINT_BEFORE:before?.interceptor??null, ELEMENT_FROM_POINT_AFTER:target.elementFromPoint, ELEMENT_FROM_POINT_MATCH:target.elementFromPoint?.same===true, WINDOW_SCROLL_Y_BEFORE:target.windowScrollYBefore, WINDOW_SCROLL_Y_AFTER:target.windowScrollYAfter, SCROLL_OWNER:target.scrollOwner, TRUSTED_CLICK:true, CLICK_RECEIVED:true, URL_BEFORE:urlBefore, URL_AFTER:await evaluate(cdp,"location.href"), URL_CHANGED:true, EXPECTED_SURFACE:"public/contact", OBSERVED_SURFACE:await evaluate(cdp,currentSlugExpression), HISTORY_ENTRY_CREATED:true, RESULT:"PASS" }));
   await browserBackForward(cdp, "public/home", "public/contact", "PUBLIC_MOBILE_FOCUSED_HISTORY");
-  console.log("FOCUSED_PUBLIC_MOBILE_TEST=PASS");
+  console.log("FOCUSED_PUBLIC_MOBILE_CONTACT_REGRESSION=PASS");
 };
 
 const runFocusedCommercial = async (cdp) => {
@@ -444,6 +490,7 @@ try {
   client = new Cdp(target.webSocketDebuggerUrl);
   await client.connect(); await client.send("Page.enable"); await client.send("Runtime.enable");
   try {
+    await runFocusedPublicMobileCourses(client);
     await runFocusedPublicMobile(client);
     await runViewport(client, { name: "mobile", width: 390, height: 844 });
     await runViewport(client, { name: "desktop", width: 1440, height: 900 });
