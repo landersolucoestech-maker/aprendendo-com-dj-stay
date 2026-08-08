@@ -100,11 +100,23 @@ const targetSnapshot = async (cdp, selector) => evaluate(cdp, `(() => {
   if(!el)return {candidateCount:candidates.length,target:null};
   const r=el.getBoundingClientRect(); const x=r.left+r.width/2; const y=r.top+r.height/2;
   const scrollables=[]; let parent=el.parentElement;
-  while(parent){const s=getComputedStyle(parent);if(/(auto|scroll)/.test(s.overflowY)&&parent.scrollHeight>parent.clientHeight){const pr=parent.getBoundingClientRect();scrollables.push({tag:parent.tagName,scrollTop:parent.scrollTop,scrollHeight:parent.scrollHeight,clientHeight:parent.clientHeight,rect:{left:pr.left,top:pr.top,right:pr.right,bottom:pr.bottom,width:pr.width,height:pr.height}});}parent=parent.parentElement;}
+  while(parent){const s=getComputedStyle(parent);if(parent.scrollHeight>parent.clientHeight){const pr=parent.getBoundingClientRect();scrollables.push({tag:parent.tagName,scrollTop:parent.scrollTop,scrollHeight:parent.scrollHeight,clientHeight:parent.clientHeight,overflowY:s.overflowY,rect:{left:pr.left,top:pr.top,right:pr.right,bottom:pr.bottom,width:pr.width,height:pr.height}});}parent=parent.parentElement;}
   const point=(x>=0&&x<innerWidth&&y>=0&&y<innerHeight)?document.elementFromPoint(x,y):null;
   const hit=point?{tag:point.tagName,text:(point.textContent||'').trim().replace(/\\s+/g,' ').slice(0,120),href:point.closest('a')?.getAttribute('href')||null,same:point===el||el.contains(point)}:null;
   const clippedByScrollable=scrollables.some((item)=>r.bottom<=item.rect.top||r.top>=item.rect.bottom||r.right<=item.rect.left||r.left>=item.rect.right);
   return {candidateCount:candidates.length,target:{tag:el.tagName,text:(el.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160),href:el.getAttribute('href'),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},center:{x,y},viewport:{width:innerWidth,height:innerHeight},inViewport:x>=0&&x<innerWidth&&y>=0&&y<innerHeight,clippedByScrollable,scrollables,elementFromPoint:hit}};
+})()`);
+
+const overlaySnapshot = async (cdp, selector) => evaluate(cdp, `(() => {
+  const candidates=Array.from(document.querySelectorAll(${JSON.stringify(selector)}));
+  const el=candidates.find((node)=>{const r=node.getBoundingClientRect();const s=getComputedStyle(node);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&s.pointerEvents!=='none';});
+  if(!el)return null;
+  const summarize=(node)=>{if(!node)return null;const r=node.getBoundingClientRect();const s=getComputedStyle(node);return{tag:node.tagName,classes:node.className||'',data:Object.fromEntries(Array.from(node.attributes).filter((a)=>a.name.startsWith('data-')).map((a)=>[a.name,a.value])),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},position:s.position,zIndex:s.zIndex,pointerEvents:s.pointerEvents,overflow:s.overflow,overflowY:s.overflowY,scrollMarginTop:s.scrollMarginTop};};
+  const chain=(node)=>{const rows=[];let current=node;while(current){rows.push(summarize(current));current=current.parentElement;}return rows;};
+  const r=el.getBoundingClientRect();const x=Math.min(innerWidth-1,Math.max(0,r.left+r.width/2));const y=Math.min(innerHeight-1,Math.max(0,r.top+r.height/2));
+  const point=document.elementFromPoint(x,y);
+  let scrollOwner=null;let p=el.parentElement;while(p){if(p.scrollHeight>p.clientHeight){scrollOwner=summarize(p);break;}p=p.parentElement;}if(!scrollOwner&&document.documentElement.scrollHeight>innerHeight)scrollOwner={tag:'WINDOW',scrollY:window.scrollY,scrollHeight:document.documentElement.scrollHeight,clientHeight:innerHeight};
+  return {target:summarize(el),targetParentChain:chain(el),interceptor:summarize(point),interceptorParentChain:chain(point),windowScrollY:window.scrollY,innerHeight,documentHeight:document.documentElement.scrollHeight,scrollOwner,center:{x,y},interceptorConfirmed:Boolean(point&&point!==el&&!el.contains(point))};
 })()`);
 
 const stabilizeTarget = async (cdp, selector) => evaluate(cdp, `new Promise((resolve) => {
@@ -113,19 +125,52 @@ const stabilizeTarget = async (cdp, selector) => evaluate(cdp, `new Promise((res
   const el=candidates.find((node)=>{const r=node.getBoundingClientRect();const s=getComputedStyle(node);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&s.pointerEvents!=='none';});
   if(!el){resolve(null);return;}
   el.setAttribute('data-click-smoke-target','true');
-  const scrollable=(()=>{let parent=el.parentElement;while(parent){const s=getComputedStyle(parent);if(/(auto|scroll)/.test(s.overflowY)&&parent.scrollHeight>parent.clientHeight)return parent;parent=parent.parentElement;}return null;})();
-  el.scrollIntoView({block:'nearest',inline:'nearest'});
+  const beforeRect=el.getBoundingClientRect();
+  const windowScrollYBefore=window.scrollY;
+  const scrollable=(()=>{let parent=el.parentElement;while(parent){if(parent.scrollHeight>parent.clientHeight)return parent;parent=parent.parentElement;}return null;})();
+  const scrollOwnerBefore=scrollable?.scrollTop??window.scrollY;
+  el.scrollIntoView({block:'center',inline:'nearest'});
   if(scrollable){const er=el.getBoundingClientRect();const pr=scrollable.getBoundingClientRect();scrollable.scrollTop += (er.top+er.height/2)-(pr.top+scrollable.clientHeight/2);}
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    const r=el.getBoundingClientRect();const x=r.left+r.width/2;const y=r.top+r.height/2;const point=document.elementFromPoint(x,y);
-    resolve({x,y,text:(el.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160),aria:el.getAttribute('aria-label'),tag:el.tagName,href:el.getAttribute('href'),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},elementFromPoint:point?{tag:point.tagName,text:(point.textContent||'').trim().replace(/\\s+/g,' ').slice(0,120),href:point.closest('a')?.getAttribute('href')||null,same:point===el||el.contains(point)}:null,scrollTop:scrollable?.scrollTop??null});
+    const safety=12;
+    const findFixedOverlays=(rect)=>Array.from(document.querySelectorAll('body *')).filter((node)=>{
+      if(!(node instanceof HTMLElement)||node===el||el.contains(node)||node.closest('[data-preview-navigator]'))return false;
+      const s=getComputedStyle(node);if(!['fixed','sticky'].includes(s.position)||s.pointerEvents==='none'||s.visibility==='hidden'||s.display==='none')return false;
+      const nr=node.getBoundingClientRect();return nr.width>0&&nr.height>0&&nr.bottom>0&&nr.top<innerHeight&&nr.right>rect.left&&nr.left<rect.right;
+    }).map((node)=>{const nr=node.getBoundingClientRect();const s=getComputedStyle(node);return{node,rect:nr,position:s.position,zIndex:s.zIndex,pointerEvents:s.pointerEvents};});
+    let r=el.getBoundingClientRect();
+    let overlays=findFixedOverlays(r);
+    let headerBottom=overlays.filter((item)=>item.rect.top<=0||item.rect.top<r.bottom).reduce((max,item)=>Math.max(max,item.rect.bottom),0);
+    const safeTop=Math.max(0,headerBottom)+safety;
+    const safeBottom=innerHeight-safety;
+    let adjustment=0;
+    if(r.top<safeTop) adjustment=r.top-safeTop;
+    else if(r.bottom>safeBottom) adjustment=r.bottom-safeBottom;
+    if(adjustment!==0){if(scrollable)scrollable.scrollTop+=adjustment;else window.scrollBy(0,adjustment);}
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      r=el.getBoundingClientRect();
+      overlays=findFixedOverlays(r);
+      headerBottom=overlays.filter((item)=>item.rect.top<=0||item.rect.top<r.bottom).reduce((max,item)=>Math.max(max,item.rect.bottom),0);
+      const clickable={left:Math.max(0,r.left),top:Math.max(0,r.top,headerBottom+safety),right:Math.min(innerWidth,r.right),bottom:Math.min(innerHeight-safety,r.bottom)};
+      clickable.width=Math.max(0,clickable.right-clickable.left);clickable.height=Math.max(0,clickable.bottom-clickable.top);
+      if(clickable.width<=0||clickable.height<=0){resolve({unClickable:true,text:(el.textContent||'').trim(),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},clickableRect:clickable,headerBottom,windowScrollYBefore,windowScrollYAfter:window.scrollY,scrollTopBefore:scrollOwnerBefore,scrollTopAfter:scrollable?.scrollTop??window.scrollY});return;}
+      const xs=[0.5,0.25,0.75].map((p)=>clickable.left+clickable.width*p);
+      const ys=[0.5,0.25,0.75].map((p)=>clickable.top+clickable.height*p);
+      let chosen=null;
+      for(const y of ys){for(const x of xs){const point=document.elementFromPoint(x,y);if(point&&(point===el||el.contains(point))){chosen={x,y,point};break;}}if(chosen)break;}
+      const x=chosen?.x??(clickable.left+clickable.width/2);const y=chosen?.y??(clickable.top+clickable.height/2);const point=chosen?.point??document.elementFromPoint(x,y);
+      const pointRect=point?.getBoundingClientRect?.();
+      const overlayAtPoint=point&&point!==el&&!el.contains(point)?{tag:point.tagName,classes:point.className||'',rect:pointRect?{left:pointRect.left,top:pointRect.top,right:pointRect.right,bottom:pointRect.bottom,width:pointRect.width,height:pointRect.height}:null,position:getComputedStyle(point).position,zIndex:getComputedStyle(point).zIndex,pointerEvents:getComputedStyle(point).pointerEvents,text:(point.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160)}:null;
+      resolve({x,y,text:(el.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160),aria:el.getAttribute('aria-label'),tag:el.tagName,href:el.getAttribute('href'),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},rectBefore:{left:beforeRect.left,top:beforeRect.top,right:beforeRect.right,bottom:beforeRect.bottom,width:beforeRect.width,height:beforeRect.height},clickableRect:clickable,headerBottom,interceptor:overlayAtPoint,elementFromPoint:point?{tag:point.tagName,text:(point.textContent||'').trim().replace(/\\s+/g,' ').slice(0,120),href:point.closest('a')?.getAttribute('href')||null,same:point===el||el.contains(point)}:null,scrollTopBefore:scrollOwnerBefore,scrollTopAfter:scrollable?.scrollTop??window.scrollY,windowScrollYBefore,windowScrollYAfter:window.scrollY,scrollOwner:scrollable?{tag:scrollable.tagName,classes:scrollable.className||'',clientHeight:scrollable.clientHeight,scrollHeight:scrollable.scrollHeight}: {tag:'WINDOW',clientHeight:innerHeight,scrollHeight:document.documentElement.scrollHeight}});
+    }));
   }));
 })`);
 
 const trustedClick = async (cdp, selector) => {
   const target = await stabilizeTarget(cdp, selector);
   if (!target) return null;
-  if (!target.elementFromPoint?.same) throw new Error(`Centro do alvo interceptado para ${selector}: ${JSON.stringify(target)}`);
+  if (target.unClickable) throw new Error(`Alvo sem região clicável para ${selector}: ${JSON.stringify(target)}`);
+  if (!target.elementFromPoint?.same) throw new Error(`Ponto seguro do alvo interceptado para ${selector}: ${JSON.stringify(target)}`);
   clickProbes.length = 0;
   await evaluate(cdp, `(() => { const target=document.querySelector('[data-click-smoke-target="true"]'); if(!target)return false; const probe=(event)=>{const action=event.target instanceof Element?event.target.closest('a,button,[role="button"]'):null; console.log('__CLICK_PROBE__'+JSON.stringify({received:true,defaultPrevented:event.defaultPrevented,targetTag:event.target?.tagName||null,actionTag:action?.tagName||null,href:action?.getAttribute?.('href')||null,trusted:event.isTrusted}));}; document.addEventListener('click',probe,{capture:true,once:true}); return true;})()`);
   await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: target.x, y: target.y });
@@ -180,7 +225,7 @@ const clickDestination = async (cdp, slug, { navigator = false, scenario = "navi
   }
   currentStep.selector = target.aria || target.text || selector;
   await waitSurface(cdp, slug);
-  await logStep(cdp, "PASS", { TRUSTED_CLICK: target.probe?.trusted === true, CLICK_RECEIVED: target.probe?.received === true, DEFAULT_PREVENTED: target.probe?.defaultPrevented ?? null, TARGET_RECT: target.rect, ELEMENT_FROM_POINT: target.elementFromPoint });
+  await logStep(cdp, "PASS", { TRUSTED_CLICK: target.probe?.trusted === true, CLICK_RECEIVED: target.probe?.received === true, DEFAULT_PREVENTED: target.probe?.defaultPrevented ?? null, TARGET_RECT: target.rect, TARGET_RECT_BEFORE: target.rectBefore ?? null, CLICKABLE_RECT: target.clickableRect ?? null, CLICK_POINT: { x: target.x, y: target.y }, ELEMENT_FROM_POINT: target.elementFromPoint, SCROLL_OWNER: target.scrollOwner ?? null, SCROLL_TOP_BEFORE: target.scrollTopBefore ?? null, SCROLL_TOP_AFTER: target.scrollTopAfter ?? null, WINDOW_SCROLL_Y_BEFORE: target.windowScrollYBefore ?? null, WINDOW_SCROLL_Y_AFTER: target.windowScrollYAfter ?? null });
 };
 
 const browserBackForward = async (cdp, backSlug, forwardSlug, scenario) => {
@@ -306,6 +351,28 @@ const classifyNavigatorTarget = (snapshot) => {
   return "OTHER";
 };
 
+const runFocusedPublicMobile = async (cdp) => {
+  currentStep.viewport = "mobile";
+  await cdp.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await prepareScenario(cdp, "public/home", "PUBLIC_MOBILE_FOCUSED");
+  const selector = selectorForDestination("public/contact");
+  const beforeHistory = await cdp.send("Page.getNavigationHistory");
+  const before = await overlaySnapshot(cdp, selector);
+  console.log(JSON.stringify({ SCENARIO:"PUBLIC", VIEWPORT:"mobile", FROM:"public/home", ACTION:"Landing → Contato", TARGET:"Tirar uma dúvida", SELECTOR:selector, TARGET_RECT:before?.target?.rect??null, TARGET_STYLE_POSITION:before?.target?.position??null, TARGET_Z_INDEX:before?.target?.zIndex??null, TARGET_PARENT_CHAIN:before?.targetParentChain??[], INTERCEPTOR_TAG:before?.interceptor?.tag??null, INTERCEPTOR_CLASSES:before?.interceptor?.classes??null, INTERCEPTOR_DATA_ATTRIBUTES:before?.interceptor?.data??null, INTERCEPTOR_RECT:before?.interceptor?.rect??null, INTERCEPTOR_POSITION:before?.interceptor?.position??null, INTERCEPTOR_Z_INDEX:before?.interceptor?.zIndex??null, INTERCEPTOR_POINTER_EVENTS:before?.interceptor?.pointerEvents??null, INTERCEPTOR_OVERFLOW:before?.interceptor?.overflow??null, INTERCEPTOR_PARENT_CHAIN:before?.interceptorParentChain??[], HEADER_HEIGHT:before?.interceptor?.rect?.height??null, TARGET_TOP_BEFORE_SCROLL:before?.target?.rect?.top??null, WINDOW_SCROLL_Y_BEFORE:before?.windowScrollY??null, SCROLL_OWNER:before?.scrollOwner??null, INTERCEPTOR_CONFIRMED:before?.interceptorConfirmed===true, HISTORY_BEFORE:{currentIndex:beforeHistory.currentIndex,entries:beforeHistory.entries.length} }));
+  currentStep = { scenario:"PUBLIC_MOBILE_FOCUSED", viewport:"mobile", from:"public/home", action:"Landing → Contato", selector, expectedSlug:"public/contact" };
+  const urlBefore = await evaluate(cdp, "location.href");
+  const target = await trustedClick(cdp, selector);
+  if (!target) throw new Error("public/contact não encontrado no teste focado mobile.");
+  if (target.probe?.trusted !== true || target.probe?.received !== true || target.elementFromPoint?.same !== true) throw new Error(`Trusted click focado inválido: ${JSON.stringify(target)}`);
+  await waitSurface(cdp, "public/contact");
+  const afterHistory = await cdp.send("Page.getNavigationHistory");
+  const entryCreated = afterHistory.entries.some((entry)=>entry.url.includes(expectedPath("public/contact"))) && afterHistory.entries.length > beforeHistory.entries.length;
+  if (!entryCreated) throw new Error("Histórico não recebeu entrada public/contact.");
+  console.log(JSON.stringify({ SCENARIO:"PUBLIC_MOBILE_FOCUSED", VIEWPORT:"mobile", FROM:"public/home", ACTION:"Landing → Contato", TARGET:"Tirar uma dúvida", TARGET_RECT_BEFORE:target.rectBefore, TARGET_RECT_AFTER:target.rect, HEADER_HEIGHT:target.headerBottom, INTERCEPTOR_RECT:before?.interceptor?.rect??null, CLICKABLE_RECT:target.clickableRect, CLICK_X:target.x, CLICK_Y:target.y, ELEMENT_FROM_POINT_BEFORE:before?.interceptor??null, ELEMENT_FROM_POINT_AFTER:target.elementFromPoint, ELEMENT_FROM_POINT_MATCH:target.elementFromPoint?.same===true, WINDOW_SCROLL_Y_BEFORE:target.windowScrollYBefore, WINDOW_SCROLL_Y_AFTER:target.windowScrollYAfter, SCROLL_OWNER:target.scrollOwner, TRUSTED_CLICK:true, CLICK_RECEIVED:true, URL_BEFORE:urlBefore, URL_AFTER:await evaluate(cdp,"location.href"), URL_CHANGED:true, EXPECTED_SURFACE:"public/contact", OBSERVED_SURFACE:await evaluate(cdp,currentSlugExpression), HISTORY_ENTRY_CREATED:true, RESULT:"PASS" }));
+  await browserBackForward(cdp, "public/home", "public/contact", "PUBLIC_MOBILE_FOCUSED_HISTORY");
+  console.log("FOCUSED_PUBLIC_MOBILE_TEST=PASS");
+};
+
 const runFocusedCommercial = async (cdp) => {
   currentStep.viewport = "desktop";
   await cdp.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
@@ -377,8 +444,10 @@ try {
   client = new Cdp(target.webSocketDebuggerUrl);
   await client.connect(); await client.send("Page.enable"); await client.send("Runtime.enable");
   try {
+    await runFocusedPublicMobile(client);
+    await runViewport(client, { name: "mobile", width: 390, height: 844 });
+    await runViewport(client, { name: "desktop", width: 1440, height: 900 });
     await runFocusedCommercial(client);
-    for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }]) await runViewport(client, viewport);
     console.log("BROWSER_BACK_FORWARD_ALL_AREAS=PASS");
     console.log("PREVIEW_CLICK_SMOKE=PASS");
   } catch (error) {
