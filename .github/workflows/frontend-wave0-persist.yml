@@ -1,0 +1,177 @@
+name: Frontend Wave 0 Persist
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/frontend-wave0-persist.yml"
+      - "scripts/reconcile-frontend-wave0.mjs"
+      - "scripts/validate-physical-manifest.mjs"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontend-wave0-persist-dev
+  cancel-in-progress: false
+
+jobs:
+  persist:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      BASE_HEAD: ${{ github.sha }}
+
+    steps:
+      - name: Checkout integral da dev
+        uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Configurar Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.0
+          cache: npm
+
+      - name: Fixar npm do projeto
+        run: npm install --global npm@10.9.4
+
+      - name: Registrar checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "BRANCH=$(git branch --show-current)"
+          echo "HEAD=$(git rev-parse HEAD)"
+          echo "ORIGIN=$(git remote get-url origin)"
+          echo "TRACKED_FILES=$(git ls-files | wc -l | tr -d ' ')"
+          git status --short
+          git remote -v
+          test "$(git branch --show-current)" = "dev"
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/dev)"
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar reconciliação — primeira passagem
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/reconcile-frontend-wave0.mjs
+          node scripts/validate-physical-manifest.mjs
+          find docs/reconstruction/frontend -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/wave0-hashes-1.txt
+
+      - name: Gerar reconciliação — segunda passagem e validar determinismo
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/reconcile-frontend-wave0.mjs
+          node scripts/validate-physical-manifest.mjs
+          find docs/reconstruction/frontend -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/wave0-hashes-2.txt
+          diff -u /tmp/wave0-hashes-1.txt /tmp/wave0-hashes-2.txt
+          echo "DETERMINISM=PASS"
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Testes unitários
+        run: npm run test:unit
+
+      - name: Build development
+        run: |
+          env \
+            VITE_APP_ENV=development \
+            VITE_CI_RUNTIME_SMOKE=true \
+            VITE_SUPABASE_URL=https://jmtyurketfclaneqxohu.supabase.co \
+            VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_ci_runtime_smoke_only_not_for_deployment \
+            npm run build:dev
+
+      - name: Revalidar manifest
+        run: node scripts/validate-physical-manifest.mjs
+
+      - name: Validar rotas e boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          total=$(grep -o '<Route\b' src/App.tsx | wc -l | tr -d ' ')
+          explicit=$(grep -o 'path=' src/App.tsx | wc -l | tr -d ' ')
+          fallback=$(grep -o 'path="\*"' src/App.tsx | wc -l | tr -d ' ')
+          echo "TOTAL_ROUTE_REGISTRATIONS=$total"
+          echo "EXPLICIT_ROUTE_PATTERNS=$explicit"
+          echo "FALLBACK_ROUTES=$fallback"
+          test "$total" -eq 54
+          test "$explicit" -eq 53
+          test "$fallback" -eq 1
+          git diff --exit-code "$BASE_HEAD" -- src/App.tsx src/routing
+          allowed='^(\.github/workflows/frontend-wave0-persist\.yml|scripts/reconcile-frontend-wave0\.mjs|scripts/validate-physical-manifest\.mjs|docs/reconstruction/frontend/(physical-manifest\.json|physical-manifest\.md|manifest-summary\.json|wave0-validation-report\.md|domain-summary\.md|wave-file-map\.md|high-risk-files\.md|duplication-map\.md|dependency-hotspots\.md))$'
+          unexpected=$(git diff --name-only | grep -Ev "$allowed" || true)
+          if [ -n "$unexpected" ]; then
+            echo "UNAUTHORIZED_PATHS"
+            echo "$unexpected"
+            exit 1
+          fi
+          echo "ROUTES=INVARIANT"
+
+      - name: Commitar somente documentação autorizada
+        id: commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            docs/reconstruction/frontend/physical-manifest.json \
+            docs/reconstruction/frontend/physical-manifest.md \
+            docs/reconstruction/frontend/manifest-summary.json \
+            docs/reconstruction/frontend/wave0-validation-report.md \
+            docs/reconstruction/frontend/domain-summary.md \
+            docs/reconstruction/frontend/wave-file-map.md \
+            docs/reconstruction/frontend/high-risk-files.md \
+            docs/reconstruction/frontend/duplication-map.md \
+            docs/reconstruction/frontend/dependency-hotspots.md
+          staged=$(git diff --cached --name-only)
+          test -n "$staged"
+          if echo "$staged" | grep -Ev '^docs/reconstruction/frontend/(physical-manifest\.json|physical-manifest\.md|manifest-summary\.json|wave0-validation-report\.md|domain-summary\.md|wave-file-map\.md|high-risk-files\.md|duplication-map\.md|dependency-hotspots\.md)$'; then
+            echo "UNAUTHORIZED_STAGED_PATH"
+            exit 1
+          fi
+          git commit -m "docs(frontend-v2): persist reconciled wave0 manifest"
+          echo "final_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "FINAL_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Verificar concorrência e push fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin dev
+          if [ "$(git rev-parse origin/dev)" != "$BASE_HEAD" ]; then
+            echo "CONCURRENT_DEV_UPDATE"
+            exit 1
+          fi
+          git push origin HEAD:dev
+
+      - name: Confirmar novo HEAD remoto
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin dev
+          test "$(git rev-parse origin/dev)" = "${{ steps.commit.outputs.final_sha }}"
+          echo "REMOTE_HEAD=$(git rev-parse origin/dev)"
+
+      - name: Publicar artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-wave0-reconciliation-${{ env.FINAL_SHA || github.sha }}
+          path: |
+            docs/reconstruction/frontend/
+            /tmp/wave0-hashes-1.txt
+            /tmp/wave0-hashes-2.txt
+          retention-days: 7
+          if-no-files-found: warn
