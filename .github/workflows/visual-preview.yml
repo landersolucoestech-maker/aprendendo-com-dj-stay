@@ -94,7 +94,7 @@ jobs:
         env:
           VITE_APP_ENV: development
           VITE_CI_RUNTIME_SMOKE: "true"
-          VITE_SUPABASE_URL: https://preview.invalid
+          VITE_SUPABASE_URL: https://jmtyurketfclaneqxohu.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_runtime_smoke_only_not_for_deployment
         run: npx vite build --mode development --config visual-preview/vite.config.mjs
 
