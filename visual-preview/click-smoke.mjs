@@ -78,28 +78,58 @@ const waitSurface = async (client, slug) => {
   if (!href.endsWith(expectedPath(slug))) throw new Error(`URL inesperada para ${slug}: ${href}`);
 };
 
+const selectorForDestination = (slug, navigator) => navigator
+  ? `[data-preview-navigator] a[href$="/visual-preview/${slug}/"]`
+  : `[data-preview-destination="${slug}"]:not([data-preview-navigator] *)`;
+
+const isVisibleExpression = (selector) => `(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden'; })()`;
+
+const openResponsiveNavigationIfNeeded = async (client, selector) => {
+  if (await evaluate(client, isVisibleExpression(selector))) return;
+  const shellMenu = await evaluate(client, `Boolean(document.querySelector('[data-shell-menu-button]'))`);
+  if (shellMenu) {
+    await evaluate(client, `document.querySelector('[data-shell-menu-button]').click()`);
+    await waitFor(client, isVisibleExpression(selector), 3000);
+    return;
+  }
+  const publicMenuSelector = `button[aria-label*="menu" i], button[aria-label*="navegação" i], button[aria-label*="navegacao" i], header button`;
+  const publicMenu = await evaluate(client, `Boolean(document.querySelector(${JSON.stringify(publicMenuSelector)}))`);
+  if (publicMenu) {
+    await evaluate(client, `document.querySelector(${JSON.stringify(publicMenuSelector)}).click()`);
+    await waitFor(client, isVisibleExpression(selector), 3000);
+  }
+};
+
 const clickDestination = async (client, slug, { navigator = false } = {}) => {
-  const selector = navigator
-    ? `[data-preview-navigator] a[href$="/visual-preview/${slug}/"]`
-    : `[data-preview-destination="${slug}"]:not([data-preview-navigator] *)`;
+  const selector = selectorForDestination(slug, navigator);
   if (navigator) {
     await evaluate(client, `document.querySelector('[data-preview-navigator] > button')?.click()`);
     await sleep(50);
   }
-  const found = await waitFor(client, `Boolean(document.querySelector(${JSON.stringify(selector)}))`, 5000);
+  let found = await waitFor(client, `Boolean(document.querySelector(${JSON.stringify(selector)}))`, 5000);
   if (!found) {
-    const available = await evaluate(client, `Array.from(document.querySelectorAll('[data-preview-destination]')).map((el) => ({text:(el.textContent||'').trim().slice(0,80),dest:el.dataset.previewDestination})).slice(0,80)`);
+    const available = await evaluate(client, `Array.from(document.querySelectorAll('[data-preview-destination]')).map((el) => ({text:(el.textContent||'').trim().slice(0,80),dest:el.dataset.previewDestination})).slice(0,100)`);
     throw new Error(`Ação real não encontrada para ${slug}. Disponíveis: ${JSON.stringify(available)}`);
   }
+  if (!navigator) await openResponsiveNavigationIfNeeded(client, selector);
+  found = await evaluate(client, isVisibleExpression(selector));
+  if (!found) throw new Error(`Ação para ${slug} existe, mas não ficou visível para clique real.`);
   await evaluate(client, `document.querySelector(${JSON.stringify(selector)}).click()`);
   await waitSurface(client, slug);
   console.log(`CLICK_NAV ${slug} PASS`);
 };
 
 const browserBackForward = async (client, backSlug, forwardSlug) => {
-  await client.send("Page.goBack");
+  const beforeBack = await client.send("Page.getNavigationHistory");
+  const backEntry = beforeBack.entries[beforeBack.currentIndex - 1];
+  if (!backEntry) throw new Error("Histórico não possui entrada anterior.");
+  await client.send("Page.navigateToHistoryEntry", { entryId: backEntry.id });
   await waitSurface(client, backSlug);
-  await client.send("Page.goForward");
+
+  const afterBack = await client.send("Page.getNavigationHistory");
+  const forwardEntry = afterBack.entries[afterBack.currentIndex + 1];
+  if (!forwardEntry) throw new Error("Histórico não possui entrada seguinte.");
+  await client.send("Page.navigateToHistoryEntry", { entryId: forwardEntry.id });
   await waitSurface(client, forwardSlug);
   console.log(`BROWSER_BACK_FORWARD ${backSlug} -> ${forwardSlug} PASS`);
 };
@@ -153,8 +183,6 @@ try {
   for (const viewport of [{ name: "desktop", width: 1440, height: 1000 }, { name: "mobile", width: 390, height: 844 }]) {
     await runScenario(client, viewport);
   }
-  const navigableCount = await evaluate(client, "document.querySelectorAll('[data-preview-destination]').length");
-  console.log(`CLICK_NAVIGABLE_ACTIONS_LAST_SURFACE=${navigableCount}`);
   console.log("PREVIEW_CLICK_SMOKE=PASS");
   client.close();
   await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`);
