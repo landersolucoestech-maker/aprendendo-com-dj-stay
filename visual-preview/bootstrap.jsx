@@ -1,4 +1,5 @@
 import { SURFACES } from "./surfaces.js";
+import { installPreviewNavigation } from "./navigation.js";
 
 const prefix = "/aprendendo-com-dj-stay/visual-preview/";
 const pathname = window.location.pathname;
@@ -144,4 +145,5 @@ globalThis.fetch = async (input, init = {}) => {
   throw new Error("VISUAL_PREVIEW_ONLY blocked external request: " + url.href);
 };
 
+installPreviewNavigation(surface.slug);
 import("./app.jsx");
