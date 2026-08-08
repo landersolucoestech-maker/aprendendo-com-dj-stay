@@ -35,12 +35,6 @@ import {
 import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { brandConfig } from "@/config/brand";
 import { cn } from "@/lib/utils";
 
@@ -189,6 +183,34 @@ export const AuthenticatedShell = ({
     }
   }, []);
 
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setDrawerOpen(false);
+      }
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    const focusFrame = window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>(
+          "[data-shell-drawer-content] a, [data-shell-drawer-content] button:not([disabled])",
+        )
+        ?.focus();
+    });
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      window.requestAnimationFrame(() => {
+        document.querySelector<HTMLButtonElement>("[data-shell-menu-button]")?.focus();
+      });
+    };
+  }, [drawerOpen]);
+
   const setCollapsedPersisted = (next: boolean) => {
     setCollapsed(next);
     try {
@@ -300,45 +322,52 @@ export const AuthenticatedShell = ({
         </div>
       </div>
 
-      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent
-          data-shell-drawer-content
-          side="left"
-          className="h-dvh w-full max-w-none border-r border-sidebar-border bg-sidebar p-0 sm:w-80 sm:max-w-sm"
-        >
-          <SheetTitle className="sr-only">{portalLabel}</SheetTitle>
-          <SheetDescription className="sr-only">
-            Navegação autenticada do portal.
-          </SheetDescription>
-          <div className="flex h-full flex-col p-4">
-            <BrandBlock
-              collapsed={false}
-              homePath={homePath}
-              portalLabel={portalLabel}
-            />
-            <ShellNavigationContext.Provider value={mobileNavigationValue}>
-              <div
-                className="mt-6 min-h-0 flex-1 overflow-y-auto pr-1"
-                onClickCapture={(event) => {
-                  const target = event.target as HTMLElement;
-                  if (target.closest("a")) setDrawerOpen(false);
-                }}
-              >
-                {mobileNavigation ?? navigation}
-              </div>
-            </ShellNavigationContext.Provider>
-            <div className="mt-4">
-              <AccountBlock
+      {drawerOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Fechar navegação"
+            className="absolute inset-0 cursor-default bg-background/80 backdrop-blur-sm"
+            onClick={() => setDrawerOpen(false)}
+          />
+          <aside
+            data-shell-drawer-content
+            data-state="open"
+            role="dialog"
+            aria-modal="true"
+            aria-label={portalLabel}
+            className="absolute inset-y-0 left-0 h-dvh w-full max-w-none border-r border-sidebar-border bg-sidebar p-0 shadow-raised sm:w-80 sm:max-w-sm"
+          >
+            <div className="flex h-full flex-col p-4">
+              <BrandBlock
                 collapsed={false}
-                displayName={displayName}
-                email={email}
-                isSigningOut={isSigningOut}
-                onSignOut={onSignOut}
+                homePath={homePath}
+                portalLabel={portalLabel}
               />
+              <ShellNavigationContext.Provider value={mobileNavigationValue}>
+                <div
+                  className="mt-6 min-h-0 flex-1 overflow-y-auto pr-1"
+                  onClickCapture={(event) => {
+                    const target = event.target as HTMLElement;
+                    if (target.closest("a")) setDrawerOpen(false);
+                  }}
+                >
+                  {mobileNavigation ?? navigation}
+                </div>
+              </ShellNavigationContext.Provider>
+              <div className="mt-4">
+                <AccountBlock
+                  collapsed={false}
+                  displayName={displayName}
+                  email={email}
+                  isSigningOut={isSigningOut}
+                  onSignOut={onSignOut}
+                />
+              </div>
             </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+          </aside>
+        </div>
+      ) : null}
     </div>
   );
 };
@@ -495,7 +524,6 @@ await writeText(
   LayoutDashboard,
   Link2,
   MousePointerClick,
-  ReceiptText,
   Tags,
   WalletCards,
 } from "lucide-react";
@@ -511,39 +539,11 @@ import {
 } from "@/shared/navigation/AuthenticatedShell";
 
 const affiliateGroups = [
-  {
-    label: "GERAL",
-    items: [
-      { hash: "#affiliate-overview", label: "Visão geral", icon: LayoutDashboard },
-    ],
-  },
-  {
-    label: "OPERAÇÃO",
-    items: [
-      { hash: "#affiliate-offers", label: "Ofertas", icon: Tags },
-      { hash: "#affiliate-links", label: "Links", icon: Link2 },
-    ],
-  },
-  {
-    label: "PERFORMANCE",
-    items: [
-      { hash: "#affiliate-clicks", label: "Cliques", icon: MousePointerClick },
-      { hash: "#affiliate-conversions", label: "Conversões", icon: ChartNoAxesCombined },
-    ],
-  },
-  {
-    label: "FINANCEIRO",
-    items: [
-      { hash: "#affiliate-commissions", label: "Comissões", icon: BadgeDollarSign },
-      { hash: "#affiliate-payouts", label: "Payouts", icon: WalletCards },
-    ],
-  },
-  {
-    label: "HISTÓRICO",
-    items: [
-      { hash: "#affiliate-events", label: "Eventos", icon: Activity },
-    ],
-  },
+  { label: "GERAL", items: [{ hash: "#affiliate-overview", label: "Visão geral", icon: LayoutDashboard }] },
+  { label: "OPERAÇÃO", items: [{ hash: "#affiliate-offers", label: "Ofertas", icon: Tags }, { hash: "#affiliate-links", label: "Links", icon: Link2 }] },
+  { label: "PERFORMANCE", items: [{ hash: "#affiliate-clicks", label: "Cliques", icon: MousePointerClick }, { hash: "#affiliate-conversions", label: "Conversões", icon: ChartNoAxesCombined }] },
+  { label: "FINANCEIRO", items: [{ hash: "#affiliate-commissions", label: "Comissões", icon: BadgeDollarSign }, { hash: "#affiliate-payouts", label: "Payouts", icon: WalletCards }] },
+  { label: "HISTÓRICO", items: [{ hash: "#affiliate-events", label: "Eventos", icon: Activity }] },
 ] as const;
 
 const AffiliateNavigation = () => {
@@ -555,11 +555,7 @@ const AffiliateNavigation = () => {
     <nav aria-label="Navegação do Portal do Afiliado" className="space-y-5">
       {affiliateGroups.map((group) => (
         <div key={group.label}>
-          {!collapsed ? (
-            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              {group.label}
-            </p>
-          ) : null}
+          {!collapsed ? <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{group.label}</p> : null}
           <div className="space-y-1">
             {group.items.map(({ hash, label, icon: Icon }) => {
               const active = activeHash === hash;
@@ -572,17 +568,11 @@ const AffiliateNavigation = () => {
                   className={cn(
                     "flex min-h-11 items-center rounded-xl text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
                     collapsed ? "justify-center px-2" : "gap-3 px-3",
-                    active
-                      ? "bg-affiliate/15 text-affiliate"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    active ? "bg-affiliate/15 text-affiliate" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                   onClick={() => {
                     closeNavigation();
-                    window.requestAnimationFrame(() => {
-                      document
-                        .getElementById(hash.slice(1))
-                        ?.scrollIntoView({ block: "start" });
-                    });
+                    window.requestAnimationFrame(() => document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" }));
                   }}
                 >
                   <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -684,36 +674,19 @@ const adminNavigation = [
   { to: "/admin/erros", label: "Erros", icon: Bug, group: "GOVERNANÇA" },
 ] as const;
 
-const visibleAdminNavigation = adminNavigation.filter(
-  (item) => item.to !== "/admin/erros",
-);
-const adminGroups = [
-  "VISÃO GERAL",
-  "CONTEÚDO",
-  "ACADÊMICO",
-  "FINANCEIRO",
-  "RELACIONAMENTO",
-  "GOVERNANÇA",
-] as const;
+const visibleAdminNavigation = adminNavigation.filter((item) => item.to !== "/admin/erros");
+const adminGroups = ["VISÃO GERAL", "CONTEÚDO", "ACADÊMICO", "FINANCEIRO", "RELACIONAMENTO", "GOVERNANÇA"] as const;
 
 export const AdminNavigation = () => {
   const { collapsed, closeNavigation } = useAuthenticatedShellNavigation();
-
   return (
-    <nav
-      aria-label="Navegação administrativa"
-      className="flex h-full flex-col gap-5 overflow-x-auto overflow-y-auto pb-2"
-    >
+    <nav aria-label="Navegação administrativa" className="flex h-full flex-col gap-5 overflow-x-auto overflow-y-auto pb-2">
       {adminGroups.map((group) => {
         const items = visibleAdminNavigation.filter((item) => item.group === group);
         if (items.length === 0) return null;
         return (
           <div key={group}>
-            {!collapsed ? (
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                {group}
-              </p>
-            ) : null}
+            {!collapsed ? <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{group}</p> : null}
             <div className="space-y-1">
               {items.map(({ to, label, icon: Icon }) => (
                 <NavLink
@@ -722,15 +695,11 @@ export const AdminNavigation = () => {
                   end={to === "/admin"}
                   aria-label={collapsed ? label : undefined}
                   onClick={closeNavigation}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex min-h-11 items-center rounded-xl text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
-                      collapsed ? "justify-center px-2" : "gap-3 px-3",
-                      isActive
-                        ? "bg-admin/15 text-admin"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    )
-                  }
+                  className={({ isActive }) => cn(
+                    "flex min-h-11 items-center rounded-xl text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
+                    collapsed ? "justify-center px-2" : "gap-3 px-3",
+                    isActive ? "bg-admin/15 text-admin" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
                 >
                   <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                   {!collapsed ? <span>{label}</span> : null}
@@ -795,42 +764,16 @@ const commerceNavigation = [
   { to: "/marketplace", label: "Produtos digitais", icon: Boxes },
 ] as const;
 
-const studentNavigationByPath = new Map(
-  studentNavigation.map((item) => [item.to, item] as const),
-);
-
+const studentNavigationByPath = new Map(studentNavigation.map((item) => [item.to, item] as const));
 const studentGroups = [
-  {
-    label: "APRENDIZADO",
-    paths: [
-      "/aluno",
-      "/aluno/cursos",
-      "/aluno/biblioteca",
-      "/aluno/favoritos",
-      "/aluno/certificados",
-      "/aluno/historico",
-    ],
-  },
-  {
-    label: "MINHAS COMPRAS",
-    paths: ["/aluno/produtos", "/aluno/pedidos", "/aluno/pagamentos"],
-  },
-  {
-    label: "CONTA",
-    paths: [
-      "/aluno/notificacoes",
-      "/aluno/suporte",
-      "/aluno/perfil",
-      "/aluno/preferencias",
-      "/aluno/privacidade",
-    ],
-  },
+  { label: "APRENDIZADO", paths: ["/aluno", "/aluno/cursos", "/aluno/biblioteca", "/aluno/favoritos", "/aluno/certificados", "/aluno/historico"] },
+  { label: "MINHAS COMPRAS", paths: ["/aluno/produtos", "/aluno/pedidos", "/aluno/pagamentos"] },
+  { label: "CONTA", paths: ["/aluno/notificacoes", "/aluno/suporte", "/aluno/perfil", "/aluno/preferencias", "/aluno/privacidade"] },
 ] as const;
 
 const StudentNavigation = ({ mobile = false }: { readonly mobile?: boolean }) => {
   const { collapsed, closeNavigation } = useAuthenticatedShellNavigation();
   const compact = collapsed && !mobile;
-
   const renderItem = (item: (typeof studentNavigation)[number]) => {
     const Icon = item.icon;
     return (
@@ -840,15 +783,11 @@ const StudentNavigation = ({ mobile = false }: { readonly mobile?: boolean }) =>
         end={item.end}
         aria-label={compact ? item.label : undefined}
         onClick={closeNavigation}
-        className={({ isActive }) =>
-          cn(
-            "flex min-h-11 items-center rounded-xl text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
-            compact ? "justify-center px-2" : "gap-3 px-3",
-            isActive
-              ? "bg-course/15 text-course"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          )
-        }
+        className={({ isActive }) => cn(
+          "flex min-h-11 items-center rounded-xl text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
+          compact ? "justify-center px-2" : "gap-3 px-3",
+          isActive ? "bg-course/15 text-course" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        )}
       >
         <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
         {!compact ? <span>{item.label}</span> : null}
@@ -857,65 +796,30 @@ const StudentNavigation = ({ mobile = false }: { readonly mobile?: boolean }) =>
   };
 
   return (
-    <nav
-      className="flex flex-col gap-5 overflow-y-auto pb-2"
-      aria-label={
-        mobile
-          ? "Navegação móvel do Portal do Aluno"
-          : "Navegação do Portal do Aluno"
-      }
-    >
+    <nav className="flex flex-col gap-5 overflow-y-auto pb-2" aria-label={mobile ? "Navegação móvel do Portal do Aluno" : "Navegação do Portal do Aluno"}>
       <div>
-        {!compact ? (
-          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-            APRENDIZADO
-          </p>
-        ) : null}
-        <div className="space-y-1">
-          {studentGroups[0].paths.map((path) => renderItem(studentNavigationByPath.get(path)!))}
-        </div>
+        {!compact ? <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">APRENDIZADO</p> : null}
+        <div className="space-y-1">{studentGroups[0].paths.map((path) => renderItem(studentNavigationByPath.get(path)!))}</div>
       </div>
-
       <div>
-        {!compact ? (
-          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-            COMPRAR
-          </p>
-        ) : null}
+        {!compact ? <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">COMPRAR</p> : null}
         <div className="space-y-1">
           {commerceNavigation.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              aria-label={compact ? label : undefined}
-              onClick={closeNavigation}
-              className={({ isActive }) =>
-                cn(
-                  "flex min-h-11 items-center rounded-xl text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
-                  compact ? "justify-center px-2" : "gap-3 px-3",
-                  isActive
-                    ? "bg-marketplace/15 text-marketplace"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )
-              }
-            >
+            <NavLink key={to} to={to} aria-label={compact ? label : undefined} onClick={closeNavigation} className={({ isActive }) => cn(
+              "flex min-h-11 items-center rounded-xl text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
+              compact ? "justify-center px-2" : "gap-3 px-3",
+              isActive ? "bg-marketplace/15 text-marketplace" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}>
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
               {!compact ? <span>{label}</span> : null}
             </NavLink>
           ))}
         </div>
       </div>
-
       {studentGroups.slice(1).map((group) => (
         <div key={group.label}>
-          {!compact ? (
-            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              {group.label}
-            </p>
-          ) : null}
-          <div className="space-y-1">
-            {group.paths.map((path) => renderItem(studentNavigationByPath.get(path)!))}
-          </div>
+          {!compact ? <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{group.label}</p> : null}
+          <div className="space-y-1">{group.paths.map((path) => renderItem(studentNavigationByPath.get(path)!))}</div>
         </div>
       ))}
     </nav>
@@ -930,13 +834,7 @@ interface StudentPortalShellProps {
   readonly children: ReactNode;
 }
 
-export const StudentPortalShell = ({
-  displayName,
-  email,
-  isSigningOut,
-  onSignOut,
-  children,
-}: StudentPortalShellProps) => (
+export const StudentPortalShell = ({ displayName, email, isSigningOut, onSignOut, children }: StudentPortalShellProps) => (
   <StudentShell
     displayName={displayName}
     email={email}
@@ -974,37 +872,31 @@ await replaceExactly(
   '      <div className="space-y-8">\n        <section\n          className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"',
   '      <div className="space-y-8">\n        <span id="affiliate-overview" className="sr-only" />\n        <section\n          id="affiliate-performance"\n          className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"',
 );
-
 await replaceExactly(
   "src/pages/affiliate/AffiliatePortal.tsx",
   '          aria-label="Resumo do afiliado"\n        >\n          <SummaryCard',
   '          aria-label="Resumo do afiliado"\n        >\n          <span id="affiliate-clicks" className="sr-only" />\n          <span id="affiliate-conversions" className="sr-only" />\n          <SummaryCard',
 );
-
 await replaceExactly(
   "src/pages/affiliate/AffiliatePortal.tsx",
   '        <Card variant="affiliate">\n          <CardHeader>\n            <CardTitle className="flex items-center gap-2">\n              <Link2',
   '        <Card id="affiliate-offers" variant="affiliate">\n          <CardHeader>\n            <CardTitle className="flex items-center gap-2">\n              <Link2',
 );
-
 await replaceExactly(
   "src/pages/affiliate/AffiliatePortal.tsx",
   '        <Card variant="affiliate">\n          <CardHeader>\n            <CardTitle>Links rastreáveis</CardTitle>',
   '        <Card id="affiliate-links" variant="affiliate">\n          <CardHeader>\n            <CardTitle>Links rastreáveis</CardTitle>',
 );
-
 await replaceExactly(
   "src/pages/affiliate/AffiliatePortal.tsx",
   '          <Card variant="affiliate">\n            <CardHeader>\n              <CardTitle>Comissões</CardTitle>',
   '          <Card id="affiliate-commissions" variant="affiliate">\n            <CardHeader>\n              <CardTitle>Comissões</CardTitle>',
 );
-
 await replaceExactly(
   "src/pages/affiliate/AffiliatePortal.tsx",
   '          <Card variant="affiliate">\n            <CardHeader>\n              <CardTitle>Repasses</CardTitle>',
   '          <Card id="affiliate-payouts" variant="affiliate">\n            <CardHeader>\n              <CardTitle>Repasses</CardTitle>',
 );
-
 await replaceExactly(
   "src/pages/affiliate/AffiliatePortal.tsx",
   '        <Card variant="affiliate">\n          <CardHeader>\n            <CardTitle className="flex items-center gap-2">\n              <Activity',
