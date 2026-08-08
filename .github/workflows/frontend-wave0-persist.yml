@@ -100,8 +100,8 @@ jobs:
         run: |
           set -euo pipefail
           total=$(grep -o '<Route\b' src/App.tsx | wc -l | tr -d ' ')
-          explicit=$(grep -o 'path=' src/App.tsx | wc -l | tr -d ' ')
           fallback=$(grep -o 'path="\*"' src/App.tsx | wc -l | tr -d ' ')
+          explicit=$((total - fallback))
           echo "TOTAL_ROUTE_REGISTRATIONS=$total"
           echo "EXPLICIT_ROUTE_PATTERNS=$explicit"
           echo "FALLBACK_ROUTES=$fallback"
