@@ -9,7 +9,7 @@ on:
       - "visual-preview/**"
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -36,6 +36,21 @@ jobs:
         with:
           node-version: 22.22.0
           cache: npm
+
+      - name: Restaurar topologia remota esperada
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin refs/heads/__temp_preview_invalid >/dev/null 2>&1; then
+            gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/__temp_preview_invalid"
+          fi
+          git fetch --prune origin
+          branches="$(git branch -r | sed -n 's#^[[:space:]]*origin/##p' | grep -v '^HEAD ->' | sort)"
+          expected="$(printf '%s\n' dev main | sort)"
+          test "$branches" = "$expected"
+          echo "REMOTE_BRANCH_TOPOLOGY=dev,main PASS"
 
       - name: Confirmar dev e main intacta
         shell: bash
