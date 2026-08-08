@@ -62,11 +62,53 @@ const waitForPreviewReady = async (client, timeoutMs = 15000) => {
       const ready = await evaluate(client, "document.documentElement.dataset.visualPreviewReady === 'true'");
       if (ready) return true;
     } catch {
-      // A navegação pode substituir o execution context entre Page.navigate e o primeiro evaluate.
+      // Page.navigate can replace the JavaScript execution context between polls.
     }
     await sleep(100);
   }
   return false;
+};
+
+const diagnostics = async (client) => {
+  let dom;
+  try {
+    dom = await evaluate(client, `(() => ({
+      href: location.href,
+      readyState: document.readyState,
+      title: document.title,
+      bodyText: (document.body?.innerText || "").slice(0, 500),
+      bodyHtml: (document.body?.innerHTML || "").slice(0, 1000),
+      scripts: Array.from(document.scripts).map((script) => script.src || "inline")
+    }))()`);
+  } catch (error) {
+    dom = { evaluationError: String(error) };
+  }
+  const events = client.events.flatMap((event) => {
+    if (event.method === "Runtime.exceptionThrown") {
+      const details = event.params?.exceptionDetails;
+      return [{
+        method: event.method,
+        text: details?.text,
+        description: details?.exception?.description,
+        value: details?.exception?.value,
+        url: details?.url,
+        line: details?.lineNumber,
+        column: details?.columnNumber,
+      }];
+    }
+    if (event.method === "Runtime.consoleAPICalled" && ["error", "warning"].includes(event.params?.type)) {
+      return [{ method: event.method, type: event.params.type, args: event.params.args?.map((arg) => arg.value ?? arg.description) }];
+    }
+    if (event.method === "Network.loadingFailed") {
+      return [{ method: event.method, url: event.params?.requestId, errorText: event.params?.errorText }];
+    }
+    if (event.method === "Network.responseReceived") {
+      const response = event.params?.response;
+      if (response && response.status >= 400) return [{ method: event.method, status: response.status, url: response.url }];
+    }
+    return [];
+  });
+  return { dom, events: events.slice(-30) };
 };
 
 const chromePath=findChrome();
@@ -89,7 +131,10 @@ try {
       const url=base+"visual-preview/"+surface.slug+"/";
       await client.send("Page.navigate",{url});
       const ready=await waitForPreviewReady(client);
-      if(!ready) throw new Error(`${surface.slug} ${viewport.name}: preview não ficou pronto`);
+      if(!ready) {
+        const detail=await diagnostics(client);
+        throw new Error(`${surface.slug} ${viewport.name}: preview não ficou pronto\n${JSON.stringify(detail,null,2)}`);
+      }
       await sleep(250);
       const state=await evaluate(client,`(() => ({
         text: (document.body.innerText || "").trim().length,
@@ -101,7 +146,7 @@ try {
         throw new Error(`${surface.slug} ${viewport.name}: tela vazia/inválida ${JSON.stringify(state)}`);
       }
       const exceptions=client.events.filter(e=>e.method==="Runtime.exceptionThrown");
-      if(exceptions.length) throw new Error(`${surface.slug} ${viewport.name}: console/runtime exception`);
+      if(exceptions.length) throw new Error(`${surface.slug} ${viewport.name}: console/runtime exception\n${JSON.stringify(await diagnostics(client),null,2)}`);
       const external=[...new Set(client.events
         .filter(e=>e.method==="Network.requestWillBeSent")
         .map(e=>e.params?.request?.url)
