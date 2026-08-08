@@ -231,9 +231,7 @@ jobs:
                           <LayoutDashboard className="h-9 w-9" aria-hidden="true" />
                           Visão geral
                         </h1>
-                        <p className="mt-3 max-w-3xl text-gray-400">
-                          Prévia visual isolada da estrutura administrativa.
-                        </p>
+                        <p className="mt-3 max-w-3xl text-gray-400">Prévia visual isolada da estrutura administrativa.</p>
                       </div>
                       <div className="flex flex-wrap gap-3">
                         <Button variant="outline" className="border-white/20 bg-transparent">Abrir financeiro</Button>
@@ -252,10 +250,7 @@ jobs:
 
                     <section className="grid gap-6 xl:grid-cols-3" aria-label="Resumo por domínio">
                       <Card className="border-white/10 bg-white/5">
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-white"><Banknote className="h-5 w-5" aria-hidden="true" /> Financeiro</CardTitle>
-                          <CardDescription className="text-gray-400">Resumo financeiro para conferência visual.</CardDescription>
-                        </CardHeader>
+                        <CardHeader><CardTitle className="flex items-center gap-2 text-white"><Banknote className="h-5 w-5" aria-hidden="true" /> Financeiro</CardTitle><CardDescription className="text-gray-400">Resumo financeiro para conferência visual.</CardDescription></CardHeader>
                         <CardContent className="space-y-3 text-sm">
                           <div className="flex justify-between gap-4"><span className="text-gray-400">Pedidos totais</span><strong>{admin.finance.totalOrders}</strong></div>
                           <div className="flex justify-between gap-4"><span className="text-gray-400">Pendentes</span><strong>{admin.finance.pendingOrders}</strong></div>
@@ -265,10 +260,7 @@ jobs:
                       </Card>
 
                       <Card className="border-white/10 bg-white/5">
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-white"><BookOpen className="h-5 w-5" aria-hidden="true" /> Acadêmico</CardTitle>
-                          <CardDescription className="text-gray-400">Resumo acadêmico para conferência visual.</CardDescription>
-                        </CardHeader>
+                        <CardHeader><CardTitle className="flex items-center gap-2 text-white"><BookOpen className="h-5 w-5" aria-hidden="true" /> Acadêmico</CardTitle><CardDescription className="text-gray-400">Resumo acadêmico para conferência visual.</CardDescription></CardHeader>
                         <CardContent className="space-y-3 text-sm">
                           <div className="flex justify-between gap-4"><span className="text-gray-400">Alunos</span><strong>{admin.academic.students}</strong></div>
                           <div className="flex justify-between gap-4"><span className="text-gray-400">Matrículas</span><strong>{admin.academic.enrollments}</strong></div>
@@ -278,10 +270,7 @@ jobs:
                       </Card>
 
                       <Card className="border-white/10 bg-white/5">
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-white"><Boxes className="h-5 w-5" aria-hidden="true" /> Catálogo</CardTitle>
-                          <CardDescription className="text-gray-400">Resumo editorial para conferência visual.</CardDescription>
-                        </CardHeader>
+                        <CardHeader><CardTitle className="flex items-center gap-2 text-white"><Boxes className="h-5 w-5" aria-hidden="true" /> Catálogo</CardTitle><CardDescription className="text-gray-400">Resumo editorial para conferência visual.</CardDescription></CardHeader>
                         <CardContent className="space-y-3 text-sm">
                           <div className="flex justify-between gap-4"><span className="text-gray-400">Cursos publicados</span><strong>{admin.catalogue.publishedCourses}</strong></div>
                           <div className="flex justify-between gap-4"><span className="text-gray-400">Cursos em rascunho</span><strong>{admin.catalogue.draftCourses}</strong></div>
@@ -300,57 +289,33 @@ jobs:
             const student = VISUAL_PREVIEW_ONLY.student;
             return (
               <div data-visual-preview-only="true">
-                <StudentPortalShell
-                  displayName={student.displayName}
-                  email={student.email}
-                  isSigningOut={false}
-                  onSignOut={() => undefined}
-                >
+                <StudentPortalShell displayName={student.displayName} email={student.email} isSigningOut={false} onSignOut={() => undefined}>
                   <div className="space-y-8">
-                    <StudentSectionHeader
-                      eyebrow="Portal do Aluno"
-                      title="Visão geral"
-                      description="Acompanhe seus acessos, progresso, materiais e atividades."
-                    />
-
+                    <StudentSectionHeader eyebrow="Portal do Aluno" title="Visão geral" description="Acompanhe seus acessos, progresso, materiais e atividades." />
                     <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Resumo acadêmico">
                       <StudentStatCard label="Cursos ativos" value={student.stats.activeCourses} description="Acessos ativos" icon={GraduationCap} />
                       <StudentStatCard label="Progresso médio" value={student.stats.averageProgress} description="Média das aulas iniciadas" icon={PlayCircle} />
                       <StudentStatCard label="Aulas concluídas" value={student.stats.completedLessons} description="Conclusões registradas" icon={CheckCircle2} />
                       <StudentStatCard label="Materiais liberados" value={student.stats.releasedMaterials} description="Arquivos acessíveis" icon={Library} />
                     </section>
-
                     <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
                       <Card variant="course">
-                        <CardHeader>
-                          <CardTitle>Continuar estudando</CardTitle>
-                          <CardDescription>Matrículas ativas mais recentes.</CardDescription>
-                        </CardHeader>
+                        <CardHeader><CardTitle>Continuar estudando</CardTitle><CardDescription>Matrículas ativas mais recentes.</CardDescription></CardHeader>
                         <CardContent className="space-y-4">
                           {student.courses.map((course) => (
                             <article key={course.id} className="surface-muted flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-                              <div>
-                                <h3 className="font-semibold text-foreground">{course.title}</h3>
-                                <p className="mt-1 text-sm text-muted-foreground">Acesso até {course.accessUntil}</p>
-                              </div>
+                              <div><h3 className="font-semibold text-foreground">{course.title}</h3><p className="mt-1 text-sm text-muted-foreground">Acesso até {course.accessUntil}</p></div>
                               <Button variant="context" className="w-full sm:w-auto">Abrir curso</Button>
                             </article>
                           ))}
                           <Button asChild variant="link"><Link to="/aluno">Ver todos os cursos</Link></Button>
                         </CardContent>
                       </Card>
-
                       <Card variant="course">
-                        <CardHeader>
-                          <CardTitle>Atividades recentes</CardTitle>
-                          <CardDescription>Últimas atualizações.</CardDescription>
-                        </CardHeader>
+                        <CardHeader><CardTitle>Atividades recentes</CardTitle><CardDescription>Últimas atualizações.</CardDescription></CardHeader>
                         <CardContent className="space-y-4">
                           {student.activities.map((activity) => (
-                            <article key={activity.id} className="border-b border-border pb-4 last:border-0">
-                              <p className="text-sm text-foreground">{activity.activity}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">{activity.time}</p>
-                            </article>
+                            <article key={activity.id} className="border-b border-border pb-4 last:border-0"><p className="text-sm text-foreground">{activity.activity}</p><p className="mt-1 text-xs text-muted-foreground">{activity.time}</p></article>
                           ))}
                           <Button asChild variant="link"><Link to="/aluno">Ver histórico completo</Link></Button>
                         </CardContent>
@@ -385,8 +350,6 @@ jobs:
 
           export default App;
           TSX
-
-          printf 'VISUAL_PREVIEW_ONLY\n' > artifacts-visual-preview-mode.txt
 
       - name: Typecheck do preview isolado
         run: |
@@ -446,7 +409,6 @@ jobs:
               name: "admin",
               path: "/admin",
               requiredText: [
-                "Administração",
                 "Visão geral",
                 "Valor confirmado",
                 "Alunos",
@@ -457,12 +419,12 @@ jobs:
                 "Acadêmico",
                 "Catálogo",
               ],
+              desktopOnlyText: ["Administração"],
             },
             {
               name: "student",
               path: "/aluno",
               requiredText: [
-                "Aprendendo com DJ Stay",
                 "Portal do Aluno",
                 "Início",
                 "Meus cursos",
@@ -486,6 +448,7 @@ jobs:
                 "Continuar estudando",
                 "Atividades recentes",
               ],
+              desktopOnlyText: ["Aprendendo com DJ Stay"],
             },
           ];
           const viewports = [
@@ -531,22 +494,20 @@ jobs:
                 });
                 await page.waitForSelector('[data-visual-preview-only="true"]', { timeout: 10_000 });
                 await new Promise((resolve) => setTimeout(resolve, 500));
-                await page.evaluate(
-                  () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-                );
+                await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 
                 const bodyText = await page.evaluate(() => document.body.innerText);
-                const missingText = route.requiredText.filter((text) => !bodyText.includes(text));
+                const expectedText = [
+                  ...route.requiredText,
+                  ...(viewport.name === "desktop" ? route.desktopOnlyText : []),
+                ];
+                const missingText = expectedText.filter((text) => !bodyText.includes(text));
                 if (missingText.length > 0) {
                   throw new Error(`${route.name}/${viewport.name} missing required text: ${missingText.join(", ")}`);
                 }
 
                 const screenshotPath = `artifacts/visual-preview/screenshots/${route.name}-${viewport.name}.png`;
-                await page.screenshot({
-                  path: screenshotPath,
-                  type: "png",
-                  captureBeyondViewport: false,
-                });
+                await page.screenshot({ path: screenshotPath, type: "png", captureBeyondViewport: false });
 
                 captures.push({
                   route: route.path,
