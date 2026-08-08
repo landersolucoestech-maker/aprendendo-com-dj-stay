@@ -44,6 +44,30 @@ const moduleFixture = [{
   aulas: [{ id: UUID_LESSON, titulo: "Aula 1 · Introdução", descricao: "Aula navegável do preview.", ordem: 1, duracao: 12 }],
 }];
 
+const publicCourseFixture = {
+  slug: "curso-preview-navegavel",
+  title: "Curso Preview Navegável",
+  short_description: "Curso VISUAL_PREVIEW_ONLY para validar a jornada de compra sem backend real.",
+  description: "Oferta visual isolada usada apenas no preview navegável.",
+  category: "DJ",
+  language_code: "pt-BR",
+  level: "all_levels",
+  objectives: ["Navegar pelo fluxo completo do curso", "Validar a experiência visual antes da implementação funcional"],
+  prerequisites: [],
+  price_amount: 199,
+  effective_price_amount: 149,
+  currency_code: "BRL",
+  promotion_active: true,
+  access_duration_days: 365,
+  certificate_enabled: true,
+  published_at: now,
+  module_count: 1,
+  lesson_count: 1,
+  duration_minutes: 12,
+  preview_lesson_count: 0,
+  modules: [{ title: "Módulo 1 · Fundamentos", description: "Introdução ao curso.", position: 1, lesson_count: 1, duration_minutes: 12, preview_lesson_count: 0 }],
+};
+
 const affiliateFixture = () => {
   const mode = surface.slug.split("/")[1];
   const profileStatus =
@@ -138,7 +162,7 @@ const rpcFixture = (name) => {
   if (name.includes("student_progress_summary")) return { started_lessons: 0, completed_lessons: 0, average_progress_percent: 0 };
   if (name.includes("student_library_summary")) return { total: 0 };
   if (name.includes("recent_activities")) return [];
-  if (name.includes("public_course_catalog")) return [];
+  if (name.includes("public_course_catalog")) return { courses: [publicCourseFixture] };
   return studentSummary;
 };
 
