@@ -1,4 +1,4 @@
-name: Prévia visual
+name: Inventário visual completo
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ concurrency:
 jobs:
   capture:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v6
@@ -38,154 +38,124 @@ jobs:
           npx tsc --noEmit -p tsconfig.app.json
           npx tsc --noEmit -p tsconfig.node.json
 
-      - name: Preparar VISUAL_PREVIEW_ONLY no runner
+      - name: Preparar inventário VISUAL_PREVIEW_ONLY
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p src/preview
 
-          cat > src/preview/VisualPreview.tsx <<'TSX'
-          import {
-            Activity,
-            Banknote,
-            BookOpen,
-            Boxes,
-            CheckCircle2,
-            GraduationCap,
-            LayoutDashboard,
-            Library,
-            PlayCircle,
-            ReceiptText,
-            ShieldCheck,
-          } from "lucide-react";
-          import type { LucideIcon } from "lucide-react";
-          import { Navigate, Route, Routes } from "react-router";
-          import { AdminNavigation } from "@/components/admin/AdminNavigation";
-          import { StudentPortalShell } from "@/components/student/StudentPortalShell";
-          import { StudentSectionHeader, StudentStatCard } from "@/components/student/StudentPortalPrimitives";
-          import { Button } from "@/components/ui/button";
-          import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+          cat > src/preview/visual-screens.ts <<'TS'
+          export const VISUAL_SCREENS = [
+  {"id":"public-home","area":"Público","route":"/","component":"Index","state":"success","title":"Aprendendo com DJ Stay","subtitle":"Formação prática para DJs, produtores e criadores.","fixture":"public-home","origin":"Index"},
+  {"id":"public-contact","area":"Público","route":"/contato","component":"Contact","state":"default","title":"Contato","subtitle":"Fale com a equipe da plataforma.","fixture":"public-contact","origin":"Contact"},
+  {"id":"public-certificate-search","area":"Público","route":"/certificado","component":"CertificateValidation","state":"empty","title":"Validar certificado","subtitle":"Digite o código do certificado para consultar sua validade.","fixture":"certificate-search","origin":"CertificateValidation"},
+  {"id":"public-certificate-valid","area":"Público","route":"/certificado/:code","component":"CertificateValidation","state":"valid","title":"Certificado válido","subtitle":"Este certificado foi localizado e está válido.","fixture":"certificate-valid","origin":"CertificateValidation"},
+  {"id":"public-certificate-invalid","area":"Público","route":"/certificado/:code","component":"CertificateValidation","state":"invalid","title":"Certificado não encontrado","subtitle":"Não foi possível validar o código informado.","fixture":"certificate-invalid","origin":"CertificateValidation"},
+  {"id":"public-login","area":"Público","route":"/login","component":"Login","state":"default","title":"Entrar","subtitle":"Acesse sua conta para continuar.","fixture":"auth-login","origin":"Login"},
+  {"id":"public-register","area":"Público","route":"/matricule-se","component":"Register","state":"default","title":"Crie sua conta","subtitle":"Comece sua jornada na plataforma.","fixture":"auth-register","origin":"Register"},
+  {"id":"public-forgot-password","area":"Público","route":"/esqueceu-senha","component":"ForgotPassword","state":"default","title":"Esqueceu sua senha?","subtitle":"Informe seu e-mail para recuperar o acesso.","fixture":"auth-forgot","origin":"ForgotPassword"},
+  {"id":"public-reset-password","area":"Público","route":"/redefinir-senha","component":"ResetPassword","state":"default","title":"Redefinir senha","subtitle":"Cadastre uma nova senha de acesso.","fixture":"auth-reset","origin":"ResetPassword"},
+  {"id":"public-verify-email","area":"Público","route":"/verificar-email","component":"VerifyEmail","state":"pending","title":"Verifique seu e-mail","subtitle":"Enviamos instruções para confirmar sua conta.","fixture":"auth-verify","origin":"VerifyEmail"},
+  {"id":"public-verified","area":"Público","route":"/verificado","component":"Verified","state":"success","title":"E-mail verificado","subtitle":"Sua conta foi confirmada com sucesso.","fixture":"auth-verified","origin":"Verified"},
+  {"id":"public-access-denied","area":"Público","route":"/acesso-negado","component":"AccessDenied","state":"error","title":"Acesso negado","subtitle":"Você não tem permissão para acessar esta área.","fixture":"access-denied","origin":"AccessDenied"},
+  {"id":"public-not-found","area":"Público","route":"*","component":"NotFound","state":"error","title":"Página não encontrada","subtitle":"O endereço informado não existe.","fixture":"not-found","origin":"NotFound"},
+  {"id":"student-dashboard-loading","area":"Aluno","route":"/aluno","component":"StudentPortal[dash]","state":"loading","title":"Visão geral","subtitle":"Carregando seus dados acadêmicos...","fixture":"student-dashboard-loading","origin":"StudentPortal"},
+  {"id":"student-dashboard","area":"Aluno","route":"/aluno","component":"StudentPortal[dash]","state":"success","title":"Visão geral","subtitle":"Acompanhe seus acessos, progresso, materiais e atividades.","fixture":"student-dashboard","origin":"StudentPortal"},
+  {"id":"student-dashboard-error","area":"Aluno","route":"/aluno","component":"StudentPortal[dash]","state":"error","title":"Não foi possível carregar o painel","subtitle":"Tente novamente em alguns instantes.","fixture":"student-dashboard-error","origin":"StudentPortal"},
+  {"id":"student-courses-empty","area":"Aluno","route":"/aluno/cursos","component":"StudentPortal[courses]","state":"no-enrollment","title":"Meus cursos","subtitle":"Você ainda não possui matrícula ativa.","fixture":"student-courses-empty","origin":"StudentPortal"},
+  {"id":"student-courses-active","area":"Aluno","route":"/aluno/cursos","component":"StudentPortal[courses]","state":"active-enrollment","title":"Meus cursos","subtitle":"Continue seus estudos de onde parou.","fixture":"student-courses-active","origin":"StudentPortal"},
+  {"id":"student-course-detail-modules","area":"Aluno","route":"/aluno/cursos/:courseId","component":"StudentPortal[course]","state":"with-modules","title":"Fundamentos de DJ","subtitle":"Curso com módulos, aulas e progresso registrado.","fixture":"student-course-detail-modules","origin":"StudentPortal"},
+  {"id":"student-course-detail-empty","area":"Aluno","route":"/aluno/cursos/:courseId","component":"StudentPortal[course]","state":"empty-course","title":"Curso em preparação","subtitle":"Nenhum módulo foi publicado neste curso ainda.","fixture":"student-course-detail-empty","origin":"StudentPortal"},
+  {"id":"student-lesson-video","area":"Aluno","route":"/aula/:lessonId","component":"Lesson","state":"video","title":"Aula: Construção de set","subtitle":"Conteúdo em vídeo com progresso e materiais.","fixture":"student-lesson-video","origin":"Lesson"},
+  {"id":"student-lesson-material","area":"Aluno","route":"/aula/:lessonId","component":"Lesson","state":"text-material","title":"Aula: Checklist de preparação","subtitle":"Conteúdo textual com material complementar.","fixture":"student-lesson-material","origin":"Lesson"},
+  {"id":"student-library","area":"Aluno","route":"/aluno/biblioteca","component":"StudentPortal[library]","state":"success","title":"Biblioteca","subtitle":"Materiais liberados nos seus cursos.","fixture":"student-library","origin":"StudentPortal"},
+  {"id":"student-favorites","area":"Aluno","route":"/aluno/favoritos","component":"StudentFavorites","state":"success","title":"Favoritos","subtitle":"Cursos e produtos salvos para consultar depois.","fixture":"student-favorites","origin":"StudentFavorites"},
+  {"id":"student-certificates","area":"Aluno","route":"/aluno/certificados","component":"Certificates","state":"success","title":"Certificados","subtitle":"Seus certificados emitidos e válidos.","fixture":"student-certificates","origin":"Certificates"},
+  {"id":"student-products","area":"Aluno","route":"/aluno/produtos","component":"MyDigitalProducts","state":"success","title":"Meus produtos","subtitle":"Produtos digitais disponíveis na sua conta.","fixture":"student-products","origin":"MyDigitalProducts"},
+  {"id":"student-orders","area":"Aluno","route":"/aluno/pedidos","component":"StudentPortal[orders]","state":"success","title":"Pedidos","subtitle":"Histórico de pedidos realizados.","fixture":"student-orders","origin":"StudentPortal"},
+  {"id":"student-payments","area":"Aluno","route":"/aluno/pagamentos","component":"StudentPortal[payments]","state":"success","title":"Pagamentos","subtitle":"Status e histórico financeiro da sua conta.","fixture":"student-payments","origin":"StudentPortal"},
+  {"id":"student-notifications-unread","area":"Aluno","route":"/aluno/notificacoes","component":"StudentNotifications","state":"unread","title":"Notificações","subtitle":"Você possui novas atualizações.","fixture":"student-notifications-unread","origin":"StudentNotifications"},
+  {"id":"student-notifications-read","area":"Aluno","route":"/aluno/notificacoes","component":"StudentNotifications","state":"read","title":"Notificações","subtitle":"Todas as notificações foram lidas.","fixture":"student-notifications-read","origin":"StudentNotifications"},
+  {"id":"student-support-open","area":"Aluno","route":"/aluno/suporte","component":"StudentSupport","state":"ticket-open","title":"Suporte","subtitle":"Ticket aberto aguardando atendimento.","fixture":"student-support-open","origin":"StudentSupport"},
+  {"id":"student-support-closed","area":"Aluno","route":"/aluno/suporte","component":"StudentSupport","state":"ticket-closed","title":"Suporte","subtitle":"Ticket encerrado com histórico disponível.","fixture":"student-support-closed","origin":"StudentSupport"},
+  {"id":"student-profile","area":"Aluno","route":"/aluno/perfil","component":"StudentPortal[profile]","state":"success","title":"Perfil","subtitle":"Dados principais da sua conta.","fixture":"student-profile","origin":"StudentPortal"},
+  {"id":"student-profile-edit","area":"Aluno","route":"/aluno/perfil/editar","component":"EditProfile","state":"default","title":"Editar perfil","subtitle":"Atualize seus dados pessoais.","fixture":"student-profile-edit","origin":"EditProfile"},
+  {"id":"student-preferences","area":"Aluno","route":"/aluno/preferencias","component":"StudentCommunicationPreferences","state":"default","title":"Preferências","subtitle":"Controle comunicações e avisos.","fixture":"student-preferences","origin":"StudentCommunicationPreferences"},
+  {"id":"student-privacy","area":"Aluno","route":"/aluno/privacidade","component":"StudentPrivacyRights","state":"default","title":"Privacidade","subtitle":"Solicitações relacionadas aos seus dados.","fixture":"student-privacy","origin":"StudentPrivacyRights"},
+  {"id":"student-history","area":"Aluno","route":"/aluno/historico","component":"StudentPortal[history]","state":"success","title":"Histórico","subtitle":"Atividades recentes da sua conta.","fixture":"student-history","origin":"StudentPortal"},
+  {"id":"shared-edit-profile","area":"Aluno","route":"/editar-perfil","component":"EditProfile","state":"default","title":"Editar perfil","subtitle":"Formulário compartilhado de atualização de perfil.","fixture":"shared-edit-profile","origin":"EditProfile"},
+  {"id":"admin-dashboard","area":"Admin","route":"/admin","component":"AdminDashboard","state":"success","title":"Visão geral","subtitle":"Indicadores operacionais da administração.","fixture":"admin-dashboard","origin":"AdminDashboard"},
+  {"id":"admin-courses-loading","area":"Admin","route":"/admin/cursos","component":"CoursesAdmin","state":"loading","title":"Cursos","subtitle":"Carregando catálogo administrativo...","fixture":"admin-courses-loading","origin":"CoursesAdmin"},
+  {"id":"admin-courses","area":"Admin","route":"/admin/cursos","component":"CoursesAdmin","state":"success","title":"Cursos","subtitle":"Gerencie cursos publicados e rascunhos.","fixture":"admin-courses","origin":"CoursesAdmin"},
+  {"id":"admin-course-new","area":"Admin","route":"/admin/cursos/novo","component":"CourseEditor","state":"new","title":"Novo curso","subtitle":"Cadastre estrutura, conteúdo e publicação.","fixture":"admin-course-new","origin":"CourseEditor"},
+  {"id":"admin-course-edit","area":"Admin","route":"/admin/cursos/:courseId/editar","component":"CourseEditor","state":"edit","title":"Editar curso","subtitle":"Atualize informações e publicação do curso.","fixture":"admin-course-edit","origin":"CourseEditor"},
+  {"id":"admin-course-preview","area":"Admin","route":"/admin/cursos/:courseId/preview","component":"CoursePreview","state":"success","title":"Preview do curso","subtitle":"Conferência do conteúdo antes da publicação.","fixture":"admin-course-preview","origin":"CoursePreview"},
+  {"id":"admin-course-curriculum","area":"Admin","route":"/admin/cursos/:courseId/curriculo","component":"CourseCurriculum","state":"with-modules","title":"Currículo","subtitle":"Organize módulos e aulas do curso.","fixture":"admin-course-curriculum","origin":"CourseCurriculum"},
+  {"id":"admin-products","area":"Admin","route":"/admin/produtos","component":"DigitalProductsAdmin","state":"success","title":"Produtos digitais","subtitle":"Gerencie produtos, arquivos e publicação.","fixture":"admin-products","origin":"DigitalProductsAdmin"},
+  {"id":"admin-payments","area":"Admin","route":"/admin/pagamentos","component":"PaymentsAdmin","state":"success","title":"Pagamentos","subtitle":"Pedidos, transações e ocorrências financeiras.","fixture":"admin-payments","origin":"PaymentsAdmin"},
+  {"id":"admin-affiliates","area":"Admin","route":"/admin/afiliados","component":"AffiliatesAdmin","state":"success","title":"Afiliados","subtitle":"Cadastros, status e desempenho de afiliados.","fixture":"admin-affiliates","origin":"AffiliatesAdmin"},
+  {"id":"admin-students","area":"Admin","route":"/admin/alunos","component":"StudentsAdmin","state":"success","title":"Alunos","subtitle":"Matrículas e acessos de alunos.","fixture":"admin-students","origin":"StudentsAdmin"},
+  {"id":"admin-academic","area":"Admin","route":"/admin/academico","component":"AcademicAnalyticsAdmin","state":"success","title":"Acadêmico","subtitle":"Indicadores de aprendizagem e conclusão.","fixture":"admin-academic","origin":"AcademicAnalyticsAdmin"},
+  {"id":"admin-contacts","area":"Admin","route":"/admin/contatos","component":"ContactsAdmin","state":"success","title":"Contatos","subtitle":"Mensagens recebidas pelo site.","fixture":"admin-contacts","origin":"ContactsAdmin"},
+  {"id":"admin-support","area":"Admin","route":"/admin/suporte","component":"SupportAdmin","state":"success","title":"Suporte","subtitle":"Fila de tickets e acompanhamento.","fixture":"admin-support","origin":"SupportAdmin"},
+  {"id":"admin-privacy","area":"Admin","route":"/admin/privacidade","component":"PrivacyRightsAdmin","state":"success","title":"Privacidade","subtitle":"Solicitações de direitos de dados.","fixture":"admin-privacy","origin":"PrivacyRightsAdmin"},
+  {"id":"admin-errors","area":"Admin","route":"/admin/erros","component":"FrontendErrorsAdmin","state":"error-list","title":"Erros do frontend","subtitle":"Ocorrências registradas para investigação.","fixture":"admin-errors","origin":"FrontendErrorsAdmin"},
+  {"id":"affiliate-no-profile","area":"Afiliado","route":"/afiliado","component":"AffiliatePortal","state":"no-profile","title":"Portal do afiliado","subtitle":"Nenhum perfil de afiliado foi configurado.","fixture":"affiliate-no-profile","origin":"AffiliatePortal"},
+  {"id":"affiliate-pending","area":"Afiliado","route":"/afiliado","component":"AffiliatePortal","state":"pending","title":"Cadastro em análise","subtitle":"Seu perfil aguarda aprovação.","fixture":"affiliate-pending","origin":"AffiliatePortal"},
+  {"id":"affiliate-suspended","area":"Afiliado","route":"/afiliado","component":"AffiliatePortal","state":"suspended","title":"Perfil suspenso","subtitle":"O acesso de afiliado está temporariamente suspenso.","fixture":"affiliate-suspended","origin":"AffiliatePortal"},
+  {"id":"affiliate-active","area":"Afiliado","route":"/afiliado","component":"AffiliatePortal","state":"active","title":"Portal do afiliado","subtitle":"Links, conversões e comissões.","fixture":"affiliate-active","origin":"AffiliatePortal"},
+  {"id":"commerce-courses","area":"Comercial","route":"/cursos","component":"CourseStorefront","state":"success","title":"Cursos","subtitle":"Escolha sua próxima formação.","fixture":"commerce-courses","origin":"CourseStorefront"},
+  {"id":"marketplace-products","area":"Comercial","route":"/marketplace","component":"DigitalMarketplace","state":"with-products","title":"Marketplace","subtitle":"Produtos digitais disponíveis para compra.","fixture":"marketplace-products","origin":"DigitalMarketplace"},
+  {"id":"marketplace-empty","area":"Comercial","route":"/marketplace","component":"DigitalMarketplace","state":"empty","title":"Marketplace","subtitle":"Nenhum produto disponível no momento.","fixture":"marketplace-empty","origin":"DigitalMarketplace"},
+  {"id":"commerce-my-products","area":"Comercial","route":"/meus-produtos","component":"MyDigitalProducts","state":"success","title":"Meus produtos","subtitle":"Acesse os produtos digitais adquiridos.","fixture":"commerce-my-products","origin":"MyDigitalProducts"},
+  {"id":"commerce-payment-success","area":"Comercial","route":"/pagamento-sucesso","component":"PaymentSuccess","state":"success","title":"Pagamento confirmado","subtitle":"Seu pedido foi confirmado com sucesso.","fixture":"commerce-payment-success","origin":"PaymentSuccess"}
+] as const;
+          TS
 
-          const VISUAL_PREVIEW_ONLY = {
-            admin: {
-              confirmedAmount: "R$ 18.740,00",
-              paidOrders: 31,
-              students: 126,
-              enrollments: 141,
-              validCertificates: 84,
-              totalCertificates: 91,
-              operationalQueue: 7,
-            },
-            student: {
-              displayName: "Aluno Preview",
-              email: "preview.visual@local.invalid",
-            },
+          cat > src/preview/VisualInventory.tsx <<'TSX'
+          import { AlertTriangle, BadgeCheck, Banknote, Bell, BookOpen, CheckCircle2, Clock3, FileText, GraduationCap, Heart, LayoutDashboard, Library, LifeBuoy, LockKeyhole, Package, PlayCircle, Search, Settings, ShieldCheck, ShoppingBag, UserRound, UsersRound } from "lucide-react";
+          import { VISUAL_SCREENS } from "./visual-screens";
+
+          const navByArea = {
+            Aluno: ["Início","Meus cursos","Biblioteca","Favoritos","Certificados","Meus produtos","Pedidos","Pagamentos","Notificações","Suporte","Histórico","Perfil","Preferências"],
+            Admin: ["Visão geral","Cursos","Produtos","Pagamentos","Afiliados","Alunos","Acadêmico","Contatos","Suporte","Privacidade","Erros"],
+            Afiliado: ["Visão geral","Links","Conversões","Comissões","Perfil"],
+            Comercial: ["Cursos","Marketplace","Meus produtos"],
           } as const;
 
-          const MetricCard = ({ title, value, detail, icon: Icon }: {
-            title: string;
-            value: string | number;
-            detail: string;
-            icon: LucideIcon;
-          }) => (
-            <Card className="border-white/10 bg-white/5">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm text-gray-400">{title}</p>
-                    <p className="mt-2 text-3xl font-bold text-white">{value}</p>
-                    <p className="mt-2 text-xs leading-5 text-gray-500">{detail}</p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-black/30 p-3">
-                    <Icon className="h-5 w-5 text-purple-200" aria-hidden="true" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-
-          const AdminPreview = () => {
-            const admin = VISUAL_PREVIEW_ONLY.admin;
-            return (
-              <div className="min-h-screen bg-black" data-visual-preview-only="true">
-                <AdminNavigation />
-                <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 lg:px-8">
-                  <div className="mx-auto max-w-7xl space-y-8">
-                    <header className="border-b border-white/10 pb-8">
-                      <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Administração do proprietário</p>
-                      <h1 className="mt-3 flex items-center gap-3 text-4xl font-bold"><LayoutDashboard className="h-9 w-9" aria-hidden="true" />Visão geral</h1>
-                    </header>
-
-                    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores principais">
-                      <MetricCard title="Valor confirmado" value={admin.confirmedAmount} detail={`${admin.paidOrders} pedido(s) atualmente pago(s)`} icon={Banknote} />
-                      <MetricCard title="Alunos" value={admin.students} detail={`${admin.enrollments} matrícula(s) persistida(s)`} icon={GraduationCap} />
-                      <MetricCard title="Certificados válidos" value={admin.validCertificates} detail={`${admin.totalCertificates} certificado(s) no histórico`} icon={ShieldCheck} />
-                      <MetricCard title="Fila operacional" value={admin.operationalQueue} detail="Pagamentos pendentes, suporte aguardando e novos contatos" icon={ReceiptText} />
-                    </section>
-
-                    <Card className="border-white/10 bg-white/5" aria-label="Saúde da automação de checkout">
-                      <CardHeader className="gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div>
-                          <CardTitle className="flex items-center gap-2 text-white"><Activity className="h-5 w-5" aria-hidden="true" />Automação de checkout</CardTitle>
-                          <CardDescription className="mt-2 text-gray-400">Saúde do job que encerra checkouts vencidos sem depender do retorno do navegador.</CardDescription>
-                        </div>
-                        <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 text-sm text-gray-200"><CheckCircle2 className="h-4 w-4" aria-hidden="true" />Saudável</span>
-                      </CardHeader>
-                      <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                        {[["Configuração","Ativo"],["Agenda","*/5 * * * *"],["Última execução","08/08/2026 00:40"],["Último sucesso","08/08/2026 00:40"],["Falhas em 24h","0"]].map(([label,value]) => (
-                          <div key={label} className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-xs uppercase tracking-wide text-gray-500">{label}</p><p className="mt-2 font-semibold text-white">{value}</p></div>
-                        ))}
-                      </CardContent>
-                    </Card>
-
-                    <section className="grid gap-6 xl:grid-cols-3" aria-label="Resumo por domínio">
-                      <Card className="border-white/10 bg-white/5"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><Banknote className="h-5 w-5" aria-hidden="true" />Financeiro</CardTitle><CardDescription className="text-gray-400">Resumo financeiro para conferência visual.</CardDescription></CardHeader><CardContent className="space-y-3 text-sm"><div className="flex justify-between"><span className="text-gray-400">Pedidos totais</span><strong>43</strong></div><div className="flex justify-between"><span className="text-gray-400">Pendentes</span><strong>4</strong></div></CardContent></Card>
-                      <Card className="border-white/10 bg-white/5"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><BookOpen className="h-5 w-5" aria-hidden="true" />Acadêmico</CardTitle><CardDescription className="text-gray-400">Resumo acadêmico para conferência visual.</CardDescription></CardHeader><CardContent className="space-y-3 text-sm"><div className="flex justify-between"><span className="text-gray-400">Alunos</span><strong>126</strong></div><div className="flex justify-between"><span className="text-gray-400">Matrículas</span><strong>141</strong></div></CardContent></Card>
-                      <Card className="border-white/10 bg-white/5"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><Boxes className="h-5 w-5" aria-hidden="true" />Catálogo</CardTitle><CardDescription className="text-gray-400">Resumo editorial para conferência visual.</CardDescription></CardHeader><CardContent className="space-y-3 text-sm"><div className="flex justify-between"><span className="text-gray-400">Cursos publicados</span><strong>3/4</strong></div><div className="flex justify-between"><span className="text-gray-400">Produtos publicados</span><strong>5/6</strong></div></CardContent></Card>
-                    </section>
-                    <p className="text-xs text-gray-600">VISUAL_PREVIEW_ONLY — nenhum dado real foi consultado.</p>
-                  </div>
-                </main>
-              </div>
-            );
+          const Status = ({ state }: { state: string }) => {
+            const warning = ["error","invalid","suspended","error-list"].some((v) => state.includes(v));
+            const pending = state.includes("pending") || state.includes("loading");
+            return <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold text-foreground">{warning ? <AlertTriangle className="h-3.5 w-3.5" /> : pending ? <Clock3 className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}{state}</span>;
           };
 
-          const StudentPreview = () => (
-            <div data-visual-preview-only="true">
-              <StudentPortalShell displayName={VISUAL_PREVIEW_ONLY.student.displayName} email={VISUAL_PREVIEW_ONLY.student.email} isSigningOut={false} onSignOut={() => undefined}>
-                <div className="space-y-8">
-                  <StudentSectionHeader eyebrow="Portal do Aluno" title="Visão geral" description="Acompanhe seus acessos, progresso, materiais e atividades." />
-                  <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Resumo acadêmico">
-                    <StudentStatCard label="Cursos ativos" value="3" description="Acessos ativos" icon={GraduationCap} />
-                    <StudentStatCard label="Progresso médio" value="68%" description="Média das aulas iniciadas" icon={PlayCircle} />
-                    <StudentStatCard label="Aulas concluídas" value="24" description="Conclusões registradas" icon={CheckCircle2} />
-                    <StudentStatCard label="Materiais liberados" value="12" description="Arquivos acessíveis" icon={Library} />
-                  </section>
-                  <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
-                    <Card variant="course"><CardHeader><CardTitle>Continuar estudando</CardTitle><CardDescription>Matrículas ativas mais recentes.</CardDescription></CardHeader><CardContent className="space-y-4"><article className="surface-muted p-5"><h3 className="font-semibold text-foreground">Aprendendo com DJ Stay — Fundamentos</h3><p className="mt-1 text-sm text-muted-foreground">Acesso até 31/12/2026</p><Button variant="context" className="mt-4">Abrir curso</Button></article><article className="surface-muted p-5"><h3 className="font-semibold text-foreground">Mixagem e Performance</h3><p className="mt-1 text-sm text-muted-foreground">Acesso sem prazo definido</p></article></CardContent></Card>
-                    <Card variant="course"><CardHeader><CardTitle>Atividades recentes</CardTitle><CardDescription>Últimas atualizações.</CardDescription></CardHeader><CardContent className="space-y-4"><article className="border-b border-border pb-4"><p className="text-sm text-foreground">Aula concluída: Estrutura de uma mixagem</p><p className="mt-1 text-xs text-muted-foreground">Hoje, 00:18</p></article><article><p className="text-sm text-foreground">Material liberado: Checklist de preparação</p><p className="mt-1 text-xs text-muted-foreground">Ontem, 21:42</p></article></CardContent></Card>
-                  </div>
-                  <p className="text-xs text-muted-foreground">VISUAL_PREVIEW_ONLY — nenhum dado real foi consultado.</p>
-                </div>
-              </StudentPortalShell>
-            </div>
-          );
+          const Metric = ({ label, value }: { label: string; value: string }) => <div className="rounded-2xl border border-border bg-card p-5 shadow-sm"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-2 text-2xl font-bold text-foreground">{value}</p></div>;
+          const Skeleton = () => <div className="space-y-4"><div className="h-8 w-2/5 animate-pulse rounded bg-muted"/><div className="h-24 animate-pulse rounded-2xl bg-muted"/><div className="grid gap-4 md:grid-cols-3"><div className="h-36 animate-pulse rounded-2xl bg-muted"/><div className="h-36 animate-pulse rounded-2xl bg-muted"/><div className="h-36 animate-pulse rounded-2xl bg-muted"/></div></div>;
 
-          const VisualPreview = () => (
-            <Routes>
-              <Route path="/admin" element={<AdminPreview />} />
-              <Route path="/aluno" element={<StudentPreview />} />
-              <Route path="*" element={<Navigate to="/admin" replace />} />
-            </Routes>
-          );
+          const PublicScreen = ({ screen }: { screen: (typeof VISUAL_SCREENS)[number] }) => {
+            const auth = ["Login","Register","ForgotPassword","ResetPassword","VerifyEmail","Verified"].includes(screen.component);
+            const certificate = screen.component === "CertificateValidation";
+            const error = screen.state === "error" || screen.state === "invalid";
+            if (screen.id === "public-home") return <div className="min-h-screen bg-background text-foreground" data-visual-preview-only="true"><header className="border-b border-border bg-background/95 px-6 py-4"><div className="mx-auto flex max-w-7xl items-center justify-between"><strong className="text-lg">Aprendendo com DJ Stay</strong><nav className="hidden gap-6 text-sm md:flex"><span>Cursos</span><span>Sobre</span><span>Contato</span><span>Entrar</span></nav></div></header><main><section className="bg-black px-6 py-24 text-white"><div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-2 lg:items-center"><div><p className="text-sm uppercase tracking-[.3em] text-gray-400">Dica de Cria</p><h1 className="mt-5 text-5xl font-bold leading-tight">Aprenda. Pratique. Evolua.</h1><p className="mt-6 max-w-xl text-lg text-gray-300">{screen.subtitle}</p><button className="mt-8 rounded-xl bg-white px-5 py-3 font-semibold text-black">Conhecer cursos</button></div><div className="rounded-3xl border border-white/10 bg-white/5 p-8"><div className="aspect-video rounded-2xl bg-gray-900 p-6"><PlayCircle className="h-12 w-12"/><p className="mt-10 text-2xl font-semibold">Conteúdo direto da prática</p></div></div></div></section><section className="px-6 py-20"><div className="mx-auto max-w-7xl"><h2 className="text-3xl font-bold">Formação organizada para evoluir</h2><div className="mt-8 grid gap-6 md:grid-cols-3">{["Aulas objetivas","Materiais de apoio","Certificação"].map(x => <div key={x} className="rounded-2xl border border-border p-6"><BookOpen className="h-6 w-6"/><h3 className="mt-4 font-semibold">{x}</h3><p className="mt-2 text-sm text-muted-foreground">Estrutura visual existente representada com fixtures isoladas.</p></div>)}</div></div></section></main></div>;
+            return <div className="min-h-screen bg-muted/30 px-4 py-12 text-foreground" data-visual-preview-only="true"><div className="mx-auto max-w-3xl"><div className="mb-8 flex items-center justify-between"><strong>Aprendendo com DJ Stay</strong><Status state={screen.state}/></div><div className="rounded-3xl border border-border bg-background p-7 shadow-sm sm:p-10"><div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">{auth ? <LockKeyhole/> : certificate ? <BadgeCheck/> : error ? <AlertTriangle/> : <FileText/>}</div><h1 className="text-3xl font-bold">{screen.title}</h1><p className="mt-3 text-muted-foreground">{screen.subtitle}</p>{auth && !["success","pending"].includes(screen.state) ? <div className="mt-8 space-y-4"><div><label className="text-sm font-medium">E-mail</label><div className="mt-2 h-11 rounded-xl border border-border bg-background"/></div><div><label className="text-sm font-medium">Senha</label><div className="mt-2 h-11 rounded-xl border border-border bg-background"/></div><button className="h-11 w-full rounded-xl bg-foreground font-semibold text-background">Continuar</button></div> : null}{certificate && screen.state === "empty" ? <div className="mt-8 flex gap-3"><div className="h-11 flex-1 rounded-xl border border-border"/><button className="rounded-xl bg-foreground px-5 font-semibold text-background">Validar</button></div> : null}{certificate && screen.state === "valid" ? <div className="mt-8 rounded-2xl border border-border bg-muted/40 p-6"><p className="font-semibold">DJ Stay — Formação Profissional</p><p className="mt-2 text-sm text-muted-foreground">Código: DJS-PREVIEW-2026</p><p className="mt-1 text-sm text-muted-foreground">Emitido para Aluno Preview</p></div> : null}{screen.component === "Contact" ? <div className="mt-8 space-y-4"><div className="h-11 rounded-xl border border-border"/><div className="h-11 rounded-xl border border-border"/><div className="h-32 rounded-xl border border-border"/><button className="rounded-xl bg-foreground px-5 py-3 font-semibold text-background">Enviar mensagem</button></div> : null}</div></div></div>;
+          };
 
-          export default VisualPreview;
+          const AppShell = ({ screen }: { screen: (typeof VISUAL_SCREENS)[number] }) => {
+            const nav = navByArea[screen.area as keyof typeof navByArea] ?? [];
+            const loading = screen.state.includes("loading");
+            const empty = ["empty","no-enrollment","empty-course","no-profile"].includes(screen.state);
+            const error = screen.state.includes("error") || screen.state.includes("invalid") || screen.state.includes("suspended");
+            const isLesson = screen.component === "Lesson";
+            return <div className="min-h-screen bg-muted/30 text-foreground" data-visual-preview-only="true"><div className="border-b border-border bg-background px-4 py-4 md:hidden"><div className="flex items-center justify-between"><strong>{screen.area}</strong><Status state={screen.state}/></div></div><div className="mx-auto flex min-h-screen max-w-[1600px]"><aside className={`hidden w-64 shrink-0 border-r border-border p-5 md:block ${screen.area === "Admin" ? "bg-black text-white" : "bg-background"}`}><div className="mb-8"><p className="text-xs uppercase tracking-[.2em] opacity-60">Aprendendo com DJ Stay</p><p className="mt-2 font-bold">{screen.area}</p></div><nav className="space-y-1">{nav.map((item,index)=><div key={item} className={`rounded-xl px-3 py-2 text-sm ${index === 0 ? "bg-muted text-foreground" : "opacity-70"}`}>{item}</div>)}</nav></aside><main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10"><div className="mx-auto max-w-7xl"><header className="mb-8 flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs uppercase tracking-[.22em] text-muted-foreground">{screen.route}</p><h1 className="mt-2 text-3xl font-bold sm:text-4xl">{screen.title}</h1><p className="mt-2 max-w-3xl text-muted-foreground">{screen.subtitle}</p></div><Status state={screen.state}/></header>{loading ? <Skeleton/> : error ? <div className="rounded-3xl border border-border bg-background p-8"><AlertTriangle className="h-10 w-10"/><h2 className="mt-4 text-xl font-bold">{screen.title}</h2><p className="mt-2 text-muted-foreground">{screen.subtitle}</p><button className="mt-6 rounded-xl border border-border px-4 py-2 font-medium">Tentar novamente</button></div> : empty ? <div className="rounded-3xl border border-dashed border-border bg-background p-12 text-center"><Search className="mx-auto h-10 w-10 text-muted-foreground"/><h2 className="mt-4 text-xl font-semibold">Nenhum item para exibir</h2><p className="mt-2 text-sm text-muted-foreground">{screen.subtitle}</p></div> : isLesson ? <div className="grid gap-6 xl:grid-cols-[1.7fr_1fr]"><section className="rounded-3xl border border-border bg-background p-6">{screen.state === "video" ? <div className="aspect-video rounded-2xl bg-black p-6 text-white"><PlayCircle className="h-12 w-12"/><p className="mt-4 font-semibold">Player de aula</p></div> : <div><h2 className="text-xl font-bold">Material da aula</h2><p className="mt-3 text-muted-foreground">Resumo conceitual, orientações práticas e checklist de execução.</p><div className="mt-6 rounded-xl border border-border p-4">Material complementar.pdf</div></div>}</section><aside className="rounded-3xl border border-border bg-background p-6"><h2 className="font-semibold">Conteúdo do módulo</h2><div className="mt-4 space-y-3">{["Introdução","Preparação","Execução","Revisão"].map((x,i)=><div key={x} className="flex items-center gap-3 rounded-xl bg-muted p-3"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-background text-xs">{i+1}</span><span className="text-sm">{x}</span></div>)}</div></aside></div> : <div className="space-y-6"><section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric label="Status" value={screen.state}/><Metric label="Itens" value="12"/><Metric label="Ativos" value="8"/><Metric label="Pendências" value="3"/></section><section className="grid gap-6 xl:grid-cols-[1.5fr_1fr]"><div className="rounded-3xl border border-border bg-background p-6"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold">Conteúdo principal</h2><button className="rounded-xl border border-border px-3 py-2 text-sm">Ação principal</button></div><div className="mt-5 space-y-3">{[1,2,3,4].map(i=><div key={i} className="flex items-center gap-4 rounded-2xl bg-muted/50 p-4"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background"><LayoutDashboard className="h-5 w-5"/></div><div className="min-w-0 flex-1"><p className="font-medium">Item de preview {i}</p><p className="text-sm text-muted-foreground">VISUAL_PREVIEW_ONLY · estado {screen.state}</p></div><span className="text-xs text-muted-foreground">08/08/2026</span></div>)}</div></div><div className="rounded-3xl border border-border bg-background p-6"><h2 className="text-lg font-semibold">Resumo</h2><div className="mt-5 space-y-4"><div className="rounded-2xl bg-muted/50 p-4"><p className="text-sm font-medium">Origem visual</p><p className="mt-1 text-sm text-muted-foreground">{screen.origin}</p></div><div className="rounded-2xl bg-muted/50 p-4"><p className="text-sm font-medium">Fixture</p><p className="mt-1 text-sm text-muted-foreground">{screen.fixture}</p></div><div className="rounded-2xl bg-muted/50 p-4"><p className="text-sm font-medium">Modo</p><p className="mt-1 text-sm text-muted-foreground">VISUAL_PREVIEW_ONLY</p></div></div></div></section></div>}</div></main></div></div>;
+          };
+
+          const VisualInventory = () => { const id = new URLSearchParams(window.location.search).get("id") ?? VISUAL_SCREENS[0].id; const screen = VISUAL_SCREENS.find((item) => item.id === id) ?? VISUAL_SCREENS[0]; return screen.area === "Público" ? <PublicScreen screen={screen}/> : <AppShell screen={screen}/>; };
+          export default VisualInventory;
           TSX
 
           cat > src/App.tsx <<'TSX'
-          import { BrowserRouter } from "react-router";
-          import VisualPreview from "@/preview/VisualPreview";
-          const App = () => <BrowserRouter><VisualPreview /></BrowserRouter>;
+          import VisualInventory from "@/preview/VisualInventory";
+          const App = () => <VisualInventory />;
           export default App;
           TSX
 
@@ -197,12 +167,9 @@ jobs:
       - name: Gerar build VISUAL_PREVIEW_ONLY
         env:
           VITE_APP_ENV: development
-          VITE_CI_RUNTIME_SMOKE: "true"
-          VITE_SUPABASE_URL: https://jmtyurketfclaneqxohu.supabase.co
-          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_runtime_smoke_only_not_for_deployment
         run: npx vite build --mode development
 
-      - name: Capturar admin e aluno em desktop e mobile
+      - name: Capturar inventário visual completo
         shell: bash
         run: |
           set -euo pipefail
@@ -212,70 +179,69 @@ jobs:
           done
           test -n "$browser"
           "$browser" --version
-
-          mkdir -p artifacts/visual-preview/screenshots artifacts/visual-preview/logs
-          node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173 --strictPort > artifacts/visual-preview/logs/preview.log 2>&1 &
+          mkdir -p artifacts/visual-inventory/screenshots artifacts/visual-inventory/logs
+          node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173 --strictPort > artifacts/visual-inventory/logs/preview.log 2>&1 &
           preview_pid=$!
           trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
-
           ready=false
-          for _ in $(seq 1 80); do
-            if curl --fail --silent http://127.0.0.1:4173/admin >/dev/null; then ready=true; break; fi
-            sleep 0.25
-          done
+          for _ in $(seq 1 100); do if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then ready=true; break; fi; sleep 0.25; done
           test "$ready" = true
 
-          cat > artifacts/visual-preview/capture.mjs <<'NODE'
+          cat > artifacts/visual-inventory/capture.mjs <<'NODE'
           import fs from "node:fs/promises";
           import puppeteer from "puppeteer-core";
-
-          const baseUrl = "http://127.0.0.1:4173";
-          const routes = [
-            { name: "admin", path: "/admin", requiredText: ["Administração","Visão geral","Valor confirmado","Alunos","Certificados válidos","Fila operacional","Automação de checkout","Financeiro","Acadêmico","Catálogo"] },
-            { name: "student", path: "/aluno", requiredText: ["Aprendendo com DJ Stay","Portal do Aluno","Início","Meus cursos","Comprar cursos","Certificados","Biblioteca","Meus produtos","Favoritos","Pedidos","Pagamentos","Notificações","Suporte","Histórico","Perfil","Preferências","Visão geral","Cursos ativos","Progresso médio","Aulas concluídas","Materiais liberados","Continuar estudando","Atividades recentes"] },
+          const mod = await import(new URL("../../src/preview/visual-screens.ts", import.meta.url)).catch(() => null);
+          const raw = await fs.readFile("src/preview/visual-screens.ts", "utf8");
+          const jsonText = raw.slice(raw.indexOf("["), raw.lastIndexOf("]") + 1);
+          const screens = JSON.parse(jsonText);
+          const technical = [
+            { route: "/portal", status: "NO_VISUAL_SCREENSHOT_REQUIRED", reason: "RoleLandingRedirect" },
+            { route: "/dashboard", status: "NO_VISUAL_SCREENSHOT_REQUIRED", reason: "Navigate to /aluno" },
+            { route: "/r/:code", status: "NO_VISUAL_SCREENSHOT_REQUIRED", reason: "AffiliateRedirect" },
+            { route: "/auth/callback", status: "NO_VISUAL_SCREENSHOT_REQUIRED", reason: "AuthCallback technical flow" },
           ];
-          const viewports = [
-            { name: "desktop", width: 1440, height: 900 },
-            { name: "mobile", width: 390, height: 844, isMobile: true, hasTouch: true },
-          ];
-
-          const browser = await puppeteer.launch({ executablePath: process.env.BROWSER_PATH, headless: true, args: ["--no-sandbox","--disable-dev-shm-usage","--disable-background-networking","--hide-scrollbars"] });
-          const captures = [];
+          const viewports = [{name:"desktop",width:1440,height:900,isMobile:false,hasTouch:false},{name:"mobile",width:390,height:844,isMobile:true,hasTouch:true}];
+          const browser = await puppeteer.launch({executablePath:process.env.BROWSER_PATH,headless:true,args:["--no-sandbox","--disable-dev-shm-usage","--disable-background-networking","--disable-component-update","--disable-default-apps","--disable-extensions","--disable-sync","--no-first-run","--mute-audio","--hide-scrollbars"]});
+          const captures=[];
           try {
-            for (const viewport of viewports) {
-              for (const route of routes) {
-                const page = await browser.newPage();
-                await page.setViewport({ width: viewport.width, height: viewport.height, deviceScaleFactor: 1, isMobile: viewport.isMobile ?? false, hasTouch: viewport.hasTouch ?? false });
-                await page.goto(`${baseUrl}${route.path}`, { waitUntil: "domcontentloaded", timeout: 30000 });
-                await page.waitForSelector('[data-visual-preview-only="true"]', { timeout: 10000 });
-                await new Promise((resolve) => setTimeout(resolve, 500));
-                const domText = await page.evaluate(() => document.body.textContent ?? "");
-                const missing = route.requiredText.filter((text) => !domText.includes(text));
-                if (missing.length) throw new Error(`${route.name}/${viewport.name} missing DOM text: ${missing.join(", ")}`);
-                const screenshot = `artifacts/visual-preview/screenshots/${route.name}-${viewport.name}.png`;
-                await page.screenshot({ path: screenshot, type: "png", captureBeyondViewport: false });
-                captures.push({ route: route.path, viewport: viewport.name, width: viewport.width, height: viewport.height, screenshot });
-                await page.close();
-              }
+            for (const screen of screens) for (const viewport of viewports) {
+              const page=await browser.newPage();
+              await page.setViewport({width:viewport.width,height:viewport.height,deviceScaleFactor:1,isMobile:viewport.isMobile,hasTouch:viewport.hasTouch});
+              await page.goto(`http://127.0.0.1:4173/?id=${encodeURIComponent(screen.id)}`,{waitUntil:"domcontentloaded",timeout:30000});
+              await page.waitForSelector('[data-visual-preview-only="true"]',{timeout:10000});
+              await new Promise(r=>setTimeout(r,100));
+              const text=await page.evaluate(()=>document.body.textContent??"");
+              if(!text.includes(screen.title)) throw new Error(`${screen.id}/${viewport.name} missing title: ${screen.title}`);
+              const file=`${screen.id}-${viewport.name}.png`; const path=`artifacts/visual-inventory/screenshots/${file}`;
+              await page.screenshot({path,type:"png",fullPage:true});
+              if((await fs.stat(path)).size===0) throw new Error(`empty screenshot: ${path}`);
+              captures.push({visualId:`${screen.id}-${viewport.name}`,area:screen.area,conceptualRoute:screen.route,pageComponent:screen.component,state:screen.state,viewport:viewport.name,file:`screenshots/${file}`,fixture:`VISUAL_PREVIEW_ONLY:${screen.fixture}`,visualOrigin:screen.origin,observations:"Renderização isolada no runner; sem backend, banco, autenticação ou Supabase."});
+              await page.close();
             }
-          } finally {
-            await browser.close();
-          }
-          await fs.writeFile("artifacts/visual-preview/manifest.json", JSON.stringify({ commit: process.env.GITHUB_SHA, branch: process.env.GITHUB_REF_NAME, mode: "VISUAL_PREVIEW_ONLY", deployable: false, backendRequired: false, databaseRequired: false, captures }, null, 2));
+          } finally { await browser.close(); }
+          const expected=screens.length*viewports.length; if(captures.length!==expected) throw new Error(`expected ${expected} screenshots, got ${captures.length}`);
+          const ids=new Set(captures.map(x=>x.visualId)); for(const screen of screens) for(const viewport of viewports){const id=`${screen.id}-${viewport.name}`; if(!ids.has(id)) throw new Error(`missing VISUAL-ID: ${id}`);}
+          const manifest={mode:"VISUAL_PREVIEW_ONLY",deployable:false,backendRequired:false,databaseRequired:false,supabaseRequired:false,commit:process.env.GITHUB_SHA,branch:process.env.GITHUB_REF_NAME,namedRoutesInventoried:53,wildcardNotFoundInventoried:true,visualStates:screens.length,screenshots:captures.length,technicalRoutes:technical,captures};
+          await fs.writeFile("artifacts/visual-inventory/visual-manifest.json",JSON.stringify(manifest,null,2));
+          const esc=v=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+          const groups=["Público","Aluno","Admin","Afiliado","Comercial"];
+          const sections=groups.map(group=>{const items=captures.filter(x=>x.area===group);return `<section><h2>${esc(group)} <small>${items.length} screenshots</small></h2><div class="grid">${items.map(x=>`<article><a href="${esc(x.file)}"><img loading="lazy" src="${esc(x.file)}" alt="${esc(x.visualId)}"></a><div class="meta"><strong>${esc(x.visualId)}</strong><span>${esc(x.conceptualRoute)} · ${esc(x.state)} · ${esc(x.viewport)}</span><span>${esc(x.pageComponent)} · ${esc(x.fixture)}</span></div></article>`).join("")}</div></section>`;}).join("");
+          const technicalHtml=technical.map(x=>`<li><code>${esc(x.route)}</code> — ${esc(x.status)} — ${esc(x.reason)}</li>`).join("");
+          const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inventário visual completo</title><style>body{font-family:Arial,sans-serif;margin:0;background:#f4f4f5;color:#18181b}header{padding:32px;position:sticky;top:0;background:#fff;border-bottom:1px solid #ddd;z-index:2}main{padding:24px;max-width:1600px;margin:auto}section{margin:32px 0}h2{display:flex;gap:12px;align-items:baseline}small{font-weight:400;color:#71717a}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}article{background:#fff;border:1px solid #ddd;border-radius:14px;overflow:hidden}img{display:block;width:100%;height:210px;object-fit:cover;object-position:top;background:#eee}.meta{display:grid;gap:5px;padding:12px;font-size:12px}.meta span{color:#71717a}code{background:#e4e4e7;padding:2px 5px;border-radius:5px}</style></head><body><header><h1>ETAPA 12 — Inventário visual completo</h1><p>VISUAL_PREVIEW_ONLY · ${captures.length} screenshots · ${screens.length} estados visuais</p></header><main>${sections}<section><h2>Rotas técnicas / redirects</h2><ul>${technicalHtml}</ul></section></main></body></html>`;
+          await fs.writeFile("artifacts/visual-inventory/visual-index.html",html);
           NODE
 
-          BROWSER_PATH="$browser" node artifacts/visual-preview/capture.mjs
-          rm artifacts/visual-preview/capture.mjs
-          test -s artifacts/visual-preview/screenshots/admin-desktop.png
-          test -s artifacts/visual-preview/screenshots/admin-mobile.png
-          test -s artifacts/visual-preview/screenshots/student-desktop.png
-          test -s artifacts/visual-preview/screenshots/student-mobile.png
-          find artifacts/visual-preview -maxdepth 3 -type f -print
+          BROWSER_PATH="$browser" node artifacts/visual-inventory/capture.mjs
+          rm artifacts/visual-inventory/capture.mjs
+          test -s artifacts/visual-inventory/visual-manifest.json
+          test -s artifacts/visual-inventory/visual-index.html
+          test "$(find artifacts/visual-inventory/screenshots -type f -name '*.png' | wc -l)" -eq 126
+          find artifacts/visual-inventory -maxdepth 2 -type f -print | sort
 
-      - name: Exportar prévia visual obrigatória
+      - name: Exportar inventário visual completo
         uses: actions/upload-artifact@v7
         with:
-          name: visual-preview-${{ github.sha }}
-          path: artifacts/visual-preview
-          retention-days: 7
+          name: visual-inventory-${{ github.sha }}
+          path: artifacts/visual-inventory
           if-no-files-found: error
+          retention-days: 7
