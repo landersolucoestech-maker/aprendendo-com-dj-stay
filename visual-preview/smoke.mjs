@@ -55,6 +55,20 @@ const evaluate = async (client, expression) => {
   return result.result?.value;
 };
 
+const waitForPreviewReady = async (client, timeoutMs = 15000) => {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const ready = await evaluate(client, "document.documentElement.dataset.visualPreviewReady === 'true'");
+      if (ready) return true;
+    } catch {
+      // A navegação pode substituir o execution context entre Page.navigate e o primeiro evaluate.
+    }
+    await sleep(100);
+  }
+  return false;
+};
+
 const chromePath=findChrome();
 const port=9333;
 const chrome=spawn(chromePath,[
@@ -74,13 +88,7 @@ try {
       await client.send("Emulation.setDeviceMetricsOverride",{width:viewport.width,height:viewport.height,deviceScaleFactor:1,mobile:viewport.width<640});
       const url=base+"visual-preview/"+surface.slug+"/";
       await client.send("Page.navigate",{url});
-      const deadline=Date.now()+15000;
-      let ready=false;
-      while(Date.now()<deadline){
-        ready=await evaluate(client,"document.documentElement.dataset.visualPreviewReady === 'true'");
-        if(ready) break;
-        await sleep(100);
-      }
+      const ready=await waitForPreviewReady(client);
       if(!ready) throw new Error(`${surface.slug} ${viewport.name}: preview não ficou pronto`);
       await sleep(250);
       const state=await evaluate(client,`(() => ({
