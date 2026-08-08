@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router";
+import { MemoryRouter, Route, Routes } from "react-router";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthContext } from "@/auth/auth-context";
 import { AdminShell } from "@/app/shells/AdminShell";
@@ -146,6 +146,15 @@ function CommerceSurface() {
   }
 }
 
+const previewRoutePattern = () => {
+  if (["student/course", "student/modules", "student/lessons"].includes(surface.slug)) return "/aluno/cursos/:courseId";
+  if (["student/lesson-video", "student/lesson-text"].includes(surface.slug)) return "/aula/:lessonId";
+  if (surface.slug === "admin/course-edit") return "/admin/cursos/:courseId/editar";
+  if (surface.slug === "admin/course-preview") return "/admin/cursos/:courseId/preview";
+  if (["admin/curriculum", "admin/modules", "admin/lessons", "admin/module-editor", "admin/lesson-editor", "admin/assets"].includes(surface.slug)) return "/admin/cursos/:courseId/curriculo";
+  return surface.route.split(/[?#]/)[0] || "/";
+};
+
 const groupLabels = { public: "Público", student: "Aluno", admin: "Admin", affiliate: "Afiliado", commerce: "Comercial" };
 function PreviewNavigator() {
   const [open, setOpen] = useState(false);
@@ -197,7 +206,7 @@ function App() {
   else if (surface.area === "affiliate") content = <AffiliateSurface />;
   else content = <CommerceSurface />;
 
-  return <><PreviewNavigator /><Suspense fallback={<div className="min-h-screen p-8">Carregando componente real…</div>}>{content}</Suspense></>;
+  return <><PreviewNavigator /><Suspense fallback={<div className="min-h-screen p-8">Carregando componente real…</div>}><Routes><Route path={previewRoutePattern()} element={content} /></Routes></Suspense></>;
 }
 
 createRoot(document.getElementById("root")).render(
