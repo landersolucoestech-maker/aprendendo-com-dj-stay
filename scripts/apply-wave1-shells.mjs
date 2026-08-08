@@ -745,6 +745,7 @@ import { useAuthenticatedShellNavigation } from "@/shared/navigation/Authenticat
 const studentNavigation = [
   { to: "/aluno", label: "Início", icon: LayoutDashboard, end: true },
   { to: "/aluno/cursos", label: "Meus cursos", icon: BookOpen, end: false },
+  { to: "/cursos", label: "Comprar cursos", icon: ShoppingCart, end: false },
   { to: "/aluno/certificados", label: "Certificados", icon: Award, end: false },
   { to: "/aluno/biblioteca", label: "Biblioteca", icon: Library, end: false },
   { to: "/aluno/produtos", label: "Meus produtos", icon: PackageCheck, end: false },
@@ -759,12 +760,13 @@ const studentNavigation = [
   { to: "/aluno/privacidade", label: "Privacidade", icon: ShieldCheck, end: false },
 ] as const;
 
+const studentNavigationByPath = new Map(studentNavigation.map((item) => [item.to, item] as const));
+const courseStorefrontNavigation = studentNavigationByPath.get("/cursos")!;
 const commerceNavigation = [
-  { to: "/cursos", label: "Cursos", icon: ShoppingCart },
-  { to: "/marketplace", label: "Produtos digitais", icon: Boxes },
+  { ...courseStorefrontNavigation, displayLabel: "Cursos" },
+  { to: "/marketplace", label: "Produtos digitais", displayLabel: "Produtos digitais", icon: Boxes, end: false },
 ] as const;
 
-const studentNavigationByPath = new Map(studentNavigation.map((item) => [item.to, item] as const));
 const studentGroups = [
   { label: "APRENDIZADO", paths: ["/aluno", "/aluno/cursos", "/aluno/biblioteca", "/aluno/favoritos", "/aluno/certificados", "/aluno/historico"] },
   { label: "MINHAS COMPRAS", paths: ["/aluno/produtos", "/aluno/pedidos", "/aluno/pagamentos"] },
@@ -804,14 +806,14 @@ const StudentNavigation = ({ mobile = false }: { readonly mobile?: boolean }) =>
       <div>
         {!compact ? <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">COMPRAR</p> : null}
         <div className="space-y-1">
-          {commerceNavigation.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} aria-label={compact ? label : undefined} onClick={closeNavigation} className={({ isActive }) => cn(
+          {commerceNavigation.map(({ to, displayLabel, icon: Icon, end }) => (
+            <NavLink key={to} to={to} end={end} aria-label={compact ? displayLabel : undefined} onClick={closeNavigation} className={({ isActive }) => cn(
               "flex min-h-11 items-center rounded-xl text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
               compact ? "justify-center px-2" : "gap-3 px-3",
               isActive ? "bg-marketplace/15 text-marketplace" : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}>
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {!compact ? <span>{label}</span> : null}
+              {!compact ? <span>{displayLabel}</span> : null}
             </NavLink>
           ))}
         </div>
