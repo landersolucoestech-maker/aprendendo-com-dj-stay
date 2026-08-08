@@ -92,13 +92,13 @@ jobs:
               FAIL=1
             fi
             printf -- "- %s: **%s** (exit %s)\n" "$label" "$outcome" "$rc" >> "$REPORT"
-            return 0
+            return "$rc"
           }
 
           run_gate "npm ci" "artifacts/frontend-wave0/logs/npm-ci.log" npm ci
-          INSTALL_RC=${PIPESTATUS[0]:-0}
+          INSTALL_RC=$?
 
-          if grep -q -- '- npm ci: **PASS**' "$REPORT"; then
+          if [ "$INSTALL_RC" -eq 0 ]; then
             run_gate "TYPECHECK" "artifacts/frontend-wave0/logs/typecheck.log" npm run typecheck
             run_gate "LINT" "artifacts/frontend-wave0/logs/lint.log" npm run lint
             run_gate "TESTS" "artifacts/frontend-wave0/logs/tests.log" npm run test:unit
