@@ -59,7 +59,7 @@ const textRules = [
   [/^meus cursos$/i, "student/courses"],
   [/^(continuar estudando|abrir curso|ver curso)$/i, "student/course"],
   [/^(módulos|modulos|ver módulos|ver modulos)$/i, "student/modules"],
-  [/^(aula|abrir aula|assistir aula|continuar aula|próxima aula|proxima aula)$/i, "student/lesson-video"],
+  [/^(aula\b|abrir aula|assistir aula|continuar aula|próxima aula|proxima aula)/i, "student/lesson-video"],
   [/^(biblioteca|materiais)$/i, "student/library"],
   [/^favoritos$/i, "student/favorites"],
   [/^certificados$/i, "student/certificates"],
@@ -121,7 +121,7 @@ const contextualText = (text, currentSlug) => {
     if (value === "cursos") return "commerce/courses";
     if (value === "marketplace" || value === "produtos digitais") return "commerce/marketplace";
     if (value === "meus produtos") return "commerce/products";
-    if (/^(comprar|finalizar compra|ir para checkout|checkout)$/.test(value)) return "commerce/checkout-processing";
+    if (/^(comprar\b|finalizar compra|ir para checkout|checkout)/.test(value)) return "commerce/checkout-processing";
     if (/^(tentar novamente|falha|erro)$/.test(value)) return "commerce/checkout-error";
     if (/^(confirmado|sucesso|pagamento confirmado)$/.test(value)) return "commerce/payment-success";
     if (/^(expirado|checkout expirado)$/.test(value)) return "commerce/payment-expired";
@@ -145,6 +145,11 @@ const fromHref = (href, currentSlug) => {
   }
 
   const path = url.pathname.replace(/\/+$/, "") || "/";
+  if (path === "/portal" || path === "/dashboard") {
+    if (currentSlug.startsWith("admin/")) return "admin/dashboard";
+    if (currentSlug.startsWith("affiliate/")) return "affiliate/active";
+    return "student/dashboard";
+  }
   if (path === "/afiliado") {
     const hashMap = new Map([
       ["#affiliate-overview", "affiliate/active"], ["#affiliate-offers", "affiliate/offers"],
