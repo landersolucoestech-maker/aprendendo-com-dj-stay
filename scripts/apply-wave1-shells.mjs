@@ -661,7 +661,7 @@ import { cn } from "@/lib/utils";
 import { useAuthenticatedShellNavigation } from "@/shared/navigation/AuthenticatedShell";
 
 const adminNavigation = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, group: "VISÃO GERAL" },
+  { to: "/admin", label: "Visão geral", icon: LayoutDashboard, group: "VISÃO GERAL" },
   { to: "/admin/cursos", label: "Cursos", icon: BookOpen, group: "CONTEÚDO" },
   { to: "/admin/produtos", label: "Produtos", icon: Boxes, group: "CONTEÚDO" },
   { to: "/admin/alunos", label: "Alunos", icon: GraduationCap, group: "ACADÊMICO" },
@@ -693,7 +693,7 @@ export const AdminNavigation = () => {
                   key={to}
                   to={to}
                   end={to === "/admin"}
-                  aria-label={collapsed ? label : undefined}
+                  aria-label={collapsed ? (to === "/admin" ? "Dashboard" : label) : undefined}
                   onClick={closeNavigation}
                   className={({ isActive }) => cn(
                     "flex min-h-11 items-center rounded-xl text-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
@@ -702,7 +702,7 @@ export const AdminNavigation = () => {
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  {!collapsed ? <span>{label}</span> : null}
+                  {!collapsed ? <span>{to === "/admin" ? "Dashboard" : label}</span> : null}
                 </NavLink>
               ))}
             </div>
