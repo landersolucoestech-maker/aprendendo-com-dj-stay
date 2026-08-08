@@ -9,7 +9,7 @@ on:
       - "visual-preview/**"
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -37,31 +37,20 @@ jobs:
           node-version: 22.22.0
           cache: npm
 
-      - name: Restaurar topologia remota esperada
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Confirmar dev, topologia e main intacta
         shell: bash
         run: |
           set -euo pipefail
-          if git ls-remote --exit-code --heads origin refs/heads/__temp_preview_invalid >/dev/null 2>&1; then
-            gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/__temp_preview_invalid"
-          fi
-          git fetch --prune origin
-          branches="$(git branch -r | sed -n 's#^[[:space:]]*origin/##p' | grep -v '^HEAD ->' | sort)"
-          expected="$(printf '%s\n' dev main | sort)"
-          test "$branches" = "$expected"
-          echo "REMOTE_BRANCH_TOPOLOGY=dev,main PASS"
-
-      - name: Confirmar dev e main intacta
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch origin dev main
+          git fetch --prune origin dev main
           test "$(git branch --show-current)" = "dev"
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/dev)"
           test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN_HEAD"
+          branches="$(git branch -r | sed -n 's#^[[:space:]]*origin/##p' | grep -v '^HEAD ->' | sort)"
+          expected="$(printf '%s\n' dev main | sort)"
+          test "$branches" = "$expected"
           echo "HEAD_BEFORE_RUN=$(git rev-parse HEAD)"
           echo "MAIN=$(git rev-parse origin/main)"
+          echo "REMOTE_BRANCH_TOPOLOGY=dev,main PASS"
 
       - name: npm ci
         run: npm ci
@@ -104,8 +93,9 @@ jobs:
       - name: Build VISUAL_PREVIEW_ONLY com componentes reais
         env:
           VITE_APP_ENV: development
+          VITE_CI_RUNTIME_SMOKE: "true"
           VITE_SUPABASE_URL: https://preview.invalid
-          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_visual_preview_only_not_for_deployment
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_runtime_smoke_only_not_for_deployment
         run: npx vite build --config visual-preview/vite.config.mjs
 
       - name: Materializar URLs profundas do preview
