@@ -1,0 +1,236 @@
+name: Frontend Wave 1 Shells
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/frontend-wave1-shells.yml"
+      - "scripts/apply-wave1-shells.mjs"
+      - "scripts/run-wave1-shell-preview.mjs"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontend-wave1-shells-dev
+  cancel-in-progress: false
+
+jobs:
+  reconstruct-shells:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      EXPECTED_WAVE0_HEAD: 29af482d25ee6ed6b4e8068189017f72f149b422
+      EXPECTED_MAIN_HEAD: b3a303caff9a19f231616b2b4d9fc65c2d8a557d
+
+    steps:
+      - name: Checkout integral da dev
+        uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Configurar Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.0
+          cache: npm
+
+      - name: Fixar npm do projeto
+        run: npm install --global npm@10.9.4
+
+      - name: Validar baseline e bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin dev main
+          test "$(git branch --show-current)" = "dev"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN_HEAD"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_WAVE0_HEAD"
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/dev)"
+          BOOTSTRAP_HEAD="$(git rev-parse HEAD)"
+          echo "BOOTSTRAP_HEAD=$BOOTSTRAP_HEAD" >> "$GITHUB_ENV"
+          echo "BRANCH=$(git branch --show-current)"
+          echo "HEAD=$BOOTSTRAP_HEAD"
+          echo "MAIN=$(git rev-parse origin/main)"
+          git status --short
+          git remote -v
+          bootstrap_paths="$(git diff --name-only "$EXPECTED_WAVE0_HEAD" "$BOOTSTRAP_HEAD")"
+          echo "$bootstrap_paths"
+          unexpected="$(printf '%s\n' "$bootstrap_paths" | grep -Ev '^(\.github/workflows/frontend-wave1-shells\.yml|scripts/apply-wave1-shells\.mjs|scripts/run-wave1-shell-preview\.mjs)$' || true)"
+          test -z "$unexpected"
+
+      - name: Confirmar os 17 arquivos da Wave 1
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile } from "node:fs/promises";
+          const manifest = JSON.parse(await readFile("docs/reconstruction/frontend/physical-manifest.json", "utf8"));
+          const actual = manifest.filter((entry) => entry.primaryWave === "WAVE 1").map((entry) => entry.path).sort();
+          const expected = [
+            "src/App.tsx",
+            "src/main.tsx",
+            "src/routing/AuthLoadingScreen.tsx",
+            "src/routing/PublicOnlyRoute.tsx",
+            "src/routing/RequireAuth.tsx",
+            "src/routing/RequireRole.tsx",
+            "src/routing/RoleLandingRedirect.tsx",
+            "src/routing/RouteErrorBoundary.tsx",
+            "src/routing/RouteLoadingFallback.tsx",
+            "src/routing/lazy/admin-pages.ts",
+            "src/routing/lazy/affiliate-pages.ts",
+            "src/routing/lazy/auth-pages.ts",
+            "src/routing/lazy/commerce-pages.ts",
+            "src/routing/lazy/public-pages.ts",
+            "src/routing/lazy/student-pages.ts",
+            "src/routing/route-state.test.ts",
+            "src/routing/route-state.ts",
+          ].sort();
+          if (actual.length !== 17 || JSON.stringify(actual) !== JSON.stringify(expected)) {
+            console.error({ actual, expected });
+            process.exit(1);
+          }
+          console.log("WAVE1_FILES=17 PASS");
+          NODE
+
+      - name: Aplicar arquitetura de shells
+        run: node scripts/apply-wave1-shells.mjs
+
+      - name: Validar boundary e invariância de rotas
+        shell: bash
+        run: |
+          set -euo pipefail
+          total=$(grep -o '<Route\b' src/App.tsx | wc -l | tr -d ' ')
+          fallback=$(grep -o 'path="\*"' src/App.tsx | wc -l | tr -d ' ')
+          explicit=$((total - fallback))
+          echo "TOTAL_ROUTE_REGISTRATIONS=$total"
+          echo "EXPLICIT_ROUTE_PATTERNS=$explicit"
+          echo "FALLBACK_ROUTES=$fallback"
+          test "$total" -eq 54
+          test "$explicit" -eq 53
+          test "$fallback" -eq 1
+          git diff --exit-code "$EXPECTED_WAVE0_HEAD" -- src/routing src/auth src/integrations supabase package.json package-lock.json vite.config.ts
+          allowed='^(src/App\.tsx|src/components/admin/AdminNavigation\.tsx|src/components/student/StudentPortalShell\.tsx|src/pages/affiliate/AffiliatePortal\.tsx|src/app/shells/(StudentShell|AdminShell|AffiliateShell)\.tsx|src/shared/navigation/AuthenticatedShell\.tsx)$'
+          changed="$(git diff --name-only)"
+          echo "$changed"
+          unexpected="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          if [ -n "$unexpected" ]; then
+            echo "UNAUTHORIZED_WAVE1_PATHS"
+            echo "$unexpected"
+            exit 1
+          fi
+          echo "ROUTES=INVARIANT"
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Testes unitários
+        run: npm run test:unit
+
+      - name: Build development
+        run: |
+          env \
+            VITE_APP_ENV=development \
+            VITE_CI_RUNTIME_SMOKE=true \
+            VITE_SUPABASE_URL=https://jmtyurketfclaneqxohu.supabase.co \
+            VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_ci_runtime_smoke_only_not_for_deployment \
+            npm run build:dev
+
+      - name: Preview remoto e testes de interação dos shells
+        run: node scripts/run-wave1-shell-preview.mjs
+
+      - name: Confirmar screenshots e workspace limpo de preview temporário
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            wave1-screenshots/student-desktop.png \
+            wave1-screenshots/student-mobile.png \
+            wave1-screenshots/admin-desktop.png \
+            wave1-screenshots/admin-mobile.png \
+            wave1-screenshots/affiliate-desktop.png \
+            wave1-screenshots/affiliate-mobile.png \
+            wave1-preview-report.json; do
+            test -s "$file"
+          done
+          test ! -e wave1-preview.html
+          test ! -e src/wave1-preview.tsx
+          changed="$(git diff --name-only)"
+          allowed='^(src/App\.tsx|src/components/admin/AdminNavigation\.tsx|src/components/student/StudentPortalShell\.tsx|src/pages/affiliate/AffiliatePortal\.tsx|src/app/shells/(StudentShell|AdminShell|AffiliateShell)\.tsx|src/shared/navigation/AuthenticatedShell\.tsx)$'
+          unexpected="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$unexpected"
+
+      - name: Commit feature somente após gates verdes
+        id: feature_commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/App.tsx \
+            src/components/admin/AdminNavigation.tsx \
+            src/components/student/StudentPortalShell.tsx \
+            src/pages/affiliate/AffiliatePortal.tsx \
+            src/app/shells/StudentShell.tsx \
+            src/app/shells/AdminShell.tsx \
+            src/app/shells/AffiliateShell.tsx \
+            src/shared/navigation/AuthenticatedShell.tsx
+          staged="$(git diff --cached --name-only)"
+          echo "$staged"
+          test -n "$staged"
+          allowed='^(src/App\.tsx|src/components/admin/AdminNavigation\.tsx|src/components/student/StudentPortalShell\.tsx|src/pages/affiliate/AffiliatePortal\.tsx|src/app/shells/(StudentShell|AdminShell|AffiliateShell)\.tsx|src/shared/navigation/AuthenticatedShell\.tsx)$'
+          unexpected="$(printf '%s\n' "$staged" | grep -Ev "$allowed" || true)"
+          test -z "$unexpected"
+          git commit -m "feat(frontend-v2): introduce authenticated application shells"
+          FINAL_SHA="$(git rev-parse HEAD)"
+          echo "FINAL_SHA=$FINAL_SHA" >> "$GITHUB_ENV"
+          echo "final_sha=$FINAL_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Concorrência e push fast-forward somente para dev
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin dev main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN_HEAD"
+          if [ "$(git rev-parse origin/dev)" != "$BOOTSTRAP_HEAD" ]; then
+            echo "CONCURRENT_DEV_UPDATE"
+            exit 1
+          fi
+          git push origin HEAD:dev
+
+      - name: Revalidar novo HEAD remoto
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin dev main
+          test "$(git rev-parse origin/dev)" = "$FINAL_SHA"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN_HEAD"
+          total=$(grep -o '<Route\b' src/App.tsx | wc -l | tr -d ' ')
+          fallback=$(grep -o 'path="\*"' src/App.tsx | wc -l | tr -d ' ')
+          explicit=$((total - fallback))
+          test "$total" -eq 54
+          test "$explicit" -eq 53
+          test "$fallback" -eq 1
+          echo "REMOTE_HEAD=$FINAL_SHA"
+          echo "ROUTES=54/53/1 INVARIANT"
+
+      - name: Publicar screenshots e relatório
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-wave1-shells-${{ env.FINAL_SHA || github.sha }}
+          path: |
+            wave1-screenshots/
+            wave1-preview-report.json
+          retention-days: 14
+          if-no-files-found: warn
