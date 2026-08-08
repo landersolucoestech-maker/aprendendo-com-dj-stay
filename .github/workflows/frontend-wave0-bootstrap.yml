@@ -1,0 +1,161 @@
+name: Frontend Wave 0 Bootstrap
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/frontend-wave0-bootstrap.yml"
+      - "scripts/frontend-wave0-manifest.mjs"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-wave0-bootstrap-dev
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      WAVE0_BASELINE_SHA: 292a2a51d95a2f6f35d6c4255df780aa00fa2e51
+      WAVE0_BOOTSTRAP_EVENT: ${{ github.event_name }}
+
+    steps:
+      - name: Checkout integral da dev
+        uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Configurar Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.0
+          cache: npm
+
+      - name: Fixar npm do projeto
+        run: npm install --global npm@10.9.4
+
+      - name: Registrar estado do checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/frontend-wave0/logs
+          {
+            echo "BRANCH=$(git branch --show-current)"
+            echo "HEAD=$(git rev-parse HEAD)"
+            echo "ORIGIN=$(git remote get-url origin)"
+            echo "TRACKED_FILES=$(git ls-files | wc -l | tr -d ' ')"
+            echo "GIT_STATUS_BEGIN"
+            git status --short
+            echo "GIT_STATUS_END"
+            echo "MAIN_REMOTE=$(git rev-parse origin/main)"
+            echo "DEV_REMOTE=$(git rev-parse origin/dev)"
+            echo "NODE=$(node --version)"
+            echo "NPM=$(npm --version)"
+          } | tee artifacts/frontend-wave0/logs/checkout-state.log
+          test "$(git branch --show-current)" = "dev"
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/dev)"
+
+      - name: Gerar e validar manifest físico
+        id: manifest
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/frontend-wave0-manifest.mjs 2>&1 | tee artifacts/frontend-wave0/logs/manifest.log
+
+      - name: Executar gates do frontend
+        id: quality
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          mkdir -p artifacts/frontend-wave0/logs
+          REPORT="artifacts/frontend-wave0/validation-report.md"
+          touch "$REPORT"
+          FAIL=0
+
+          run_gate() {
+            local label="$1"
+            local logfile="$2"
+            shift 2
+            echo "===== $label =====" | tee "$logfile"
+            "$@" 2>&1 | tee -a "$logfile"
+            local rc=${PIPESTATUS[0]}
+            local outcome="PASS"
+            if [ "$rc" -ne 0 ]; then
+              outcome="FAIL"
+              FAIL=1
+            fi
+            printf -- "- %s: **%s** (exit %s)\n" "$label" "$outcome" "$rc" >> "$REPORT"
+            return 0
+          }
+
+          run_gate "npm ci" "artifacts/frontend-wave0/logs/npm-ci.log" npm ci
+          INSTALL_RC=${PIPESTATUS[0]:-0}
+
+          if grep -q -- '- npm ci: **PASS**' "$REPORT"; then
+            run_gate "TYPECHECK" "artifacts/frontend-wave0/logs/typecheck.log" npm run typecheck
+            run_gate "LINT" "artifacts/frontend-wave0/logs/lint.log" npm run lint
+            run_gate "TESTS" "artifacts/frontend-wave0/logs/tests.log" npm run test:unit
+            run_gate "BUILD" "artifacts/frontend-wave0/logs/build.log" env \
+              VITE_APP_ENV=development \
+              VITE_CI_RUNTIME_SMOKE=true \
+              VITE_SUPABASE_URL=https://jmtyurketfclaneqxohu.supabase.co \
+              VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_ci_runtime_smoke_only_not_for_deployment \
+              npm run build:dev
+          else
+            printf -- '- TYPECHECK: **BLOCKED** (npm ci failed)\n' >> "$REPORT"
+            printf -- '- LINT: **BLOCKED** (npm ci failed)\n' >> "$REPORT"
+            printf -- '- TESTS: **BLOCKED** (npm ci failed)\n' >> "$REPORT"
+            printf -- '- BUILD: **BLOCKED** (npm ci failed)\n' >> "$REPORT"
+            FAIL=1
+          fi
+
+          exit "$FAIL"
+
+      - name: Confirmar que nenhum arquivo versionado foi modificado no runner
+        id: clean
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "TRACKED_DIFF_BEGIN"
+            git diff --name-only
+            echo "TRACKED_DIFF_END"
+            echo "STAGED_DIFF_BEGIN"
+            git diff --cached --name-only
+            echo "STAGED_DIFF_END"
+          } | tee artifacts/frontend-wave0/logs/repository-mutation-check.log
+          git diff --quiet
+          git diff --cached --quiet
+
+      - name: Publicar artifact da Wave 0 bootstrap
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-wave0-bootstrap-${{ github.sha }}
+          path: artifacts/frontend-wave0
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Gate final do bootstrap
+        if: always()
+        env:
+          MANIFEST: ${{ steps.manifest.outcome }}
+          QUALITY: ${{ steps.quality.outcome }}
+          CLEAN: ${{ steps.clean.outcome }}
+        shell: bash
+        run: |
+          echo "manifest=$MANIFEST"
+          echo "quality=$QUALITY"
+          echo "clean=$CLEAN"
+          test "$MANIFEST" = success
+          test "$QUALITY" = success
+          test "$CLEAN" = success
