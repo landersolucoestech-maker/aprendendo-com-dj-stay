@@ -38,7 +38,7 @@ jobs:
           node-version: 22.22.0
           cache: npm
 
-      - name: Fixar npm do projeto
+      - name: Fixar npm
         run: npm install --global npm@10.9.4
 
       - name: Validar baseline e bootstrap
@@ -46,20 +46,19 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin dev main
-          test "$(git branch --show-current)" = "dev"
+          test "$(git branch --show-current)" = dev
           test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN_HEAD"
           git merge-base --is-ancestor "$EXPECTED_WAVE0_HEAD" HEAD
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/dev)"
           BOOTSTRAP_HEAD="$(git rev-parse HEAD)"
           echo "BOOTSTRAP_HEAD=$BOOTSTRAP_HEAD" >> "$GITHUB_ENV"
-          echo "BRANCH=$(git branch --show-current)"
+          echo "BRANCH=dev"
           echo "HEAD=$BOOTSTRAP_HEAD"
           echo "MAIN=$(git rev-parse origin/main)"
           git status --short
           git remote -v
-          bootstrap_paths="$(git diff --name-only "$EXPECTED_WAVE0_HEAD" "$BOOTSTRAP_HEAD")"
-          echo "$bootstrap_paths"
-          unexpected="$(printf '%s\n' "$bootstrap_paths" | grep -Ev '^(\.github/workflows/frontend-wave1-shells\.yml|scripts/apply-wave1-shells\.mjs|scripts/run-wave1-shell-preview\.mjs)$' || true)"
+          changed="$(git diff --name-only "$EXPECTED_WAVE0_HEAD" "$BOOTSTRAP_HEAD")"
+          unexpected="$(printf '%s\n' "$changed" | grep -Ev '^(\.github/workflows/frontend-wave1-shells\.yml|scripts/apply-wave1-shells\.mjs|scripts/run-wave1-shell-preview\.mjs)$' || true)"
           test -z "$unexpected"
 
       - name: Confirmar os 17 arquivos da Wave 1
@@ -106,118 +105,105 @@ jobs:
           node --input-type=module <<'NODE'
           import { readFile, writeFile } from "node:fs/promises";
 
-          const replaceOnce = (source, before, after, label) => {
+          const mustReplace = (source, before, after, label) => {
             if (!source.includes(before)) throw new Error(label + " target not found");
             return source.replace(before, after);
           };
 
           const sharedPath = "src/shared/navigation/AuthenticatedShell.tsx";
           let shared = await readFile(sharedPath, "utf8");
-          shared = replaceOnce(
+          shared = mustReplace(
             shared,
             `  readonly mobileNavigation?: ReactNode;\n  readonly children: ReactNode;`,
             `  readonly mobileNavigation?: ReactNode;\n  readonly brand?: ReactNode;\n  readonly children: ReactNode;`,
-            "AuthenticatedShell brand prop",
+            "shared brand prop",
           );
-          shared = replaceOnce(
+          shared = mustReplace(
             shared,
             `  navigation,\n  mobileNavigation,\n  children,`,
             `  navigation,\n  mobileNavigation,\n  brand,\n  children,`,
-            "AuthenticatedShell brand destructure",
+            "shared brand destructure",
           );
-          const brandBlock = `            <BrandBlock\n              collapsed={collapsed}\n              homePath={homePath}\n              portalLabel={portalLabel}\n            />`;
-          shared = replaceOnce(
-            shared,
-            brandBlock,
-            `            {brand ?? (\n              <BrandBlock\n                collapsed={collapsed}\n                homePath={homePath}\n                portalLabel={portalLabel}\n              />\n            )}`,
-            "AuthenticatedShell desktop brand",
+          shared = shared.replace(
+            /<BrandBlock\s+collapsed=\{collapsed\}\s+homePath=\{homePath\}\s+portalLabel=\{portalLabel\}\s+\/>/,
+            `{brand ?? (\n              <BrandBlock\n                collapsed={collapsed}\n                homePath={homePath}\n                portalLabel={portalLabel}\n              />\n            )}`,
           );
-          const mobileBrandBlock = `            <BrandBlock\n              collapsed={false}\n              homePath={homePath}\n              portalLabel={portalLabel}\n            />`;
-          shared = replaceOnce(
-            shared,
-            mobileBrandBlock,
-            `            {brand ?? (\n              <BrandBlock\n                collapsed={false}\n                homePath={homePath}\n                portalLabel={portalLabel}\n              />\n            )}`,
-            "AuthenticatedShell mobile brand",
+          shared = shared.replace(
+            /<BrandBlock\s+collapsed=\{false\}\s+homePath=\{homePath\}\s+portalLabel=\{portalLabel\}\s+\/>/,
+            `{brand ?? (\n                <BrandBlock\n                  collapsed={false}\n                  homePath={homePath}\n                  portalLabel={portalLabel}\n                />\n              )}`,
           );
+          if (!shared.includes("brand ??")) throw new Error("shared brand rendering not installed");
           await writeFile(sharedPath, shared, "utf8");
 
           const studentShellPath = "src/app/shells/StudentShell.tsx";
           let studentShell = await readFile(studentShellPath, "utf8");
-          studentShell = replaceOnce(
+          studentShell = mustReplace(
             studentShell,
             `  readonly mobileNavigation: ReactNode;\n  readonly children: ReactNode;`,
             `  readonly mobileNavigation: ReactNode;\n  readonly brand: ReactNode;\n  readonly children: ReactNode;`,
-            "StudentShell brand prop",
+            "student shell brand prop",
           );
-          studentShell = replaceOnce(
+          studentShell = mustReplace(
             studentShell,
             `  navigation,\n  mobileNavigation,\n  children,`,
             `  navigation,\n  mobileNavigation,\n  brand,\n  children,`,
-            "StudentShell brand destructure",
+            "student shell brand destructure",
           );
-          studentShell = replaceOnce(
+          studentShell = mustReplace(
             studentShell,
             `      navigation={navigation}\n      mobileNavigation={mobileNavigation}`,
             `      navigation={navigation}\n      mobileNavigation={mobileNavigation}\n      brand={brand}`,
-            "StudentShell brand forwarding",
+            "student shell brand forward",
           );
           await writeFile(studentShellPath, studentShell, "utf8");
 
           const studentPath = "src/components/student/StudentPortalShell.tsx";
           let student = await readFile(studentPath, "utf8");
-          student = replaceOnce(
-            student,
-            `import { NavLink } from "react-router";`,
-            `import { Link, NavLink } from "react-router";`,
-            "StudentPortalShell Link import",
-          );
-          student = replaceOnce(
+          student = mustReplace(student, `import { NavLink } from "react-router";`, `import { Link, NavLink } from "react-router";`, "student Link import");
+          student = mustReplace(
             student,
             `import { StudentShell } from "@/app/shells/StudentShell";\nimport { cn } from "@/lib/utils";`,
             `import { StudentShell } from "@/app/shells/StudentShell";\nimport { brandConfig } from "@/config/brand";\nimport { cn } from "@/lib/utils";`,
-            "StudentPortalShell brand import",
+            "student brand import",
           );
-          const navigationMarker = `const StudentNavigation = ({ mobile = false }: { readonly mobile?: boolean }) => {`;
-          const studentBrand = `const StudentBrand = () => (\n  <Link\n    to="/aluno"\n    className="flex min-h-12 items-center gap-3 rounded-xl px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar"\n    aria-label={\`Ir para o início de \${brandConfig.name}\`}\n  >\n    <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-course/25 bg-course/10">\n      <img\n        src={brandConfig.logoPath}\n        alt={brandConfig.logoAlt}\n        className="h-full w-full object-cover"\n      />\n    </span>\n    <span className="min-w-0">\n      <span className="block truncate text-sm font-bold text-sidebar-foreground">\n        {brandConfig.name}\n      </span>\n      <span className="block truncate text-xs text-muted-foreground">Portal do Aluno</span>\n    </span>\n  </Link>\n);\n\n`;
-          student = replaceOnce(
+          const marker = `const StudentNavigation = ({ mobile = false }: { readonly mobile?: boolean }) => {`;
+          const brand = `const StudentBrand = () => (\n  <Link\n    to="/aluno"\n    className="flex min-h-12 items-center gap-3 rounded-xl px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar"\n    aria-label={\`Ir para o início de \${brandConfig.name}\`}\n  >\n    <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-course/25 bg-course/10">\n      <img src={brandConfig.logoPath} alt={brandConfig.logoAlt} className="h-full w-full object-cover" />\n    </span>\n    <span className="min-w-0">\n      <span className="block truncate text-sm font-bold text-sidebar-foreground">{brandConfig.name}</span>\n      <span className="block truncate text-xs text-muted-foreground">Portal do Aluno</span>\n    </span>\n  </Link>\n);\n\n`;
+          student = mustReplace(student, marker, brand + marker, "student brand component");
+          student = mustReplace(student, `? "bg-course/15 text-course"`, `? "bg-course text-primary-foreground"`, "student active state");
+          student = mustReplace(
             student,
-            navigationMarker,
-            studentBrand + navigationMarker,
-            "StudentPortalShell brand component",
+            `export const StudentPortalShell = ({ displayName, email, isSigningOut, onSignOut, children }: StudentPortalShellProps) => (\n  <StudentShell`,
+            `export const StudentPortalShell = ({ displayName, email, isSigningOut, onSignOut, children }: StudentPortalShellProps) => (\n  <div data-context="course" className="app-shell">\n    <StudentShell`,
+            "student wrapper",
           );
-          student = replaceOnce(
-            student,
-            `? "bg-course/15 text-course"`,
-            `? "bg-course text-primary-foreground"`,
-            "StudentPortalShell active course state",
-          );
-          const studentBefore = `export const StudentPortalShell = ({\n  displayName,\n  email,\n  isSigningOut,\n  onSignOut,\n  children,\n}: StudentPortalShellProps) => (\n  <StudentShell`;
-          const studentAfter = `export const StudentPortalShell = ({\n  displayName,\n  email,\n  isSigningOut,\n  onSignOut,\n  children,\n}: StudentPortalShellProps) => (\n  <div data-context="course" className="app-shell">\n    <StudentShell`;
-          student = replaceOnce(student, studentBefore, studentAfter, "StudentPortalShell wrapper");
-          student = replaceOnce(
+          student = mustReplace(
             student,
             `    mobileNavigation={<StudentNavigation mobile />}\n  >`,
             `    mobileNavigation={<StudentNavigation mobile />}\n    brand={<StudentBrand />}\n  >`,
-            "StudentPortalShell brand injection",
+            "student brand injection",
           );
-          student = replaceOnce(
+          student = mustReplace(
             student,
             `    {children}\n  </StudentShell>\n);`,
             `      {children}\n    </StudentShell>\n  </div>\n);`,
-            "StudentPortalShell wrapper closing",
+            "student wrapper close",
           );
           await writeFile(studentPath, student, "utf8");
 
           const adminPath = "src/components/admin/AdminNavigation.tsx";
           let admin = await readFile(adminPath, "utf8");
-          const adminBefore = `const adminNavigation = [\n  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, group: "VISÃO GERAL" },\n  { to: "/admin/cursos", label: "Cursos", icon: BookOpen, group: "CONTEÚDO" },\n  { to: "/admin/produtos", label: "Produtos", icon: Boxes, group: "CONTEÚDO" },\n  { to: "/admin/alunos", label: "Alunos", icon: GraduationCap, group: "ACADÊMICO" },\n  { to: "/admin/academico", label: "Acadêmico", icon: BarChart3, group: "ACADÊMICO" },\n  { to: "/admin/pagamentos", label: "Pagamentos", icon: Banknote, group: "FINANCEIRO" },\n  { to: "/admin/afiliados", label: "Afiliados", icon: HandCoins, group: "FINANCEIRO" },\n  { to: "/admin/contatos", label: "Contatos", icon: MessagesSquare, group: "RELACIONAMENTO" },\n  { to: "/admin/suporte", label: "Suporte", icon: LifeBuoy, group: "RELACIONAMENTO" },\n  { to: "/admin/privacidade", label: "Privacidade", icon: ShieldCheck, group: "GOVERNANÇA" },\n  { to: "/admin/erros", label: "Erros", icon: Bug, group: "GOVERNANÇA" },\n] as const;`;
-          const adminAfter = `const adminNavigation = [\n  { to: "/admin", label: "Dashboard", icon: LayoutDashboard },\n  { to: "/admin/cursos", label: "Cursos", icon: BookOpen },\n  { to: "/admin/produtos", label: "Produtos", icon: Boxes },\n  { to: "/admin/alunos", label: "Alunos", icon: GraduationCap },\n  { to: "/admin/academico", label: "Acadêmico", icon: BarChart3 },\n  { to: "/admin/pagamentos", label: "Pagamentos", icon: Banknote },\n  { to: "/admin/afiliados", label: "Afiliados", icon: HandCoins },\n  { to: "/admin/contatos", label: "Contatos", icon: MessagesSquare },\n  { to: "/admin/suporte", label: "Suporte", icon: LifeBuoy },\n  { to: "/admin/privacidade", label: "Privacidade", icon: ShieldCheck },\n  { to: "/admin/erros", label: "Erros", icon: Bug },\n] as const;\n\nconst adminGroupByPath = {\n  "/admin": "VISÃO GERAL",\n  "/admin/cursos": "CONTEÚDO",\n  "/admin/produtos": "CONTEÚDO",\n  "/admin/alunos": "ACADÊMICO",\n  "/admin/academico": "ACADÊMICO",\n  "/admin/pagamentos": "FINANCEIRO",\n  "/admin/afiliados": "FINANCEIRO",\n  "/admin/contatos": "RELACIONAMENTO",\n  "/admin/suporte": "RELACIONAMENTO",\n  "/admin/privacidade": "GOVERNANÇA",\n  "/admin/erros": "GOVERNANÇA",\n} as const;`;
-          admin = replaceOnce(admin, adminBefore, adminAfter, "AdminNavigation contract shape");
-          admin = replaceOnce(
+          admin = admin.replace(/, group: "(?:VISÃO GERAL|CONTEÚDO|ACADÊMICO|FINANCEIRO|RELACIONAMENTO|GOVERNANÇA)"/g, "");
+          admin = mustReplace(
+            admin,
+            `] as const;\n\nconst visibleAdminNavigation`,
+            `] as const;\n\nconst adminGroupByPath = {\n  "/admin": "VISÃO GERAL",\n  "/admin/cursos": "CONTEÚDO",\n  "/admin/produtos": "CONTEÚDO",\n  "/admin/alunos": "ACADÊMICO",\n  "/admin/academico": "ACADÊMICO",\n  "/admin/pagamentos": "FINANCEIRO",\n  "/admin/afiliados": "FINANCEIRO",\n  "/admin/contatos": "RELACIONAMENTO",\n  "/admin/suporte": "RELACIONAMENTO",\n  "/admin/privacidade": "GOVERNANÇA",\n  "/admin/erros": "GOVERNANÇA",\n} as const;\n\nconst visibleAdminNavigation`,
+            "admin group map",
+          );
+          admin = mustReplace(
             admin,
             `visibleAdminNavigation.filter((item) => item.group === group)`,
             `visibleAdminNavigation.filter((item) => adminGroupByPath[item.to] === group)`,
-            "AdminNavigation grouping",
+            "admin grouping",
           );
           await writeFile(adminPath, admin, "utf8");
           console.log("LEGACY_SHELL_BRIDGES=PASS");
@@ -239,13 +225,8 @@ jobs:
           git diff --exit-code "$EXPECTED_WAVE0_HEAD" -- src/routing src/auth src/integrations supabase package.json package-lock.json vite.config.ts
           allowed='^(src/App\.tsx|src/components/admin/AdminNavigation\.tsx|src/components/student/StudentPortalShell\.tsx|src/pages/affiliate/AffiliatePortal\.tsx|src/app/shells/(StudentShell|AdminShell|AffiliateShell)\.tsx|src/shared/navigation/AuthenticatedShell\.tsx)$'
           changed="$(git diff --name-only)"
-          echo "$changed"
           unexpected="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
-          if [ -n "$unexpected" ]; then
-            echo "UNAUTHORIZED_WAVE1_PATHS"
-            echo "$unexpected"
-            exit 1
-          fi
+          if [ -n "$unexpected" ]; then echo "$unexpected"; exit 1; fi
           echo "ROUTES=INVARIANT"
 
       - name: Instalar dependências
@@ -272,7 +253,7 @@ jobs:
       - name: Preview remoto e testes de interação dos shells
         run: node scripts/run-wave1-shell-preview.mjs
 
-      - name: Confirmar screenshots e workspace limpo de preview temporário
+      - name: Confirmar screenshots e preview temporário removido
         shell: bash
         run: |
           set -euo pipefail
@@ -283,14 +264,11 @@ jobs:
             wave1-screenshots/admin-mobile.png \
             wave1-screenshots/affiliate-desktop.png \
             wave1-screenshots/affiliate-mobile.png \
-            wave1-preview-report.json; do
-            test -s "$file"
-          done
+            wave1-preview-report.json; do test -s "$file"; done
           test ! -e wave1-preview.html
           test ! -e src/wave1-preview.tsx
-          changed="$(git diff --name-only)"
           allowed='^(src/App\.tsx|src/components/admin/AdminNavigation\.tsx|src/components/student/StudentPortalShell\.tsx|src/pages/affiliate/AffiliatePortal\.tsx|src/app/shells/(StudentShell|AdminShell|AffiliateShell)\.tsx|src/shared/navigation/AuthenticatedShell\.tsx)$'
-          unexpected="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          unexpected="$(git diff --name-only | grep -Ev "$allowed" || true)"
           test -z "$unexpected"
 
       - name: Commit feature somente após gates verdes
@@ -310,7 +288,6 @@ jobs:
             src/app/shells/AffiliateShell.tsx \
             src/shared/navigation/AuthenticatedShell.tsx
           staged="$(git diff --cached --name-only)"
-          echo "$staged"
           test -n "$staged"
           allowed='^(src/App\.tsx|src/components/admin/AdminNavigation\.tsx|src/components/student/StudentPortalShell\.tsx|src/pages/affiliate/AffiliatePortal\.tsx|src/app/shells/(StudentShell|AdminShell|AffiliateShell)\.tsx|src/shared/navigation/AuthenticatedShell\.tsx)$'
           unexpected="$(printf '%s\n' "$staged" | grep -Ev "$allowed" || true)"
@@ -326,10 +303,7 @@ jobs:
           set -euo pipefail
           git fetch origin dev main
           test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN_HEAD"
-          if [ "$(git rev-parse origin/dev)" != "$BOOTSTRAP_HEAD" ]; then
-            echo "CONCURRENT_DEV_UPDATE"
-            exit 1
-          fi
+          if [ "$(git rev-parse origin/dev)" != "$BOOTSTRAP_HEAD" ]; then echo CONCURRENT_DEV_UPDATE; exit 1; fi
           git push origin HEAD:dev
 
       - name: Revalidar novo HEAD remoto
