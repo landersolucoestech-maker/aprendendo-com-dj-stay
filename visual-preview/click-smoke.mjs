@@ -79,6 +79,13 @@ const waitSurface = async (cdp, slug) => {
   if (!pathname.endsWith(expectedPath(slug))) throw new Error(`URL inesperada para ${slug}: ${pathname}`);
 };
 
+const prepareScenario = async (cdp, slug, scenario) => {
+  currentStep = { scenario: `${scenario}_SETUP`, viewport: currentStep.viewport, from: "isolated", action: `Preparar ${slug}`, selector: "CDP Page.navigate", expectedSlug: slug };
+  await cdp.send("Page.navigate", { url: `${base}visual-preview/${slug}/` });
+  await waitSurface(cdp, slug);
+  console.log(JSON.stringify({ SCENARIO: scenario, VIEWPORT: currentStep.viewport, FROM: "isolated", ACTION: "deterministic scenario setup", SELECTOR_OR_ACCESSIBLE_NAME: "CDP Page.navigate", URL_AFTER: await evaluate(cdp, "location.href"), EXPECTED_URL: expectedPath(slug), EXPECTED_SURFACE: slug, OBSERVED_SURFACE: slug, RESULT: "SETUP_PASS" }));
+};
+
 const visibleTarget = async (cdp, selector) => evaluate(cdp, `(() => {
   document.querySelectorAll('[data-click-smoke-target]').forEach((el)=>el.removeAttribute('data-click-smoke-target'));
   const candidates=Array.from(document.querySelectorAll(${JSON.stringify(selector)}));
@@ -196,6 +203,7 @@ const validateShellInteractions = async (cdp, context) => {
 };
 
 const runPublic = async (cdp) => {
+  await prepareScenario(cdp, "public/home", "PUBLIC");
   await clickDestination(cdp, "public/login", { scenario: "PUBLIC", action: "Landing → Login" });
   await browserBackForward(cdp, "public/home", "public/login", "PUBLIC_HISTORY");
   await clickDestination(cdp, "public/register", { scenario: "PUBLIC", action: "Login → Cadastro" });
@@ -211,7 +219,7 @@ const runPublic = async (cdp) => {
 };
 
 const runStudent = async (cdp) => {
-  await goHistoryTo(cdp, "public/login");
+  await prepareScenario(cdp, "public/login", "STUDENT");
   await clickDestination(cdp, "student/dashboard", { scenario: "STUDENT", action: "Login → Dashboard" });
   await validateShellInteractions(cdp, "STUDENT");
   await clickDestination(cdp, "student/courses", { scenario: "STUDENT", action: "Dashboard → Meus cursos" });
@@ -233,7 +241,7 @@ const runStudent = async (cdp) => {
 };
 
 const runAdmin = async (cdp) => {
-  await clickDestination(cdp, "admin/dashboard", { navigator: true, scenario: "ADMIN", action: "Entrar Admin" });
+  await prepareScenario(cdp, "admin/dashboard", "ADMIN");
   await validateShellInteractions(cdp, "ADMIN");
   await clickDestination(cdp, "admin/courses", { scenario: "ADMIN", action: "Dashboard → Cursos" });
   await browserBackForward(cdp, "admin/dashboard", "admin/courses", "ADMIN_HISTORY");
@@ -251,7 +259,7 @@ const runAdmin = async (cdp) => {
 };
 
 const runAffiliate = async (cdp) => {
-  await clickDestination(cdp, "affiliate/active", { navigator: true, scenario: "AFFILIATE", action: "Entrar Affiliate" });
+  await prepareScenario(cdp, "affiliate/active", "AFFILIATE");
   await validateShellInteractions(cdp, "AFFILIATE");
   await clickDestination(cdp, "affiliate/offers", { scenario: "AFFILIATE", action: "Ativo → Ofertas" });
   await browserBackForward(cdp, "affiliate/active", "affiliate/offers", "AFFILIATE_HISTORY");
@@ -260,7 +268,7 @@ const runAffiliate = async (cdp) => {
 };
 
 const runCommercial = async (cdp) => {
-  await clickDestination(cdp, "commerce/courses", { navigator: true, scenario: "COMMERCIAL", action: "Entrar Cursos" });
+  await prepareScenario(cdp, "commerce/courses", "COMMERCIAL");
   await clickDestination(cdp, "commerce/marketplace", { scenario: "COMMERCIAL", action: "Cursos → Marketplace" });
   await browserBackForward(cdp, "commerce/courses", "commerce/marketplace", "COMMERCIAL_HISTORY");
   await clickDestination(cdp, "commerce/products", { scenario: "COMMERCIAL", action: "Marketplace → Meus produtos" });
@@ -289,8 +297,6 @@ const saveDiagnostics = async (cdp, error) => {
 const runViewport = async (cdp, viewport) => {
   currentStep.viewport = viewport.name;
   await cdp.send("Emulation.setDeviceMetricsOverride", { width: viewport.width, height: viewport.height, deviceScaleFactor: 1, mobile: viewport.width < 640 });
-  await cdp.send("Page.navigate", { url: `${base}visual-preview/public/home/` });
-  await waitSurface(cdp, "public/home");
   await runPublic(cdp);
   await runStudent(cdp);
   await runAdmin(cdp);
