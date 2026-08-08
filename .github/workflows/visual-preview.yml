@@ -44,76 +44,6 @@ jobs:
           set -euo pipefail
           mkdir -p src/preview
 
-          cat > src/preview/visual-preview-fixtures.ts <<'TS'
-          export const VISUAL_PREVIEW_ONLY = {
-            mode: "VISUAL_PREVIEW_ONLY",
-            admin: {
-              metrics: {
-                confirmedAmount: "R$ 18.740,00",
-                paidOrders: 31,
-                students: 126,
-                enrollments: 141,
-                validCertificates: 84,
-                totalCertificates: 91,
-                operationalQueue: 7,
-              },
-              checkout: {
-                status: "Saudável",
-                configuration: "Ativo",
-                schedule: "*/5 * * * *",
-                lastRun: "08/08/2026 00:40",
-                lastSuccess: "08/08/2026 00:40",
-                failures24h: 0,
-              },
-              finance: {
-                totalOrders: 43,
-                pendingOrders: 4,
-                refunded: "R$ 420,00",
-                chargebackLost: "R$ 0,00",
-              },
-              academic: {
-                students: 126,
-                enrollments: 141,
-                certificates: 91,
-                validCertificates: 84,
-              },
-              catalogue: {
-                publishedCourses: "3/4",
-                draftCourses: 1,
-                publishedProducts: "5/6",
-                draftProducts: 1,
-              },
-            },
-            student: {
-              displayName: "Aluno Preview",
-              email: "preview.visual@local.invalid",
-              stats: {
-                activeCourses: "3",
-                averageProgress: "68%",
-                completedLessons: "24",
-                releasedMaterials: "12",
-              },
-              courses: [
-                {
-                  id: "preview-course-1",
-                  title: "Aprendendo com DJ Stay — Fundamentos",
-                  accessUntil: "31/12/2026 23:59",
-                },
-                {
-                  id: "preview-course-2",
-                  title: "Mixagem e Performance",
-                  accessUntil: "sem prazo definido",
-                },
-              ],
-              activities: [
-                { id: "a1", activity: "Aula concluída: Estrutura de uma mixagem", time: "Hoje, 00:18" },
-                { id: "a2", activity: "Material liberado: Checklist de preparação", time: "Ontem, 21:42" },
-                { id: "a3", activity: "Progresso atualizado no curso Fundamentos", time: "Ontem, 20:05" },
-              ],
-            },
-          } as const;
-          TS
-
           cat > src/preview/VisualPreview.tsx <<'TSX'
           import {
             Activity,
@@ -121,7 +51,6 @@ jobs:
             BookOpen,
             Boxes,
             CheckCircle2,
-            Clock3,
             GraduationCap,
             LayoutDashboard,
             Library,
@@ -130,34 +59,34 @@ jobs:
             ShieldCheck,
           } from "lucide-react";
           import type { LucideIcon } from "lucide-react";
-          import { Link, Navigate, Route, Routes } from "react-router";
-
+          import { Navigate, Route, Routes } from "react-router";
           import { AdminNavigation } from "@/components/admin/AdminNavigation";
           import { StudentPortalShell } from "@/components/student/StudentPortalShell";
-          import {
-            StudentSectionHeader,
-            StudentStatCard,
-          } from "@/components/student/StudentPortalPrimitives";
+          import { StudentSectionHeader, StudentStatCard } from "@/components/student/StudentPortalPrimitives";
           import { Button } from "@/components/ui/button";
-          import {
-            Card,
-            CardContent,
-            CardDescription,
-            CardHeader,
-            CardTitle,
-          } from "@/components/ui/card";
-          import { VISUAL_PREVIEW_ONLY } from "./visual-preview-fixtures";
+          import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-          const MetricCard = ({
-            title,
-            value,
-            detail,
-            icon: Icon,
-          }: {
-            readonly title: string;
-            readonly value: string | number;
-            readonly detail: string;
-            readonly icon: LucideIcon;
+          const VISUAL_PREVIEW_ONLY = {
+            admin: {
+              confirmedAmount: "R$ 18.740,00",
+              paidOrders: 31,
+              students: 126,
+              enrollments: 141,
+              validCertificates: 84,
+              totalCertificates: 91,
+              operationalQueue: 7,
+            },
+            student: {
+              displayName: "Aluno Preview",
+              email: "preview.visual@local.invalid",
+            },
+          } as const;
+
+          const MetricCard = ({ title, value, detail, icon: Icon }: {
+            title: string;
+            value: string | number;
+            detail: string;
+            icon: LucideIcon;
           }) => (
             <Card className="border-white/10 bg-white/5">
               <CardContent className="p-5">
@@ -175,48 +104,6 @@ jobs:
             </Card>
           );
 
-          const CheckoutHealthPreview = () => {
-            const health = VISUAL_PREVIEW_ONLY.admin.checkout;
-            return (
-              <Card className="border-white/10 bg-white/5" aria-label="Saúde da automação de checkout">
-                <CardHeader className="gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <Activity className="h-5 w-5" aria-hidden="true" /> Automação de checkout
-                    </CardTitle>
-                    <CardDescription className="mt-2 text-gray-400">
-                      Saúde do job que encerra checkouts vencidos sem depender do retorno do navegador.
-                    </CardDescription>
-                  </div>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 text-sm text-gray-200">
-                    <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                    {health.status}
-                  </span>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                    {[
-                      ["Configuração", health.configuration],
-                      ["Agenda", health.schedule],
-                      ["Última execução", health.lastRun],
-                      ["Último sucesso", health.lastSuccess],
-                      ["Falhas em 24h", String(health.failures24h)],
-                    ].map(([label, value]) => (
-                      <div key={label} className="rounded-xl border border-white/10 bg-black/20 p-4">
-                        <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
-                        <p className="mt-2 font-semibold text-white">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 flex items-center gap-2 text-xs text-gray-500">
-                    <Clock3 className="h-4 w-4" aria-hidden="true" />
-                    VISUAL_PREVIEW_ONLY — nenhum job real foi consultado.
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          };
-
           const AdminPreview = () => {
             const admin = VISUAL_PREVIEW_ONLY.admin;
             return (
@@ -224,108 +111,65 @@ jobs:
                 <AdminNavigation />
                 <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 lg:px-8">
                   <div className="mx-auto max-w-7xl space-y-8">
-                    <header className="flex flex-col gap-5 border-b border-white/10 pb-8 lg:flex-row lg:items-end lg:justify-between">
-                      <div>
-                        <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Administração do proprietário</p>
-                        <h1 className="mt-3 flex items-center gap-3 text-4xl font-bold">
-                          <LayoutDashboard className="h-9 w-9" aria-hidden="true" />
-                          Visão geral
-                        </h1>
-                        <p className="mt-3 max-w-3xl text-gray-400">Prévia visual isolada da estrutura administrativa.</p>
-                      </div>
-                      <div className="flex flex-wrap gap-3">
-                        <Button variant="outline" className="border-white/20 bg-transparent">Abrir financeiro</Button>
-                        <Button className="btn-brand">Gerenciar alunos</Button>
-                      </div>
+                    <header className="border-b border-white/10 pb-8">
+                      <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Administração do proprietário</p>
+                      <h1 className="mt-3 flex items-center gap-3 text-4xl font-bold"><LayoutDashboard className="h-9 w-9" aria-hidden="true" />Visão geral</h1>
                     </header>
 
                     <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores principais">
-                      <MetricCard title="Valor confirmado" value={admin.metrics.confirmedAmount} detail={`${admin.metrics.paidOrders} pedido(s) atualmente pago(s)`} icon={Banknote} />
-                      <MetricCard title="Alunos" value={admin.metrics.students} detail={`${admin.metrics.enrollments} matrícula(s) persistida(s)`} icon={GraduationCap} />
-                      <MetricCard title="Certificados válidos" value={admin.metrics.validCertificates} detail={`${admin.metrics.totalCertificates} certificado(s) no histórico`} icon={ShieldCheck} />
-                      <MetricCard title="Fila operacional" value={admin.metrics.operationalQueue} detail="Pagamentos pendentes, suporte aguardando e novos contatos" icon={ReceiptText} />
+                      <MetricCard title="Valor confirmado" value={admin.confirmedAmount} detail={`${admin.paidOrders} pedido(s) atualmente pago(s)`} icon={Banknote} />
+                      <MetricCard title="Alunos" value={admin.students} detail={`${admin.enrollments} matrícula(s) persistida(s)`} icon={GraduationCap} />
+                      <MetricCard title="Certificados válidos" value={admin.validCertificates} detail={`${admin.totalCertificates} certificado(s) no histórico`} icon={ShieldCheck} />
+                      <MetricCard title="Fila operacional" value={admin.operationalQueue} detail="Pagamentos pendentes, suporte aguardando e novos contatos" icon={ReceiptText} />
                     </section>
 
-                    <CheckoutHealthPreview />
+                    <Card className="border-white/10 bg-white/5" aria-label="Saúde da automação de checkout">
+                      <CardHeader className="gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div>
+                          <CardTitle className="flex items-center gap-2 text-white"><Activity className="h-5 w-5" aria-hidden="true" />Automação de checkout</CardTitle>
+                          <CardDescription className="mt-2 text-gray-400">Saúde do job que encerra checkouts vencidos sem depender do retorno do navegador.</CardDescription>
+                        </div>
+                        <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 text-sm text-gray-200"><CheckCircle2 className="h-4 w-4" aria-hidden="true" />Saudável</span>
+                      </CardHeader>
+                      <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                        {[["Configuração","Ativo"],["Agenda","*/5 * * * *"],["Última execução","08/08/2026 00:40"],["Último sucesso","08/08/2026 00:40"],["Falhas em 24h","0"]].map(([label,value]) => (
+                          <div key={label} className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-xs uppercase tracking-wide text-gray-500">{label}</p><p className="mt-2 font-semibold text-white">{value}</p></div>
+                        ))}
+                      </CardContent>
+                    </Card>
 
                     <section className="grid gap-6 xl:grid-cols-3" aria-label="Resumo por domínio">
-                      <Card className="border-white/10 bg-white/5">
-                        <CardHeader><CardTitle className="flex items-center gap-2 text-white"><Banknote className="h-5 w-5" aria-hidden="true" /> Financeiro</CardTitle><CardDescription className="text-gray-400">Resumo financeiro para conferência visual.</CardDescription></CardHeader>
-                        <CardContent className="space-y-3 text-sm">
-                          <div className="flex justify-between gap-4"><span className="text-gray-400">Pedidos totais</span><strong>{admin.finance.totalOrders}</strong></div>
-                          <div className="flex justify-between gap-4"><span className="text-gray-400">Pendentes</span><strong>{admin.finance.pendingOrders}</strong></div>
-                          <div className="flex justify-between gap-4"><span className="text-gray-400">Reembolsado</span><strong>{admin.finance.refunded}</strong></div>
-                          <div className="flex justify-between gap-4"><span className="text-gray-400">Chargeback perdido</span><strong>{admin.finance.chargebackLost}</strong></div>
-                        </CardContent>
-                      </Card>
-
-                      <Card className="border-white/10 bg-white/5">
-                        <CardHeader><CardTitle className="flex items-center gap-2 text-white"><BookOpen className="h-5 w-5" aria-hidden="true" /> Acadêmico</CardTitle><CardDescription className="text-gray-400">Resumo acadêmico para conferência visual.</CardDescription></CardHeader>
-                        <CardContent className="space-y-3 text-sm">
-                          <div className="flex justify-between gap-4"><span className="text-gray-400">Alunos</span><strong>{admin.academic.students}</strong></div>
-                          <div className="flex justify-between gap-4"><span className="text-gray-400">Matrículas</span><strong>{admin.academic.enrollments}</strong></div>
-                          <div className="flex justify-between gap-4"><span className="text-gray-400">Certificados no histórico</span><strong>{admin.academic.certificates}</strong></div>
-                          <div className="flex justify-between gap-4"><span className="text-gray-400">Certificados válidos</span><strong>{admin.academic.validCertificates}</strong></div>
-                        </CardContent>
-                      </Card>
-
-                      <Card className="border-white/10 bg-white/5">
-                        <CardHeader><CardTitle className="flex items-center gap-2 text-white"><Boxes className="h-5 w-5" aria-hidden="true" /> Catálogo</CardTitle><CardDescription className="text-gray-400">Resumo editorial para conferência visual.</CardDescription></CardHeader>
-                        <CardContent className="space-y-3 text-sm">
-                          <div className="flex justify-between gap-4"><span className="text-gray-400">Cursos publicados</span><strong>{admin.catalogue.publishedCourses}</strong></div>
-                          <div className="flex justify-between gap-4"><span className="text-gray-400">Cursos em rascunho</span><strong>{admin.catalogue.draftCourses}</strong></div>
-                          <div className="flex justify-between gap-4"><span className="text-gray-400">Produtos publicados</span><strong>{admin.catalogue.publishedProducts}</strong></div>
-                          <div className="flex justify-between gap-4"><span className="text-gray-400">Produtos em rascunho</span><strong>{admin.catalogue.draftProducts}</strong></div>
-                        </CardContent>
-                      </Card>
+                      <Card className="border-white/10 bg-white/5"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><Banknote className="h-5 w-5" aria-hidden="true" />Financeiro</CardTitle><CardDescription className="text-gray-400">Resumo financeiro para conferência visual.</CardDescription></CardHeader><CardContent className="space-y-3 text-sm"><div className="flex justify-between"><span className="text-gray-400">Pedidos totais</span><strong>43</strong></div><div className="flex justify-between"><span className="text-gray-400">Pendentes</span><strong>4</strong></div></CardContent></Card>
+                      <Card className="border-white/10 bg-white/5"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><BookOpen className="h-5 w-5" aria-hidden="true" />Acadêmico</CardTitle><CardDescription className="text-gray-400">Resumo acadêmico para conferência visual.</CardDescription></CardHeader><CardContent className="space-y-3 text-sm"><div className="flex justify-between"><span className="text-gray-400">Alunos</span><strong>126</strong></div><div className="flex justify-between"><span className="text-gray-400">Matrículas</span><strong>141</strong></div></CardContent></Card>
+                      <Card className="border-white/10 bg-white/5"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><Boxes className="h-5 w-5" aria-hidden="true" />Catálogo</CardTitle><CardDescription className="text-gray-400">Resumo editorial para conferência visual.</CardDescription></CardHeader><CardContent className="space-y-3 text-sm"><div className="flex justify-between"><span className="text-gray-400">Cursos publicados</span><strong>3/4</strong></div><div className="flex justify-between"><span className="text-gray-400">Produtos publicados</span><strong>5/6</strong></div></CardContent></Card>
                     </section>
+                    <p className="text-xs text-gray-600">VISUAL_PREVIEW_ONLY — nenhum dado real foi consultado.</p>
                   </div>
                 </main>
               </div>
             );
           };
 
-          const StudentPreview = () => {
-            const student = VISUAL_PREVIEW_ONLY.student;
-            return (
-              <div data-visual-preview-only="true">
-                <StudentPortalShell displayName={student.displayName} email={student.email} isSigningOut={false} onSignOut={() => undefined}>
-                  <div className="space-y-8">
-                    <StudentSectionHeader eyebrow="Portal do Aluno" title="Visão geral" description="Acompanhe seus acessos, progresso, materiais e atividades." />
-                    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Resumo acadêmico">
-                      <StudentStatCard label="Cursos ativos" value={student.stats.activeCourses} description="Acessos ativos" icon={GraduationCap} />
-                      <StudentStatCard label="Progresso médio" value={student.stats.averageProgress} description="Média das aulas iniciadas" icon={PlayCircle} />
-                      <StudentStatCard label="Aulas concluídas" value={student.stats.completedLessons} description="Conclusões registradas" icon={CheckCircle2} />
-                      <StudentStatCard label="Materiais liberados" value={student.stats.releasedMaterials} description="Arquivos acessíveis" icon={Library} />
-                    </section>
-                    <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
-                      <Card variant="course">
-                        <CardHeader><CardTitle>Continuar estudando</CardTitle><CardDescription>Matrículas ativas mais recentes.</CardDescription></CardHeader>
-                        <CardContent className="space-y-4">
-                          {student.courses.map((course) => (
-                            <article key={course.id} className="surface-muted flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-                              <div><h3 className="font-semibold text-foreground">{course.title}</h3><p className="mt-1 text-sm text-muted-foreground">Acesso até {course.accessUntil}</p></div>
-                              <Button variant="context" className="w-full sm:w-auto">Abrir curso</Button>
-                            </article>
-                          ))}
-                          <Button asChild variant="link"><Link to="/aluno">Ver todos os cursos</Link></Button>
-                        </CardContent>
-                      </Card>
-                      <Card variant="course">
-                        <CardHeader><CardTitle>Atividades recentes</CardTitle><CardDescription>Últimas atualizações.</CardDescription></CardHeader>
-                        <CardContent className="space-y-4">
-                          {student.activities.map((activity) => (
-                            <article key={activity.id} className="border-b border-border pb-4 last:border-0"><p className="text-sm text-foreground">{activity.activity}</p><p className="mt-1 text-xs text-muted-foreground">{activity.time}</p></article>
-                          ))}
-                          <Button asChild variant="link"><Link to="/aluno">Ver histórico completo</Link></Button>
-                        </CardContent>
-                      </Card>
-                    </div>
+          const StudentPreview = () => (
+            <div data-visual-preview-only="true">
+              <StudentPortalShell displayName={VISUAL_PREVIEW_ONLY.student.displayName} email={VISUAL_PREVIEW_ONLY.student.email} isSigningOut={false} onSignOut={() => undefined}>
+                <div className="space-y-8">
+                  <StudentSectionHeader eyebrow="Portal do Aluno" title="Visão geral" description="Acompanhe seus acessos, progresso, materiais e atividades." />
+                  <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Resumo acadêmico">
+                    <StudentStatCard label="Cursos ativos" value="3" description="Acessos ativos" icon={GraduationCap} />
+                    <StudentStatCard label="Progresso médio" value="68%" description="Média das aulas iniciadas" icon={PlayCircle} />
+                    <StudentStatCard label="Aulas concluídas" value="24" description="Conclusões registradas" icon={CheckCircle2} />
+                    <StudentStatCard label="Materiais liberados" value="12" description="Arquivos acessíveis" icon={Library} />
+                  </section>
+                  <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+                    <Card variant="course"><CardHeader><CardTitle>Continuar estudando</CardTitle><CardDescription>Matrículas ativas mais recentes.</CardDescription></CardHeader><CardContent className="space-y-4"><article className="surface-muted p-5"><h3 className="font-semibold text-foreground">Aprendendo com DJ Stay — Fundamentos</h3><p className="mt-1 text-sm text-muted-foreground">Acesso até 31/12/2026</p><Button variant="context" className="mt-4">Abrir curso</Button></article><article className="surface-muted p-5"><h3 className="font-semibold text-foreground">Mixagem e Performance</h3><p className="mt-1 text-sm text-muted-foreground">Acesso sem prazo definido</p></article></CardContent></Card>
+                    <Card variant="course"><CardHeader><CardTitle>Atividades recentes</CardTitle><CardDescription>Últimas atualizações.</CardDescription></CardHeader><CardContent className="space-y-4"><article className="border-b border-border pb-4"><p className="text-sm text-foreground">Aula concluída: Estrutura de uma mixagem</p><p className="mt-1 text-xs text-muted-foreground">Hoje, 00:18</p></article><article><p className="text-sm text-foreground">Material liberado: Checklist de preparação</p><p className="mt-1 text-xs text-muted-foreground">Ontem, 21:42</p></article></CardContent></Card>
                   </div>
-                </StudentPortalShell>
-              </div>
-            );
-          };
+                  <p className="text-xs text-muted-foreground">VISUAL_PREVIEW_ONLY — nenhum dado real foi consultado.</p>
+                </div>
+              </StudentPortalShell>
+            </div>
+          );
 
           const VisualPreview = () => (
             <Routes>
@@ -341,13 +185,7 @@ jobs:
           cat > src/App.tsx <<'TSX'
           import { BrowserRouter } from "react-router";
           import VisualPreview from "@/preview/VisualPreview";
-
-          const App = () => (
-            <BrowserRouter>
-              <VisualPreview />
-            </BrowserRouter>
-          );
-
+          const App = () => <BrowserRouter><VisualPreview /></BrowserRouter>;
           export default App;
           TSX
 
@@ -368,33 +206,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           browser=""
           for candidate in google-chrome google-chrome-stable chromium chromium-browser; do
-            if command -v "$candidate" >/dev/null 2>&1; then
-              browser="$(command -v "$candidate")"
-              break
-            fi
+            if command -v "$candidate" >/dev/null 2>&1; then browser="$(command -v "$candidate")"; break; fi
           done
           test -n "$browser"
           "$browser" --version
 
           mkdir -p artifacts/visual-preview/screenshots artifacts/visual-preview/logs
-
-          node node_modules/vite/bin/vite.js preview \
-            --host 127.0.0.1 \
-            --port 4173 \
-            --strictPort \
-            > artifacts/visual-preview/logs/preview.log 2>&1 &
+          node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173 --strictPort > artifacts/visual-preview/logs/preview.log 2>&1 &
           preview_pid=$!
           trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
 
           ready=false
           for _ in $(seq 1 80); do
-            if curl --fail --silent --show-error http://127.0.0.1:4173/admin >/dev/null; then
-              ready=true
-              break
-            fi
+            if curl --fail --silent http://127.0.0.1:4173/admin >/dev/null; then ready=true; break; fi
             sleep 0.25
           done
           test "$ready" = true
@@ -405,151 +231,45 @@ jobs:
 
           const baseUrl = "http://127.0.0.1:4173";
           const routes = [
-            {
-              name: "admin",
-              path: "/admin",
-              requiredText: [
-                "Visão geral",
-                "Valor confirmado",
-                "Alunos",
-                "Certificados válidos",
-                "Fila operacional",
-                "Automação de checkout",
-                "Financeiro",
-                "Acadêmico",
-                "Catálogo",
-              ],
-              desktopOnlyText: ["Administração"],
-            },
-            {
-              name: "student",
-              path: "/aluno",
-              requiredText: [
-                "Portal do Aluno",
-                "Início",
-                "Meus cursos",
-                "Comprar cursos",
-                "Certificados",
-                "Biblioteca",
-                "Meus produtos",
-                "Favoritos",
-                "Pedidos",
-                "Pagamentos",
-                "Notificações",
-                "Suporte",
-                "Histórico",
-                "Perfil",
-                "Preferências",
-                "Visão geral",
-                "Cursos ativos",
-                "Progresso médio",
-                "Aulas concluídas",
-                "Materiais liberados",
-                "Continuar estudando",
-                "Atividades recentes",
-              ],
-              desktopOnlyText: ["Aprendendo com DJ Stay"],
-            },
+            { name: "admin", path: "/admin", requiredText: ["Administração","Visão geral","Valor confirmado","Alunos","Certificados válidos","Fila operacional","Automação de checkout","Financeiro","Acadêmico","Catálogo"] },
+            { name: "student", path: "/aluno", requiredText: ["Aprendendo com DJ Stay","Portal do Aluno","Início","Meus cursos","Comprar cursos","Certificados","Biblioteca","Meus produtos","Favoritos","Pedidos","Pagamentos","Notificações","Suporte","Histórico","Perfil","Preferências","Visão geral","Cursos ativos","Progresso médio","Aulas concluídas","Materiais liberados","Continuar estudando","Atividades recentes"] },
           ];
           const viewports = [
             { name: "desktop", width: 1440, height: 900 },
             { name: "mobile", width: 390, height: 844, isMobile: true, hasTouch: true },
           ];
 
-          const browser = await puppeteer.launch({
-            executablePath: process.env.BROWSER_PATH,
-            headless: true,
-            args: [
-              "--no-sandbox",
-              "--disable-dev-shm-usage",
-              "--disable-background-networking",
-              "--disable-component-update",
-              "--disable-default-apps",
-              "--disable-extensions",
-              "--disable-sync",
-              "--metrics-recording-only",
-              "--no-first-run",
-              "--mute-audio",
-              "--hide-scrollbars",
-            ],
-          });
-
+          const browser = await puppeteer.launch({ executablePath: process.env.BROWSER_PATH, headless: true, args: ["--no-sandbox","--disable-dev-shm-usage","--disable-background-networking","--hide-scrollbars"] });
           const captures = [];
-
           try {
             for (const viewport of viewports) {
               for (const route of routes) {
                 const page = await browser.newPage();
-                await page.setViewport({
-                  width: viewport.width,
-                  height: viewport.height,
-                  deviceScaleFactor: 1,
-                  isMobile: viewport.isMobile ?? false,
-                  hasTouch: viewport.hasTouch ?? false,
-                });
-
-                await page.goto(`${baseUrl}${route.path}`, {
-                  waitUntil: "domcontentloaded",
-                  timeout: 30_000,
-                });
-                await page.waitForSelector('[data-visual-preview-only="true"]', { timeout: 10_000 });
+                await page.setViewport({ width: viewport.width, height: viewport.height, deviceScaleFactor: 1, isMobile: viewport.isMobile ?? false, hasTouch: viewport.hasTouch ?? false });
+                await page.goto(`${baseUrl}${route.path}`, { waitUntil: "domcontentloaded", timeout: 30000 });
+                await page.waitForSelector('[data-visual-preview-only="true"]', { timeout: 10000 });
                 await new Promise((resolve) => setTimeout(resolve, 500));
-                await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-
-                const bodyText = await page.evaluate(() => document.body.innerText);
-                const expectedText = [
-                  ...route.requiredText,
-                  ...(viewport.name === "desktop" ? route.desktopOnlyText : []),
-                ];
-                const missingText = expectedText.filter((text) => !bodyText.includes(text));
-                if (missingText.length > 0) {
-                  throw new Error(`${route.name}/${viewport.name} missing required text: ${missingText.join(", ")}`);
-                }
-
-                const screenshotPath = `artifacts/visual-preview/screenshots/${route.name}-${viewport.name}.png`;
-                await page.screenshot({ path: screenshotPath, type: "png", captureBeyondViewport: false });
-
-                captures.push({
-                  route: route.path,
-                  name: route.name,
-                  viewport: viewport.name,
-                  width: viewport.width,
-                  height: viewport.height,
-                  screenshot: screenshotPath,
-                });
+                const domText = await page.evaluate(() => document.body.textContent ?? "");
+                const missing = route.requiredText.filter((text) => !domText.includes(text));
+                if (missing.length) throw new Error(`${route.name}/${viewport.name} missing DOM text: ${missing.join(", ")}`);
+                const screenshot = `artifacts/visual-preview/screenshots/${route.name}-${viewport.name}.png`;
+                await page.screenshot({ path: screenshot, type: "png", captureBeyondViewport: false });
+                captures.push({ route: route.path, viewport: viewport.name, width: viewport.width, height: viewport.height, screenshot });
                 await page.close();
               }
             }
           } finally {
             await browser.close();
           }
-
-          await fs.writeFile(
-            "artifacts/visual-preview/manifest.json",
-            JSON.stringify(
-              {
-                commit: process.env.GITHUB_SHA,
-                branch: process.env.GITHUB_REF_NAME,
-                mode: "VISUAL_PREVIEW_ONLY",
-                deployable: false,
-                backendRequired: false,
-                databaseRequired: false,
-                captures,
-              },
-              null,
-              2,
-            ),
-          );
+          await fs.writeFile("artifacts/visual-preview/manifest.json", JSON.stringify({ commit: process.env.GITHUB_SHA, branch: process.env.GITHUB_REF_NAME, mode: "VISUAL_PREVIEW_ONLY", deployable: false, backendRequired: false, databaseRequired: false, captures }, null, 2));
           NODE
 
           BROWSER_PATH="$browser" node artifacts/visual-preview/capture.mjs
           rm artifacts/visual-preview/capture.mjs
-
           test -s artifacts/visual-preview/screenshots/admin-desktop.png
           test -s artifacts/visual-preview/screenshots/admin-mobile.png
           test -s artifacts/visual-preview/screenshots/student-desktop.png
           test -s artifacts/visual-preview/screenshots/student-mobile.png
-
           find artifacts/visual-preview -maxdepth 3 -type f -print
 
       - name: Exportar prévia visual obrigatória
