@@ -55,6 +55,9 @@ import PaymentSuccess from "@/pages/PaymentSuccess";
 import { SURFACES } from "./surfaces.js";
 
 const surface = globalThis.__VISUAL_PREVIEW_ONLY__.surface;
+const COURSE_ID = "11111111-1111-4111-8111-111111111111";
+const MODULE_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const LESSON_ID = "22222222-2222-4222-8222-222222222222";
 const user = {
   id: "00000000-0000-4000-8000-000000000001",
   aud: "authenticated",
@@ -82,6 +85,34 @@ const authValue = {
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, staleTime: Infinity, refetchOnWindowFocus: false }, mutations: { retry: false } },
 });
+const previewLesson = {
+  id: LESSON_ID,
+  title: "Aula 1 · Introdução",
+  description: "Aula navegável do preview.",
+  durationMinutes: 12,
+  durationLabel: "12 min",
+  order: 1,
+  moduleId: MODULE_ID,
+  completionMode: "manual",
+  completionPercent: null,
+  contentKind: "video",
+};
+queryClient.setQueryData(["modules", COURSE_ID], [{
+  id: MODULE_ID,
+  title: "Módulo 1 · Fundamentos",
+  description: "Conteúdo VISUAL_PREVIEW_ONLY para permitir navegação real entre curso, módulo e aula.",
+  order: 1,
+  lessons: [{
+    id: LESSON_ID,
+    title: previewLesson.title,
+    description: previewLesson.description,
+    durationMinutes: 12,
+    durationLabel: "12 min",
+    order: 1,
+  }],
+}]);
+queryClient.setQueryData(["lessons"], [previewLesson]);
+queryClient.setQueryData(["user-progress"], []);
 
 function PublicSurface() {
   switch (surface.component) {
