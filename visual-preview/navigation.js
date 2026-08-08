@@ -59,7 +59,7 @@ const textRules = [
   [/^meus cursos$/i, "student/courses"],
   [/^(continuar estudando|abrir curso|ver curso)$/i, "student/course"],
   [/^(módulos|modulos|ver módulos|ver modulos)$/i, "student/modules"],
-  [/^(aula\b|abrir aula|assistir aula|continuar aula|próxima aula|proxima aula)/i, "student/lesson-video"],
+  [/^(aula\b|assistir$|abrir aula|assistir aula|continuar aula|próxima aula|proxima aula)/i, "student/lesson-video"],
   [/^(biblioteca|materiais)$/i, "student/library"],
   [/^favoritos$/i, "student/favorites"],
   [/^certificados$/i, "student/certificates"],
@@ -90,6 +90,7 @@ const contextualText = (text, currentSlug) => {
   if (area === "student") {
     if (/^(cursos|comprar cursos)$/.test(value)) return "commerce/courses";
     if (/^(produtos digitais|marketplace|comprar produtos)$/.test(value)) return "commerce/marketplace";
+    if (currentSlug === "student/course" && /^módulo\b|^modulo\b/.test(value)) return "student/modules";
   }
   if (area === "admin") {
     const admin = new Map([
@@ -188,9 +189,24 @@ export function installPreviewNavigation(currentSlug) {
     window.location.assign(previewUrl(slug));
   };
 
+  const decorateModuleSurface = () => {
+    if (currentSlug !== "student/course") return;
+    for (const heading of document.querySelectorAll("h3")) {
+      if (!/^módulo\b|^modulo\b/i.test((heading.textContent || "").trim())) continue;
+      const header = heading.closest("div.flex.items-center.justify-between") || heading.parentElement;
+      if (!(header instanceof HTMLElement)) continue;
+      header.setAttribute("role", "button");
+      header.tabIndex = 0;
+      header.dataset.previewDestination = "student/modules";
+      if (!header.getAttribute("aria-label")) header.setAttribute("aria-label", `Abrir módulo ${(heading.textContent || "").trim()}`);
+    }
+  };
+
   const decorate = () => {
+    decorateModuleSurface();
     for (const element of document.querySelectorAll("a,button,[role='button']")) {
       if (element.closest("[data-preview-navigator]")) continue;
+      if (element.dataset.previewDestination) continue;
       const destination = resolvePreviewDestination({ href: element.getAttribute("href"), text: element.textContent, currentSlug });
       if (destination) element.dataset.previewDestination = destination;
       else delete element.dataset.previewDestination;
@@ -204,6 +220,16 @@ export function installPreviewNavigation(currentSlug) {
     if (!destination) return;
     event.preventDefault();
     event.stopPropagation();
+    navigate(destination);
+  }, true);
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const element = getActionElement(event.target);
+    if (!element || element.tagName === "A" || element.tagName === "BUTTON" || element.closest("[data-preview-navigator]")) return;
+    const destination = element.dataset.previewDestination;
+    if (!destination) return;
+    event.preventDefault();
     navigate(destination);
   }, true);
 
