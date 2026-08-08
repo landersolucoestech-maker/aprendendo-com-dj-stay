@@ -96,7 +96,7 @@ jobs:
           VITE_CI_RUNTIME_SMOKE: "true"
           VITE_SUPABASE_URL: https://preview.invalid
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_runtime_smoke_only_not_for_deployment
-        run: npx vite build --config visual-preview/vite.config.mjs
+        run: npx vite build --mode development --config visual-preview/vite.config.mjs
 
       - name: Materializar URLs profundas do preview
         shell: bash
@@ -132,7 +132,6 @@ jobs:
           exit 1
 
       - name: Chrome smoke — 73 URLs desktop + mobile
-        continue-on-error: true
         env:
           PREVIEW_BASE_URL: http://127.0.0.1:4173/aprendendo-com-dj-stay/
         run: node visual-preview/smoke.mjs
