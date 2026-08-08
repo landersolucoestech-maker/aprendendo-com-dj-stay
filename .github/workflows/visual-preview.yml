@@ -164,7 +164,7 @@ jobs:
     needs: validate-build-smoke
     runs-on: ubuntu-24.04
     environment:
-      name: github-pages
+      name: dev-visual-preview
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Publicar GitHub Pages
