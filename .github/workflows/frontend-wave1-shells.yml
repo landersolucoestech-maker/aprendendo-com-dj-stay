@@ -99,24 +99,37 @@ jobs:
       - name: Aplicar arquitetura de shells
         run: node scripts/apply-wave1-shells.mjs
 
-      - name: Preservar ponte estrutural do shell legado
+      - name: Preservar pontes estruturais legadas
         shell: bash
         run: |
           set -euo pipefail
           node --input-type=module <<'NODE'
           import { readFile, writeFile } from "node:fs/promises";
-          const path = "src/components/student/StudentPortalShell.tsx";
-          let source = await readFile(path, "utf8");
-          const before = `export const StudentPortalShell = ({\n  displayName,\n  email,\n  isSigningOut,\n  onSignOut,\n  children,\n}: StudentPortalShellProps) => (\n  <StudentShell`;
-          const after = `export const StudentPortalShell = ({\n  displayName,\n  email,\n  isSigningOut,\n  onSignOut,\n  children,\n}: StudentPortalShellProps) => (\n  <div data-context="course" className="contents">\n    <StudentShell`;
-          if (!source.includes(before)) throw new Error("StudentPortalShell compatibility target not found");
-          source = source.replace(before, after);
-          const closing = `    {children}\n  </StudentShell>\n);`;
-          const replacement = `      {children}\n    </StudentShell>\n  </div>\n);`;
-          if (!source.includes(closing)) throw new Error("StudentPortalShell compatibility closing target not found");
-          source = source.replace(closing, replacement);
-          await writeFile(path, source, "utf8");
-          console.log("STUDENT_SHELL_LEGACY_BRIDGE=PASS");
+
+          const studentPath = "src/components/student/StudentPortalShell.tsx";
+          let student = await readFile(studentPath, "utf8");
+          const studentBefore = `export const StudentPortalShell = ({\n  displayName,\n  email,\n  isSigningOut,\n  onSignOut,\n  children,\n}: StudentPortalShellProps) => (\n  <StudentShell`;
+          const studentAfter = `export const StudentPortalShell = ({\n  displayName,\n  email,\n  isSigningOut,\n  onSignOut,\n  children,\n}: StudentPortalShellProps) => (\n  <div data-context="course" className="contents">\n    <StudentShell`;
+          if (!student.includes(studentBefore)) throw new Error("StudentPortalShell compatibility target not found");
+          student = student.replace(studentBefore, studentAfter);
+          const studentClosing = `    {children}\n  </StudentShell>\n);`;
+          const studentReplacement = `      {children}\n    </StudentShell>\n  </div>\n);`;
+          if (!student.includes(studentClosing)) throw new Error("StudentPortalShell compatibility closing target not found");
+          student = student.replace(studentClosing, studentReplacement);
+          await writeFile(studentPath, student, "utf8");
+
+          const adminPath = "src/components/admin/AdminNavigation.tsx";
+          let admin = await readFile(adminPath, "utf8");
+          const adminBefore = `const adminNavigation = [\n  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, group: "VISÃO GERAL" },\n  { to: "/admin/cursos", label: "Cursos", icon: BookOpen, group: "CONTEÚDO" },\n  { to: "/admin/produtos", label: "Produtos", icon: Boxes, group: "CONTEÚDO" },\n  { to: "/admin/alunos", label: "Alunos", icon: GraduationCap, group: "ACADÊMICO" },\n  { to: "/admin/academico", label: "Acadêmico", icon: BarChart3, group: "ACADÊMICO" },\n  { to: "/admin/pagamentos", label: "Pagamentos", icon: Banknote, group: "FINANCEIRO" },\n  { to: "/admin/afiliados", label: "Afiliados", icon: HandCoins, group: "FINANCEIRO" },\n  { to: "/admin/contatos", label: "Contatos", icon: MessagesSquare, group: "RELACIONAMENTO" },\n  { to: "/admin/suporte", label: "Suporte", icon: LifeBuoy, group: "RELACIONAMENTO" },\n  { to: "/admin/privacidade", label: "Privacidade", icon: ShieldCheck, group: "GOVERNANÇA" },\n  { to: "/admin/erros", label: "Erros", icon: Bug, group: "GOVERNANÇA" },\n] as const;`;
+          const adminAfter = `const adminNavigation = [\n  { to: "/admin", label: "Dashboard", icon: LayoutDashboard },\n  { to: "/admin/cursos", label: "Cursos", icon: BookOpen },\n  { to: "/admin/produtos", label: "Produtos", icon: Boxes },\n  { to: "/admin/alunos", label: "Alunos", icon: GraduationCap },\n  { to: "/admin/academico", label: "Acadêmico", icon: BarChart3 },\n  { to: "/admin/pagamentos", label: "Pagamentos", icon: Banknote },\n  { to: "/admin/afiliados", label: "Afiliados", icon: HandCoins },\n  { to: "/admin/contatos", label: "Contatos", icon: MessagesSquare },\n  { to: "/admin/suporte", label: "Suporte", icon: LifeBuoy },\n  { to: "/admin/privacidade", label: "Privacidade", icon: ShieldCheck },\n  { to: "/admin/erros", label: "Erros", icon: Bug },\n] as const;\n\nconst adminGroupByPath = {\n  "/admin": "VISÃO GERAL",\n  "/admin/cursos": "CONTEÚDO",\n  "/admin/produtos": "CONTEÚDO",\n  "/admin/alunos": "ACADÊMICO",\n  "/admin/academico": "ACADÊMICO",\n  "/admin/pagamentos": "FINANCEIRO",\n  "/admin/afiliados": "FINANCEIRO",\n  "/admin/contatos": "RELACIONAMENTO",\n  "/admin/suporte": "RELACIONAMENTO",\n  "/admin/privacidade": "GOVERNANÇA",\n  "/admin/erros": "GOVERNANÇA",\n} as const;`;
+          if (!admin.includes(adminBefore)) throw new Error("AdminNavigation compatibility target not found");
+          admin = admin.replace(adminBefore, adminAfter);
+          const groupBefore = `visibleAdminNavigation.filter((item) => item.group === group)`;
+          const groupAfter = `visibleAdminNavigation.filter((item) => adminGroupByPath[item.to] === group)`;
+          if (!admin.includes(groupBefore)) throw new Error("AdminNavigation grouping target not found");
+          admin = admin.replace(groupBefore, groupAfter);
+          await writeFile(adminPath, admin, "utf8");
+          console.log("LEGACY_SHELL_BRIDGES=PASS");
           NODE
 
       - name: Validar boundary e invariância de rotas
