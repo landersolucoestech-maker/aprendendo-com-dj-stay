@@ -7,6 +7,7 @@ const diagnosticsDir = process.env.CLICK_SMOKE_DIAGNOSTICS_DIR ?? "click-smoke-a
 let currentStep = { scenario: "bootstrap", viewport: "unknown", from: "", action: "", selector: "", expectedSlug: "" };
 let client;
 const consoleErrors = [];
+const clickProbes = [];
 
 const findChrome = () => {
   if (process.env.CHROME_BIN) return process.env.CHROME_BIN;
@@ -36,7 +37,14 @@ class Cdp {
     });
     this.ws.addEventListener("message", (event) => {
       const message = JSON.parse(String(event.data));
-      if (message.method === "Runtime.consoleAPICalled" && message.params?.type === "error") consoleErrors.push(message.params.args?.map((arg) => arg.value ?? arg.description ?? "").join(" ") ?? "console.error");
+      if (message.method === "Runtime.consoleAPICalled") {
+        const values = message.params.args?.map((arg) => arg.value ?? arg.description ?? "") ?? [];
+        if (message.params?.type === "error") consoleErrors.push(values.join(" ") || "console.error");
+        for (const value of values) {
+          if (typeof value !== "string" || !value.startsWith("__CLICK_PROBE__")) continue;
+          try { clickProbes.push(JSON.parse(value.slice("__CLICK_PROBE__".length))); } catch {}
+        }
+      }
       if (message.method === "Runtime.exceptionThrown") consoleErrors.push(message.params?.exceptionDetails?.text ?? "Runtime.exceptionThrown");
       if (!message.id) return;
       const pending = this.pending.get(message.id);
@@ -86,21 +94,45 @@ const prepareScenario = async (cdp, slug, scenario) => {
   console.log(JSON.stringify({ SCENARIO: scenario, VIEWPORT: currentStep.viewport, FROM: "isolated", ACTION: "deterministic scenario setup", SELECTOR_OR_ACCESSIBLE_NAME: "CDP Page.navigate", URL_AFTER: await evaluate(cdp, "location.href"), EXPECTED_URL: expectedPath(slug), EXPECTED_SURFACE: slug, OBSERVED_SURFACE: slug, RESULT: "SETUP_PASS" }));
 };
 
-const visibleTarget = async (cdp, selector) => evaluate(cdp, `(() => {
-  document.querySelectorAll('[data-click-smoke-target]').forEach((el)=>el.removeAttribute('data-click-smoke-target'));
+const targetSnapshot = async (cdp, selector) => evaluate(cdp, `(() => {
   const candidates=Array.from(document.querySelectorAll(${JSON.stringify(selector)}));
   const el=candidates.find((node)=>{const r=node.getBoundingClientRect();const s=getComputedStyle(node);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&s.pointerEvents!=='none';});
-  if(!el)return null; el.scrollIntoView({block:'center',inline:'center'}); el.setAttribute('data-click-smoke-target','true');
-  const r=el.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2,text:(el.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160),aria:el.getAttribute('aria-label'),tag:el.tagName};
+  if(!el)return {candidateCount:candidates.length,target:null};
+  const r=el.getBoundingClientRect(); const x=r.left+r.width/2; const y=r.top+r.height/2;
+  const scrollables=[]; let parent=el.parentElement;
+  while(parent){const s=getComputedStyle(parent);if(/(auto|scroll)/.test(s.overflowY)&&parent.scrollHeight>parent.clientHeight){const pr=parent.getBoundingClientRect();scrollables.push({tag:parent.tagName,scrollTop:parent.scrollTop,scrollHeight:parent.scrollHeight,clientHeight:parent.clientHeight,rect:{left:pr.left,top:pr.top,right:pr.right,bottom:pr.bottom,width:pr.width,height:pr.height}});}parent=parent.parentElement;}
+  const point=(x>=0&&x<innerWidth&&y>=0&&y<innerHeight)?document.elementFromPoint(x,y):null;
+  const hit=point?{tag:point.tagName,text:(point.textContent||'').trim().replace(/\\s+/g,' ').slice(0,120),href:point.closest('a')?.getAttribute('href')||null,same:point===el||el.contains(point)}:null;
+  const clippedByScrollable=scrollables.some((item)=>r.bottom<=item.rect.top||r.top>=item.rect.bottom||r.right<=item.rect.left||r.left>=item.rect.right);
+  return {candidateCount:candidates.length,target:{tag:el.tagName,text:(el.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160),href:el.getAttribute('href'),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},center:{x,y},viewport:{width:innerWidth,height:innerHeight},inViewport:x>=0&&x<innerWidth&&y>=0&&y<innerHeight,clippedByScrollable,scrollables,elementFromPoint:hit}};
 })()`);
 
+const stabilizeTarget = async (cdp, selector) => evaluate(cdp, `new Promise((resolve) => {
+  document.querySelectorAll('[data-click-smoke-target]').forEach((node)=>node.removeAttribute('data-click-smoke-target'));
+  const candidates=Array.from(document.querySelectorAll(${JSON.stringify(selector)}));
+  const el=candidates.find((node)=>{const r=node.getBoundingClientRect();const s=getComputedStyle(node);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&s.pointerEvents!=='none';});
+  if(!el){resolve(null);return;}
+  el.setAttribute('data-click-smoke-target','true');
+  const scrollable=(()=>{let parent=el.parentElement;while(parent){const s=getComputedStyle(parent);if(/(auto|scroll)/.test(s.overflowY)&&parent.scrollHeight>parent.clientHeight)return parent;parent=parent.parentElement;}return null;})();
+  el.scrollIntoView({block:'nearest',inline:'nearest'});
+  if(scrollable){const er=el.getBoundingClientRect();const pr=scrollable.getBoundingClientRect();scrollable.scrollTop += (er.top+er.height/2)-(pr.top+scrollable.clientHeight/2);}
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const r=el.getBoundingClientRect();const x=r.left+r.width/2;const y=r.top+r.height/2;const point=document.elementFromPoint(x,y);
+    resolve({x,y,text:(el.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160),aria:el.getAttribute('aria-label'),tag:el.tagName,href:el.getAttribute('href'),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},elementFromPoint:point?{tag:point.tagName,text:(point.textContent||'').trim().replace(/\\s+/g,' ').slice(0,120),href:point.closest('a')?.getAttribute('href')||null,same:point===el||el.contains(point)}:null,scrollTop:scrollable?.scrollTop??null});
+  }));
+})`);
+
 const trustedClick = async (cdp, selector) => {
-  const target = await visibleTarget(cdp, selector);
+  const target = await stabilizeTarget(cdp, selector);
   if (!target) return null;
+  if (!target.elementFromPoint?.same) throw new Error(`Centro do alvo interceptado para ${selector}: ${JSON.stringify(target)}`);
+  clickProbes.length = 0;
+  await evaluate(cdp, `(() => { const target=document.querySelector('[data-click-smoke-target="true"]'); if(!target)return false; const probe=(event)=>{const action=event.target instanceof Element?event.target.closest('a,button,[role="button"]'):null; console.log('__CLICK_PROBE__'+JSON.stringify({received:true,defaultPrevented:event.defaultPrevented,targetTag:event.target?.tagName||null,actionTag:action?.tagName||null,href:action?.getAttribute?.('href')||null,trusted:event.isTrusted}));}; document.addEventListener('click',probe,{capture:true,once:true}); return true;})()`);
   await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: target.x, y: target.y });
   await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", x: target.x, y: target.y, button: "left", buttons: 1, clickCount: 1 });
   await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: target.x, y: target.y, button: "left", buttons: 0, clickCount: 1 });
-  return target;
+  await sleep(30);
+  return { ...target, probe: clickProbes.at(-1) ?? null };
 };
 const pressEscape = async (cdp) => {
   await cdp.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 });
@@ -148,7 +180,7 @@ const clickDestination = async (cdp, slug, { navigator = false, scenario = "navi
   }
   currentStep.selector = target.aria || target.text || selector;
   await waitSurface(cdp, slug);
-  await logStep(cdp, "PASS", { TRUSTED_CLICK: true });
+  await logStep(cdp, "PASS", { TRUSTED_CLICK: target.probe?.trusted === true, CLICK_RECEIVED: target.probe?.received === true, DEFAULT_PREVENTED: target.probe?.defaultPrevented ?? null, TARGET_RECT: target.rect, ELEMENT_FROM_POINT: target.elementFromPoint });
 };
 
 const browserBackForward = async (cdp, backSlug, forwardSlug, scenario) => {
@@ -267,6 +299,37 @@ const runAffiliate = async (cdp) => {
   console.log("AFFILIATE_CLICK_NAV=PASS");
 };
 
+const classifyNavigatorTarget = (snapshot) => {
+  if (!snapshot?.target) return "ELEMENT_DISCOVERY_BUG";
+  if (!snapshot.target.inViewport || snapshot.target.clippedByScrollable) return "SCROLL_VISIBILITY_BUG";
+  if (!snapshot.target.elementFromPoint?.same) return "OVERLAY_INTERCEPTION_BUG";
+  return "OTHER";
+};
+
+const runFocusedCommercial = async (cdp) => {
+  currentStep.viewport = "desktop";
+  await cdp.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+  await prepareScenario(cdp, "commerce/checkout-processing", "COMMERCIAL_FOCUSED");
+  const selector = selectorForDestination("commerce/checkout-error", true);
+  const toggle = await trustedClick(cdp, "[data-preview-navigator] > button");
+  if (!toggle) throw new Error("Botão do PreviewNavigator não está visível no teste focado.");
+  await waitFor(cdp, `Boolean(document.querySelector(${JSON.stringify(selector)}))`, 3000);
+  const beforeHistory = await cdp.send("Page.getNavigationHistory");
+  const before = await targetSnapshot(cdp, selector);
+  const classification = classifyNavigatorTarget(before);
+  console.log(JSON.stringify({ SCENARIO:"COMMERCIAL_STATE", VIEWPORT:"desktop", FROM:"commerce/checkout-processing", TARGET:"checkout-error", SELECTOR:selector, TARGET_RECT:before?.target?.rect??null, ELEMENT_FROM_POINT:before?.target?.elementFromPoint??null, HREF:before?.target?.href??null, URL_BEFORE:await evaluate(cdp,"location.href"), EVENT_DISPATCHED:false, CLICK_RECEIVED:false, DEFAULT_PREVENTED:false, HISTORY_BEFORE:{currentIndex:beforeHistory.currentIndex,entries:beforeHistory.entries.length}, HISTORY_AFTER:null, ROOT_CAUSE_CLASSIFICATION:classification, CANDIDATE_COUNT:before?.candidateCount??0, SCROLLABLE_ANCESTORS:before?.target?.scrollables??[] }));
+  currentStep = { scenario:"COMMERCIAL_FOCUSED", viewport:"desktop", from:"commerce/checkout-processing", action:"checkout-processing → checkout-error", selector, expectedSlug:"commerce/checkout-error" };
+  const target = await trustedClick(cdp, selector);
+  if (!target) throw new Error("checkout-error não encontrado no teste focado.");
+  await waitSurface(cdp, "commerce/checkout-error");
+  const afterHistory = await cdp.send("Page.getNavigationHistory");
+  const entryCreated = afterHistory.entries.some((entry)=>entry.url.includes(expectedPath("commerce/checkout-error"))) && afterHistory.entries.length > beforeHistory.entries.length;
+  if (!entryCreated) throw new Error("Histórico não recebeu entrada checkout-error.");
+  console.log(JSON.stringify({ SCENARIO:"COMMERCIAL_FOCUSED", VIEWPORT:"desktop", FROM:"commerce/checkout-processing", TARGET:"checkout-error", TARGET_RECT:target.rect, ELEMENT_FROM_POINT:target.elementFromPoint, TRUSTED_CLICK:target.probe?.trusted===true, CLICK_RECEIVED:target.probe?.received===true, DEFAULT_PREVENTED:target.probe?.defaultPrevented??null, EXPECTED_SURFACE:"commerce/checkout-error", OBSERVED_SURFACE:await evaluate(cdp,currentSlugExpression), URL_CHANGED:true, HISTORY_ENTRY_CREATED:true, RESULT:"PASS" }));
+  await browserBackForward(cdp, "commerce/checkout-processing", "commerce/checkout-error", "COMMERCIAL_FOCUSED_HISTORY");
+  console.log("FOCUSED_COMMERCIAL_TEST=PASS");
+};
+
 const runCommercial = async (cdp) => {
   await prepareScenario(cdp, "commerce/courses", "COMMERCIAL");
   await clickDestination(cdp, "commerce/marketplace", { scenario: "COMMERCIAL", action: "Cursos → Marketplace" });
@@ -289,7 +352,7 @@ const saveDiagnostics = async (cdp, error) => {
   const visible = await evaluate(cdp, `Array.from(document.querySelectorAll('a,button,[role="button"]')).map((el)=>{const r=el.getBoundingClientRect();const s=getComputedStyle(el);return{tag:el.tagName,text:(el.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160),aria:el.getAttribute('aria-label'),href:el.getAttribute('href'),dest:el.dataset.previewDestination||null,visible:r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'};}).filter(x=>x.visible)`).catch(() => []);
   const history = await cdp.send("Page.getNavigationHistory").catch(() => ({}));
   const marker = await surfaceMarker(cdp).catch(() => ({}));
-  const payload = { error: String(error?.stack || error), step: currentStep, url: await evaluate(cdp, "location.href").catch(() => ""), marker, visible, history, consoleErrors };
+  const payload = { error: String(error?.stack || error), step: currentStep, url: await evaluate(cdp, "location.href").catch(() => ""), marker, visible, history, consoleErrors, clickProbes };
   await writeFile(`${diagnosticsDir}/${stamp}.json`, JSON.stringify(payload, null, 2));
   console.error("CLICK_SMOKE_DIAGNOSTIC", JSON.stringify(payload));
 };
@@ -314,6 +377,7 @@ try {
   client = new Cdp(target.webSocketDebuggerUrl);
   await client.connect(); await client.send("Page.enable"); await client.send("Runtime.enable");
   try {
+    await runFocusedCommercial(client);
     for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }]) await runViewport(client, viewport);
     console.log("BROWSER_BACK_FORWARD_ALL_AREAS=PASS");
     console.log("PREVIEW_CLICK_SMOKE=PASS");
