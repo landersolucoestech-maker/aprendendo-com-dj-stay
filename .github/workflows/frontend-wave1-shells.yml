@@ -106,28 +106,119 @@ jobs:
           node --input-type=module <<'NODE'
           import { readFile, writeFile } from "node:fs/promises";
 
+          const replaceOnce = (source, before, after, label) => {
+            if (!source.includes(before)) throw new Error(label + " target not found");
+            return source.replace(before, after);
+          };
+
+          const sharedPath = "src/shared/navigation/AuthenticatedShell.tsx";
+          let shared = await readFile(sharedPath, "utf8");
+          shared = replaceOnce(
+            shared,
+            `  readonly mobileNavigation?: ReactNode;\n  readonly children: ReactNode;`,
+            `  readonly mobileNavigation?: ReactNode;\n  readonly brand?: ReactNode;\n  readonly children: ReactNode;`,
+            "AuthenticatedShell brand prop",
+          );
+          shared = replaceOnce(
+            shared,
+            `  navigation,\n  mobileNavigation,\n  children,`,
+            `  navigation,\n  mobileNavigation,\n  brand,\n  children,`,
+            "AuthenticatedShell brand destructure",
+          );
+          const brandBlock = `            <BrandBlock\n              collapsed={collapsed}\n              homePath={homePath}\n              portalLabel={portalLabel}\n            />`;
+          shared = replaceOnce(
+            shared,
+            brandBlock,
+            `            {brand ?? (\n              <BrandBlock\n                collapsed={collapsed}\n                homePath={homePath}\n                portalLabel={portalLabel}\n              />\n            )}`,
+            "AuthenticatedShell desktop brand",
+          );
+          const mobileBrandBlock = `            <BrandBlock\n              collapsed={false}\n              homePath={homePath}\n              portalLabel={portalLabel}\n            />`;
+          shared = replaceOnce(
+            shared,
+            mobileBrandBlock,
+            `            {brand ?? (\n              <BrandBlock\n                collapsed={false}\n                homePath={homePath}\n                portalLabel={portalLabel}\n              />\n            )}`,
+            "AuthenticatedShell mobile brand",
+          );
+          await writeFile(sharedPath, shared, "utf8");
+
+          const studentShellPath = "src/app/shells/StudentShell.tsx";
+          let studentShell = await readFile(studentShellPath, "utf8");
+          studentShell = replaceOnce(
+            studentShell,
+            `  readonly mobileNavigation: ReactNode;\n  readonly children: ReactNode;`,
+            `  readonly mobileNavigation: ReactNode;\n  readonly brand: ReactNode;\n  readonly children: ReactNode;`,
+            "StudentShell brand prop",
+          );
+          studentShell = replaceOnce(
+            studentShell,
+            `  navigation,\n  mobileNavigation,\n  children,`,
+            `  navigation,\n  mobileNavigation,\n  brand,\n  children,`,
+            "StudentShell brand destructure",
+          );
+          studentShell = replaceOnce(
+            studentShell,
+            `      navigation={navigation}\n      mobileNavigation={mobileNavigation}`,
+            `      navigation={navigation}\n      mobileNavigation={mobileNavigation}\n      brand={brand}`,
+            "StudentShell brand forwarding",
+          );
+          await writeFile(studentShellPath, studentShell, "utf8");
+
           const studentPath = "src/components/student/StudentPortalShell.tsx";
           let student = await readFile(studentPath, "utf8");
+          student = replaceOnce(
+            student,
+            `import { NavLink } from "react-router";`,
+            `import { Link, NavLink } from "react-router";`,
+            "StudentPortalShell Link import",
+          );
+          student = replaceOnce(
+            student,
+            `import { StudentShell } from "@/app/shells/StudentShell";\nimport { cn } from "@/lib/utils";`,
+            `import { StudentShell } from "@/app/shells/StudentShell";\nimport { brandConfig } from "@/config/brand";\nimport { cn } from "@/lib/utils";`,
+            "StudentPortalShell brand import",
+          );
+          const navigationMarker = `const StudentNavigation = ({ mobile = false }: { readonly mobile?: boolean }) => {`;
+          const studentBrand = `const StudentBrand = () => (\n  <Link\n    to="/aluno"\n    className="flex min-h-12 items-center gap-3 rounded-xl px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar"\n    aria-label={\`Ir para o início de \${brandConfig.name}\`}\n  >\n    <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-course/25 bg-course/10">\n      <img\n        src={brandConfig.logoPath}\n        alt={brandConfig.logoAlt}\n        className="h-full w-full object-cover"\n      />\n    </span>\n    <span className="min-w-0">\n      <span className="block truncate text-sm font-bold text-sidebar-foreground">\n        {brandConfig.name}\n      </span>\n      <span className="block truncate text-xs text-muted-foreground">Portal do Aluno</span>\n    </span>\n  </Link>\n);\n\n`;
+          student = replaceOnce(
+            student,
+            navigationMarker,
+            studentBrand + navigationMarker,
+            "StudentPortalShell brand component",
+          );
+          student = replaceOnce(
+            student,
+            `? "bg-course/15 text-course"`,
+            `? "bg-course text-primary-foreground"`,
+            "StudentPortalShell active course state",
+          );
           const studentBefore = `export const StudentPortalShell = ({\n  displayName,\n  email,\n  isSigningOut,\n  onSignOut,\n  children,\n}: StudentPortalShellProps) => (\n  <StudentShell`;
-          const studentAfter = `export const StudentPortalShell = ({\n  displayName,\n  email,\n  isSigningOut,\n  onSignOut,\n  children,\n}: StudentPortalShellProps) => (\n  <div data-context="course" className="contents">\n    <StudentShell`;
-          if (!student.includes(studentBefore)) throw new Error("StudentPortalShell compatibility target not found");
-          student = student.replace(studentBefore, studentAfter);
-          const studentClosing = `    {children}\n  </StudentShell>\n);`;
-          const studentReplacement = `      {children}\n    </StudentShell>\n  </div>\n);`;
-          if (!student.includes(studentClosing)) throw new Error("StudentPortalShell compatibility closing target not found");
-          student = student.replace(studentClosing, studentReplacement);
+          const studentAfter = `export const StudentPortalShell = ({\n  displayName,\n  email,\n  isSigningOut,\n  onSignOut,\n  children,\n}: StudentPortalShellProps) => (\n  <div data-context="course" className="app-shell">\n    <StudentShell`;
+          student = replaceOnce(student, studentBefore, studentAfter, "StudentPortalShell wrapper");
+          student = replaceOnce(
+            student,
+            `    mobileNavigation={<StudentNavigation mobile />}\n  >`,
+            `    mobileNavigation={<StudentNavigation mobile />}\n    brand={<StudentBrand />}\n  >`,
+            "StudentPortalShell brand injection",
+          );
+          student = replaceOnce(
+            student,
+            `    {children}\n  </StudentShell>\n);`,
+            `      {children}\n    </StudentShell>\n  </div>\n);`,
+            "StudentPortalShell wrapper closing",
+          );
           await writeFile(studentPath, student, "utf8");
 
           const adminPath = "src/components/admin/AdminNavigation.tsx";
           let admin = await readFile(adminPath, "utf8");
           const adminBefore = `const adminNavigation = [\n  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, group: "VISÃO GERAL" },\n  { to: "/admin/cursos", label: "Cursos", icon: BookOpen, group: "CONTEÚDO" },\n  { to: "/admin/produtos", label: "Produtos", icon: Boxes, group: "CONTEÚDO" },\n  { to: "/admin/alunos", label: "Alunos", icon: GraduationCap, group: "ACADÊMICO" },\n  { to: "/admin/academico", label: "Acadêmico", icon: BarChart3, group: "ACADÊMICO" },\n  { to: "/admin/pagamentos", label: "Pagamentos", icon: Banknote, group: "FINANCEIRO" },\n  { to: "/admin/afiliados", label: "Afiliados", icon: HandCoins, group: "FINANCEIRO" },\n  { to: "/admin/contatos", label: "Contatos", icon: MessagesSquare, group: "RELACIONAMENTO" },\n  { to: "/admin/suporte", label: "Suporte", icon: LifeBuoy, group: "RELACIONAMENTO" },\n  { to: "/admin/privacidade", label: "Privacidade", icon: ShieldCheck, group: "GOVERNANÇA" },\n  { to: "/admin/erros", label: "Erros", icon: Bug, group: "GOVERNANÇA" },\n] as const;`;
           const adminAfter = `const adminNavigation = [\n  { to: "/admin", label: "Dashboard", icon: LayoutDashboard },\n  { to: "/admin/cursos", label: "Cursos", icon: BookOpen },\n  { to: "/admin/produtos", label: "Produtos", icon: Boxes },\n  { to: "/admin/alunos", label: "Alunos", icon: GraduationCap },\n  { to: "/admin/academico", label: "Acadêmico", icon: BarChart3 },\n  { to: "/admin/pagamentos", label: "Pagamentos", icon: Banknote },\n  { to: "/admin/afiliados", label: "Afiliados", icon: HandCoins },\n  { to: "/admin/contatos", label: "Contatos", icon: MessagesSquare },\n  { to: "/admin/suporte", label: "Suporte", icon: LifeBuoy },\n  { to: "/admin/privacidade", label: "Privacidade", icon: ShieldCheck },\n  { to: "/admin/erros", label: "Erros", icon: Bug },\n] as const;\n\nconst adminGroupByPath = {\n  "/admin": "VISÃO GERAL",\n  "/admin/cursos": "CONTEÚDO",\n  "/admin/produtos": "CONTEÚDO",\n  "/admin/alunos": "ACADÊMICO",\n  "/admin/academico": "ACADÊMICO",\n  "/admin/pagamentos": "FINANCEIRO",\n  "/admin/afiliados": "FINANCEIRO",\n  "/admin/contatos": "RELACIONAMENTO",\n  "/admin/suporte": "RELACIONAMENTO",\n  "/admin/privacidade": "GOVERNANÇA",\n  "/admin/erros": "GOVERNANÇA",\n} as const;`;
-          if (!admin.includes(adminBefore)) throw new Error("AdminNavigation compatibility target not found");
-          admin = admin.replace(adminBefore, adminAfter);
-          const groupBefore = `visibleAdminNavigation.filter((item) => item.group === group)`;
-          const groupAfter = `visibleAdminNavigation.filter((item) => adminGroupByPath[item.to] === group)`;
-          if (!admin.includes(groupBefore)) throw new Error("AdminNavigation grouping target not found");
-          admin = admin.replace(groupBefore, groupAfter);
+          admin = replaceOnce(admin, adminBefore, adminAfter, "AdminNavigation contract shape");
+          admin = replaceOnce(
+            admin,
+            `visibleAdminNavigation.filter((item) => item.group === group)`,
+            `visibleAdminNavigation.filter((item) => adminGroupByPath[item.to] === group)`,
+            "AdminNavigation grouping",
+          );
           await writeFile(adminPath, admin, "utf8");
           console.log("LEGACY_SHELL_BRIDGES=PASS");
           NODE
