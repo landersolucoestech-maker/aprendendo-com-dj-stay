@@ -177,10 +177,11 @@ try {
 } catch {
   bootstrapCommitFiles = [];
 }
+const unexpectedBootstrapCommitFiles = bootstrapCommitFiles.filter(
+  (file) => !ALLOWED_BOOTSTRAP_FILES.includes(file),
+);
 const bootstrapCommitFilesValid =
-  process.env.WAVE0_BOOTSTRAP_EVENT !== "push" ||
-  (bootstrapCommitFiles.length === ALLOWED_BOOTSTRAP_FILES.length &&
-    ALLOWED_BOOTSTRAP_FILES.every((file) => bootstrapCommitFiles.includes(file)));
+  process.env.WAVE0_BOOTSTRAP_EVENT !== "push" || unexpectedBootstrapCommitFiles.length === 0;
 
 const summary = {
   generatedAt: new Date().toISOString(),
@@ -209,6 +210,7 @@ const summary = {
     redirectsChanged: changedRouteFiles.filter((file) => file.startsWith("src/routing/") || file === "src/App.tsx").length,
   },
   bootstrapCommitFiles,
+  unexpectedBootstrapCommitFiles,
   bootstrapCommitFilesValid,
   trackedWorkingTreeStatus: initialStatus || "CLEAN",
 };
@@ -300,6 +302,6 @@ if (!routesPass) {
   process.exitCode = 1;
 }
 if (!bootstrapCommitFilesValid) {
-  console.error(`Bootstrap commit changed files outside the allowed boundary: ${bootstrapCommitFiles.join(", ")}`);
+  console.error(`Bootstrap commit changed files outside the allowed boundary: ${unexpectedBootstrapCommitFiles.join(", ")}`);
   process.exitCode = 1;
 }
