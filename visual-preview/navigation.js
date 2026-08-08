@@ -81,6 +81,11 @@ const contextualText = (text, currentSlug) => {
 
   if (area === "public") {
     if (/^cursos$/.test(value)) return "commerce/courses";
+    if (currentSlug === "public/login" && /^(entrar|acessar|acessar portal|entrar no portal)$/.test(value)) return "student/dashboard";
+    if (currentSlug === "public/register" && /^(criar conta|cadastrar|matricule-se|continuar)$/.test(value)) return "public/verify-email";
+    if (currentSlug === "public/forgot-password" && /^(enviar|enviar link|recuperar senha|continuar)$/.test(value)) return "public/reset-password";
+    if (currentSlug === "public/reset-password" && /^(salvar|redefinir senha|continuar|voltar ao login)$/.test(value)) return "public/login";
+    if (["public/verify-email", "public/verified"].includes(currentSlug) && /^(entrar|acessar|acessar portal|entrar no portal|continuar)$/.test(value)) return "student/dashboard";
   }
   if (area === "student") {
     if (/^(cursos|comprar cursos)$/.test(value)) return "commerce/courses";
