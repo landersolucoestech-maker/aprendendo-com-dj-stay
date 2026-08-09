@@ -21,14 +21,22 @@ const findChrome = () => {
 const waitJson = async (url, timeoutMs = 30000) => {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    try { const response = await fetch(url); if (response.ok) return response.json(); } catch {}
+    try {
+      const response = await fetch(url);
+      if (response.ok) return response.json();
+    } catch {}
     await sleep(150);
   }
   throw new Error(`Timeout: ${url}`);
 };
 
 class Cdp {
-  constructor(url) { this.url = url; this.id = 1; this.pending = new Map(); }
+  constructor(url) {
+    this.url = url;
+    this.id = 1;
+    this.pending = new Map();
+  }
+
   async connect() {
     this.ws = new WebSocket(this.url);
     await new Promise((resolve, reject) => {
@@ -42,10 +50,14 @@ class Cdp {
         if (message.params?.type === "error") consoleErrors.push(values.join(" ") || "console.error");
         for (const value of values) {
           if (typeof value !== "string" || !value.startsWith("__CLICK_PROBE__")) continue;
-          try { clickProbes.push(JSON.parse(value.slice("__CLICK_PROBE__".length))); } catch {}
+          try {
+            clickProbes.push(JSON.parse(value.slice("__CLICK_PROBE__".length)));
+          } catch {}
         }
       }
-      if (message.method === "Runtime.exceptionThrown") consoleErrors.push(message.params?.exceptionDetails?.text ?? "Runtime.exceptionThrown");
+      if (message.method === "Runtime.exceptionThrown") {
+        consoleErrors.push(message.params?.exceptionDetails?.text ?? "Runtime.exceptionThrown");
+      }
       if (!message.id) return;
       const pending = this.pending.get(message.id);
       if (!pending) return;
@@ -53,6 +65,7 @@ class Cdp {
       message.error ? pending.reject(new Error(JSON.stringify(message.error))) : pending.resolve(message.result ?? {});
     });
   }
+
   send(method, params = {}) {
     const id = this.id++;
     return new Promise((resolve, reject) => {
@@ -60,38 +73,74 @@ class Cdp {
       this.ws.send(JSON.stringify({ id, method, params }));
     });
   }
-  close() { this.ws?.close(); }
+
+  close() {
+    this.ws?.close();
+  }
 }
 
 const evaluate = async (cdp, expression) => {
-  const result = await cdp.send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
+  const result = await cdp.send("Runtime.evaluate", {
+    expression,
+    returnByValue: true,
+    awaitPromise: true,
+  });
   if (result.exceptionDetails) throw new Error(`Eval failed: ${expression}`);
   return result.result?.value;
 };
+
 const waitFor = async (cdp, expression, timeoutMs = 15000) => {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    try { if (await evaluate(cdp, expression)) return true; } catch {}
+    try {
+      if (await evaluate(cdp, expression)) return true;
+    } catch {}
     await sleep(100);
   }
   return false;
 };
+
 const expectedPath = (slug) => `/visual-preview/${slug}/`;
 const currentSlugExpression = `document.body.dataset.previewSurface || ''`;
-const surfaceMarker = async (cdp) => evaluate(cdp, `({slug:document.body.dataset.previewSurface||'',title:document.title,h1:document.querySelector('h1')?.textContent?.trim()||'',body:(document.body.innerText||'').slice(0,1600)})`);
+const surfaceMarker = async (cdp) => evaluate(
+  cdp,
+  `({slug:document.body.dataset.previewSurface||'',title:document.title,h1:document.querySelector('h1')?.textContent?.trim()||'',body:(document.body.innerText||'').slice(0,1600)})`,
+);
 
 const waitSurface = async (cdp, slug) => {
-  const ready = await waitFor(cdp, `document.documentElement.dataset.visualPreviewReady === 'true' && ${currentSlugExpression} === ${JSON.stringify(slug)}`, 18000);
+  const ready = await waitFor(
+    cdp,
+    `document.documentElement.dataset.visualPreviewReady === 'true' && ${currentSlugExpression} === ${JSON.stringify(slug)}`,
+    18000,
+  );
   if (!ready) throw new Error(`Destino não ficou pronto: ${slug}`);
   const pathname = await evaluate(cdp, "location.pathname");
   if (!pathname.endsWith(expectedPath(slug))) throw new Error(`URL inesperada para ${slug}: ${pathname}`);
 };
 
 const prepareScenario = async (cdp, slug, scenario) => {
-  currentStep = { scenario: `${scenario}_SETUP`, viewport: currentStep.viewport, from: "isolated", action: `Preparar ${slug}`, selector: "CDP Page.navigate", expectedSlug: slug };
+  currentStep = {
+    scenario: `${scenario}_SETUP`,
+    viewport: currentStep.viewport,
+    from: "isolated",
+    action: `Preparar ${slug}`,
+    selector: "CDP Page.navigate",
+    expectedSlug: slug,
+  };
   await cdp.send("Page.navigate", { url: `${base}visual-preview/${slug}/` });
   await waitSurface(cdp, slug);
-  console.log(JSON.stringify({ SCENARIO: scenario, VIEWPORT: currentStep.viewport, FROM: "isolated", ACTION: "deterministic scenario setup", SELECTOR_OR_ACCESSIBLE_NAME: "CDP Page.navigate", URL_AFTER: await evaluate(cdp, "location.href"), EXPECTED_URL: expectedPath(slug), EXPECTED_SURFACE: slug, OBSERVED_SURFACE: slug, RESULT: "SETUP_PASS" }));
+  console.log(JSON.stringify({
+    SCENARIO: scenario,
+    VIEWPORT: currentStep.viewport,
+    FROM: "isolated",
+    ACTION: "deterministic scenario setup",
+    SELECTOR_OR_ACCESSIBLE_NAME: "CDP Page.navigate",
+    URL_AFTER: await evaluate(cdp, "location.href"),
+    EXPECTED_URL: expectedPath(slug),
+    EXPECTED_SURFACE: slug,
+    OBSERVED_SURFACE: slug,
+    RESULT: "SETUP_PASS",
+  }));
 };
 
 const targetSnapshot = async (cdp, selector) => evaluate(cdp, `(() => {
@@ -121,6 +170,22 @@ const overlaySnapshot = async (cdp, selector) => evaluate(cdp, `(() => {
   return {target:summarize(el),targetParentChain:chain(el),interceptor:summarize(point),interceptorParentChain:chain(point),overlay:summarize(containingOverlay),targetInsideOverlay:Boolean(containingOverlay),targetIsOverlay:overlays.includes(el),targetOverlayRelation:containingOverlay?'INSIDE_OVERLAY':(overlays.length?'OUTSIDE_OVERLAY':'NO_OVERLAY'),windowScrollY:window.scrollY,innerHeight,documentHeight:document.documentElement.scrollHeight,scrollOwner,center:{x,y},interceptorConfirmed:Boolean(point&&point!==el&&!el.contains(point))};
 })()`);
 
+const studentDrawerGeometry = async (cdp, selector) => evaluate(cdp, `(() => {
+  const el=Array.from(document.querySelectorAll(${JSON.stringify(selector)})).find((node)=>{const r=node.getBoundingClientRect();const s=getComputedStyle(node);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden';});
+  const drawer=document.querySelector('[data-shell-drawer-content]');
+  if(!el||!drawer)return null;
+  let scrollOwner=el.parentElement;while(scrollOwner&&!(scrollOwner.scrollHeight>scrollOwner.clientHeight))scrollOwner=scrollOwner.parentElement;
+  const logout=drawer.querySelector('[data-shell-logout]');
+  const accountCard=logout?.closest('.rounded-xl')||logout?.parentElement||null;
+  const summarize=(node)=>{if(!node)return null;const r=node.getBoundingClientRect();const s=getComputedStyle(node);return{tag:node.tagName,classes:node.className||'',rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},position:s.position,zIndex:s.zIndex,pointerEvents:s.pointerEvents,clientHeight:node.clientHeight,scrollHeight:node.scrollHeight,scrollTop:node.scrollTop,offsetTop:node.offsetTop,offsetParent:node.offsetParent?.tagName||null};};
+  const tr=el.getBoundingClientRect();const dr=drawer.getBoundingClientRect();const sr=scrollOwner?.getBoundingClientRect();const ar=accountCard?.getBoundingClientRect();
+  const safety=12;
+  const maxScrollTop=scrollOwner?Math.max(0,scrollOwner.scrollHeight-scrollOwner.clientHeight):0;
+  const visibleBottom=Math.min(innerHeight,sr?.bottom??innerHeight,(ar?.top??innerHeight)-safety);
+  const requiredDelta=Math.max(0,tr.bottom-visibleBottom);
+  return {drawer:summarize(drawer),drawerViewportHeight:innerHeight,scrollOwner:summarize(scrollOwner),accountCard:summarize(accountCard),target:summarize(el),maxScrollTop,requiredScrollTop:(scrollOwner?.scrollTop??0)+requiredDelta,requiredDelta,canScrollEnough:Boolean(scrollOwner)&&((scrollOwner.scrollTop+requiredDelta)<=maxScrollTop),sameFlexColumn:Boolean(scrollOwner&&accountCard&&scrollOwner.parentElement===accountCard.parentElement?.parentElement),accountOutsideScrollOwner:Boolean(scrollOwner&&accountCard&&!scrollOwner.contains(accountCard)),windowScrollY:window.scrollY};
+})()`);
+
 const stabilizeTarget = async (cdp, selector) => evaluate(cdp, `new Promise((resolve) => {
   document.querySelectorAll('[data-click-smoke-target]').forEach((node)=>node.removeAttribute('data-click-smoke-target'));
   const candidates=Array.from(document.querySelectorAll(${JSON.stringify(selector)}));
@@ -131,11 +196,12 @@ const stabilizeTarget = async (cdp, selector) => evaluate(cdp, `new Promise((res
   const windowScrollYBefore=window.scrollY;
   const scrollable=(()=>{let parent=el.parentElement;while(parent){if(parent.scrollHeight>parent.clientHeight)return parent;parent=parent.parentElement;}return null;})();
   const scrollOwnerBefore=scrollable?.scrollTop??window.scrollY;
+  let scrollTopRequested=scrollOwnerBefore;
   const safety=12;
   const findFixedOverlays=(rect)=>Array.from(document.querySelectorAll('body *')).filter((node)=>{
     if(!(node instanceof HTMLElement)||node===el||el.contains(node)||node.closest('[data-preview-navigator]'))return false;
     const s=getComputedStyle(node);if(!['fixed','sticky'].includes(s.position)||s.pointerEvents==='none'||s.visibility==='hidden'||s.display==='none')return false;
-    const nr=node.getBoundingClientRect();return nr.width>0&&nr.height>0&&nr.bottom>0&&nr.top<innerHeight&&nr.right>rect.left&&nr.left<rect.right;
+    const nr=node.getBoundingClientRect();return nr.width>0&&nr.height>0&&nr.bottom>0&&nr.top<innerHeight&&nr.right>rect.left&&nr.left<r.right;
   }).map((node)=>{const nr=node.getBoundingClientRect();const s=getComputedStyle(node);return{node,rect:nr,position:s.position,zIndex:s.zIndex,pointerEvents:s.pointerEvents};});
   const initialOverlays=findFixedOverlays(beforeRect);
   const initialContainingOverlay=initialOverlays.find((item)=>item.node.contains(el))||null;
@@ -152,24 +218,63 @@ const stabilizeTarget = async (cdp, selector) => evaluate(cdp, `new Promise((res
     let headerBottom=blockingOverlays.filter((item)=>item.rect.top<=0||item.rect.top<r.bottom).reduce((max,item)=>Math.max(max,item.rect.bottom),0);
     const safeTop=headerBottom>0?headerBottom+safety:0;
     const safeBottom=innerHeight-safety;
+    let localBlocker=null;
+    let localVisibleTop=null;
+    let localVisibleBottom=null;
+    let scrollClamped=false;
+    if(containingOverlay&&scrollable){
+      const ownerRect=scrollable.getBoundingClientRect();
+      const sampleX=Math.min(innerWidth-1,Math.max(0,r.left+r.width/2));
+      const sampleY=Math.min(innerHeight-1,Math.max(0,r.top+r.height/2));
+      const point=document.elementFromPoint(sampleX,sampleY);
+      if(point&&point!==el&&!el.contains(point)&&!scrollable.contains(point)){
+        let blocker=point;
+        while(blocker.parentElement&&blocker.parentElement!==scrollable.parentElement&&!scrollable.contains(blocker.parentElement))blocker=blocker.parentElement;
+        const br=blocker.getBoundingClientRect();
+        if(br.width>0&&br.height>0&&br.right>r.left&&br.left<r.right){
+          localBlocker=blocker;
+          localVisibleTop=Math.max(0,ownerRect.top);
+          localVisibleBottom=Math.min(innerHeight,ownerRect.bottom,br.top-safety);
+          const deltaBottom=Math.max(0,r.bottom-localVisibleBottom);
+          const deltaTop=Math.min(0,r.top-localVisibleTop);
+          const delta=deltaBottom>0?deltaBottom:deltaTop;
+          if(delta!==0){
+            const maxScrollTop=Math.max(0,scrollable.scrollHeight-scrollable.clientHeight);
+            scrollTopRequested=Math.max(0,Math.min(maxScrollTop,scrollable.scrollTop+delta));
+            scrollable.scrollTop=scrollTopRequested;
+            scrollClamped=scrollable.scrollTop!==scrollTopRequested;
+          }
+        }
+      }
+    }
     let adjustment=0;
     if(!containingOverlay){
       if(r.top<safeTop) adjustment=r.top-safeTop;
       else if(r.bottom>safeBottom) adjustment=r.bottom-safeBottom;
     }
-    if(adjustment!==0){if(scrollable)scrollable.scrollTop+=adjustment;else window.scrollBy(0,adjustment);}
+    if(adjustment!==0){
+      if(scrollable){scrollTopRequested=scrollable.scrollTop+adjustment;scrollable.scrollTop=scrollTopRequested;}
+      else window.scrollBy(0,adjustment);
+    }
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
       r=el.getBoundingClientRect();
       overlays=findFixedOverlays(r);
       containingOverlay=overlays.find((item)=>item.node.contains(el))||null;
       blockingOverlays=overlays.filter((item)=>!item.node.contains(el));
       headerBottom=blockingOverlays.filter((item)=>item.rect.top<=0||item.rect.top<r.bottom).reduce((max,item)=>Math.max(max,item.rect.bottom),0);
-      const clickableTop=containingOverlay?Math.max(0,r.top):Math.max(0,r.top,headerBottom>0?headerBottom+safety:0);
-      const clickable={left:Math.max(0,r.left),top:clickableTop,right:Math.min(innerWidth,r.right),bottom:Math.min(innerHeight-safety,r.bottom)};
+      const ownerRect=scrollable?.getBoundingClientRect()??null;
+      let blockerRect=localBlocker?.getBoundingClientRect?.()??null;
+      let visibleTop=ownerRect?Math.max(0,ownerRect.top):0;
+      let visibleBottom=ownerRect?Math.min(innerHeight,ownerRect.bottom):innerHeight;
+      if(blockerRect)visibleBottom=Math.min(visibleBottom,blockerRect.top-safety);
+      const clickableTop=containingOverlay?Math.max(visibleTop,r.top):Math.max(0,r.top,headerBottom>0?headerBottom+safety:0);
+      const clickableBottom=containingOverlay?Math.min(visibleBottom,r.bottom):Math.min(innerHeight-safety,r.bottom);
+      const clickable={left:Math.max(0,r.left),top:clickableTop,right:Math.min(innerWidth,r.right),bottom:clickableBottom};
       clickable.width=Math.max(0,clickable.right-clickable.left);clickable.height=Math.max(0,clickable.bottom-clickable.top);
       const relation=containingOverlay?'INSIDE_OVERLAY':(overlays.length?'OUTSIDE_OVERLAY':'NO_OVERLAY');
       const overlayRect=containingOverlay?{left:containingOverlay.rect.left,top:containingOverlay.rect.top,right:containingOverlay.rect.right,bottom:containingOverlay.rect.bottom,width:containingOverlay.rect.width,height:containingOverlay.rect.height}:null;
-      if(clickable.width<=0||clickable.height<=0){resolve({unClickable:true,text:(el.textContent||'').trim(),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},clickableRect:clickable,headerBottom,targetInsideOverlay:Boolean(containingOverlay),targetOverlayRelation:relation,overlayRect,windowScrollYBefore,windowScrollYAfter:window.scrollY,scrollTopBefore:scrollOwnerBefore,scrollTopAfter:scrollable?.scrollTop??window.scrollY});return;}
+      const localBlockerSummary=localBlocker&&blockerRect?{tag:localBlocker.tagName,classes:localBlocker.className||'',rect:{left:blockerRect.left,top:blockerRect.top,right:blockerRect.right,bottom:blockerRect.bottom,width:blockerRect.width,height:blockerRect.height},position:getComputedStyle(localBlocker).position,zIndex:getComputedStyle(localBlocker).zIndex,pointerEvents:getComputedStyle(localBlocker).pointerEvents,text:(localBlocker.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160)}:null;
+      if(clickable.width<=0||clickable.height<=0){resolve({unClickable:true,text:(el.textContent||'').trim(),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},rectBefore:{left:beforeRect.left,top:beforeRect.top,right:beforeRect.right,bottom:beforeRect.bottom,width:beforeRect.width,height:beforeRect.height},clickableRect:clickable,headerBottom,targetInsideOverlay:Boolean(containingOverlay),targetOverlayRelation:relation,overlayRect,localBlocker:localBlockerSummary,availableVisibleRegion:{top:visibleTop,bottom:visibleBottom},windowScrollYBefore,windowScrollYAfter:window.scrollY,scrollTopBefore:scrollOwnerBefore,scrollTopRequested,scrollTopAfter:scrollable?.scrollTop??window.scrollY,scrollClamped});return;}
       const xs=[0.5,0.25,0.75].map((p)=>clickable.left+clickable.width*p);
       const ys=[0.5,0.25,0.75].map((p)=>clickable.top+clickable.height*p);
       let chosen=null;
@@ -177,7 +282,7 @@ const stabilizeTarget = async (cdp, selector) => evaluate(cdp, `new Promise((res
       const x=chosen?.x??(clickable.left+clickable.width/2);const y=chosen?.y??(clickable.top+clickable.height/2);const point=chosen?.point??document.elementFromPoint(x,y);
       const pointRect=point?.getBoundingClientRect?.();
       const overlayAtPoint=point&&point!==el&&!el.contains(point)?{tag:point.tagName,classes:point.className||'',rect:pointRect?{left:pointRect.left,top:pointRect.top,right:pointRect.right,bottom:pointRect.bottom,width:pointRect.width,height:pointRect.height}:null,position:getComputedStyle(point).position,zIndex:getComputedStyle(point).zIndex,pointerEvents:getComputedStyle(point).pointerEvents,text:(point.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160)}:null;
-      resolve({x,y,text:(el.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160),aria:el.getAttribute('aria-label'),tag:el.tagName,href:el.getAttribute('href'),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},rectBefore:{left:beforeRect.left,top:beforeRect.top,right:beforeRect.right,bottom:beforeRect.bottom,width:beforeRect.width,height:beforeRect.height},clickableRect:clickable,headerBottom,targetInsideOverlay:Boolean(containingOverlay),targetOverlayRelation:relation,overlayRect,interceptor:overlayAtPoint,elementFromPoint:point?{tag:point.tagName,text:(point.textContent||'').trim().replace(/\\s+/g,' ').slice(0,120),href:point.closest('a')?.getAttribute('href')||null,same:point===el||el.contains(point)}:null,scrollTopBefore:scrollOwnerBefore,scrollTopAfter:scrollable?.scrollTop??window.scrollY,windowScrollYBefore,windowScrollYAfter:window.scrollY,scrollOwner:scrollable?{tag:scrollable.tagName,classes:scrollable.className||'',clientHeight:scrollable.clientHeight,scrollHeight:scrollable.scrollHeight}:{tag:'WINDOW',clientHeight:innerHeight,scrollHeight:document.documentElement.scrollHeight}});
+      resolve({x,y,text:(el.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160),aria:el.getAttribute('aria-label'),tag:el.tagName,href:el.getAttribute('href'),rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},rectBefore:{left:beforeRect.left,top:beforeRect.top,right:beforeRect.right,bottom:beforeRect.bottom,width:beforeRect.width,height:beforeRect.height},clickableRect:clickable,headerBottom,targetInsideOverlay:Boolean(containingOverlay),targetOverlayRelation:relation,overlayRect,localBlocker:localBlockerSummary,availableVisibleRegion:{top:visibleTop,bottom:visibleBottom},interceptor:overlayAtPoint,elementFromPoint:point?{tag:point.tagName,text:(point.textContent||'').trim().replace(/\\s+/g,' ').slice(0,120),href:point.closest('a')?.getAttribute('href')||null,same:point===el||el.contains(point)}:null,scrollTopBefore:scrollOwnerBefore,scrollTopRequested,scrollTopAfter:scrollable?.scrollTop??window.scrollY,scrollClamped,windowScrollYBefore,windowScrollYAfter:window.scrollY,scrollOwner:scrollable?{tag:scrollable.tagName,classes:scrollable.className||'',clientHeight:scrollable.clientHeight,scrollHeight:scrollable.scrollHeight,rect:ownerRect?{left:ownerRect.left,top:ownerRect.top,right:ownerRect.right,bottom:ownerRect.bottom,width:ownerRect.width,height:ownerRect.height}:null}:{tag:'WINDOW',clientHeight:innerHeight,scrollHeight:document.documentElement.scrollHeight}});
     }));
   }));
 })`);
@@ -195,6 +300,7 @@ const trustedClick = async (cdp, selector) => {
   await sleep(30);
   return { ...target, probe: clickProbes.at(-1) ?? null };
 };
+
 const pressEscape = async (cdp) => {
   await cdp.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 });
   await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 });
@@ -205,26 +311,61 @@ const selectorForDestination = (slug, navigator = false) => navigator
   : `[data-preview-destination="${slug}"]:not([data-preview-navigator] *)`;
 
 const publicMenuSelector = `button[aria-label*="menu" i],button[aria-label*="navegação" i],button[aria-label*="navegacao" i]`;
+
 const openResponsiveMenu = async (cdp) => {
   if (await trustedClick(cdp, "[data-shell-menu-button]")) {
     await waitFor(cdp, `Boolean(document.querySelector('[data-shell-drawer-content]'))`, 3000);
     return true;
   }
-  if (await trustedClick(cdp, publicMenuSelector)) { await sleep(150); return true; }
+  if (await trustedClick(cdp, publicMenuSelector)) {
+    await sleep(150);
+    return true;
+  }
   return false;
 };
 
 const logStep = async (cdp, result, extra = {}) => {
   const url = await evaluate(cdp, "location.href").catch(() => "unavailable");
   const marker = await surfaceMarker(cdp).catch(() => ({}));
-  console.log(JSON.stringify({ SCENARIO: currentStep.scenario, VIEWPORT: currentStep.viewport, FROM: currentStep.from, ACTION: currentStep.action, SELECTOR_OR_ACCESSIBLE_NAME: currentStep.selector, URL_AFTER: url, EXPECTED_URL: currentStep.expectedSlug ? expectedPath(currentStep.expectedSlug) : "", EXPECTED_SURFACE: currentStep.expectedSlug, OBSERVED_SURFACE: marker.slug, OBSERVED_TITLE: marker.title, OBSERVED_H1: marker.h1, RESULT: result, ...extra }));
+  console.log(JSON.stringify({
+    SCENARIO: currentStep.scenario,
+    VIEWPORT: currentStep.viewport,
+    FROM: currentStep.from,
+    ACTION: currentStep.action,
+    SELECTOR_OR_ACCESSIBLE_NAME: currentStep.selector,
+    URL_AFTER: url,
+    EXPECTED_URL: currentStep.expectedSlug ? expectedPath(currentStep.expectedSlug) : "",
+    EXPECTED_SURFACE: currentStep.expectedSlug,
+    OBSERVED_SURFACE: marker.slug,
+    OBSERVED_TITLE: marker.title,
+    OBSERVED_H1: marker.h1,
+    RESULT: result,
+    ...extra,
+  }));
 };
 
 const clickDestination = async (cdp, slug, { navigator = false, scenario = "navigation", action = slug } = {}) => {
   const selector = selectorForDestination(slug, navigator);
   const before = await evaluate(cdp, "location.href");
-  currentStep = { scenario, viewport: currentStep.viewport, from: await evaluate(cdp, currentSlugExpression), action, selector, expectedSlug: slug };
-  console.log(JSON.stringify({ SCENARIO: scenario, VIEWPORT: currentStep.viewport, FROM: currentStep.from, ACTION: action, SELECTOR_OR_ACCESSIBLE_NAME: selector, URL_BEFORE: before, EXPECTED_URL: expectedPath(slug), EXPECTED_SURFACE: slug, RESULT: "START" }));
+  currentStep = {
+    scenario,
+    viewport: currentStep.viewport,
+    from: await evaluate(cdp, currentSlugExpression),
+    action,
+    selector,
+    expectedSlug: slug,
+  };
+  console.log(JSON.stringify({
+    SCENARIO: scenario,
+    VIEWPORT: currentStep.viewport,
+    FROM: currentStep.from,
+    ACTION: action,
+    SELECTOR_OR_ACCESSIBLE_NAME: selector,
+    URL_BEFORE: before,
+    EXPECTED_URL: expectedPath(slug),
+    EXPECTED_SURFACE: slug,
+    RESULT: "START",
+  }));
   if (navigator) {
     const toggle = await trustedClick(cdp, "[data-preview-navigator] > button");
     if (!toggle) throw new Error("Botão do PreviewNavigator não está visível.");
@@ -241,11 +382,39 @@ const clickDestination = async (cdp, slug, { navigator = false, scenario = "navi
   }
   currentStep.selector = target.aria || target.text || selector;
   await waitSurface(cdp, slug);
-  await logStep(cdp, "PASS", { TRUSTED_CLICK: target.probe?.trusted === true, CLICK_RECEIVED: target.probe?.received === true, DEFAULT_PREVENTED: target.probe?.defaultPrevented ?? null, TARGET_RECT: target.rect, TARGET_RECT_BEFORE: target.rectBefore ?? null, TARGET_INSIDE_OVERLAY: target.targetInsideOverlay ?? null, TARGET_OVERLAY_RELATION: target.targetOverlayRelation ?? null, OVERLAY_RECT: target.overlayRect ?? null, CLICKABLE_RECT: target.clickableRect ?? null, CLICK_POINT: { x: target.x, y: target.y }, ELEMENT_FROM_POINT: target.elementFromPoint, SCROLL_OWNER: target.scrollOwner ?? null, SCROLL_TOP_BEFORE: target.scrollTopBefore ?? null, SCROLL_TOP_AFTER: target.scrollTopAfter ?? null, WINDOW_SCROLL_Y_BEFORE: target.windowScrollYBefore ?? null, WINDOW_SCROLL_Y_AFTER: target.windowScrollYAfter ?? null });
+  await logStep(cdp, "PASS", {
+    TRUSTED_CLICK: target.probe?.trusted === true,
+    CLICK_RECEIVED: target.probe?.received === true,
+    DEFAULT_PREVENTED: target.probe?.defaultPrevented ?? null,
+    TARGET_RECT: target.rect,
+    TARGET_RECT_BEFORE: target.rectBefore ?? null,
+    TARGET_INSIDE_OVERLAY: target.targetInsideOverlay ?? null,
+    TARGET_OVERLAY_RELATION: target.targetOverlayRelation ?? null,
+    OVERLAY_RECT: target.overlayRect ?? null,
+    LOCAL_BLOCKER: target.localBlocker ?? null,
+    AVAILABLE_VISIBLE_REGION: target.availableVisibleRegion ?? null,
+    CLICKABLE_RECT: target.clickableRect ?? null,
+    CLICK_POINT: { x: target.x, y: target.y },
+    ELEMENT_FROM_POINT: target.elementFromPoint,
+    SCROLL_OWNER: target.scrollOwner ?? null,
+    SCROLL_TOP_BEFORE: target.scrollTopBefore ?? null,
+    SCROLL_TOP_REQUESTED: target.scrollTopRequested ?? null,
+    SCROLL_TOP_AFTER: target.scrollTopAfter ?? null,
+    SCROLL_CLAMPED: target.scrollClamped ?? null,
+    WINDOW_SCROLL_Y_BEFORE: target.windowScrollYBefore ?? null,
+    WINDOW_SCROLL_Y_AFTER: target.windowScrollYAfter ?? null,
+  });
 };
 
 const browserBackForward = async (cdp, backSlug, forwardSlug, scenario) => {
-  currentStep = { scenario, viewport: currentStep.viewport, from: await evaluate(cdp, currentSlugExpression), action: "browser back/forward", selector: "CDP Page.navigateToHistoryEntry", expectedSlug: backSlug };
+  currentStep = {
+    scenario,
+    viewport: currentStep.viewport,
+    from: await evaluate(cdp, currentSlugExpression),
+    action: "browser back/forward",
+    selector: "CDP Page.navigateToHistoryEntry",
+    expectedSlug: backSlug,
+  };
   const before = await cdp.send("Page.getNavigationHistory");
   const backEntry = before.entries[before.currentIndex - 1];
   if (!backEntry) throw new Error("Histórico não possui entrada anterior.");
@@ -264,8 +433,15 @@ const goHistoryTo = async (cdp, slug) => {
   const history = await cdp.send("Page.getNavigationHistory");
   const suffix = expectedPath(slug);
   let entry = null;
-  for (let index = history.currentIndex; index >= 0; index -= 1) if (history.entries[index]?.url.includes(suffix)) { entry = history.entries[index]; break; }
-  if (!entry) for (const candidate of history.entries) if (candidate.url.includes(suffix)) entry = candidate;
+  for (let index = history.currentIndex; index >= 0; index -= 1) {
+    if (history.entries[index]?.url.includes(suffix)) {
+      entry = history.entries[index];
+      break;
+    }
+  }
+  if (!entry) {
+    for (const candidate of history.entries) if (candidate.url.includes(suffix)) entry = candidate;
+  }
   if (!entry) throw new Error(`Histórico não contém ${slug}.`);
   await cdp.send("Page.navigateToHistoryEntry", { entryId: entry.id });
   await waitSurface(cdp, slug);
@@ -322,10 +498,19 @@ const runStudent = async (cdp) => {
   await clickDestination(cdp, "student/lesson-video", { scenario: "COURSE_MODULE_LESSON", action: "Módulo → Aula/player" });
   await goHistoryTo(cdp, "student/modules");
   for (const [slug, label] of [
-    ["student/library", "Biblioteca"], ["student/favorites", "Favoritos"], ["student/certificates", "Certificados"],
-    ["student/products", "Produtos"], ["student/orders", "Pedidos"], ["student/payments", "Pagamentos"],
-    ["student/notifications", "Notificações"], ["student/support", "Suporte"], ["student/history", "Histórico"], ["student/profile", "Perfil"],
-  ]) await clickDestination(cdp, slug, { scenario: "STUDENT", action: label });
+    ["student/library", "Biblioteca"],
+    ["student/favorites", "Favoritos"],
+    ["student/certificates", "Certificados"],
+    ["student/products", "Produtos"],
+    ["student/orders", "Pedidos"],
+    ["student/payments", "Pagamentos"],
+    ["student/notifications", "Notificações"],
+    ["student/support", "Suporte"],
+    ["student/history", "Histórico"],
+    ["student/profile", "Perfil"],
+  ]) {
+    await clickDestination(cdp, slug, { scenario: "STUDENT", action: label });
+  }
   await clickDestination(cdp, "student/profile-edit", { scenario: "STUDENT", action: "Perfil → Editar perfil" });
   await clickDestination(cdp, "student/preferences", { scenario: "STUDENT", action: "Preferências" });
   await clickDestination(cdp, "student/privacy", { scenario: "STUDENT", action: "Privacidade" });
@@ -347,7 +532,18 @@ const runAdmin = async (cdp) => {
   await clickDestination(cdp, "admin/module-editor", { scenario: "ADMIN", action: "Currículo → editor de módulo" });
   await clickDestination(cdp, "admin/lesson-editor", { scenario: "ADMIN", action: "Módulo → editor de aula" });
   await clickDestination(cdp, "admin/assets", { scenario: "ADMIN", action: "Aula → assets/mídia" });
-  for (const [slug, label] of [["admin/products","Produtos"],["admin/payments","Pagamentos"],["admin/affiliates","Afiliados"],["admin/students","Alunos"],["admin/academic","Acadêmico"],["admin/contacts","Contatos"],["admin/support","Suporte"],["admin/privacy","Privacidade"]]) await clickDestination(cdp, slug, { scenario: "ADMIN", action: label });
+  for (const [slug, label] of [
+    ["admin/products", "Produtos"],
+    ["admin/payments", "Pagamentos"],
+    ["admin/affiliates", "Afiliados"],
+    ["admin/students", "Alunos"],
+    ["admin/academic", "Acadêmico"],
+    ["admin/contacts", "Contatos"],
+    ["admin/support", "Suporte"],
+    ["admin/privacy", "Privacidade"],
+  ]) {
+    await clickDestination(cdp, slug, { scenario: "ADMIN", action: label });
+  }
   console.log("ADMIN_CLICK_NAV=PASS");
 };
 
@@ -356,7 +552,15 @@ const runAffiliate = async (cdp) => {
   await validateShellInteractions(cdp, "AFFILIATE");
   await clickDestination(cdp, "affiliate/offers", { scenario: "AFFILIATE", action: "Ativo → Ofertas" });
   await browserBackForward(cdp, "affiliate/active", "affiliate/offers", "AFFILIATE_HISTORY");
-  for (const [slug,label] of [["affiliate/links","Links"],["affiliate/performance","Performance"],["affiliate/commissions","Comissões"],["affiliate/payouts","Payouts"],["affiliate/events","Histórico"]]) await clickDestination(cdp, slug, { scenario: "AFFILIATE", action: label });
+  for (const [slug, label] of [
+    ["affiliate/links", "Links"],
+    ["affiliate/performance", "Performance"],
+    ["affiliate/commissions", "Comissões"],
+    ["affiliate/payouts", "Payouts"],
+    ["affiliate/events", "Histórico"],
+  ]) {
+    await clickDestination(cdp, slug, { scenario: "AFFILIATE", action: label });
+  }
   console.log("AFFILIATE_CLICK_NAV=PASS");
 };
 
@@ -365,6 +569,92 @@ const classifyNavigatorTarget = (snapshot) => {
   if (!snapshot.target.inViewport || snapshot.target.clippedByScrollable) return "SCROLL_VISIBILITY_BUG";
   if (!snapshot.target.elementFromPoint?.same) return "OVERLAY_INTERCEPTION_BUG";
   return "OTHER";
+};
+
+const runFocusedStudentMobileNotifications = async (cdp) => {
+  currentStep.viewport = "mobile";
+  await cdp.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await prepareScenario(cdp, "student/payments", "STUDENT_NOTIFICATIONS_FOCUSED");
+  const opened = await openResponsiveMenu(cdp);
+  if (!opened || !(await waitFor(cdp, `Boolean(document.querySelector('[data-shell-drawer-content]'))`, 3000))) {
+    throw new Error("DRAWER_OPEN=false no focused Student Notifications.");
+  }
+  const selector = selectorForDestination("student/notifications");
+  const beforeHistory = await cdp.send("Page.getNavigationHistory");
+  const geometry = await studentDrawerGeometry(cdp, selector);
+  if (!geometry?.target) throw new Error("TARGET_FOUND=false para student/notifications.");
+  if (!geometry.scrollOwner) throw new Error("SCROLL_OWNER_FOUND=false para student/notifications.");
+  console.log(JSON.stringify({
+    SCENARIO: "STUDENT_NOTIFICATIONS_FOCUSED",
+    VIEWPORT: "mobile",
+    FROM: "student/payments",
+    ACTION: "Notificações",
+    DRAWER_RECT: geometry.drawer?.rect ?? null,
+    DRAWER_VIEWPORT_HEIGHT: geometry.drawerViewportHeight,
+    NAV_SCROLL_OWNER: geometry.scrollOwner,
+    ACCOUNT_CARD: geometry.accountCard,
+    TARGET: geometry.target,
+    MAX_SCROLL_TOP: geometry.maxScrollTop,
+    REQUIRED_SCROLL_TOP: geometry.requiredScrollTop,
+    REQUIRED_SCROLL_DELTA: geometry.requiredDelta,
+    CAN_SCROLL_ENOUGH: geometry.canScrollEnough,
+    ACCOUNT_OUTSIDE_SCROLL_OWNER: geometry.accountOutsideScrollOwner,
+    SAME_FLEX_COLUMN: geometry.sameFlexColumn,
+    ROOT_CAUSE_CLASSIFICATION: geometry.canScrollEnough ? "HARNESS_SCROLL_POSITIONING_BUG" : "REAL_LAYOUT_OCCLUSION_CONFIRMED",
+  }));
+  if (!geometry.canScrollEnough) throw new Error(`REAL_LAYOUT_OCCLUSION_CONFIRMED=true: ${JSON.stringify(geometry)}`);
+  currentStep = {
+    scenario: "STUDENT_NOTIFICATIONS_FOCUSED",
+    viewport: "mobile",
+    from: "student/payments",
+    action: "Notificações",
+    selector,
+    expectedSlug: "student/notifications",
+  };
+  const urlBefore = await evaluate(cdp, "location.href");
+  const target = await trustedClick(cdp, selector);
+  if (!target) throw new Error("TARGET_FOUND=false após scroll local.");
+  if (!(target.scrollTopAfter > target.scrollTopBefore)) throw new Error(`SCROLL_TOP_AFTER não avançou: ${JSON.stringify(target)}`);
+  if (target.localBlocker?.rect && !(target.rect.bottom < target.localBlocker.rect.top - 11)) {
+    throw new Error(`TARGET_VISIBLE_ABOVE_ACCOUNT_CARD=false: ${JSON.stringify(target)}`);
+  }
+  if (target.elementFromPoint?.same !== true) throw new Error(`ELEMENT_FROM_POINT_MATCH=false: ${JSON.stringify(target)}`);
+  if (target.probe?.trusted !== true || target.probe?.received !== true) throw new Error(`TRUSTED_CLICK=false: ${JSON.stringify(target)}`);
+  await waitSurface(cdp, "student/notifications");
+  const afterHistory = await cdp.send("Page.getNavigationHistory");
+  const entryCreated = afterHistory.entries.some((entry) => entry.url.includes(expectedPath("student/notifications"))) && afterHistory.entries.length > beforeHistory.entries.length;
+  if (!entryCreated) throw new Error("HISTORY_ENTRY_CREATED=false para student/notifications.");
+  console.log(JSON.stringify({
+    SCENARIO: "STUDENT_NOTIFICATIONS_FOCUSED",
+    VIEWPORT: "mobile",
+    FROM: "student/payments",
+    ACTION: "Notificações",
+    DRAWER_OPEN: true,
+    TARGET_FOUND: true,
+    SCROLL_OWNER_FOUND: true,
+    TARGET_VISIBLE_ABOVE_ACCOUNT_CARD: true,
+    ELEMENT_FROM_POINT_MATCH: true,
+    TRUSTED_CLICK: true,
+    URL_BEFORE: urlBefore,
+    URL_AFTER: await evaluate(cdp, "location.href"),
+    URL_CHANGED: true,
+    HISTORY_ENTRY_CREATED: true,
+    EXPECTED_SURFACE: "student/notifications",
+    OBSERVED_SURFACE: await evaluate(cdp, currentSlugExpression),
+    SCROLL_TOP_BEFORE: target.scrollTopBefore,
+    SCROLL_TOP_REQUESTED: target.scrollTopRequested,
+    SCROLL_TOP_AFTER: target.scrollTopAfter,
+    TARGET_RECT_BEFORE: target.rectBefore,
+    TARGET_RECT_AFTER: target.rect,
+    ACCOUNT_CARD_RECT_AFTER: target.localBlocker?.rect ?? null,
+    AVAILABLE_VISIBLE_REGION: target.availableVisibleRegion,
+    CLICKABLE_RECT: target.clickableRect,
+    CLICK_POINT: { x: target.x, y: target.y },
+    ELEMENT_FROM_POINT: target.elementFromPoint,
+    RESULT: "PASS",
+  }));
+  await browserBackForward(cdp, "student/payments", "student/notifications", "STUDENT_NOTIFICATIONS_FOCUSED_HISTORY");
+  console.log("FOCUSED_STUDENT_MOBILE_NOTIFICATIONS_TEST=PASS");
 };
 
 const runFocusedPublicMobileCourses = async (cdp) => {
@@ -377,7 +667,7 @@ const runFocusedPublicMobileCourses = async (cdp) => {
   let trigger = null;
   if (!courses) {
     const relation = await overlaySnapshot(cdp, publicMenuSelector);
-    console.log(JSON.stringify({ SCENARIO:"PUBLIC", VIEWPORT:"mobile", FROM:"public/home", ACTION:"Landing → Cursos / abrir menu", TARGET_TAG:relation?.target?.tag??null, TARGET_RECT:relation?.target?.rect??null, TARGET_CLASSES:relation?.target?.classes??null, TARGET_PARENT_CHAIN:relation?.targetParentChain??[], OVERLAY:relation?.overlay??null, OVERLAY_TAG:relation?.overlay?.tag??null, OVERLAY_RECT:relation?.overlay?.rect??null, OVERLAY_CLASSES:relation?.overlay?.classes??null, OVERLAY_POSITION:relation?.overlay?.position??null, TARGET_INSIDE_OVERLAY:relation?.targetInsideOverlay===true, TARGET_IS_OVERLAY_DESCENDANT:relation?.targetInsideOverlay===true, TARGET_IS_OVERLAY:relation?.targetIsOverlay===true, TARGET_OVERLAY_RELATION:relation?.targetOverlayRelation??"NO_OVERLAY" }));
+    console.log(JSON.stringify({ SCENARIO: "PUBLIC", VIEWPORT: "mobile", FROM: "public/home", ACTION: "Landing → Cursos / abrir menu", TARGET_TAG: relation?.target?.tag ?? null, TARGET_RECT: relation?.target?.rect ?? null, TARGET_CLASSES: relation?.target?.classes ?? null, TARGET_PARENT_CHAIN: relation?.targetParentChain ?? [], OVERLAY: relation?.overlay ?? null, OVERLAY_TAG: relation?.overlay?.tag ?? null, OVERLAY_RECT: relation?.overlay?.rect ?? null, OVERLAY_CLASSES: relation?.overlay?.classes ?? null, OVERLAY_POSITION: relation?.overlay?.position ?? null, TARGET_INSIDE_OVERLAY: relation?.targetInsideOverlay === true, TARGET_IS_OVERLAY_DESCENDANT: relation?.targetInsideOverlay === true, TARGET_IS_OVERLAY: relation?.targetIsOverlay === true, TARGET_OVERLAY_RELATION: relation?.targetOverlayRelation ?? "NO_OVERLAY" }));
     trigger = await trustedClick(cdp, publicMenuSelector);
     if (!trigger) throw new Error("MENU_TRIGGER_FOUND=false");
     if (trigger.targetInsideOverlay !== true) throw new Error(`MENU_TRIGGER_INSIDE_OVERLAY=false: ${JSON.stringify(trigger)}`);
@@ -390,9 +680,9 @@ const runFocusedPublicMobileCourses = async (cdp) => {
   if (courses.probe?.trusted !== true || courses.elementFromPoint?.same !== true) throw new Error(`COURSES_TARGET_TRUSTED_CLICK=false: ${JSON.stringify(courses)}`);
   await waitSurface(cdp, "commerce/courses");
   const afterHistory = await cdp.send("Page.getNavigationHistory");
-  const entryCreated = afterHistory.entries.some((entry)=>entry.url.includes(expectedPath("commerce/courses"))) && afterHistory.entries.length > beforeHistory.entries.length;
+  const entryCreated = afterHistory.entries.some((entry) => entry.url.includes(expectedPath("commerce/courses"))) && afterHistory.entries.length > beforeHistory.entries.length;
   if (!entryCreated) throw new Error("HISTORY_ENTRY_CREATED=false para commerce/courses");
-  console.log(JSON.stringify({ SCENARIO:"PUBLIC_MOBILE_COURSES_FOCUSED", VIEWPORT:"mobile", FROM:"public/home", ACTION:"Landing → Cursos", MENU_TRIGGER_FOUND:Boolean(trigger), MENU_TRIGGER_INSIDE_OVERLAY:trigger?.targetInsideOverlay??null, MENU_TRIGGER_TRUSTED_CLICK:trigger?.probe?.trusted===true, MENU_OPENED:Boolean(trigger), TARGET_RECT:trigger?.rect??courses.rect, OVERLAY_RECT:trigger?.overlayRect??null, CLICKABLE_RECT:trigger?.clickableRect??courses.clickableRect, CLICK_X:trigger?.x??courses.x, CLICK_Y:trigger?.y??courses.y, ELEMENT_FROM_POINT:trigger?.elementFromPoint??courses.elementFromPoint, ELEMENT_FROM_POINT_MATCH:(trigger?.elementFromPoint??courses.elementFromPoint)?.same===true, COURSES_TARGET_FOUND:true, COURSES_TARGET_TRUSTED_CLICK:courses.probe?.trusted===true, URL_AFTER:await evaluate(cdp,"location.href"), EXPECTED_SURFACE:"commerce/courses", OBSERVED_SURFACE:await evaluate(cdp,currentSlugExpression), URL_CHANGED:true, HISTORY_ENTRY_CREATED:true, RESULT:"PASS" }));
+  console.log(JSON.stringify({ SCENARIO: "PUBLIC_MOBILE_COURSES_FOCUSED", VIEWPORT: "mobile", FROM: "public/home", ACTION: "Landing → Cursos", MENU_TRIGGER_FOUND: Boolean(trigger), MENU_TRIGGER_INSIDE_OVERLAY: trigger?.targetInsideOverlay ?? null, MENU_TRIGGER_TRUSTED_CLICK: trigger?.probe?.trusted === true, MENU_OPENED: Boolean(trigger), TARGET_RECT: trigger?.rect ?? courses.rect, OVERLAY_RECT: trigger?.overlayRect ?? null, CLICKABLE_RECT: trigger?.clickableRect ?? courses.clickableRect, CLICK_X: trigger?.x ?? courses.x, CLICK_Y: trigger?.y ?? courses.y, ELEMENT_FROM_POINT: trigger?.elementFromPoint ?? courses.elementFromPoint, ELEMENT_FROM_POINT_MATCH: (trigger?.elementFromPoint ?? courses.elementFromPoint)?.same === true, COURSES_TARGET_FOUND: true, COURSES_TARGET_TRUSTED_CLICK: courses.probe?.trusted === true, URL_AFTER: await evaluate(cdp, "location.href"), EXPECTED_SURFACE: "commerce/courses", OBSERVED_SURFACE: await evaluate(cdp, currentSlugExpression), URL_CHANGED: true, HISTORY_ENTRY_CREATED: true, RESULT: "PASS" }));
   await browserBackForward(cdp, "public/home", "commerce/courses", "PUBLIC_MOBILE_COURSES_FOCUSED_HISTORY");
   console.log("FOCUSED_PUBLIC_MOBILE_COURSES_TEST=PASS");
 };
@@ -404,19 +694,35 @@ const runFocusedPublicMobile = async (cdp) => {
   const selector = selectorForDestination("public/contact");
   const beforeHistory = await cdp.send("Page.getNavigationHistory");
   const before = await overlaySnapshot(cdp, selector);
-  console.log(JSON.stringify({ SCENARIO:"PUBLIC", VIEWPORT:"mobile", FROM:"public/home", ACTION:"Landing → Contato", TARGET:"Tirar uma dúvida", SELECTOR:selector, TARGET_RECT:before?.target?.rect??null, TARGET_STYLE_POSITION:before?.target?.position??null, TARGET_Z_INDEX:before?.target?.zIndex??null, TARGET_PARENT_CHAIN:before?.targetParentChain??[], INTERCEPTOR_TAG:before?.interceptor?.tag??null, INTERCEPTOR_CLASSES:before?.interceptor?.classes??null, INTERCEPTOR_DATA_ATTRIBUTES:before?.interceptor?.data??null, INTERCEPTOR_RECT:before?.interceptor?.rect??null, INTERCEPTOR_POSITION:before?.interceptor?.position??null, INTERCEPTOR_Z_INDEX:before?.interceptor?.zIndex??null, INTERCEPTOR_POINTER_EVENTS:before?.interceptor?.pointerEvents??null, INTERCEPTOR_OVERFLOW:before?.interceptor?.overflow??null, INTERCEPTOR_PARENT_CHAIN:before?.interceptorParentChain??[], HEADER_HEIGHT:before?.interceptor?.rect?.height??null, TARGET_TOP_BEFORE_SCROLL:before?.target?.rect?.top??null, WINDOW_SCROLL_Y_BEFORE:before?.windowScrollY??null, SCROLL_OWNER:before?.scrollOwner??null, INTERCEPTOR_CONFIRMED:before?.interceptorConfirmed===true, HISTORY_BEFORE:{currentIndex:beforeHistory.currentIndex,entries:beforeHistory.entries.length} }));
-  currentStep = { scenario:"PUBLIC_MOBILE_FOCUSED", viewport:"mobile", from:"public/home", action:"Landing → Contato", selector, expectedSlug:"public/contact" };
+  currentStep = { scenario: "PUBLIC_MOBILE_FOCUSED", viewport: "mobile", from: "public/home", action: "Landing → Contato", selector, expectedSlug: "public/contact" };
   const urlBefore = await evaluate(cdp, "location.href");
   const target = await trustedClick(cdp, selector);
   if (!target) throw new Error("public/contact não encontrado no teste focado mobile.");
   if (target.probe?.trusted !== true || target.probe?.received !== true || target.elementFromPoint?.same !== true) throw new Error(`Trusted click focado inválido: ${JSON.stringify(target)}`);
   await waitSurface(cdp, "public/contact");
   const afterHistory = await cdp.send("Page.getNavigationHistory");
-  const entryCreated = afterHistory.entries.some((entry)=>entry.url.includes(expectedPath("public/contact"))) && afterHistory.entries.length > beforeHistory.entries.length;
+  const entryCreated = afterHistory.entries.some((entry) => entry.url.includes(expectedPath("public/contact"))) && afterHistory.entries.length > beforeHistory.entries.length;
   if (!entryCreated) throw new Error("Histórico não recebeu entrada public/contact.");
-  console.log(JSON.stringify({ SCENARIO:"PUBLIC_MOBILE_FOCUSED", VIEWPORT:"mobile", FROM:"public/home", ACTION:"Landing → Contato", TARGET:"Tirar uma dúvida", TARGET_RECT_BEFORE:target.rectBefore, TARGET_RECT_AFTER:target.rect, HEADER_HEIGHT:target.headerBottom, INTERCEPTOR_RECT:before?.interceptor?.rect??null, TARGET_INSIDE_OVERLAY:target.targetInsideOverlay, CLICKABLE_RECT:target.clickableRect, CLICK_X:target.x, CLICK_Y:target.y, ELEMENT_FROM_POINT_BEFORE:before?.interceptor??null, ELEMENT_FROM_POINT_AFTER:target.elementFromPoint, ELEMENT_FROM_POINT_MATCH:target.elementFromPoint?.same===true, WINDOW_SCROLL_Y_BEFORE:target.windowScrollYBefore, WINDOW_SCROLL_Y_AFTER:target.windowScrollYAfter, SCROLL_OWNER:target.scrollOwner, TRUSTED_CLICK:true, CLICK_RECEIVED:true, URL_BEFORE:urlBefore, URL_AFTER:await evaluate(cdp,"location.href"), URL_CHANGED:true, EXPECTED_SURFACE:"public/contact", OBSERVED_SURFACE:await evaluate(cdp,currentSlugExpression), HISTORY_ENTRY_CREATED:true, RESULT:"PASS" }));
+  console.log(JSON.stringify({ SCENARIO: "PUBLIC_MOBILE_FOCUSED", VIEWPORT: "mobile", FROM: "public/home", ACTION: "Landing → Contato", TARGET: "Tirar uma dúvida", TARGET_RECT_BEFORE: target.rectBefore, TARGET_RECT_AFTER: target.rect, HEADER_HEIGHT: target.headerBottom, INTERCEPTOR_RECT: before?.interceptor?.rect ?? null, TARGET_INSIDE_OVERLAY: target.targetInsideOverlay, CLICKABLE_RECT: target.clickableRect, CLICK_X: target.x, CLICK_Y: target.y, ELEMENT_FROM_POINT_BEFORE: before?.interceptor ?? null, ELEMENT_FROM_POINT_AFTER: target.elementFromPoint, ELEMENT_FROM_POINT_MATCH: target.elementFromPoint?.same === true, WINDOW_SCROLL_Y_BEFORE: target.windowScrollYBefore, WINDOW_SCROLL_Y_AFTER: target.windowScrollYAfter, SCROLL_OWNER: target.scrollOwner, TRUSTED_CLICK: true, CLICK_RECEIVED: true, URL_BEFORE: urlBefore, URL_AFTER: await evaluate(cdp, "location.href"), URL_CHANGED: true, EXPECTED_SURFACE: "public/contact", OBSERVED_SURFACE: await evaluate(cdp, currentSlugExpression), HISTORY_ENTRY_CREATED: true, RESULT: "PASS" }));
   await browserBackForward(cdp, "public/home", "public/contact", "PUBLIC_MOBILE_FOCUSED_HISTORY");
   console.log("FOCUSED_PUBLIC_MOBILE_CONTACT_REGRESSION=PASS");
+};
+
+const runFocusedStudentProfileEdit = async (cdp) => {
+  currentStep.viewport = "mobile";
+  await cdp.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await prepareScenario(cdp, "student/profile", "STUDENT_PROFILE_EDIT_FOCUSED");
+  await clickDestination(cdp, "student/profile-edit", { scenario: "STUDENT_PROFILE_EDIT_FOCUSED", action: "Perfil → Editar perfil" });
+  console.log("FOCUSED_STUDENT_PROFILE_EDIT_REGRESSION=PASS");
+};
+
+const runFocusedStudentHistory = async (cdp) => {
+  currentStep.viewport = "mobile";
+  await cdp.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await prepareScenario(cdp, "student/dashboard", "STUDENT_HISTORY_FOCUSED");
+  await clickDestination(cdp, "student/courses", { scenario: "STUDENT_HISTORY_FOCUSED", action: "Dashboard → Meus cursos" });
+  await browserBackForward(cdp, "student/dashboard", "student/courses", "STUDENT_HISTORY_FOCUSED_HISTORY");
+  console.log("FOCUSED_STUDENT_HISTORY_REGRESSION=PASS");
 };
 
 const runFocusedCommercial = async (cdp) => {
@@ -430,15 +736,15 @@ const runFocusedCommercial = async (cdp) => {
   const beforeHistory = await cdp.send("Page.getNavigationHistory");
   const before = await targetSnapshot(cdp, selector);
   const classification = classifyNavigatorTarget(before);
-  console.log(JSON.stringify({ SCENARIO:"COMMERCIAL_STATE", VIEWPORT:"desktop", FROM:"commerce/checkout-processing", TARGET:"checkout-error", SELECTOR:selector, TARGET_RECT:before?.target?.rect??null, ELEMENT_FROM_POINT:before?.target?.elementFromPoint??null, HREF:before?.target?.href??null, URL_BEFORE:await evaluate(cdp,"location.href"), EVENT_DISPATCHED:false, CLICK_RECEIVED:false, DEFAULT_PREVENTED:false, HISTORY_BEFORE:{currentIndex:beforeHistory.currentIndex,entries:beforeHistory.entries.length}, HISTORY_AFTER:null, ROOT_CAUSE_CLASSIFICATION:classification, CANDIDATE_COUNT:before?.candidateCount??0, SCROLLABLE_ANCESTORS:before?.target?.scrollables??[] }));
-  currentStep = { scenario:"COMMERCIAL_FOCUSED", viewport:"desktop", from:"commerce/checkout-processing", action:"checkout-processing → checkout-error", selector, expectedSlug:"commerce/checkout-error" };
+  console.log(JSON.stringify({ SCENARIO: "COMMERCIAL_STATE", VIEWPORT: "desktop", FROM: "commerce/checkout-processing", TARGET: "checkout-error", SELECTOR: selector, TARGET_RECT: before?.target?.rect ?? null, ELEMENT_FROM_POINT: before?.target?.elementFromPoint ?? null, HREF: before?.target?.href ?? null, URL_BEFORE: await evaluate(cdp, "location.href"), EVENT_DISPATCHED: false, CLICK_RECEIVED: false, DEFAULT_PREVENTED: false, HISTORY_BEFORE: { currentIndex: beforeHistory.currentIndex, entries: beforeHistory.entries.length }, HISTORY_AFTER: null, ROOT_CAUSE_CLASSIFICATION: classification, CANDIDATE_COUNT: before?.candidateCount ?? 0, SCROLLABLE_ANCESTORS: before?.target?.scrollables ?? [] }));
+  currentStep = { scenario: "COMMERCIAL_FOCUSED", viewport: "desktop", from: "commerce/checkout-processing", action: "checkout-processing → checkout-error", selector, expectedSlug: "commerce/checkout-error" };
   const target = await trustedClick(cdp, selector);
   if (!target) throw new Error("checkout-error não encontrado no teste focado.");
   await waitSurface(cdp, "commerce/checkout-error");
   const afterHistory = await cdp.send("Page.getNavigationHistory");
-  const entryCreated = afterHistory.entries.some((entry)=>entry.url.includes(expectedPath("commerce/checkout-error"))) && afterHistory.entries.length > beforeHistory.entries.length;
+  const entryCreated = afterHistory.entries.some((entry) => entry.url.includes(expectedPath("commerce/checkout-error"))) && afterHistory.entries.length > beforeHistory.entries.length;
   if (!entryCreated) throw new Error("Histórico não recebeu entrada checkout-error.");
-  console.log(JSON.stringify({ SCENARIO:"COMMERCIAL_FOCUSED", VIEWPORT:"desktop", FROM:"commerce/checkout-processing", TARGET:"checkout-error", TARGET_RECT:target.rect, ELEMENT_FROM_POINT:target.elementFromPoint, TRUSTED_CLICK:target.probe?.trusted===true, CLICK_RECEIVED:target.probe?.received===true, DEFAULT_PREVENTED:target.probe?.defaultPrevented??null, EXPECTED_SURFACE:"commerce/checkout-error", OBSERVED_SURFACE:await evaluate(cdp,currentSlugExpression), URL_CHANGED:true, HISTORY_ENTRY_CREATED:true, RESULT:"PASS" }));
+  console.log(JSON.stringify({ SCENARIO: "COMMERCIAL_FOCUSED", VIEWPORT: "desktop", FROM: "commerce/checkout-processing", TARGET: "checkout-error", TARGET_RECT: target.rect, ELEMENT_FROM_POINT: target.elementFromPoint, TRUSTED_CLICK: target.probe?.trusted === true, CLICK_RECEIVED: target.probe?.received === true, DEFAULT_PREVENTED: target.probe?.defaultPrevented ?? null, EXPECTED_SURFACE: "commerce/checkout-error", OBSERVED_SURFACE: await evaluate(cdp, currentSlugExpression), URL_CHANGED: true, HISTORY_ENTRY_CREATED: true, RESULT: "PASS" }));
   await browserBackForward(cdp, "commerce/checkout-processing", "commerce/checkout-error", "COMMERCIAL_FOCUSED_HISTORY");
   console.log("FOCUSED_COMMERCIAL_TEST=PASS");
 };
@@ -465,14 +771,28 @@ const saveDiagnostics = async (cdp, error) => {
   const visible = await evaluate(cdp, `Array.from(document.querySelectorAll('a,button,[role="button"]')).map((el)=>{const r=el.getBoundingClientRect();const s=getComputedStyle(el);return{tag:el.tagName,text:(el.textContent||'').trim().replace(/\\s+/g,' ').slice(0,160),aria:el.getAttribute('aria-label'),href:el.getAttribute('href'),dest:el.dataset.previewDestination||null,visible:r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'};}).filter(x=>x.visible)`).catch(() => []);
   const history = await cdp.send("Page.getNavigationHistory").catch(() => ({}));
   const marker = await surfaceMarker(cdp).catch(() => ({}));
-  const payload = { error: String(error?.stack || error), step: currentStep, url: await evaluate(cdp, "location.href").catch(() => ""), marker, visible, history, consoleErrors, clickProbes };
+  const payload = {
+    error: String(error?.stack || error),
+    step: currentStep,
+    url: await evaluate(cdp, "location.href").catch(() => ""),
+    marker,
+    visible,
+    history,
+    consoleErrors,
+    clickProbes,
+  };
   await writeFile(`${diagnosticsDir}/${stamp}.json`, JSON.stringify(payload, null, 2));
   console.error("CLICK_SMOKE_DIAGNOSTIC", JSON.stringify(payload));
 };
 
 const runViewport = async (cdp, viewport) => {
   currentStep.viewport = viewport.name;
-  await cdp.send("Emulation.setDeviceMetricsOverride", { width: viewport.width, height: viewport.height, deviceScaleFactor: 1, mobile: viewport.width < 640 });
+  await cdp.send("Emulation.setDeviceMetricsOverride", {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: viewport.width < 640,
+  });
   await runPublic(cdp);
   await runStudent(cdp);
   await runAdmin(cdp);
@@ -483,15 +803,30 @@ const runViewport = async (cdp, viewport) => {
 
 const chromePath = findChrome();
 const port = 9444;
-const chrome = spawn(chromePath, ["--headless=new","--no-sandbox","--disable-dev-shm-usage","--disable-gpu","--remote-allow-origins=*",`--remote-debugging-port=${port}`,"--user-data-dir=/tmp/visual-preview-click-chrome","about:blank"], { stdio: ["ignore","ignore","ignore"] });
+const chrome = spawn(chromePath, [
+  "--headless=new",
+  "--no-sandbox",
+  "--disable-dev-shm-usage",
+  "--disable-gpu",
+  "--remote-allow-origins=*",
+  `--remote-debugging-port=${port}`,
+  "--user-data-dir=/tmp/visual-preview-click-chrome",
+  "about:blank",
+], { stdio: ["ignore", "ignore", "ignore"] });
+
 try {
   await waitJson(`http://127.0.0.1:${port}/json/version`);
   const target = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" }).then((response) => response.json());
   client = new Cdp(target.webSocketDebuggerUrl);
-  await client.connect(); await client.send("Page.enable"); await client.send("Runtime.enable");
+  await client.connect();
+  await client.send("Page.enable");
+  await client.send("Runtime.enable");
   try {
-    await runFocusedPublicMobileCourses(client);
+    await runFocusedStudentMobileNotifications(client);
     await runFocusedPublicMobile(client);
+    await runFocusedPublicMobileCourses(client);
+    await runFocusedStudentProfileEdit(client);
+    await runFocusedStudentHistory(client);
     await runViewport(client, { name: "mobile", width: 390, height: 844 });
     await runViewport(client, { name: "desktop", width: 1440, height: 900 });
     await runFocusedCommercial(client);
@@ -505,4 +840,6 @@ try {
     client.close();
     await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`).catch(() => undefined);
   }
-} finally { chrome.kill("SIGTERM"); }
+} finally {
+  chrome.kill("SIGTERM");
+}
