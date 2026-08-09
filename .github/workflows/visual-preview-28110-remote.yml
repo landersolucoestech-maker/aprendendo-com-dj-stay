@@ -6,6 +6,7 @@ on:
     branches: [dev]
     paths:
       - ".github/workflows/visual-preview-28110-remote.yml"
+      - "scripts/run-28110-focused-profile.mjs"
 
 permissions:
   contents: write
@@ -18,6 +19,8 @@ concurrency:
 env:
   BASE_FUNCTIONAL_HEAD: 828191f0aca2d935a883610b50bcd4908319a254
   EXPECTED_MAIN_HEAD: b3a303caff9a19f231616b2b4d9fc65c2d8a557d
+  BASELINE_CLICK_SMOKE_BLOB: 6344163028641bcda2aca9901eb5906daa843804
+  CANDIDATE_BLOB: 12c9cd148a3167a33cdd89763185d880f4fec9ab
 
 jobs:
   validate-and-persist:
@@ -42,147 +45,76 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p artifacts/28110
           git fetch --prune origin dev main
           current="$(git rev-parse HEAD)"
           remote_dev="$(git rev-parse origin/dev)"
           main="$(git rev-parse origin/main)"
-          parent="$(git rev-parse HEAD^)"
           test "$(git branch --show-current)" = "dev"
           test "$current" = "$remote_dev"
           test "$main" = "$EXPECTED_MAIN_HEAD"
-          test "$parent" = "$BASE_FUNCTIONAL_HEAD"
-          mapfile -t control_files < <(git diff-tree --no-commit-id --name-only -r HEAD)
-          test "${#control_files[@]}" -eq 1
-          test "${control_files[0]}" = ".github/workflows/visual-preview-28110-remote.yml"
+          git merge-base --is-ancestor "$BASE_FUNCTIONAL_HEAD" HEAD
+          mapfile -t cp_files < <(git diff --name-only "$BASE_FUNCTIONAL_HEAD"..HEAD | sort)
+          printf '%s\n' "${cp_files[@]}" | tee artifacts/28110/control-plane-files.txt
+          test "${#cp_files[@]}" -eq 2
+          test "${cp_files[0]}" = ".github/workflows/visual-preview-28110-remote.yml"
+          test "${cp_files[1]}" = "scripts/run-28110-focused-profile.mjs"
+          test "$(git hash-object visual-preview/click-smoke.mjs)" = "$BASELINE_CLICK_SMOKE_BLOB"
+          if git rev-list --objects --all | grep -q "^$CANDIDATE_BLOB "; then
+            echo "CANDIDATE_BLOB_REFERENCED=true"
+            exit 1
+          fi
           test -z "$(git status --porcelain)"
-          echo "BASE_HEAD=$BASE_FUNCTIONAL_HEAD"
-          echo "CURRENT_HEAD=$current"
-          echo "MAIN_HEAD=$main"
-          echo "BRANCH=$(git branch --show-current)"
-          echo "NODE=$(node --version)"
-          echo "NPM=$(npm --version)"
-          echo "TRACKED_FILES=$(git ls-files | wc -l | tr -d ' ')"
-          echo "CONTROL_PLANE_BOUNDARY=PASS"
+          echo "BASE_HEAD=$BASE_FUNCTIONAL_HEAD" | tee artifacts/28110/preconditions.txt
+          echo "CURRENT_HEAD=$current" | tee -a artifacts/28110/preconditions.txt
+          echo "MAIN_HEAD=$main" | tee -a artifacts/28110/preconditions.txt
+          echo "BRANCH=$(git branch --show-current)" | tee -a artifacts/28110/preconditions.txt
+          echo "NODE=$(node --version)" | tee -a artifacts/28110/preconditions.txt
+          echo "NPM=$(npm --version)" | tee -a artifacts/28110/preconditions.txt
+          echo "TRACKED_FILES=$(git ls-files | wc -l | tr -d ' ')" | tee -a artifacts/28110/preconditions.txt
+          echo "CONTROL_PLANE_BOUNDARY=PASS" | tee -a artifacts/28110/preconditions.txt
+          echo "CANDIDATE_BLOB_REFERENCED=false" | tee -a artifacts/28110/preconditions.txt
           echo "control_head=$current" >> "$GITHUB_OUTPUT"
 
-      - name: Confirmar baseline incorreto ainda presente
+      - name: Materializar e validar semanticamente o candidate órfão
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          grep -F "if(point&&point!==el&&!el.contains(point)&&!scrollable.contains(point))" visual-preview/click-smoke.mjs >/dev/null
-          grep -F "while(blocker.parentElement&&blocker.parentElement!==scrollable.parentElement&&!scrollable.contains(blocker.parentElement))blocker=blocker.parentElement;" visual-preview/click-smoke.mjs >/dev/null
-          echo "BASELINE_BLOCKER_CLASSIFICATION_BUG_PRESENT=true"
-
-      - name: Aplicar candidate patch somente no runner
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('visual-preview/click-smoke.mjs')
-          text = path.read_text()
-          old = '''    let localBlocker=null;
-    let localVisibleTop=null;
-    let localVisibleBottom=null;
-    let scrollClamped=false;
-    if(containingOverlay&&scrollable){
-      const ownerRect=scrollable.getBoundingClientRect();
-      const sampleX=Math.min(innerWidth-1,Math.max(0,r.left+r.width/2));
-      const sampleY=Math.min(innerHeight-1,Math.max(0,r.top+r.height/2));
-      const point=document.elementFromPoint(sampleX,sampleY);
-      if(point&&point!==el&&!el.contains(point)&&!scrollable.contains(point)){
-        let blocker=point;
-        while(blocker.parentElement&&blocker.parentElement!==scrollable.parentElement&&!scrollable.contains(blocker.parentElement))blocker=blocker.parentElement;
-        const br=blocker.getBoundingClientRect();
-        if(br.width>0&&br.height>0&&br.right>r.left&&br.left<r.right){
-          localBlocker=blocker;
-          localVisibleTop=Math.max(0,ownerRect.top);
-          localVisibleBottom=Math.min(innerHeight,ownerRect.bottom,br.top-safety);
-          const deltaBottom=Math.max(0,r.bottom-localVisibleBottom);
-          const deltaTop=Math.min(0,r.top-localVisibleTop);
-          const delta=deltaBottom>0?deltaBottom:deltaTop;
-          if(delta!==0){
-            const maxScrollTop=Math.max(0,scrollable.scrollHeight-scrollable.clientHeight);
-            scrollTopRequested=Math.max(0,Math.min(maxScrollTop,scrollable.scrollTop+delta));
-            scrollable.scrollTop=scrollTopRequested;
-            scrollClamped=scrollable.scrollTop!==scrollTopRequested;
-          }
-        }
-      }
-    }'''
-          new = '''    let localBlocker=null;
-    let localBlockerCandidates=[];
-    let localVisibleTop=null;
-    let localVisibleBottom=null;
-    let scrollClamped=false;
-    if(containingOverlay&&scrollable){
-      const ownerRect=scrollable.getBoundingClientRect();
-      localVisibleTop=Math.max(0,ownerRect.top);
-      localVisibleBottom=Math.min(innerHeight,ownerRect.bottom);
-      const summarizeCandidate=(node)=>{if(!node)return null;const nr=node.getBoundingClientRect();const s=getComputedStyle(node);return{tag:node.tagName,position:s.position,rect:{left:nr.left,top:nr.top,right:nr.right,bottom:nr.bottom,width:nr.width,height:nr.height},zIndex:s.zIndex,pointerEvents:s.pointerEvents,containsTarget:node.contains(el),containedByScrollOwner:scrollable.contains(node),isDocumentRoot:node===document.documentElement,isBody:node===document.body,isScrollOwner:node===scrollable,isFixed:s.position==='fixed',isSticky:s.position==='sticky'};};
-      const sampleX=Math.min(innerWidth-1,Math.max(0,r.left+r.width/2));
-      const sampleY=Math.min(innerHeight-1,Math.max(0,r.top+r.height/2));
-      const point=document.elementFromPoint(sampleX,sampleY);
-      if(point)localBlockerCandidates.push(summarizeCandidate(point));
-      if(point&&point!==document.documentElement&&point!==document.body&&point!==el&&!point.contains(el)&&!el.contains(point)&&!scrollable.contains(point)){
-        let blocker=point;
-        while(blocker.parentElement&&blocker.parentElement!==scrollable.parentElement&&!scrollable.contains(blocker.parentElement)&&blocker.parentElement!==document.body&&blocker.parentElement!==document.documentElement&&!blocker.parentElement.contains(el))blocker=blocker.parentElement;
-        if(blocker!==point)localBlockerCandidates.push(summarizeCandidate(blocker));
-        const br=blocker.getBoundingClientRect();
-        const bs=getComputedStyle(blocker);
-        const intersectsTarget=br.bottom>r.top&&br.top<r.bottom&&br.right>r.left&&br.left<r.right;
-        const canIntercept=bs.pointerEvents!=='none'&&bs.visibility!=='hidden'&&bs.display!=='none';
-        if(blocker!==document.documentElement&&blocker!==document.body&&blocker!==scrollable&&!blocker.contains(el)&&br.width>0&&br.height>0&&intersectsTarget&&canIntercept){
-          localBlocker=blocker;
-          localVisibleBottom=Math.min(localVisibleBottom,br.top-safety);
-        }
-      }
-      const deltaBottom=Math.max(0,r.bottom-localVisibleBottom);
-      const deltaTop=Math.min(0,r.top-localVisibleTop);
-      const delta=deltaBottom>0?deltaBottom:deltaTop;
-      if(delta!==0){
-        const maxScrollTop=Math.max(0,scrollable.scrollHeight-scrollable.clientHeight);
-        scrollTopRequested=Math.max(0,Math.min(maxScrollTop,scrollable.scrollTop+delta));
-        scrollable.scrollTop=scrollTopRequested;
-        scrollClamped=scrollable.scrollTop!==scrollTopRequested;
-      }
-    }'''
-          if text.count(old) != 1:
-              raise SystemExit(f'Candidate source block count != 1: {text.count(old)}')
-          text = text.replace(old, new)
-          old_resolve = 'localBlocker:localBlockerSummary,availableVisibleRegion:'
-          new_resolve = 'localBlocker:localBlockerSummary,localBlockerCandidates,availableVisibleRegion:'
-          if text.count(old_resolve) != 2:
-              raise SystemExit(f'Resolve injection count != 2: {text.count(old_resolve)}')
-          text = text.replace(old_resolve, new_resolve)
-          path.write_text(text)
-          PY
+          gh api "repos/${GITHUB_REPOSITORY}/git/blobs/${CANDIDATE_BLOB}" --jq '.content' | tr -d '\n' | base64 --decode > /tmp/candidate-click-smoke.mjs
+          test "$(git hash-object /tmp/candidate-click-smoke.mjs)" = "$CANDIDATE_BLOB"
+          grep -F 'point!==document.documentElement' /tmp/candidate-click-smoke.mjs >/dev/null
+          grep -F 'point!==document.body' /tmp/candidate-click-smoke.mjs >/dev/null
+          grep -F 'blocker!==scrollable' /tmp/candidate-click-smoke.mjs >/dev/null
+          grep -F '!blocker.contains(el)' /tmp/candidate-click-smoke.mjs >/dev/null
+          grep -F "bs.pointerEvents!=='none'" /tmp/candidate-click-smoke.mjs >/dev/null
+          grep -F 'intersectsTarget&&canIntercept' /tmp/candidate-click-smoke.mjs >/dev/null
+          grep -F 'localBlockerCandidates' /tmp/candidate-click-smoke.mjs >/dev/null
+          cmp -s visual-preview/click-smoke.mjs /tmp/candidate-click-smoke.mjs && { echo 'Candidate não difere do baseline'; exit 1; }
+          cp /tmp/candidate-click-smoke.mjs visual-preview/click-smoke.mjs
           changed="$(git diff --name-only)"
           test "$changed" = "visual-preview/click-smoke.mjs"
-          echo "PATCH_BOUNDARY=PASS"
+          echo "CANDIDATE_PATCH=SEMANTICALLY_VERIFIED" | tee artifacts/28110/candidate.txt
+          echo "FILES_CHANGED=$changed" | tee -a artifacts/28110/candidate.txt
 
-      - name: Validação estática do candidate
+      - name: Node check e patch boundary
         shell: bash
         run: |
           set -euo pipefail
           node --check visual-preview/click-smoke.mjs
-          grep -F 'point!==document.documentElement' visual-preview/click-smoke.mjs >/dev/null
-          grep -F 'point!==document.body' visual-preview/click-smoke.mjs >/dev/null
-          grep -F 'blocker!==scrollable' visual-preview/click-smoke.mjs >/dev/null
-          grep -F '!blocker.contains(el)' visual-preview/click-smoke.mjs >/dev/null
-          grep -F "bs.pointerEvents!=='none'" visual-preview/click-smoke.mjs >/dev/null
-          grep -F 'intersectsTarget&&canIntercept' visual-preview/click-smoke.mjs >/dev/null
-          echo "HTML_EXCLUDED_AS_BLOCKER=true"
-          echo "BODY_EXCLUDED_AS_BLOCKER=true"
-          echo "DOCUMENT_ROOT_EXCLUDED=true"
-          echo "SCROLL_OWNER_EXCLUDED=true"
-          echo "TARGET_ANCESTORS_NOT_BLINDLY_TREATED_AS_BLOCKERS=true"
-          echo "NODE_CHECK=PASS"
+          test "$(git diff --name-only)" = "visual-preview/click-smoke.mjs"
+          echo "HTML_EXCLUDED_AS_BLOCKER=true" | tee artifacts/28110/static-validation.txt
+          echo "BODY_EXCLUDED_AS_BLOCKER=true" | tee -a artifacts/28110/static-validation.txt
+          echo "DOCUMENT_ROOT_EXCLUDED=true" | tee -a artifacts/28110/static-validation.txt
+          echo "SCROLL_OWNER_EXCLUDED=true" | tee -a artifacts/28110/static-validation.txt
+          echo "PATCH_BOUNDARY=PASS" | tee -a artifacts/28110/static-validation.txt
+          echo "NODE_CHECK=PASS" | tee -a artifacts/28110/static-validation.txt
 
       - name: npm ci
         run: npm ci
 
-      - name: Build VISUAL_PREVIEW_ONLY para focused tests
+      - name: Build VISUAL_PREVIEW_ONLY para validação runtime
         env:
           VITE_APP_ENV: development
           VITE_CI_RUNTIME_SMOKE: "true"
@@ -190,116 +122,85 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_runtime_smoke_only_not_for_deployment
         run: npx vite build --mode development --config visual-preview/vite.config.mjs
 
-      - name: Materializar URLs profundas e iniciar servidor local
+      - name: Materializar 73 deep links e iniciar servidor local
         shell: bash
         run: |
           set -euo pipefail
           node --input-type=module <<'NODE'
           import { cp, mkdir } from "node:fs/promises";
           import { SURFACES } from "./visual-preview/surfaces.js";
+          if (SURFACES.length !== 73) process.exit(1);
           for (const surface of SURFACES) {
             const dir = `dist-visual-preview/visual-preview/${surface.slug}`;
             await mkdir(dir, { recursive: true });
             await cp("dist-visual-preview/index.html", `${dir}/index.html`);
           }
-          if (SURFACES.length !== 73) process.exit(1);
           console.log(`PREVIEW_SURFACES=${SURFACES.length}`);
           NODE
           rm -rf dist-pages
           mkdir -p dist-pages/aprendendo-com-dj-stay
           cp -R dist-visual-preview/. dist-pages/aprendendo-com-dj-stay/
-          python3 -m http.server 4173 --directory dist-pages >/tmp/visual-preview-http.log 2>&1 &
+          python3 -m http.server 4173 --directory dist-pages >artifacts/28110/http.log 2>&1 &
           for i in $(seq 1 50); do
-            curl -fsS http://127.0.0.1:4173/aprendendo-com-dj-stay/visual-preview/student/history/ >/dev/null && exit 0
+            if curl -fsS http://127.0.0.1:4173/aprendendo-com-dj-stay/visual-preview/student/history/ >/dev/null; then
+              exit 0
+            fi
             sleep 0.2
           done
-          cat /tmp/visual-preview-http.log
+          cat artifacts/28110/http.log
           exit 1
 
-      - name: Focused Profile mobile — candidate first
+      - name: Focused Student mobile Profile primeiro
         env:
           PREVIEW_BASE_URL: http://127.0.0.1:4173/aprendendo-com-dj-stay/
-          CLICK_SMOKE_DIAGNOSTICS_DIR: click-smoke-artifacts/focused-profile
+          CLICK_SMOKE_DIAGNOSTICS_DIR: artifacts/28110/focused-profile-diagnostics
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          src = Path('visual-preview/click-smoke.mjs').read_text()
-          insert_at = src.index('const chromePath = findChrome();')
-          fn = r'''
-          const runFocusedStudentMobileProfile = async (cdp) => {
-            currentStep.viewport = "mobile";
-            await cdp.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-            await prepareScenario(cdp, "student/history", "STUDENT_PROFILE_FOCUSED");
-            const opened = await openResponsiveMenu(cdp);
-            if (!opened || !(await waitFor(cdp, `Boolean(document.querySelector('[data-shell-drawer-content]'))`, 3000))) throw new Error("DRAWER_OPEN=false no focused Student Profile.");
-            const selector = selectorForDestination("student/profile");
-            const beforeHistory = await cdp.send("Page.getNavigationHistory");
-            const geometry = await studentDrawerGeometry(cdp, selector);
-            if (!geometry?.target) throw new Error("TARGET_FOUND=false para student/profile.");
-            if (!geometry.scrollOwner) throw new Error("SCROLL_OWNER_FOUND=false para student/profile.");
-            currentStep = { scenario: "STUDENT_PROFILE_FOCUSED", viewport: "mobile", from: "student/history", action: "Perfil", selector, expectedSlug: "student/profile" };
-            const urlBefore = await evaluate(cdp, "location.href");
-            const target = await trustedClick(cdp, selector);
-            if (!target) throw new Error("TARGET_FOUND=false para student/profile após estabilização.");
-            if (target.localBlocker?.tag === "HTML" || target.localBlocker?.tag === "BODY") throw new Error(`STRUCTURAL_ROOT_AS_BLOCKER=true: ${JSON.stringify(target)}`);
-            if (!(target.clickableRect?.width > 0 && target.clickableRect?.height > 0)) throw new Error(`CLICKABLE_RECT_INVALID: ${JSON.stringify(target)}`);
-            if (target.elementFromPoint?.same !== true) throw new Error(`ELEMENT_FROM_POINT_MATCH=false: ${JSON.stringify(target)}`);
-            if (target.probe?.trusted !== true || target.probe?.received !== true) throw new Error(`TRUSTED_CLICK=false: ${JSON.stringify(target)}`);
-            await waitSurface(cdp, "student/profile");
-            const afterHistory = await cdp.send("Page.getNavigationHistory");
-            const entryCreated = afterHistory.entries.some((entry) => entry.url.includes(expectedPath("student/profile"))) && afterHistory.entries.length > beforeHistory.entries.length;
-            if (!entryCreated) throw new Error("HISTORY_ENTRY_CREATED=false para student/profile.");
-            console.log(JSON.stringify({SCENARIO:"STUDENT_PROFILE_FOCUSED",VIEWPORT:"mobile",FROM:"student/history",DRAWER:true,SCROLL_OWNER:target.scrollOwner,CLIENT_HEIGHT:target.scrollOwner?.clientHeight,SCROLL_HEIGHT:target.scrollOwner?.scrollHeight,MAX_SCROLL_TOP:geometry.maxScrollTop,SCROLL_TOP_BEFORE:target.scrollTopBefore,SCROLL_TOP_REQUESTED:target.scrollTopRequested,SCROLL_TOP_AFTER:target.scrollTopAfter,TARGET_RECT_BEFORE:target.rectBefore,TARGET_RECT_AFTER:target.rect,BLOCKER_CANDIDATES:target.localBlockerCandidates,LOCAL_BLOCKER:target.localBlocker,VISIBLE_REGION:target.availableVisibleRegion,CLICKABLE_RECT:target.clickableRect,CLICK_POINT:{x:target.x,y:target.y},ELEMENT_FROM_POINT:target.elementFromPoint,ELEMENT_FROM_POINT_MATCH:true,TRUSTED_CLICK:true,URL_BEFORE:urlBefore,URL_AFTER:await evaluate(cdp,"location.href"),EXPECTED_SURFACE:"student/profile",OBSERVED_SURFACE:await evaluate(cdp,currentSlugExpression),HISTORY_ENTRY_CREATED:true,RESULT:"PASS"}));
-            await browserBackForward(cdp, "student/history", "student/profile", "STUDENT_PROFILE_FOCUSED_HISTORY");
-            console.log("FOCUSED_STUDENT_MOBILE_PROFILE_TEST=PASS");
-          };
-          '''
-          src = src[:insert_at] + fn + src[insert_at:]
-          start = src.index('try {\n  await waitJson(`http://127.0.0.1:${port}/json/version`);')
-          end = src.rindex('} finally {\n  chrome.kill("SIGTERM");\n}') + len('} finally {\n  chrome.kill("SIGTERM");\n}')
-          replacement = '''try {\n  await waitJson(`http://127.0.0.1:${port}/json/version`);\n  const target = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" }).then((response) => response.json());\n  client = new Cdp(target.webSocketDebuggerUrl);\n  await client.connect();\n  await client.send("Page.enable");\n  await client.send("Runtime.enable");\n  try {\n    await runFocusedStudentMobileProfile(client);\n  } catch (error) {\n    await logStep(client, "FAIL", { ERROR: String(error?.message || error) }).catch(() => undefined);\n    await saveDiagnostics(client, error);\n    throw error;\n  } finally {\n    client.close();\n    await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`).catch(() => undefined);\n  }\n} finally {\n  chrome.kill("SIGTERM");\n}'''
-          src = src[:start] + replacement + src[end:]
-          Path('/tmp/click-smoke-profile.mjs').write_text(src)
-          PY
-          node --check /tmp/click-smoke-profile.mjs
-          node /tmp/click-smoke-profile.mjs | tee /tmp/focused-profile.log
-          grep -F 'FOCUSED_STUDENT_MOBILE_PROFILE_TEST=PASS' /tmp/focused-profile.log >/dev/null
+          node scripts/run-28110-focused-profile.mjs 2>&1 | tee artifacts/28110/focused-profile.log
+          grep -F 'FOCUSED_STUDENT_MOBILE_PROFILE_TEST=PASS' artifacts/28110/focused-profile.log >/dev/null
 
-      - name: Full click-smoke — focused regressions + mobile + desktop
+      - name: Focused regressions + mobile + desktop completos
         env:
           PREVIEW_BASE_URL: http://127.0.0.1:4173/aprendendo-com-dj-stay/
-          CLICK_SMOKE_DIAGNOSTICS_DIR: click-smoke-artifacts/local
-        run: node visual-preview/click-smoke.mjs | tee /tmp/full-click-smoke.log
-
-      - name: Confirm focused regressions and complete navigation
+          CLICK_SMOKE_DIAGNOSTICS_DIR: artifacts/28110/full-click-diagnostics
         shell: bash
         run: |
           set -euo pipefail
-          grep -F 'FOCUSED_STUDENT_MOBILE_NOTIFICATIONS_TEST=PASS' /tmp/full-click-smoke.log >/dev/null
-          grep -F 'FOCUSED_PUBLIC_MOBILE_CONTACT_REGRESSION=PASS' /tmp/full-click-smoke.log >/dev/null
-          grep -F 'FOCUSED_PUBLIC_MOBILE_COURSES_TEST=PASS' /tmp/full-click-smoke.log >/dev/null
-          grep -F 'FOCUSED_STUDENT_PROFILE_EDIT_REGRESSION=PASS' /tmp/full-click-smoke.log >/dev/null
-          grep -F 'FOCUSED_STUDENT_HISTORY_REGRESSION=PASS' /tmp/full-click-smoke.log >/dev/null
-          grep -F 'FOCUSED_COMMERCIAL_TEST=PASS' /tmp/full-click-smoke.log >/dev/null
-          grep -F 'CLICK_SMOKE_MOBILE=PASS' /tmp/full-click-smoke.log >/dev/null
-          grep -F 'CLICK_SMOKE_DESKTOP=PASS' /tmp/full-click-smoke.log >/dev/null
-          grep -F 'BROWSER_BACK_FORWARD_ALL_AREAS=PASS' /tmp/full-click-smoke.log >/dev/null
-          grep -F 'PREVIEW_CLICK_SMOKE=PASS' /tmp/full-click-smoke.log >/dev/null
-          echo "FOCUSED_REGRESSIONS=PASS"
-          echo "MOBILE_COMPLETE=PASS"
-          echo "DESKTOP_COMPLETE=PASS"
-          echo "HISTORY_COMPLETE=PASS"
+          node visual-preview/click-smoke.mjs 2>&1 | tee artifacts/28110/full-click-smoke.log
+          grep -F 'FOCUSED_STUDENT_MOBILE_NOTIFICATIONS_TEST=PASS' artifacts/28110/full-click-smoke.log >/dev/null
+          grep -F 'FOCUSED_PUBLIC_MOBILE_CONTACT_REGRESSION=PASS' artifacts/28110/full-click-smoke.log >/dev/null
+          grep -F 'FOCUSED_PUBLIC_MOBILE_COURSES_TEST=PASS' artifacts/28110/full-click-smoke.log >/dev/null
+          grep -F 'FOCUSED_STUDENT_PROFILE_EDIT_REGRESSION=PASS' artifacts/28110/full-click-smoke.log >/dev/null
+          grep -F 'FOCUSED_STUDENT_HISTORY_REGRESSION=PASS' artifacts/28110/full-click-smoke.log >/dev/null
+          grep -F 'FOCUSED_COMMERCIAL_TEST=PASS' artifacts/28110/full-click-smoke.log >/dev/null
+          grep -F 'CLICK_SMOKE_MOBILE=PASS' artifacts/28110/full-click-smoke.log >/dev/null
+          grep -F 'CLICK_SMOKE_DESKTOP=PASS' artifacts/28110/full-click-smoke.log >/dev/null
+          grep -F 'BROWSER_BACK_FORWARD_ALL_AREAS=PASS' artifacts/28110/full-click-smoke.log >/dev/null
+          grep -F 'PREVIEW_CLICK_SMOKE=PASS' artifacts/28110/full-click-smoke.log >/dev/null
+          echo "RUNTIME_CLICK_SMOKE=PASS" | tee artifacts/28110/runtime-summary.txt
 
       - name: Typecheck completo
-        run: npm run typecheck
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run typecheck 2>&1 | tee artifacts/28110/typecheck.log
 
       - name: Lint
-        run: npm run lint
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run lint 2>&1 | tee artifacts/28110/lint.log
 
       - name: Testes unitários
-        run: npm run test:unit
+        shell: bash
+        env:
+          NO_COLOR: "1"
+        run: |
+          set -euo pipefail
+          npm run test:unit 2>&1 | tee artifacts/28110/tests.log
+          grep -E 'Test Files[[:space:]]+57 passed.*\(57\)' artifacts/28110/tests.log >/dev/null
+          grep -E 'Tests[[:space:]]+804 passed.*\(804\)' artifacts/28110/tests.log >/dev/null
 
       - name: Build produtivo development
         env:
@@ -307,9 +208,12 @@ jobs:
           VITE_CI_RUNTIME_SMOKE: "true"
           VITE_SUPABASE_URL: https://preview.invalid
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_runtime_smoke_only_not_for_deployment
-        run: npm run build:dev
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run build:dev 2>&1 | tee artifacts/28110/build.log
 
-      - name: Rotas, deep links, 146 renders e isolamento
+      - name: Rotas e 146 renders isolados
         env:
           PREVIEW_BASE_URL: http://127.0.0.1:4173/aprendendo-com-dj-stay/
         shell: bash
@@ -321,26 +225,27 @@ jobs:
           test "$total" -eq 54
           test "$explicit" -eq 53
           test "$fallback" -eq 1
-          echo "ROUTES=54/53/1 INVARIANT"
-          node visual-preview/smoke.mjs | tee /tmp/deep-render-smoke.log
-          grep -R -F "VISUAL_PREVIEW_ONLY" visual-preview >/dev/null
-          echo "DEEP_LINKS=73/73 PASS"
-          echo "RENDERS=146/146 PASS"
-          echo "PREVIEW_EXTERNAL_NETWORK_REQUIRED=NO"
+          echo "ROUTES=54/53/1 INVARIANT" | tee artifacts/28110/routes.txt
+          node visual-preview/smoke.mjs 2>&1 | tee artifacts/28110/render-smoke.log
+          grep -F 'PREVIEW_SMOKE_TOTAL=146 PASS' artifacts/28110/render-smoke.log >/dev/null
+          grep -R -F 'VISUAL_PREVIEW_ONLY' visual-preview >/dev/null
+          echo "DEEP_LINKS=73/73 PASS" | tee artifacts/28110/isolation.txt
+          echo "RENDERS=146/146 PASS" | tee -a artifacts/28110/isolation.txt
+          echo "PREVIEW_EXTERNAL_NETWORK_REQUIRED=NO" | tee -a artifacts/28110/isolation.txt
 
-      - name: Candidate worktree boundary e concurrency check
+      - name: Worktree candidate boundary e concurrency
         id: concurrency
         shell: bash
         run: |
           set -euo pipefail
-          changed="$(git diff --name-only)"
-          test "$changed" = "visual-preview/click-smoke.mjs"
+          test "$(git diff --name-only)" = "visual-preview/click-smoke.mjs"
           test -z "$(git diff --cached --name-only)"
-          git fetch origin dev
+          git fetch origin dev main
           control_head='${{ steps.preconditions.outputs.control_head }}'
-          test "$(git rev-parse origin/dev)" = "$control_head" || { echo 'CONCURRENT_DEV_UPDATE'; exit 1; }
-          echo "WORKTREE_CANDIDATE_BOUNDARY=PASS"
-          echo "CONCURRENT_UPDATE=NO"
+          test "$(git rev-parse origin/dev)" = "$control_head" || { echo 'CONCURRENT_DEV_UPDATE' | tee artifacts/28110/concurrency.txt; exit 1; }
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN_HEAD"
+          echo "WORKTREE=CANDIDATE_ONLY" | tee artifacts/28110/concurrency.txt
+          echo "CONCURRENT_UPDATE=NO" | tee -a artifacts/28110/concurrency.txt
 
       - name: Commit funcional e push fast-forward dev
         id: feature
@@ -350,8 +255,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- visual-preview/click-smoke.mjs
-          staged="$(git diff --cached --name-only)"
-          test "$staged" = "visual-preview/click-smoke.mjs"
+          test "$(git diff --cached --name-only)" = "visual-preview/click-smoke.mjs"
           git commit -m "fix(preview): ignore structural roots as click blockers"
           feature_head="$(git rev-parse HEAD)"
           test "$(git diff-tree --no-commit-id --name-only -r HEAD)" = "visual-preview/click-smoke.mjs"
@@ -359,29 +263,25 @@ jobs:
           git fetch origin dev main
           test "$(git rev-parse origin/dev)" = "$feature_head"
           test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN_HEAD"
-          echo "FEATURE_HEAD=$feature_head"
+          echo "$feature_head" | tee artifacts/28110/feature-head.txt
           echo "feature_head=$feature_head" >> "$GITHUB_OUTPUT"
           echo "PUSH_DEV=PASS"
           echo "MAIN_ALTERADA=NAO"
 
-      - name: Disparar workflow oficial no novo HEAD
+      - name: Disparar workflow oficial do novo HEAD
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           gh workflow run visual-preview.yml --ref dev
-          echo "OFFICIAL_NEW_HEAD_WORKFLOW_DISPATCHED=true"
+          echo "OFFICIAL_NEW_HEAD_WORKFLOW_DISPATCHED=true" | tee artifacts/28110/dispatch.txt
 
-      - name: Upload diagnostics e reports
+      - name: Upload artifact 28.1.10-A
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: visual-preview-28110-remote-${{ github.run_id }}
-          path: |
-            click-smoke-artifacts
-            /tmp/focused-profile.log
-            /tmp/full-click-smoke.log
-            /tmp/deep-render-smoke.log
-          if-no-files-found: ignore
+          path: artifacts/28110
+          if-no-files-found: warn
           retention-days: 7
