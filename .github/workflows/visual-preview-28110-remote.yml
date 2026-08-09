@@ -76,7 +76,7 @@ jobs:
           echo "CANDIDATE_BLOB_REFERENCED=false" | tee -a artifacts/28110/preconditions.txt
           echo "control_head=$current" >> "$GITHUB_OUTPUT"
 
-      - name: Materializar e validar semanticamente o candidate órfão
+      - name: Materializar, corrigir sintaxe e validar semanticamente o candidate órfão
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -84,6 +84,22 @@ jobs:
           set -euo pipefail
           gh api "repos/${GITHUB_REPOSITORY}/git/blobs/${CANDIDATE_BLOB}" --jq '.content' | tr -d '\n' | base64 --decode > /tmp/candidate-click-smoke.mjs
           test "$(git hash-object /tmp/candidate-click-smoke.mjs)" = "$CANDIDATE_BLOB"
+          echo 'SYNTAX_ERROR_FILE=visual-preview/click-smoke.mjs' | tee artifacts/28110/candidate-syntax.txt
+          echo 'SYNTAX_ERROR_LINE=697' | tee -a artifacts/28110/candidate-syntax.txt
+          echo 'SYNTAX_ERROR_SOURCE=throw new Error( TARGET_VISIBLE_ABOVE_ACCOUNT_CARD=false: ${JSON.stringify(target)}`);' | tee -a artifacts/28110/candidate-syntax.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('/tmp/candidate-click-smoke.mjs')
+          text = path.read_text()
+          bad = 'throw new Error( TARGET_VISIBLE_ABOVE_ACCOUNT_CARD=false: ${JSON.stringify(target)}`);'
+          good = 'throw new Error(`TARGET_VISIBLE_ABOVE_ACCOUNT_CARD=false: ${JSON.stringify(target)}`);'
+          count = text.count(bad)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one malformed expression, found {count}')
+          path.write_text(text.replace(bad, good, 1))
+          PY
+          grep -F 'throw new Error(`TARGET_VISIBLE_ABOVE_ACCOUNT_CARD=false: ${JSON.stringify(target)}`);' /tmp/candidate-click-smoke.mjs >/dev/null
+          echo 'SYNTAX_FIX=template literal corrigido exclusivamente' | tee -a artifacts/28110/candidate-syntax.txt
           grep -F 'point!==document.documentElement' /tmp/candidate-click-smoke.mjs >/dev/null
           grep -F 'point!==document.body' /tmp/candidate-click-smoke.mjs >/dev/null
           grep -F 'blocker!==scrollable' /tmp/candidate-click-smoke.mjs >/dev/null
@@ -277,7 +293,7 @@ jobs:
           gh workflow run visual-preview.yml --ref dev
           echo "OFFICIAL_NEW_HEAD_WORKFLOW_DISPATCHED=true" | tee artifacts/28110/dispatch.txt
 
-      - name: Upload artifact 28.1.10-A
+      - name: Upload artifact 28.1.10-B
         if: always()
         uses: actions/upload-artifact@v4
         with:
