@@ -91,15 +91,27 @@ jobs:
           from pathlib import Path
           path = Path('/tmp/candidate-click-smoke.mjs')
           text = path.read_text()
-          bad = 'throw new Error( TARGET_VISIBLE_ABOVE_ACCOUNT_CARD=false: ${JSON.stringify(target)}`);'
-          good = 'throw new Error(`TARGET_VISIBLE_ABOVE_ACCOUNT_CARD=false: ${JSON.stringify(target)}`);'
-          count = text.count(bad)
-          if count != 1:
-              raise SystemExit(f'Expected exactly one malformed expression, found {count}')
-          path.write_text(text.replace(bad, good, 1))
+          first_bad = 'throw new Error( TARGET_VISIBLE_ABOVE_ACCOUNT_CARD=false: ${JSON.stringify(target)}`);'
+          first_good = 'throw new Error(`TARGET_VISIBLE_ABOVE_ACCOUNT_CARD=false: ${JSON.stringify(target)}`);'
+          first_count = text.count(first_bad)
+          if first_count != 1:
+              raise SystemExit(f'Expected exactly one first malformed expression, found {first_count}')
+          text = text.replace(first_bad, first_good, 1)
+          second_bad = 'throw new Error((TRUSTED_CLICK=false: ${JSON.stringify(target)}`);'
+          second_good = 'throw new Error(`TRUSTED_CLICK=false: ${JSON.stringify(target)}`);'
+          second_count = text.count(second_bad)
+          print(f'SECOND_SYNTAX_ERROR_MATCH_COUNT={second_count}')
+          if second_count != 1:
+              raise SystemExit(f'Expected exactly one second malformed expression, found {second_count}')
+          text = text.replace(second_bad, second_good, 1)
+          path.write_text(text)
           PY
           grep -F 'throw new Error(`TARGET_VISIBLE_ABOVE_ACCOUNT_CARD=false: ${JSON.stringify(target)}`);' /tmp/candidate-click-smoke.mjs >/dev/null
-          echo 'SYNTAX_FIX=template literal corrigido exclusivamente' | tee -a artifacts/28110/candidate-syntax.txt
+          grep -F 'throw new Error(`TRUSTED_CLICK=false: ${JSON.stringify(target)}`);' /tmp/candidate-click-smoke.mjs >/dev/null
+          echo 'FIRST_SYNTAX_FIX=template literal corrigido exclusivamente' | tee -a artifacts/28110/candidate-syntax.txt
+          echo 'SECOND_SYNTAX_ERROR_LINE=700' | tee -a artifacts/28110/candidate-syntax.txt
+          echo 'SECOND_SYNTAX_FIX=template literal corrigido exclusivamente' | tee -a artifacts/28110/candidate-syntax.txt
+          echo 'SECOND_SYNTAX_ERROR_MATCH_COUNT=1' | tee -a artifacts/28110/candidate-syntax.txt
           grep -F 'point!==document.documentElement' /tmp/candidate-click-smoke.mjs >/dev/null
           grep -F 'point!==document.body' /tmp/candidate-click-smoke.mjs >/dev/null
           grep -F 'blocker!==scrollable' /tmp/candidate-click-smoke.mjs >/dev/null
@@ -293,7 +305,7 @@ jobs:
           gh workflow run visual-preview.yml --ref dev
           echo "OFFICIAL_NEW_HEAD_WORKFLOW_DISPATCHED=true" | tee artifacts/28110/dispatch.txt
 
-      - name: Upload artifact 28.1.10-B
+      - name: Upload artifact 28.1.10-C
         if: always()
         uses: actions/upload-artifact@v4
         with:
