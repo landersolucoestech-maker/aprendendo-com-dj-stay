@@ -201,7 +201,7 @@ const stabilizeTarget = async (cdp, selector) => evaluate(cdp, `new Promise((res
   const findFixedOverlays=(rect)=>Array.from(document.querySelectorAll('body *')).filter((node)=>{
     if(!(node instanceof HTMLElement)||node===el||el.contains(node)||node.closest('[data-preview-navigator]'))return false;
     const s=getComputedStyle(node);if(!['fixed','sticky'].includes(s.position)||s.pointerEvents==='none'||s.visibility==='hidden'||s.display==='none')return false;
-    const nr=node.getBoundingClientRect();return nr.width>0&&nr.height>0&&nr.bottom>0&&nr.top<innerHeight&&nr.right>rect.left&&nr.left<r.right;
+    const nr=node.getBoundingClientRect();return nr.width>0&&nr.height>0&&nr.bottom>0&&nr.top<innerHeight&&nr.right>rect.left&&nr.left<rect.right;
   }).map((node)=>{const nr=node.getBoundingClientRect();const s=getComputedStyle(node);return{node,rect:nr,position:s.position,zIndex:s.zIndex,pointerEvents:s.pointerEvents};});
   const initialOverlays=findFixedOverlays(beforeRect);
   const initialContainingOverlay=initialOverlays.find((item)=>item.node.contains(el))||null;
