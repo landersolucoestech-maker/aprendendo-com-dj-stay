@@ -104,14 +104,25 @@ jobs:
           if second_count != 1:
               raise SystemExit(f'Expected exactly one second malformed expression, found {second_count}')
           text = text.replace(second_bad, second_good, 1)
+          third_bad = 'throw new Error((COURSES_TARGET_TRUSTED_CLICK=false: ${JSON.stringify(courses)}`);'
+          third_good = 'throw new Error(`COURSES_TARGET_TRUSTED_CLICK=false: ${JSON.stringify(courses)}`);'
+          third_count = text.count(third_bad)
+          print(f'THIRD_SYNTAX_ERROR_MATCH_COUNT={third_count}')
+          if third_count != 1:
+              raise SystemExit(f'Expected exactly one third malformed expression, found {third_count}')
+          text = text.replace(third_bad, third_good, 1)
           path.write_text(text)
           PY
           grep -F 'throw new Error(`TARGET_VISIBLE_ABOVE_ACCOUNT_CARD=false: ${JSON.stringify(target)}`);' /tmp/candidate-click-smoke.mjs >/dev/null
           grep -F 'throw new Error(`TRUSTED_CLICK=false: ${JSON.stringify(target)}`);' /tmp/candidate-click-smoke.mjs >/dev/null
+          grep -F 'throw new Error(`COURSES_TARGET_TRUSTED_CLICK=false: ${JSON.stringify(courses)}`);' /tmp/candidate-click-smoke.mjs >/dev/null
           echo 'FIRST_SYNTAX_FIX=template literal corrigido exclusivamente' | tee -a artifacts/28110/candidate-syntax.txt
           echo 'SECOND_SYNTAX_ERROR_LINE=700' | tee -a artifacts/28110/candidate-syntax.txt
           echo 'SECOND_SYNTAX_FIX=template literal corrigido exclusivamente' | tee -a artifacts/28110/candidate-syntax.txt
           echo 'SECOND_SYNTAX_ERROR_MATCH_COUNT=1' | tee -a artifacts/28110/candidate-syntax.txt
+          echo 'THIRD_SYNTAX_ERROR_LINE=758' | tee -a artifacts/28110/candidate-syntax.txt
+          echo 'THIRD_SYNTAX_FIX=template literal corrigido exclusivamente' | tee -a artifacts/28110/candidate-syntax.txt
+          echo 'THIRD_SYNTAX_ERROR_MATCH_COUNT=1' | tee -a artifacts/28110/candidate-syntax.txt
           grep -F 'point!==document.documentElement' /tmp/candidate-click-smoke.mjs >/dev/null
           grep -F 'point!==document.body' /tmp/candidate-click-smoke.mjs >/dev/null
           grep -F 'blocker!==scrollable' /tmp/candidate-click-smoke.mjs >/dev/null
@@ -305,7 +316,7 @@ jobs:
           gh workflow run visual-preview.yml --ref dev
           echo "OFFICIAL_NEW_HEAD_WORKFLOW_DISPATCHED=true" | tee artifacts/28110/dispatch.txt
 
-      - name: Upload artifact 28.1.10-C
+      - name: Upload artifact 28.1.10-D
         if: always()
         uses: actions/upload-artifact@v4
         with:
